@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1357 2017-08-20 21:03:11Z wesleyjohnson $
+// $Id: v_video.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -291,19 +291,19 @@ void V_DrawFlatFill(int x, int y, int w, int h, int scale, int flatnum);
 void V_ScreenFlatFill( int flatnum );
 
 //added:10-02-98: fade down the screen buffer before drawing the menu over
-void V_DrawFadeScreen (void);
+void V_FadeScreen (void);
 
 // Fade the console background with fade alpha and green tint per cv_darkback.
 //added:20-03-98: test console
 //   x1, x2, y2 : affected ranges in pixels,  (always y1 = 0)
-void V_DrawFadeConsBack (int x1, int x2, int y2);
+void V_FadeConsBack (int x1, int x2, int y2);
 
-//  General Draw Fade.
+//  General Fade Rectangle.
 //   x1, x2, y2 : affected ranges in pixels,  (always y1 = 0)
 //   fade_alpha : 1 (no fade) .. 255 (faded)
 //   fade_index : from fadescreen_draw8, or fadecons_draw8 table
 //   tint_rgba : added color tint, small color values only
-void V_DrawFade(int x1, int x2, int y2,
+void V_FadeRect(int x1, int x2, int y2,
                 uint32_t fade_alpha, unsigned int fade_index,
                 uint32_t tint_rgba );
 
@@ -338,7 +338,7 @@ void VID_BlitLinearScreen (byte *srcptr, byte *destptr, int width,
                            int height, int srcrowbytes, int destrowbytes);
 
 // clear to black
-void V_ClearDisplay( void );
+void V_Clear_Display( void );
   
 // [WDJ] 2012-02-06 Draw functions for all bpp, bytepp, and padded lines.
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1359 2017-10-16 16:23:17Z wesleyjohnson $
+// $Id: m_menu.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -512,7 +512,7 @@ void CV_menusound_OnChange(void)
 //
 // PROTOTYPES
 //
-static void M_DrawSaveLoadBorder(int x, int y, boolean longer);
+static void M_Draw_SaveLoadBorder(int x, int y, boolean longer);
 static void Push_Setup_Menu(menu_t *menudef);
 static void Pop_Menu( void );
 
@@ -527,7 +527,7 @@ static void M_DrawSlider (int x, int y, int range);
 static void M_CentreText(int y, char* string); //added:30-01-98:writetext centered
 
 static void M_StopMessage(int choice);
-static void M_ClearMenus (boolean callexitmenufunc);
+static void M_Clear_Menus (boolean callexitmenufunc);
 static int  M_StringHeight(char* string);
 static void M_GameOption(int choice);
 static void M_AdvOption(int choice);
@@ -798,8 +798,8 @@ boolean  M_already_playing( boolean check_netgame )
 //MAIN MENU
 //===========================================================================
 
-void M_LoadGame(int choice);
-void M_SaveGame(int choice);
+void M_Loadgame(int choice);
+void M_Savegame(int choice);
 void M_QuitDOOM(int choice);
 
 enum
@@ -812,8 +812,8 @@ enum
 menuitem_t MainMenu[]=
 {
     {IT_SUBMENU | IT_PATCH,"M_NGAME" ,"NEW GAME" ,&SingleMultiDef,'n'},
-    {IT_CALL    | IT_PATCH,"M_LOADG" ,"LOAD GAME",M_LoadGame,'l'},
-    {IT_CALL    | IT_PATCH,"M_SAVEG" ,"SAVE GAME",M_SaveGame,'s'},
+    {IT_CALL    | IT_PATCH,"M_LOADG" ,"LOAD GAME",M_Loadgame,'l'},
+    {IT_CALL    | IT_PATCH,"M_SAVEG" ,"SAVE GAME",M_Savegame,'s'},
     {IT_SUBMENU | IT_PATCH,"M_OPTION","OPTIONS"  ,&OptionsDef,'o'},
     {IT_SUBMENU | IT_PATCH,"M_RDTHIS","INFO"     ,&ReadDef1  ,'r'},  // Another hickup with Special edition.
     {IT_CALL    | IT_PATCH,"M_QUITG" ,"QUIT GAME",M_QuitDOOM,'q'}
@@ -886,7 +886,7 @@ consvar_t cv_serversearch = {"serversearch"    ,"0",CV_HIDEN,serversearch_cons_t
 void M_Connect( int choice )
 {
     // do not call menuexitfunc 
-    M_ClearMenus(false);
+    M_Clear_Menus(false);
 
     COM_BufAddText(va("connect node %d\n",
                       serverlist[choice-FIRSTSERVERLINE].server_node));
@@ -1035,7 +1035,7 @@ static boolean StartSplitScreenGame = false;
 
 void M_StartServer( int choice )
 {
-    M_ClearMenus(true);
+    M_Clear_Menus(true);
 
     netgame = true;
     multiplayer = true;
@@ -1688,7 +1688,7 @@ void M_ChooseSkill(int choice)
     }
 
     G_DeferedInitNew(choice, G_BuildMapName(epi+1,1), StartSplitScreenGame);
-    M_ClearMenus (true);
+    M_Clear_Menus (true);
 }
 
 static
@@ -1698,7 +1698,7 @@ void M_VerifyNightmare(int ch)
         return;
 
     G_DeferedInitNew(NG_nightmare, G_BuildMapName(epi+1,1), StartSplitScreenGame);
-    M_ClearMenus (true);
+    M_Clear_Menus (true);
 }
 
 //===========================================================================
@@ -2843,7 +2843,7 @@ menu_t  DirDef =
 static void draw_dir_line( int line_y )
 {
     V_DrawString( DirDef.x, line_y, 0, "DIR");
-    M_DrawSaveLoadBorder( DirDef.x+32, line_y, 0);
+    M_Draw_SaveLoadBorder( DirDef.x+32, line_y, 0);
     V_DrawString( DirDef.x+32, line_y, 0, savegamedir);
 }
 
@@ -2860,7 +2860,7 @@ void M_DrawDir(void)
         // draw string and cursor in the edit position
         V_DrawString( DirDef.x, line_y, 0, "NEW DIR");
         int line_x = DirDef.x+64;
-        M_DrawSaveLoadBorder( line_x, line_y, 0);
+        M_Draw_SaveLoadBorder( line_x, line_y, 0);
         V_DrawString( line_x, line_y, 0, edit_buffer);
         i = V_StringWidth(edit_buffer);
         V_DrawString( line_x + i, line_y, 0, "_");
@@ -2872,7 +2872,7 @@ void M_DrawDir(void)
     for (i = 0; i < NUM_DIRLINE; i++)
     {
         line_y += LINEHEIGHT;
-        M_DrawSaveLoadBorder( DirDef.x, line_y, 0);
+        M_Draw_SaveLoadBorder( DirDef.x, line_y, 0);
         V_DrawString( DirDef.x, line_y, 0, savegamedisp[i].desc);
     }
     // Put some message in the UP-TO-LEGACY dir entry.
@@ -3086,7 +3086,7 @@ void M_Get_SaveDir (int choice)
 //===========================================================================
 //LOAD GAME MENU
 //===========================================================================
-void M_DrawLoad(void);
+void M_Draw_Loadgame(void);
 
 void M_LoadSelect(int choice);
 
@@ -3101,7 +3101,7 @@ void M_LoadSelect(int choice);
 
 
 // Has SAVEGAME_NUM_MSLOT entries, and dir entry
-menuitem_t LoadGameMenu[]=
+menuitem_t LoadgameMenu[]=
 {
 #ifdef SAVEGAMEDIR
     {IT_CALL | IT_NOTHING,"",0, M_Get_SaveDir,'/'},
@@ -3118,10 +3118,10 @@ menu_t  LoadDef =
 {
     "M_LOADG",
     "Load Game",
-    LoadGameMenu,
-    M_DrawLoad,
+    LoadgameMenu,
+    M_Draw_Loadgame,
     NULL,
-    sizeof(LoadGameMenu)/sizeof(menuitem_t),
+    sizeof(LoadgameMenu)/sizeof(menuitem_t),
 //    80,54,
 #ifdef SAVEGAMEDIR
     (176-(SAVELINELEN*8/2)),54-LINEHEIGHT,
@@ -3132,9 +3132,9 @@ menu_t  LoadDef =
 };
 
 //
-// M_LoadGame & Cie.
+// M_Loadgame & Cie.
 //
-void M_DrawLoad(void)
+void M_Draw_Loadgame(void)
 {
     int i;
     int line_y = LoadDef.y;
@@ -3146,7 +3146,7 @@ void M_DrawLoad(void)
     for (i = 0; i < SAVEGAME_NUM_MSLOT; i++)
     {
         line_y += LINEHEIGHT;
-        M_DrawSaveLoadBorder( LoadDef.x, line_y, 1);
+        M_Draw_SaveLoadBorder( LoadDef.x, line_y, 1);
 #ifdef SAVEGAME_MTLEFT
         V_DrawString( LoadDef.x, line_y, 0, savegamedisp[i].levtime);
         V_DrawString( LoadDef.x+SAVE_DESC_XPOS, line_y, 0, savegamedisp[i].desc);
@@ -3158,7 +3158,7 @@ void M_DrawLoad(void)
 #else
     for (i = 0; i < SAVEGAME_NUM_MSLOT; i++)
     {
-        M_DrawSaveLoadBorder( LoadDef.x, line_y, 0);
+        M_Draw_SaveLoadBorder( LoadDef.x, line_y, 0);
 #ifdef SAVEGAME_MTLEFT
         V_DrawString( LoadDef.x, line_y, 0, savegamedisp[i].levtime);
         V_DrawString( LoadDef.x+SAVE_DESC_XPOS, line_y, 0, savegamedisp[i].desc);
@@ -3182,11 +3182,11 @@ void M_LoadSelect(int choice)
     short sgslot = choice - SAVEGAME_MSLOT_0;
 #ifdef SAVEGAME99
     if( savegamedisp[sgslot].savegameid <= 99 )
-      G_LoadGame ( savegamedisp[sgslot].savegameid );  // slot id
+      G_Load_Game ( savegamedisp[sgslot].savegameid );  // slot id
 #else
-    G_LoadGame (sgslot);
+    G_Load_Game (sgslot);
 #endif
-    M_ClearMenus (true);
+    M_Clear_Menus (true);
 }
 
 
@@ -3289,7 +3289,7 @@ void M_ReadSaveStrings( int scroll_direction )
         sgdp->desc[SAVESTRINGSIZE-1] = '\0';
         sgdp->levtime[SAVEGAME_MTLEN-1] = '\0';
         sgdp->savegameid = nameid;
-        LoadGameMenu[sgslot + SAVEGAME_MSLOT_0].status = slot_status;
+        LoadgameMenu[sgslot + SAVEGAME_MSLOT_0].status = slot_status;
         sgslot++; // uses savegamedisp[0..5]
         // When scroll_direction < 0 only, until last test satisfied
         if((sgslot >= SAVEGAME_NUM_MSLOT) && (nameid < last_nameid))
@@ -3300,8 +3300,8 @@ void M_ReadSaveStrings( int scroll_direction )
             // [WDJ] Fix bug: upon scroll down and up, EMPTY SLOT message remained
             // Must scroll the status too.
             for( i = SAVEGAME_MSLOT_0; i<SAVEGAME_MSLOT_LAST; i++ )
-               LoadGameMenu[i].status = LoadGameMenu[i+1].status;
-            LoadGameMenu[SAVEGAME_MSLOT_LAST].status = IT_SPACE | IT_NOTHING;
+               LoadgameMenu[i].status = LoadgameMenu[i+1].status;
+            LoadgameMenu[SAVEGAME_MSLOT_LAST].status = IT_SPACE | IT_NOTHING;
 
             memmove( &savegamedisp[0], &savegamedisp[1],
                          sizeof( savegame_disp_t ) * (SAVEGAME_NUM_MSLOT-1));
@@ -3314,7 +3314,7 @@ void M_ReadSaveStrings( int scroll_direction )
     clear_remaining_savegamedisp( sgslot );  // if sgslot < 5, upto [5]
     // clear remaining menu slot status, to prevent attempts to load
     for( i = sgslot+SAVEGAME_MSLOT_0; i<=SAVEGAME_MSLOT_LAST; i++ )
-       LoadGameMenu[i].status = IT_SPACE | IT_NOTHING;
+       LoadgameMenu[i].status = IT_SPACE | IT_NOTHING;
 }
 
 #else
@@ -3342,7 +3342,7 @@ void M_ReadSaveStrings(void)
         {
             // read error
             strcpy(&sgdp->desc[0], EMPTYSTRING);
-            LoadGameMenu[i].status = IT_SPACE | IT_NOTHING;
+            LoadgameMenu[i].status = IT_SPACE | IT_NOTHING;
             continue;
         }
         read( handle, savebuffer, savebuffer_size );
@@ -3356,12 +3356,12 @@ void M_ReadSaveStrings(void)
             snprintf( &sgdp->levtime[0], SAVEGAME_MTLEN,
                       "%s %s", sginfo.map, sginfo.levtime);
             sgdp->levtime[SAVEGAME_MTLEN-1] = '\0';
-            LoadGameMenu[i].status = IT_CALL | IT_NOTHING | 1;
+            LoadgameMenu[i].status = IT_CALL | IT_NOTHING | 1;
         }
         else
         {
             strncpy( &sgdp->desc[0], sginfo.msg, SAVESTRINGSIZE );
-            LoadGameMenu[i].status = IT_SPACE | IT_NOTHING;
+            LoadgameMenu[i].status = IT_SPACE | IT_NOTHING;
         }
         sgdp->desc[SAVESTRINGSIZE-1] = '\0';
     }
@@ -3392,7 +3392,7 @@ void M_Savegame_delete (int ch)
         savegamedisp[slotindex].levtime[0] = '\0';
         savegamedisp[slotindex].savegameid = 255;
         // slot no longer loadable
-        LoadGameMenu[slotindex + SAVEGAME_MSLOT_0].status = IT_SPACE | IT_NOTHING;
+        LoadgameMenu[slotindex + SAVEGAME_MSLOT_0].status = IT_SPACE | IT_NOTHING;
     }
     // fixup after the message undo, which does not record callbacks
     M_StopMessage(0);
@@ -3405,7 +3405,7 @@ void M_Savegame_delete (int ch)
 // Selected from DOOM menu
 //
 // Called from menu, and key F3
-void M_LoadGame (int choice)
+void M_Loadgame (int choice)
 {
 // change can't load message to can't load in server mode
     if (netgame && !server)
@@ -3430,12 +3430,12 @@ void M_LoadGame (int choice)
 //===========================================================================
 //                                SAVE GAME MENU
 //===========================================================================
-void M_DrawSave(void);
+void M_Draw_Savegame(void);
 
 void M_SaveSelect(int choice);
 
 // Must have SAVEGAME_NUM_MSLOT entries, plus dir
-menuitem_t SaveGameMenu[]=
+menuitem_t SavegameMenu[]=
 {
 #ifdef SAVEGAMEDIR
     {IT_CALL | IT_NOTHING,"",0, M_Get_SaveDir,'/'},
@@ -3452,10 +3452,10 @@ menu_t  SaveDef =
 {
     "M_SAVEG",
     "Save Game",
-    SaveGameMenu,
-    M_DrawSave,
+    SavegameMenu,
+    M_Draw_Savegame,
     NULL,
-    sizeof(SaveGameMenu)/sizeof(menuitem_t),
+    sizeof(SavegameMenu)/sizeof(menuitem_t),
 //    80,54,
 #ifdef SAVEGAMEDIR
     (176-(SAVELINELEN*8/2)),54-LINEHEIGHT,
@@ -3471,7 +3471,7 @@ menu_t  SaveDef =
 // Draw border for the savegame description
 //
 static
-void M_DrawSaveLoadBorder(int x, int y, boolean longer )
+void M_Draw_SaveLoadBorder(int x, int y, boolean longer )
 {
     int i;
 
@@ -3512,22 +3512,22 @@ void M_DrawSaveLoadBorder(int x, int y, boolean longer )
 
 
 //
-//  M_SaveGame & Cie.
+//  M_Savegame & Cie.
 //
-void M_DrawSave(void)
+void M_Draw_Savegame(void)
 {
     int line_y = LoadDef.y;
 
     if (edit_enable)
     {
-//        M_DrawLoad();	// optional, keep other slots displayed
+//        M_Draw_Loadgame();	// optional, keep other slots displayed
         // draw string and cursor in the original slot position
 #ifdef SAVEGAMEDIR
         line_y = LoadDef.y+(LINEHEIGHT*slotindex)+LINEHEIGHT; // dir is 0
 #else
         line_y = LoadDef.y+LINEHEIGHT*slotindex;
 #endif
-        M_DrawSaveLoadBorder( LoadDef.x, line_y, 1);
+        M_Draw_SaveLoadBorder( LoadDef.x, line_y, 1);
 #ifdef SAVEGAME_MTLEFT
         V_DrawString( LoadDef.x, line_y, 0, "DESCRIPTION:");
         V_DrawString( LoadDef.x+SAVE_DESC_XPOS, line_y, 0, edit_buffer);
@@ -3541,7 +3541,7 @@ void M_DrawSave(void)
     }
     else
     {
-        M_DrawLoad();
+        M_Draw_Loadgame();
     }
 }
 
@@ -3552,13 +3552,13 @@ void M_DrawSave(void)
 // and from quick Save by M_QuickSaveResponse
 #if defined SAVEGAMEDIR || defined SAVEGAME99
 // slti = savegame index 0..5, or quicksave 6
-void M_DoSave(int slti)
+void M_DoSavegame(int slti)
 {
     if( savegamedisp[slti].savegameid > 99 )
         return;
     // Issue command to save game
-    G_SaveGame (savegamedisp[slti].savegameid, savegamedisp[slti].desc);
-    M_ClearMenus (true);
+    G_Save_Game (savegamedisp[slti].savegameid, savegamedisp[slti].desc);
+    M_Clear_Menus (true);
 
     // PICK QUICKSAVE SLOT YET?
     if (quicksave_slotid == -2)
@@ -3569,11 +3569,11 @@ void M_DoSave(int slti)
 }
 #else
 // slot = game id and menu index 0..5
-void M_DoSave(int slot)
+void M_DoSavegame(int slot)
 {
     // Issue command to save game
-    G_SaveGame (slot, savegamedisp[slot].desc);
-    M_ClearMenus (true);
+    G_Save_Game (slot, savegamedisp[slot].desc);
+    M_Clear_Menus (true);
 
     // PICK QUICKSAVE SLOT YET?
     if (quicksave_slotid == -2)
@@ -3588,7 +3588,7 @@ void M_DoSave(int slot)
 // Called when desc editing is done
 void M_SaveEditDone( void )
 {
-    M_DoSave(slotindex);  // index 0..5
+    M_DoSavegame(slotindex);  // index 0..5
 }
 
 //
@@ -3605,8 +3605,8 @@ void M_SaveSelect(int choice)
     if( savegamedisp[slotindex].savegameid > 99 )
         return;
     // clear out EMPTY STRING and other err msgs
-    // LoadSaveStrings puts existing status in LoadGameMenu, MSLOT index
-    if ( (LoadGameMenu[choice].status & 1) != 1 )  // invalid name
+    // LoadSaveStrings puts existing status in LoadgameMenu, MSLOT index
+    if ( (LoadgameMenu[choice].status & 1) != 1 )  // invalid name
         savegamedisp[slotindex].desc[0] = 0;
     // [WDJ] edit_enable overwrites entire line
     // initiate edit of desc string, we are going to be intercepting all chars
@@ -3621,7 +3621,7 @@ void M_SaveSelect(int choice)
 // Selected from DOOM menu
 //
 // Called from menu, and key F2, and quicksave
-void M_SaveGame (int choice)
+void M_Savegame (int choice)
 {
     if(demorecording)
     {
@@ -3668,7 +3668,7 @@ void M_QuickSaveResponse(int ch)
 {
     if (ch == 'y')
     {
-        M_DoSave( QUICKSAVE_INDEX ); // initiate game save, network message
+        M_DoSavegame( QUICKSAVE_INDEX ); // initiate game save, network message
         S_StartSound(menu_sfx_action);
     }
     else
@@ -3676,7 +3676,7 @@ void M_QuickSaveResponse(int ch)
         // response was "No"
         // Give opportunity to pick a new slot
         quicksave_slotid = -2;     // means to pick a slot now
-        M_SaveGame( -2 );
+        M_Savegame( -2 );
     }
 }
 
@@ -3703,7 +3703,7 @@ pick_slot:
     // have not selected a quick save slot yet
     M_StartControlPanel();
     quicksave_slotid = -2;     // signal to save as a quicksave slot
-    M_SaveGame( -2 );
+    M_Savegame( -2 );
     return;
 }
 
@@ -3718,8 +3718,8 @@ void M_QuickLoadResponse(int ch)
     if (ch == 'y')
     {
         // quicksave_slotid is known valid, slot id
-        G_LoadGame( quicksave_slotid ); // initiate game load, network message
-        M_ClearMenus (true);
+        G_Load_Game( quicksave_slotid ); // initiate game load, network message
+        M_Clear_Menus (true);
         S_StartSound(menu_sfx_action);
     }
 }
@@ -3759,7 +3759,7 @@ void M_EndGameResponse(int ch)
         return;
 
     currentMenu->lastOn = itemOn;
-    M_ClearMenus (true);
+    M_Clear_Menus (true);
     COM_BufAddText("exitgame\n");
 }
 
@@ -4508,13 +4508,13 @@ boolean M_Responder (event_t* ev)
           case KEY_F2:            // Save
             M_StartControlPanel();
             S_StartSound(menu_sfx_open);
-            M_SaveGame(0);
+            M_Savegame(0);
             goto ret_true;
 
           case KEY_F3:            // Load
             M_StartControlPanel();
             S_StartSound(menu_sfx_open);
-            M_LoadGame(0);
+            M_Loadgame(0);
             goto ret_true;
 
           case KEY_F4:            // Sound Volume
@@ -4644,7 +4644,7 @@ boolean M_Responder (event_t* ev)
 #if defined SAVEGAMEDIR || defined SAVEGAME99
       case KEY_DELETE:	// delete directory or savegame
 #ifdef SAVEGAMEDIR
-        // The Dir, LoadGame, SaveGame menus all have dir at MSLOT_0
+        // The Dir, Loadgame, Savegame menus all have dir at MSLOT_0
         if( delete_callback && itemOn >= SAVEGAME_MSLOT_0 )
         {
             slotindex = itemOn - SAVEGAME_MSLOT_0;
@@ -4774,7 +4774,7 @@ boolean M_Responder (event_t* ev)
         }
         else
         {
-            M_ClearMenus (true);
+            M_Clear_Menus (true);
             S_StartSound(menu_sfx_esc);
             // Exit menus, return to demo or game
             if( ! Game_Playing() )
@@ -4787,7 +4787,7 @@ boolean M_Responder (event_t* ev)
         {
             S_StartSound(menu_sfx_val);
             // detach any keys associated to the game control
-            G_ClearControlKeys (setupcontrols, currentMenu->menuitems[itemOn].alphaKey);
+            G_Clear_ControlKeys (setupcontrols, currentMenu->menuitems[itemOn].alphaKey);
             goto ret_true;
         }
         currentMenu->lastOn = itemOn;
@@ -4883,7 +4883,7 @@ void M_Drawer (void)
 
     // now that's more readable with a faded background (yeah like Quake...)
     if ( reg_colormaps )  // not before colormaps loaded
-        V_DrawFadeScreen ();
+        V_FadeScreen ();
 
     // menu drawing
     if (currentMenu->drawroutine)
@@ -4919,10 +4919,10 @@ void M_StartControlPanel (void)
 }
 
 //
-// M_ClearMenus
+// M_Clear_Menus
 //
 static
-void M_ClearMenus (boolean callexitmenufunc)
+void M_Clear_Menus (boolean callexitmenufunc)
 {
     if(!menuactive)
         return;
@@ -5007,12 +5007,12 @@ void Pop_Menu( void )
        M_SetupMenu( menustack[ -- menucnt ] );  // back out
 
        // refresh data
-       if( currentMenu == &LoadDef )   M_LoadGame(0);
-       if( currentMenu == &SaveDef )   M_SaveGame(0);
+       if( currentMenu == &LoadDef )   M_Loadgame(0);
+       if( currentMenu == &SaveDef )   M_Savegame(0);
     }
     else
     {
-       M_ClearMenus (true);
+       M_Clear_Menus (true);
        // Exit menus, return to demo or game
        if( ! Game_Playing() )
            D_StartTitle();  // restart title screen and demo
@@ -5495,7 +5495,7 @@ static void CV_game_OnChange(void)
 static void M_LaunchCont( void )
 {
     init_sequence = 2;
-    M_ClearMenus(true);
+    M_Clear_Menus(true);
 }
 
 menuitem_t LaunchMenu[]=
@@ -5541,9 +5541,9 @@ void M_LaunchMenu( void )
 
     do
     {
-        V_ClearDisplay();
+        V_Clear_Display();
         I_OsPolling();
-        D_ProcessEvents ();  // menu responder
+        D_Process_Events ();  // menu responder
         M_Drawer(); // menu drawer
         I_UpdateNoBlit();
         I_FinishUpdate();       // page flip or blit buffer

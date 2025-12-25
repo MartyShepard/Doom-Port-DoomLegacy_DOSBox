@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: hu_stuff.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -88,7 +88,6 @@ boolean HU_Responder(event_t* ev);
 //
 void    HU_Ticker(void);
 void    HU_Drawer(void);
-char    HU_dequeueChatChar(void);
 void    HU_Erase(void);
 
 // used by console input
@@ -101,17 +100,20 @@ void HU_HackChatmacros (void);
 // chatmacro <0-9> "message" console command
 void Command_Chatmacro_f (void);
 
-int HU_CreateTeamFragTbl(fragsort_t *fragtab,
+int HU_Create_TeamFragTbl(fragsort_t *fragtab,
                          int dmtotals[],
                          int fragtbl[MAXPLAYERS][MAXPLAYERS]);
 
 
 
 void HU_SetTip(char *tip, int displaytics);
-void HU_ClearTips();
-int  HU_GetFSPic(int lumpnum, int xpos, int ypos);
-int  HU_DeleteFSPic(int handle);
-int  HU_ModifyFSPic(int handle, int lumpnum, int xpos, int ypos);
-void HU_DrawFSPics();
-void HU_ClearFSPics();
+void HU_Clear_Tips();
+
+void HU_Draw_FSPics();
+void HU_Clear_FSPics();
+int  HU_Get_FSPic(int lumpnum, int xpos, int ypos);
+int  HU_Delete_FSPic(int handle);
+int  HU_Modify_FSPic(int handle, int lumpnum, int xpos, int ypos);
+
+int  HU_FS_Display(int handle, boolean enable_draw);
 #endif

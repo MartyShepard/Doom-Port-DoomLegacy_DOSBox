@@ -2,7 +2,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1351 2017-07-29 18:28:41Z wesleyjohnson $
+// $Id: p_spec.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -305,7 +305,7 @@ static animdef_t   *animdefs;
 
 //SoM: 3/7/2000: Use new boom method of reading lump from wad file.
 // [WDJ] 5/18/2010 Eliminate -1 value in boolean field, use lastanim as loop test.
-void P_InitPicAnims (void)
+void P_Init_PicAnims (void)
 {
   //  Init animation
   int         i;
@@ -434,7 +434,7 @@ void P_FindAnimatedFlat (int animnum)
 //  Called by P_LoadSectors
 //
 // Called at end of P_LoadSectors
-void P_SetupLevelFlatAnims (void)
+void P_Setup_LevelFlatAnims (void)
 {
     int    i;
     // [WDJ] 5/18/2010 Eliminate -1 value in boolean field.
@@ -1050,7 +1050,7 @@ int P_FindLineFromLineTag(const line_t *line, int start)
 
 //SoM: 3/7/2000: Oh joy!
 // Hash the sector tags across the sectors and linedefs.
-static void P_InitTagLists(void)
+static void P_Init_TagLists(void)
 {
   register int i;
 
@@ -3107,12 +3107,12 @@ void P_SpawnSpecials (void)
     }
 
     //SoM: 3/8/2000: Boom level init functions
-    P_RemoveAllActiveCeilings();
-    P_RemoveAllActivePlats();
+    P_Remove_AllActiveCeilings();
+    P_Remove_AllActivePlats();
     for (i = 0; i < MAXBUTTONS; i++)
       memset(&buttonlist[i], 0, sizeof(button_t));
 
-    P_InitTagLists();   //Create xref tables for tags
+    P_Init_TagLists();   //Create xref tables for tags
     P_SpawnScrollers(); //Add generalized scrollers
     P_SpawnPushers();   //New pusher model using linedefs
 

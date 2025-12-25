@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.h 1351 2017-07-29 18:28:41Z wesleyjohnson $
+// $Id: p_spec.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -87,10 +87,10 @@
 extern consvar_t  cv_zerotags;
 
 // at game start
-void    P_InitPicAnims (void);
+void    P_Init_PicAnims (void);
 
 // at map load (sectors)
-void    P_SetupLevelFlatAnims (void);
+void    P_Setup_LevelFlatAnims (void);
 
 // at map load
 void    P_SpawnSpecials (void);
@@ -388,7 +388,7 @@ extern button_t buttonlist[MAXBUTTONS];
 
 void P_ChangeSwitchTexture ( line_t* line, int useAgain );
 
-void P_InitSwitchList(void);
+void P_Init_SwitchList(void);
 
 // SoM: 3/4/2000: Misc Boom stuff for thinkers that can share sectors, and some other stuff
 
@@ -481,7 +481,7 @@ typedef struct platlist {
   struct platlist *next,**prev;
 } platlist_t;
 
-void   P_RemoveAllActivePlats(void); //SoM: 3/9/2000
+void   P_Remove_AllActivePlats(void); //SoM: 3/9/2000
 
 #define PLATWAIT                3
 #define PLATSPEED               (FRACUNIT/NEWTICRATERATIO)
@@ -664,7 +664,7 @@ typedef struct
 // how many diff. types of anims
 #define MAXSLIDEDOORS   5
 
-void  P_InitSlidingDoorFrames(void);
+void  P_Init_SlidingDoorFrames(void);
 
 void  EV_SlidingDoor ( line_t* line, mobj_t* thing );
 
@@ -737,7 +737,7 @@ typedef struct ceilinglist {
 } ceilinglist_t;
 
 
-void P_RemoveAllActiveCeilings(void); //SoM: 3/9/2000
+void P_Remove_AllActiveCeilings(void); //SoM: 3/9/2000
 
 
 #define CEILSPEED               (FRACUNIT/NEWTICRATERATIO)
@@ -1257,9 +1257,9 @@ void P_CalcHeight (player_t* player);
 
 
 // heretic stuff
-void P_InitLava(void);
+void P_Init_Lava(void);
 void P_AmbientSound(void);
 void P_AddAmbientSfx(int sequence);
-void P_InitAmbientSound(void);
+void P_Init_AmbientSound(void);
 
 #endif

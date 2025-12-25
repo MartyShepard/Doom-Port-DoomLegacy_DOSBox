@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1359 2017-10-16 16:23:17Z wesleyjohnson $
+// $Id: r_things.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -138,7 +138,7 @@
 #include "m_swap.h"
 
 
-static void R_InitSkins (void);
+static void R_Init_Skins (void);
 
 #define MINZ                  (FRACUNIT*4)
 #define BASEYCENTER           (BASEVIDHEIGHT/2)
@@ -432,13 +432,13 @@ void R_InstallSpriteLump ( uint32_t      lumppat,     // graphics patch
             if( frame_srp == SRP_1 )
             {
                 GenPrintf(EMSG_dev,
-                 "R_InitSprites: Sprite %s frame %c has multiple rot=0 lump\n",
+                 "R_Init_Sprites: Sprite %s frame %c has multiple rot=0 lump\n",
                  spritename, 'A'+frame);
             }
             else if( frame_srp >= SRP_8 )
             {
                 GenPrintf(EMSG_dev,
-                 "R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump\n",
+                 "R_Init_Sprites: Sprite %s frame %c has rotations and a rot=0 lump\n",
                  spritename, 'A'+frame);
             }
         }
@@ -466,7 +466,7 @@ void R_InstallSpriteLump ( uint32_t      lumppat,     // graphics patch
     if( (frame_srp == SRP_1) && devparm )
     {
         GenPrintf(EMSG_dev,
-           "R_InitSprites: Sprite %s frame %c has rotations and a rot=0 lump\n",
+           "R_Init_Sprites: Sprite %s frame %c has rotations and a rot=0 lump\n",
            spritename, 'A'+frame);
     }
    
@@ -481,7 +481,7 @@ void R_InstallSpriteLump ( uint32_t      lumppat,     // graphics patch
     if( (rtp->spritelump_id != -1) && devparm )
     {
         GenPrintf(EMSG_dev,
-           "R_InitSprites: Sprite %s : %c : %c has two lumps mapped to it\n",
+           "R_Init_Sprites: Sprite %s : %c : %c has two lumps mapped to it\n",
            spritename, 'A'+frame, rotation_char );
     }
 
@@ -637,10 +637,10 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
 #ifdef DEBUG_CHEXQUEST
             // [WDJ] 4/28/2009 Chexquest
             // [WDJ] not fatal, some wads have broken sprite but still play
-            debug_Printf( "R_InitSprites: No patches found for %s frame %c \n",
+            debug_Printf( "R_Init_Sprites: No patches found for %s frame %c \n",
                           sprname, frame+'A');
 #else
-            I_SoftError ("R_InitSprites: No patches found for %s frame %c\n",
+            I_SoftError ("R_Init_Sprites: No patches found for %s frame %c\n",
                          sprname, frame+'A');
 #endif
             break;
@@ -657,7 +657,7 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
                 // if it was not loaded the two are -1
                 if( rtp->lumppat == -1)
                 {
-                    I_SoftError("R_InitSprites: Sprite %s frame %c is missing rotation %i\n",
+                    I_SoftError("R_Init_Sprites: Sprite %s frame %c is missing rotation %i\n",
                              sprname, frame+'A', rotation);
                     // Limp, use the last sprite lump read for this sprite.
                     rtp->lumppat = lumpfnd;
@@ -675,7 +675,7 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
                 // if it was not loaded the two are -1
                 if( rtp->lumppat == -1)
                 {
-                    I_SoftError("R_InitSprites: Sprite %s frame %c is missing rotation %i\n",
+                    I_SoftError("R_Init_Sprites: Sprite %s frame %c is missing rotation %i\n",
                              sprname, frame+'A', rotation);
                     // Limp, use the last sprite lump read for this sprite.
                     rtp->lumppat = lumpfnd;
@@ -876,10 +876,10 @@ void vissprites_tablesize ( void )
 
 
 //
-// R_InitSprites
+// R_Init_Sprites
 // Called at program start.
 //
-void R_InitSprites (char** namelist)
+void R_Init_Sprites (char** namelist)
 {
     int         i;
     char**      check;
@@ -914,7 +914,7 @@ void R_InitSprites (char** namelist)
     //
 
     // all that can be before loading config is to load possible skins
-    R_InitSkins ();
+    R_Init_Skins ();
     for (i=0; i<numwadfiles; i++)
         R_AddSkins (i);
 
@@ -925,17 +925,17 @@ void R_InitSprites (char** namelist)
     /*
     for (i=0; i<numsprites; i++)
          if (sprites[i].numframes<1)
-             I_SoftError("R_InitSprites: sprite %s has no frames at all\n", sprnames[i]);
+             I_SoftError("R_Init_Sprites: sprite %s has no frames at all\n", sprnames[i]);
     */
 }
 
 
 
 //
-// R_ClearSprites
+// R_Clear_Sprites
 // Called at frame start.
 //
-void R_ClearSprites (void)
+void R_Clear_Sprites (void)
 {
     vissprites_tablesize();  // re-allocation
     vspr_random += (vspr_count & 0xFFFF0) + 0x010001;  // just keep it changing
@@ -1156,7 +1156,7 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
     patch_t*            patch;
 
 
-    //Fab:R_InitSprites now sets a wad lump number
+    //Fab:R_Init_Sprites now sets a wad lump number
     // Use common patch read so do not have patch in cache without endian fixed.
     patch = W_CachePatchNum (vis->patch, PU_CACHE);
 
@@ -1969,15 +1969,15 @@ void R_DrawPlayerSprites (void)
 
 
 //
-// R_CreateDrawNodes
+// R_Create_DrawNodes
 // Creates and sorts a list of drawnodes for the scene being rendered.
-static void           R_CreateDrawNodes();
+static void           R_Create_DrawNodes();
 static drawnode_t*    R_CreateDrawNode (drawnode_t* link);
 
 static drawnode_t     nodebankhead;
 static drawnode_t     nodehead;
 
-static void R_CreateDrawNodes( void )
+static void R_Create_DrawNodes( void )
 {
   drawnode_t*   entry;
   drawseg_t*    ds;
@@ -2225,7 +2225,7 @@ static void R_DoneWithNode(drawnode_t* node)
 
 
 
-static void R_ClearDrawNodes()
+static void R_Clear_DrawNodes()
 {
   drawnode_t* dnp; // rover drawnode
   drawnode_t* next;
@@ -2242,7 +2242,7 @@ static void R_ClearDrawNodes()
 
 
 
-void R_InitDrawNodes()
+void R_Init_DrawNodes()
 {
   nodebankhead.next = nodebankhead.prev = &nodebankhead;
   nodehead.next = nodehead.prev = &nodehead;
@@ -2467,7 +2467,7 @@ void R_DrawMasked (void)
     drawnode_t*           r2;
     drawnode_t*           next;
 
-    R_CreateDrawNodes();
+    R_Create_DrawNodes();
 
     for(r2 = nodehead.next; r2 != &nodehead; r2 = r2->next)
     {
@@ -2501,7 +2501,7 @@ void R_DrawMasked (void)
         r2 = next;
       }
     }
-    R_ClearDrawNodes();
+    R_Clear_DrawNodes();
 }
 
 
@@ -2601,7 +2601,7 @@ void Skin_SetDefaultValue(skin_t *skin)
 //
 // Initialize the basic skins
 //
-void R_InitSkins (void)
+void R_Init_Skins (void)
 {
     skin_free = NULL;
 
@@ -2648,8 +2648,8 @@ void SetPlayerSkin_by_index( player_t * player, int index )
         && !( skins[player->skin] && strcmp (skins[player->skin]->faceprefix, sk->faceprefix)==0 )
         )
     {
-        ST_unloadFaceGraphics();
-        ST_loadFaceGraphics(sk->faceprefix);
+        ST_Release_FaceGraphics();
+        ST_Load_FaceGraphics(sk->faceprefix);
     }
 
 set_skin:

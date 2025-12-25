@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
+// $Id: p_info.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -281,7 +281,7 @@ int isMAPxy(char *name)
   return 1;
 }
 
-void P_ClearLevelVars(void)
+void P_Clear_LevelVars(void)
 {
   info_levelname = info_skyname = info_levelpic = info_interpic = "";
   info_music = "";
@@ -320,7 +320,7 @@ void P_ClearLevelVars(void)
 
   info_backdrop = NULL;
 
-  T_ClearScripts();
+  T_Clear_Scripts();
   info_scripts = false;
 }
 
@@ -442,7 +442,7 @@ static char *levelname;
 
 // Determine game specific level name.
 // From P_SetupLevel, level_mapname.
-// Called by P_LoadLevelInfo
+// Called by P_Load_LevelInfo
 void P_FindLevelName(void)
 {
   // Determine the level name.
@@ -566,13 +566,13 @@ void P_ParseInfoCmd(char *line)
 
 //-------------------------------------------------------------------------
 //
-// P_LoadLevelInfo
+// P_Load_LevelInfo
 //
 // Load the info lump for a level. Call P_ParseInfoCmd for each
 // line of the lump.
 
 // Dependent upon level_mapname, level_lumpnum.
-void P_LoadLevelInfo( void )
+void P_Load_LevelInfo( void )
 {
   char      *lump;
   char      *endlump_cp;
@@ -583,7 +583,7 @@ void P_LoadLevelInfo( void )
   // [WDJ] Fix to use char ptrs, and to use normal char append.
   // Replace operations that could overrun strings.
   info_readtype = RT_OTHER;  // global to I_ParseInfoCmd
-  P_ClearLevelVars();  // clear vars and init levelscript
+  P_Clear_LevelVars();  // clear vars and init levelscript
 
   lumpsize = maxscriptsize = W_LumpLength(level_lumpnum);
   readline = Z_Malloc(lumpsize + 1, PU_IN_USE, 0);
@@ -620,7 +620,7 @@ void P_LoadLevelInfo( void )
   }
   Z_Free(readline);
 
-  // These are affected by P_ClearLevelVars().
+  // These are affected by P_Clear_LevelVars().
   // Init weapon positions, dependent upon weapons info.
   P_InitWeapons();
   // Determine game specific level name.
@@ -652,7 +652,7 @@ void COM_MapInfo_f(void)
 }
 
 
-void P_Info_AddCommands(void)
+void P_Register_Info_Commands(void)
 {
   COM_AddCommand("mapinfo",  COM_MapInfo_f);
 }
@@ -665,8 +665,8 @@ char *P_LevelName(void)
 }
 
 // todo : make this use mapinfo lump
-// Called by WI_drawEL "Entering <LevelName>"
-// Called by IN_DrawYAH "NOW ENTERING"
+// Called by WI_Draw_EL "Entering <LevelName>"
+// Called by IN_Draw_YAH "NOW ENTERING"
 char *P_LevelNameByNum( int episode, int map )
 {
     register char * levnam = "New map";

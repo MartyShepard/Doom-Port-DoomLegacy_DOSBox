@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_chex.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: p_chex.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 2003-2015 by DooM Legacy Team.
 //
@@ -52,7 +52,7 @@ extern byte cheat_mypos_seq[];
 extern byte cheat_amap_seq[];
 
 
-void Chex1PatchEngine(void)
+void Chex1_PatchEngine(void)
 {
 
         //patch new text

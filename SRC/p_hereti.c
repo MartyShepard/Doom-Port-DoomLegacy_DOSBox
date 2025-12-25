@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_heretic.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_heretic.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -233,7 +233,7 @@ extern byte cheat_clev_seq[];
 extern byte cheat_mypos_seq[];
 extern byte cheat_amap_seq[];
 
-void HereticPatchEngine(void)
+void Heretic_PatchEngine(void)
 {
     ceilmovesound = sfx_dormov;
     doorclosesound = sfx_doropn;
@@ -524,11 +524,11 @@ mobj_t LavaInflictor;
 
 //----------------------------------------------------------------------------
 //
-// PROC P_InitLava
+// PROC P_Init_Lava
 //
 //----------------------------------------------------------------------------
 
-void P_InitLava(void)
+void P_Init_Lava(void)
 {
     memset(&LavaInflictor, 0, sizeof(mobj_t));
     LavaInflictor.type = MT_PHOENIXFX2;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: st_stuff.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -106,7 +106,7 @@
 // There is very little shared code, but some sharing attempts are being made.
 
 //protos
-void ST_createWidgets(void);
+static void ST_Create_Widgets(void);
 
 
 #define FLASH_COLOR  0x72
@@ -444,7 +444,7 @@ static int   sbo_ammo[NUMWEAPONS];
 //
 // Single player only, when stbar_on.
 //  Global : st_plyr
-static void ST_refreshBackground( void )
+static void ST_Refresh_Background( void )
 {
     byte * colormap;
 
@@ -950,7 +950,7 @@ void ST_Palette0( void )
 // Called by: ST_Drawer, when stbar_on.
 // STlib refresh enable is now setup by caller.
 // Only called when stbar_on == true, so more tests are pointless.
-static void ST_drawWidgets( void )
+static void ST_Draw_Widgets( void )
 {
     int  i;
     player_t * plyr;
@@ -1069,17 +1069,17 @@ void ST_Drawer ( boolean refresh )
             // after ST_Start(), screen refresh needed, or vid mode change
             if (stbar_recalc)  //recalc widget coords after vid mode change
             {
-                ST_createWidgets ();
+                ST_Create_Widgets ();
                 stbar_recalc = false;
             }
             st_force_refresh = false;
             st_card = 0;
 
             // This is not executed as frequently as drawing, so it is more
-            // complicated, in order to keep ST_drawWidgets simpler.
+            // complicated, in order to keep ST_Draw_Widgets simpler.
     
             // Draw status bar background to BG buffer
-            ST_refreshBackground();   // st_plyr
+            ST_Refresh_Background();   // st_plyr
 
             stlib_enable_erase = (rendermode==render_soft);
             stlib_force_refresh = true;  // stlib refreshes from BG buffer.
@@ -1090,7 +1090,7 @@ void ST_Drawer ( boolean refresh )
             stlib_force_refresh = false;
         }
         // Update all widgets using stlib.
-        ST_drawWidgets();
+        ST_Draw_Widgets();
     }
     else if( st_overlay_on )
     {
@@ -1118,7 +1118,7 @@ void ST_Drawer ( boolean refresh )
 }
 
 
-static void ST_loadGraphics(void)
+static void ST_Load_Graphics(void)
 {
 
     int         i;
@@ -1168,12 +1168,12 @@ static void ST_loadGraphics(void)
     sbar = (patch_t *) W_CachePatchName("STBAR", PU_LOCK_SB);
 
     // the original Doom uses 'STF' as base name for all face graphics
-    ST_loadFaceGraphics ("STF");
+    ST_Load_FaceGraphics ("STF");
 }
 
 
 // made separate so that skins code can reload custom face graphics
-void ST_loadFaceGraphics (char *facestr)
+void ST_Load_FaceGraphics (char *facestr)
 {
     int   i,j;
     int   facenum;
@@ -1233,13 +1233,13 @@ void ST_loadFaceGraphics (char *facestr)
 
 #if 0
 // Unused
-static void ST_loadData(void)
+static void ST_Load_Data(void)
 {
-    ST_loadGraphics();
+    ST_Load_Graphics();
 }
 #endif
 
-void ST_unloadGraphics(void)
+void ST_Release_Graphics(void)
 {
 
     int i;
@@ -1270,12 +1270,12 @@ void ST_unloadGraphics(void)
         Z_ChangeTag(sbar, PU_UNLOCK_CACHE);
     }
 
-    ST_unloadFaceGraphics ();
+    ST_Release_FaceGraphics ();
 }
 
 // made separate so that skins code can reload custom face graphics
-// Called by SetPlayerSkin, ST_unloadGraphics
-void ST_unloadFaceGraphics (void)
+// Called by SetPlayerSkin, ST_Release_Graphics
+void ST_Release_FaceGraphics (void)
 {
     int    i;
 
@@ -1293,9 +1293,9 @@ void ST_unloadFaceGraphics (void)
 
 #if 0
 // Unused
-void ST_unloadData(void)
+void ST_Release_Data(void)
 {
-    ST_unloadGraphics();
+    ST_Release_Graphics();
 }
 #endif
 
@@ -1379,7 +1379,8 @@ void ST_CalcPos(void)
 // Also can be called at init of Splitscreen game.
 //added:30-01-98: NOTE: this is called at any level start, view change,
 //                      and after vid mode change.
-void ST_createWidgets(void)
+static
+void ST_Create_Widgets(void)
 {
     int i;
 
@@ -1506,7 +1507,7 @@ void ST_Start (void)
     // Init as if Single player.
     // When AutoMap displayed, shows Status bar for player1.
     ST_init_stbar();
-    ST_createWidgets();
+    ST_Create_Widgets();
     st_stopped = false;
     stbar_recalc = false;  //added:02-02-98: widgets coords have been setup
                            // see ST_drawer()
@@ -1561,8 +1562,8 @@ void ST_Init (void)
    
     // Doom only
     veryfirsttime = 0;
-//    ST_loadData();
-    ST_loadGraphics();
+//    ST_Load_Data();
+    ST_Load_Graphics();
 
     //
     // cache the status bar overlay icons  (fullscreen mode)
@@ -1583,7 +1584,7 @@ void ST_Init (void)
 
 //added:16-01-98: change the status bar too, when pressing F12 while viewing
 //                 a demo.
-void ST_changeDemoView (void)
+void ST_Change_DemoView (void)
 {
     //the same routine is called at multiplayer deathmatch spawn
     // so it can be called multiple times
@@ -1600,7 +1601,7 @@ consvar_t cv_stbaroverlay = {"overlay","kahmf",CV_SAVE,NULL};
 boolean   st_overlay_on;  // status overlay for Doom and Heretic
 
 
-void ST_AddCommands (void)
+void ST_Register_Commands (void)
 {
     CV_RegisterVar (&cv_stbaroverlay);
 }
@@ -1609,10 +1610,9 @@ void ST_AddCommands (void)
 //  Draw a number, scaled, over the view
 //  Always draw the number completely since it's overlay
 //
-//   x, y: scaled position
+//   x, y: scaled position, right border!
 static
-void ST_drawOverlayNum (int       x,            // right border!
-                        int       y,
+void ST_drawOverlayNum (int x, int y,
                         int       num,
                         patch_t** numpat,
                         patch_t*  percent,

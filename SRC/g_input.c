@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: g_input.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -182,7 +182,7 @@ void  G_MapEventsToControls (event_t *ev)
 
       case ev_keyup:
         if (ev->data1 < NUMINPUTS)
-	  gamekeydown[ev->data1] = false;
+          gamekeydown[ev->data1] = false;
         break;
 
       case ev_mouse:           // buttons are virtual keys
@@ -449,7 +449,7 @@ char *gamecontrolname[num_gamecontrols] =
 //
 //  Detach any keys associated to the given game control
 //  - pass the pointer to the gamecontrol table for the player being edited
-void  G_ClearControlKeys (int (*setupcontrols)[2], int control)
+void  G_Clear_ControlKeys (int (*setupcontrols)[2], int control)
 {
     setupcontrols[control][0] = KEY_NULL;
     setupcontrols[control][1] = KEY_NULL;

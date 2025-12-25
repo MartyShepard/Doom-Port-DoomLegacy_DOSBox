@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_sky.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_sky.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -48,29 +48,29 @@
 // The sky map is 256*128*4 maps.
 #define ANGLETOSKYSHIFT         22
 
-extern int              skytexture;
-extern int              skytexturemid;
-extern fixed_t          skyscale;
-extern int              skymode;  //current sky old (0) or new(1),
+extern int     skytexture;
+extern int     skytexturemid;
+extern fixed_t skyscale;
+extern byte    sky_240;  // 0=std 128 sky, 1=240 high sky
                                   // see SCR_SetMode
 
 // Needed to store the number of the dummy sky flat.
 // Used for rendering, as well as tracking projectiles etc.
-extern int              skyflatnum;
+extern int     skyflatnum;
 
 //added:12-02-98: declare the asm routine which draws the sky columns
 void R_DrawSkyColumn (void);
 
 // Called once at startup.
-void R_InitSkyMap (void);
+void R_Init_SkyMap (void);
 
 // call after skytexture is set to adapt for old/new skies
-void R_SetupSkyDraw (void);
+void R_Setup_SkyDraw (void);
 
 void R_StorePortalRange(void);
-void R_InitPortals(void);
-void R_ClearPortals(void);
-void R_DrawPortals(void);
+void R_Init_Portals(void);
+void R_Clear_Portals(void);
+void R_Draw_Portals(void);
 
 void R_SetSkyScale (void);
 

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1351 2017-07-29 18:28:41Z wesleyjohnson $
+// $Id: t_func.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -4105,10 +4105,6 @@ err_numarg:
 //////////////////////////////////////////////////////////////////////////
 // FraggleScript HUD graphics
 //////////////////////////////////////////////////////////////////////////
-int HU_GetFSPic(int lumpnum, int xpos, int ypos);
-int HU_DeleteFSPic(int handle);
-int HU_ModifyFSPic(int handle, int lumpnum, int xpos, int ypos);
-int HU_FSDisplay(int handle, boolean newval);
 
 // alias createpic
 // NewHUPic( lumpname, x, y )
@@ -4117,7 +4113,9 @@ void SF_NewHUPic(void)
 {
     if (t_argc != 3)  goto err_numarg;
     t_return.type = FSVT_int;
-    t_return.value.i = HU_GetFSPic(W_GetNumForName(stringvalue(t_argv[0])), intvalue(t_argv[1]), intvalue(t_argv[2]));
+    t_return.value.i =
+      HU_Get_FSPic( W_GetNumForName(stringvalue(t_argv[0])),
+                    intvalue(t_argv[1]), intvalue(t_argv[2]));
 done:
     return;
 
@@ -4135,7 +4133,7 @@ void SF_DeleteHUPic(void)
     if (t_argc != 1)  goto err_numarg;
 
     handle = intvalue(t_argv[0]);
-    if (HU_DeleteFSPic(handle) == -1)  goto err_delete;
+    if (HU_Delete_FSPic(handle) == -1)  goto err_delete;
 done:
     return;
 
@@ -4157,7 +4155,7 @@ void SF_ModifyHUPic(void)
     if (t_argc != 4)  goto err_numarg;
 
     handle = intvalue(t_argv[0]);
-    if (HU_ModifyFSPic(handle, W_GetNumForName(stringvalue(t_argv[1])),
+    if (HU_Modify_FSPic(handle, W_GetNumForName(stringvalue(t_argv[1])),
                        intvalue(t_argv[2]), intvalue(t_argv[3])) == -1)
         goto err_handle;
 done:
@@ -4182,7 +4180,7 @@ void SF_SetHUPicDisplay(void)
     if (t_argc != 2)  goto err_numarg;
 
     handle = intvalue(t_argv[0]);
-    if (HU_FSDisplay(handle, intvalue(t_argv[1]) > 0 ? 1 : 0) == -1)
+    if (HU_FS_Display(handle, intvalue(t_argv[1]) > 0 ? 1 : 0) == -1)
         goto err_handle;
 done:
     return;
@@ -4463,7 +4461,7 @@ err_numarg:
 //extern int fov; // r_main.c
 int fov;
 
-void init_functions(void)
+void T_Init_functions(void)
 {
     // add all the functions
     add_game_int("consoleplayer", &consoleplayer);

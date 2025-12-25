@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.c 1196 2015-12-26 19:12:28Z wesleyjohnson $
+// $Id: t_vari.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -70,7 +70,7 @@ script_t hub_script;
 
 // initialise the global script: clear all the variables
 
-void init_variables( void )
+void T_Init_variables( void )
 {
   int i;
   
@@ -83,7 +83,7 @@ void init_variables( void )
   // any hardcoded global variables can be added here
 }
 
-void T_ClearHubScript( void )
+void T_Clear_HubScript( void )
 {
   int i;
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1355 2017-07-29 18:36:01Z wesleyjohnson $
+// $Id: p_setup.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -748,7 +748,7 @@ void P_LoadSectors (int lump)
     skyflatnum = P_AddLevelFlat ("F_SKY1");
 
     // search for animated flats and set up
-    P_SetupLevelFlatAnims ();
+    P_Setup_LevelFlatAnims ();
 }
 
 
@@ -856,7 +856,7 @@ void P_LoadThings (int lump)
 #if 0
         // PrBoom does legality checking here.
         // May need this for special thing detection and engine setup.
-        P_SetupMapthing(mt);
+        P_Setup_Mapthing(mt);
 #endif
 
         P_SpawnMapthing (mt);
@@ -1174,13 +1174,13 @@ void P_LoadSideDefs2(int lump)
         case 282:                       //SoM: 4/4/2000: Just colormap transfer
           // Set the colormap of all tagged sectors.
 
-          // SoM: R_CreateColormap will only create a colormap in software mode...
+          // SoM: R_Create_Colormap will only create a colormap in software mode...
           // [WDJ] Expanded to hardware mode too.
           {
             if(msd->toptexture[0] == '#' || msd->bottomtexture[0] == '#')
             {
               // generate colormap from sidedef1 texture text strings
-              sec->midmap = R_CreateColormap(msd->toptexture, msd->midtexture, msd->bottomtexture);
+              sec->midmap = R_Create_Colormap(msd->toptexture, msd->midtexture, msd->bottomtexture);
               sd->toptexture = sd->bottomtexture = 0;
               sec->extra_colormap = &extra_colormaps[sec->midmap];
             }
@@ -1634,27 +1634,28 @@ fail:
 // - in future, each level may use a different sky.
 //
 // The sky texture to be used instead of the F_SKY1 dummy.
-void P_SetupLevelSky (void)
+void P_Setup_LevelSky (void)
 {
-    char       skytexname[12];
+    char * sn = "SKY1";
+    char   skytexname[12];
 
     // DOOM determines the sky texture to be used
     // depending on the current episode, and the game version.
 
     if(*info_skyname)
-      skytexture = R_TextureNumForName(info_skyname);
+      sn = info_skyname;
     else
     if (gamemode == doom2_commercial)  // includes doom2, plut, tnt
       // || (gamemode == pack_tnt) he ! is not a mode is a episode !
       //    || ( gamemode == pack_plut )
     {
         if (gamemap < 12)
-            skytexture = R_TextureNumForName ("SKY1");
+            sn = "SKY1";
         else
         if (gamemap < 21)
-            skytexture = R_TextureNumForName ("SKY2");
+            sn = "SKY2";
         else
-            skytexture = R_TextureNumForName ("SKY3");
+            sn = "SKY3";
     }
     else
     if ( (gamemode==ultdoom_retail) ||
@@ -1664,7 +1665,7 @@ void P_SetupLevelSky (void)
             gameepisode = 1;
 
         sprintf (skytexname,"SKY%d",gameepisode);
-        skytexture = R_TextureNumForName (skytexname);
+        sn = & skytexname[0];
     }
     else // who knows?
     if (gamemode==heretic)
@@ -1672,16 +1673,13 @@ void P_SetupLevelSky (void)
         static char *skyLumpNames[5] = {
             "SKY1", "SKY2", "SKY3", "SKY1", "SKY3" };
 
-        if(gameepisode > 5)
-            skytexture = R_TextureNumForName("SKY1");
-        else
-            skytexture = R_TextureNumForName(skyLumpNames[gameepisode-1]);
+        if(gameepisode > 0 && gameepisode <= 5)
+            sn = skyLumpNames[gameepisode-1];
     }
-    else
-        skytexture = R_TextureNumForName ("SKY1");
 
+    skytexture = R_TextureNumForName ( sn );
     // scale up the old skies, if needed
-    R_SetupSkyDraw ();
+    R_Setup_SkyDraw ();
 }
 
 
@@ -1709,8 +1707,8 @@ boolean P_SetupLevel (int      to_episode,
     GenPrintf( (verbose? (EMSG_ver|EMSG_now) : (EMSG_console|EMSG_now)),
                "Setup Level\n" );
 
-    //Initialize sector node list.
-    P_Initsecnode();
+    //Initialize Boom sector node list.
+    P_Init_Secnode();
 
     // Clear existing level variables and reclaim memory.
     totalkills = totalitems = totalsecret = wminfo.maxfrags = 0;
@@ -1746,7 +1744,7 @@ boolean P_SetupLevel (int      to_episode,
     I_Sleep( 100 );  // give menu sound a chance to finish
     // Make sure all sounds are stopped before Z_FreeTags.
     // This will kill the last menu pistol sound too.
-    S_StopLevelSound();
+    S_Stop_LevelSound();
 
 #if 0 // UNUSED
     if (debugfile)
@@ -1764,19 +1762,19 @@ boolean P_SetupLevel (int      to_episode,
 
 #ifdef WALLSPLATS
     // clear the splats from previous level
-    R_ClearLevelSplats ();
+    R_Clear_LevelSplats ();
 #endif
     P_Clear_Extra_Mapthing();  // remove FS mapthings 
 
     script_camera_on = false;
-    HU_ClearTips();
+    HU_Clear_Tips();
 
     if (camera.chase)
         camera.mo = NULL;
 
     // UNUSED W_Profile ();
     
-    P_InitThinkers ();
+    P_Init_Thinkers ();
 
     // Loading new level map.
     // if working with a devlopment map, reload it
@@ -1819,27 +1817,27 @@ boolean P_SetupLevel (int      to_episode,
 //    R_FlushTextureCache();
 
     R_Clear_FW_effect();  // clear and init of fog store
-    R_ClearColormaps();  // colormap ZMalloc cleared by Z_FreeTags(PU_LEVEL, PU_PURGELEVEL-1)
+    R_Clear_Colormaps();  // colormap ZMalloc cleared by Z_FreeTags(PU_LEVEL, PU_PURGELEVEL-1)
 
 #ifdef FRAGGLESCRIPT
     // load level lump info(level name etc)
     // Dependent upon level_mapname, level_lumpnum.
-    P_LoadLevelInfo();
+    P_Load_LevelInfo();
 #endif
 
     //SoM: We've loaded the music lump, start the music.
-    S_StartLevelSound();
+    S_Start_LevelSound();
 
     //faB: now part of level loading since in future each level may have
     //     its own anim texture sequences, switches etc.
-    P_InitSwitchList ();
-    P_InitPicAnims ();
-    P_InitLava ();
-    P_SetupLevelSky ();
+    P_Init_SwitchList ();
+    P_Init_PicAnims ();
+    P_Init_Lava ();
+    P_Setup_LevelSky ();
 
     // SoM: WOO HOO!
     // SoM: DOH!
-    //R_InitPortals ();
+    //R_Init_Portals ();
 
     // [WDJ] Check on Hexen-format maps, idea from PrBoom.
     if( P_CheckLumpName( level_lumpnum+ML_BEHAVIOR, ML_BEHAVIOR ) == ML_BEHAVIOR )
@@ -1867,10 +1865,10 @@ boolean P_SetupLevel (int      to_episode,
     if (rendermode != render_soft)
     {
         // BP: reset light between levels (we draw preview frame lights on current frame)
-        HWR_ResetLights();
+        HWR_Reset_Lights();
         // Correct missing sidedefs & deep water trick
         HWR_CorrectSWTricks();
-        HWR_CreatePlanePolygons();
+        HWR_Create_PlanePolygons();
     }
 #endif
 
@@ -1882,15 +1880,15 @@ boolean P_SetupLevel (int      to_episode,
     for(i=0;i<MAXPLAYERS;i++)
        playerstarts[i] = NULL;
 
-    P_InitAmbientSound ();
-    P_InitMonsters ();
+    P_Init_AmbientSound ();
+    P_Init_Monsters ();
     P_OpenWeapons ();
     P_LoadThings (level_lumpnum+ML_THINGS);
     P_CloseWeapons ();
 
     // set up world state
     P_SpawnSpecials ();
-    P_InitBrainTarget();
+    P_Init_BrainTarget();
 
     //BP: spawnplayers after all structures are inititialized
     for (i=0 ; i<MAXPLAYERS ; i++)
@@ -1940,8 +1938,8 @@ boolean P_SetupLevel (int      to_episode,
 #ifdef HWRENDER // not win32 only 19990829 by Kin
     if (rendermode != render_soft)
     {
-        HWR_PrepLevelCache (numtextures);
-        HWR_CreateStaticLightmaps();
+        HWR_Prep_LevelCache (numtextures);
+        HWR_Create_StaticLightmaps();
     }
 #endif
 
@@ -1956,7 +1954,7 @@ boolean P_SetupLevel (int      to_episode,
 
     script_camera_on = false;
 
-    B_InitNodes();  //added by AC for acbot
+    B_Init_Nodes();  //added by AC for acbot
 
     //debug_Printf("P_SetupLevel: %d vertexs %d segs %d subsector\n",numvertexes,numsegs,numsubsectors);
     return true;
@@ -1989,7 +1987,7 @@ boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
     if( firstmap_out )
        firstmap_out->mapname = NULL;
 
-    if ((wadfilenum = W_LoadWadFile (wadfilename))==-1)
+    if ((wadfilenum = W_Load_WadFile (wadfilename))==-1)
     {
         GenPrintf(EMSG_warn, "could not load wad file %s\n", wadfilename);
         return false;

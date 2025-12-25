@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1357 2017-08-20 21:03:11Z wesleyjohnson $
+// $Id: v_video.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -881,7 +881,7 @@ void VID_BlitLinearScreen(byte * srcptr, byte * destptr, int width, int height, 
 #endif
 
 // clear to black
-void V_ClearDisplay( void )
+void V_Clear_Display( void )
 {
     // vid : from video setup
 #ifdef HWRENDER
@@ -2049,12 +2049,12 @@ void V_ScreenFlatFill( int flatnum )
 
 
 
-//  General Draw Fade.
+//  General Fade Rectangle.
 //   x1, x2, y2 : affected ranges in pixels,  (always y1 = 0)
 //   fade_alpha : 1 (no fade) .. 255 (faded)
 //   fade_index : from fadescreen_draw8, or fadecons_draw8 table
 //   tint_rgba : added color tint, small color values only
-void V_DrawFade(int x1, int x2, int y2,
+void V_FadeRect(int x1, int x2, int y2,
                 uint32_t fade_alpha, unsigned int fade_index,
                 uint32_t tint_rgba )
 {
@@ -2206,10 +2206,10 @@ byte fadescreen_alpha[3] =
 //  Fade all the screen buffer, so that the menu is more readable,
 //  especially now that we use the small hufont in the menus...
 //
-void V_DrawFadeScreen(void)
+void V_FadeScreen(void)
 {
     // vid : from video setup
-    V_DrawFade( 0, vid.width, vid.height,
+    V_FadeRect( 0, vid.width, vid.height,
                 fadescreen_alpha[ cv_darkback.EV ],
                 fadescreen_draw8[ cv_darkback.EV ],
                 0 );
@@ -2245,7 +2245,7 @@ byte fadecons_green[3] =
 //
 //added:20-03-98: console test
 //   x1, x2, y2 : affected ranges in pixels,  (always y1 = 0)
-void V_DrawFadeConsBack(int x1, int x2, int y2)
+void V_FadeConsBack(int x1, int x2, int y2)
 {
     uint32_t tint = RGBA(0, fadecons_green[ cv_darkback.EV ], 0, 0);
 
@@ -2254,7 +2254,7 @@ void V_DrawFadeConsBack(int x1, int x2, int y2)
     if (rendermode != render_soft)
        tint = tint*2;  // works for small values of green < 127
 #endif
-    V_DrawFade( x1, x2, y2,
+    V_FadeRect( x1, x2, y2,
                 fadecons_alpha[ cv_darkback.EV ],
                 fadecons_draw8[ cv_darkback.EV ],
                 tint );

@@ -6257,3 +6257,18 @@ This uses a naming system in use by EDGE.
 The normal 8 positions still apply (1,2,3,4,5,6,7,8).
 It adds 8 more positions between the existing 8 rotation positions.
 The 16 positions are (1,8,2,9,3,A,4,B,5,C,6,D,7,E,8,F).
+
+*** W107_corpse_color
+patchfile = w107_56_corpse_color.patch
+- commit revision 1360
+Fix bug from the W107_color_TRAN patch.
+In OpenGL, the corpse color was black due to a missed change
+to using thing->tflags for color translation.
+
+*** W107_initnames
+patchfile = w107_57_initnames.patch
+- commit revision 1361
+Rename functions with Init, Clear, Create, Load, Setup, so
+read clearer.  Get away from the run-together name syntax.
+Fix P_Setup_LevelSky to call R_TextureNumForName in only one place,
+and add one safety test.

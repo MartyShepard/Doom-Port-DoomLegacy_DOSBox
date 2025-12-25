@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.h 1207 2016-01-19 19:46:54Z wesleyjohnson $
+// $Id: d_main.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -74,7 +74,7 @@ void D_DoomMain (void);
 void D_PostEvent (const event_t* ev);
 void D_PostEvent_end (void);    // delimiter for locking memory
 
-void D_ProcessEvents (void);
+void D_Process_Events (void);
 void D_DoAdvanceDemo (void);
 
 //

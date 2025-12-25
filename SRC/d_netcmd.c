@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1337 2017-06-21 16:06:55Z wesleyjohnson $
+// $Id: d_netcmd.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -969,7 +969,7 @@ void Command_TeamFrags_f(void)
         return;
     }
 
-    HU_CreateTeamFragTbl(unused, frags, fragtbl);
+    HU_Create_TeamFragTbl(unused, frags, fragtbl);
 
     for (i = 0; i < 11; i++)
     {

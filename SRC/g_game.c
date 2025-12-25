@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1349 2017-07-29 18:26:35Z wesleyjohnson $
+// $Id: g_game.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1270,8 +1270,8 @@ void G_DoLoadLevel (boolean resetplayer)
     // [WDJ] In case demo is from other than player1 (from prboom, killough)
     ST_Start();
     // clear hud messages remains (usually from game startup)
-    HU_ClearFSPics();
-    CON_ClearHUD ();
+    HU_Clear_FSPics();
+    CON_Clear_HUD ();
 
     gameplay_msg = true;
 }
@@ -1299,7 +1299,7 @@ boolean G_Responder (event_t* ev)
 
         //added:16-01-98:change statusbar also if playingback demo
         if( singledemo )
-            ST_changeDemoView ();
+            ST_Change_DemoView ();
 
         //added:11-04-98: tell who's the view
         GenPrintf(EMSG_hud, "Viewpoint : %s\n", player_names[displayplayer]);
@@ -2478,7 +2478,7 @@ void G_Savegame_Name( /*OUT*/ char * namebuf, /*IN*/ int slot )
 //
 // Called from menu M_LoadSelect from M_Responder,
 // and from D_Main code for -loadgame command line switch.
-void G_LoadGame (int slot)
+void G_Load_Game (int slot)
 {
     // [WDJ] will handle 99 slots
     COM_BufAddText(va("load %d\n",slot));
@@ -2578,7 +2578,7 @@ failed_exit:
 // Description is a 24 byte text string
 //
 // Called from menu M_DoSave from M_Responder.
-void G_SaveGame ( int   slot, char* description )
+void G_Save_Game ( int   slot, char* description )
 {
     // Solo player has server, net player without server cannot save.
     if (server)

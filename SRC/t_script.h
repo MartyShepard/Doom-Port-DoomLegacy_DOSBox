@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.h 1221 2016-04-07 17:21:49Z wesleyjohnson $
+// $Id: t_script.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -63,8 +63,8 @@ struct runningscript_s
   mobj_t *trigger;
 };
 
-void T_Init();
-void T_ClearScripts();
+void T_Init_FS();
+void T_Clear_Scripts();
 void T_RunScript(int scriptnum, mobj_t * t_trigger );
 void T_RunThingScript(int scriptnum, mobj_t * t_trigger );
 void T_PreprocessScripts();
@@ -83,6 +83,6 @@ extern mobj_t *  fs_run_trigger;  // the trigger parameter on RunScript
 extern uint32_t fs_fadecolor;  // RGBA
 extern int      fs_fadealpha;
 
-void T_AddCommands();
+void T_Register_Commands();
 
 #endif

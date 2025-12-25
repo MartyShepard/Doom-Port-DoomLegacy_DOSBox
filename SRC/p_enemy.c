@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1354 2017-07-29 18:34:55Z wesleyjohnson $
+// $Id: p_enemy.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -3632,7 +3632,7 @@ boolean  expand_braintargets( void )
     return 1;
 }
 
-void P_InitBrainTarget()
+void P_Init_BrainTarget()
 {
     thinker_t*  thinker;
 

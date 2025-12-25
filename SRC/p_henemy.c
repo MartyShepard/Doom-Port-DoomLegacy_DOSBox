@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_henemy.c 1346 2017-07-29 18:15:55Z wesleyjohnson $
+// $Id: p_henemy.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -59,13 +59,13 @@ static BossSpot_t BossSpots[MAX_BOSS_SPOTS];
 
 //----------------------------------------------------------------------------
 //
-// PROC P_InitMonsters
+// PROC P_Init_Monsters
 //
 // Called at level load.
 //
 //----------------------------------------------------------------------------
 
-void P_InitMonsters(void)
+void P_Init_Monsters(void)
 {
     BossSpotCount = 0;
 }

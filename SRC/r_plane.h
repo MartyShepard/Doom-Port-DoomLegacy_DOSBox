@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.h 1304 2017-04-07 17:17:47Z wesleyjohnson $
+// $Id: r_plane.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -128,8 +128,9 @@ extern fixed_t          yslopetab[MAXVIDHEIGHT*4];
 extern fixed_t*         yslope;
 extern fixed_t          distscale[MAXVIDWIDTH];
 
-void R_InitPlanes (void);
-void R_ClearPlanes (player_t *player);
+void R_Init_Planes (void);
+void R_Clear_Planes (player_t *player);
+void R_Draw_Planes (void);
 
 // Draw plane span at row y, span=(x1..x2)
 // at planeheight, using spanfunc
@@ -139,8 +140,6 @@ void R_MapPlane ( int y, int x1, int x2 );
 // and Setup spanstart for next span at rows (t2..b2).
 // Param t1,b1,t2,b2 are y values.
 void R_MakeSpans ( int x, int t1, int b1, int t2, int b2 );
-
-void R_DrawPlanes (void);
 
 visplane_t* R_FindPlane( fixed_t height,
                          int     picnum,

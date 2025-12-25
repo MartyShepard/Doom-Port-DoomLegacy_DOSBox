@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw3sound.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: hw3sound.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 2001-2016 by DooM Legacy Team.
 //
@@ -133,7 +133,7 @@ void HW3S_SetSourcesNum()
     // simultaneously) within zone memory.
     if (sources)
     {
-        HW3S_StopLevelSound();
+        HW3S_Stop_LevelSound();
         Z_Free(sources);
     }
 

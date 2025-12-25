@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 1355 2017-07-29 18:36:01Z wesleyjohnson $
+// $Id: w_wad.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -176,12 +176,12 @@ void W_Shutdown(void);
 
 // load and add a wadfile to the active wad files, return wad file number
 // (you can get wadfile_t pointer: the return value indexes wadfiles[])
-int     W_LoadWadFile (const char *filename);
+int     W_Load_WadFile (const char *filename);
 
 //added 4-1-98 initmultiplefiles now return 1 if all ok 0 else
 //             so that it stops with a message if a file was not found
 //             but not if all is ok.
-int     W_InitMultipleFiles (char** filenames);
+int     W_Init_MultipleFiles (char** filenames);
 void    W_Reload (void);
 
 //  Return lump id, or -1 if name not found.
@@ -228,12 +228,12 @@ void*   W_CachePicName( char* name, int ztag );
 // The lumpptr must be to a Z_Malloc lump.
 uint64_t  W_lump_checksum( void* lumpptr );
 
-//SoM: 4/13/2000: Store lists of lumps for F_START/F_END ect.
+//SoM: 4/13/2000: Store lists of lumps for F_START/F_END etc.
 typedef struct {
   int         wadfile;
   int         firstlump;
   int         numlumps;
 } lumplist_t;
                     
-void    W_LoadDehackedLumps( int wadnum );                    
+void    W_Load_DehackedLumps( int wadnum );                    
 #endif // __W_WAD__

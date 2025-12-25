@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_ceilng.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_ceilng.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -420,13 +420,13 @@ int EV_CeilingCrushStop(line_t* line)
 
 // SoM: 3/6/2000: Extra, boom only function.
 //
-// P_RemoveAllActiveCeilings()
+// P_Remove_AllActiveCeilings()
 //
 // Removes all ceilings from the active ceiling list
 //
 // Passed nothing, returns nothing
 //
-void P_RemoveAllActiveCeilings(void)
+void P_Remove_AllActiveCeilings(void)
 {
   while (activeceilings)
   {  

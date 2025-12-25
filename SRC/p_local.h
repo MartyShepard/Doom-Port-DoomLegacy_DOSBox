@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1354 2017-07-29 18:34:55Z wesleyjohnson $
+// $Id: p_local.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -291,7 +291,7 @@ void P_UnsetThingPosition (mobj_t* thing);
 void P_SetThingPosition (mobj_t* thing);
 
 // init braintagets position
-void P_InitBrainTarget();
+void P_Init_BrainTarget();
 
 //
 // P_MAP
@@ -336,8 +336,8 @@ boolean P_CheckSector(sector_t *sector, boolean crunch);
 boolean P_ChangeSector (sector_t* sector, boolean crunch);
 
 void    P_DelSeclist(msecnode_t *);
-void    P_CreateSecNodeList(mobj_t*,fixed_t,fixed_t);
-void    P_Initsecnode( void );
+void    P_Create_SecNodeList(mobj_t*,fixed_t,fixed_t);
+void    P_Init_Secnode( void );
 
 extern fixed_t  got_friction;
 extern int      got_movefactor;  // return values of P_GetFriction and P_GetMoveFactor
@@ -481,7 +481,7 @@ void P_RepositionMace(mobj_t *mo);
 void P_ActivateBeak(player_t *player);
 void P_PlayerUseArtifact(player_t *player, artitype_t arti);
 void P_DSparilTeleport(mobj_t *actor);
-void P_InitMonsters(void);
+void P_Init_Monsters(void);
 boolean PH_LookForMonsters(mobj_t *actor);  // Heretic
 int P_GetThingFloorType(mobj_t *thing);
 mobj_t *P_CheckOnmobj(mobj_t *thing);

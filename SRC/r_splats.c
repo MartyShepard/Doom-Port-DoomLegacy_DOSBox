@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_splats.c 1304 2017-04-07 17:17:47Z wesleyjohnson $
+// $Id: r_splats.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -76,7 +76,7 @@ struct rastery_s * prastertab;
 // --------------------------------------------------------------------------
 // setup splat cache
 // --------------------------------------------------------------------------
-void R_ClearLevelSplats (void)
+void R_Clear_LevelSplats (void)
 {
 #ifdef WALLSPLATS
     freewallsplat = 0;
@@ -338,7 +338,7 @@ void R_AddFloorSplat (subsector_t* subsec, char* picname, fixed_t x, fixed_t y, 
 // --------------------------------------------------------------------------
 static floorsplat_t*   visfloorsplats;
 
-void R_ClearVisibleFloorSplats (void)
+void R_Clear_VisibleFloorSplats (void)
 {
     visfloorsplats = NULL;
 }

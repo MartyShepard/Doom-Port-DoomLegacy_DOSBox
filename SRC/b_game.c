@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1321 2017-05-23 14:23:52Z wesleyjohnson $
+// $Id: b_game.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -120,7 +120,7 @@ int botcolors[NUMSKINCOLORS] =
    10 // = Bleached Bone
 };
 
-void B_InitBots()
+void B_Init_Bots()
 {  
     boolean duplicateBot;
     int botNum, i, j;
@@ -173,7 +173,7 @@ void Command_AddBot(void)
     Send_NetXCmd(XD_ADDBOT, &buf, 1);
 }
 
-void B_AddCommands()
+void B_Register_Commands()
 {
     COM_AddCommand ("addbot", Command_AddBot);
 }
@@ -817,7 +817,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 } // end of BOT_Thinker
 
 
-bot_t* B_CreateBot()
+bot_t* B_Create_Bot()
 {
     bot_t* bot = Z_Malloc (sizeof(*bot), PU_STATIC, 0);
 

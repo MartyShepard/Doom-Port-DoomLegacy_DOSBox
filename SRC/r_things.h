@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.h 1357 2017-08-20 21:03:11Z wesleyjohnson $
+// $Id: r_things.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -104,8 +104,8 @@ void R_AddSpriteDefs (char** namelist, int wadnum);
 void R_AddSprites (sector_t* sec, int lightlevel);
 void R_AddPSprites (void);
 void R_DrawSprite (vissprite_t* spr);
-void R_InitSprites (char** namelist);
-void R_ClearSprites (void);
+void R_Init_Sprites (char** namelist);
+void R_Clear_Sprites (void);
 void R_DrawSprites (void);  //draw all vissprites
 void R_DrawMasked (void);
 
@@ -137,6 +137,6 @@ void    SetPlayerSkin(int playernum, const char *skinname);
 int     R_SkinAvailable( const char* name );
 void    R_AddSkins (int wadnum);
 
-void    R_InitDrawNodes();
+void    R_Init_DrawNodes();
 
 #endif /*__R_THINGS__*/

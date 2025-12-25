@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.h 1304 2017-04-07 17:17:47Z wesleyjohnson $
+// $Id: r_bsp.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -83,9 +83,9 @@ typedef void (*drawfunc_t) (int start, int stop);
 
 
 // BSP
-void R_ClearClipSegs (void);
-void R_SetupClipSegs (void);
-void R_ClearDrawSegs (void);
+void R_Clear_ClipSegs (void);
+void R_Setup_ClipSegs (void);
+void R_Clear_DrawSegs (void);
 
 void R_RenderBSPNode (int bspnum);
 

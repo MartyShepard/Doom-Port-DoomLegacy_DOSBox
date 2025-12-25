@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_chex.h 841 2011-07-07 22:13:54Z smite-meister $
+// $Id: p_chex.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 2003-2010 by DooM Legacy Team.
 //
@@ -23,7 +23,7 @@
 #ifndef P_CHEX_H
 #define P_CHEX_H
 
-void Chex1PatchEngine(void);
+void Chex1_PatchEngine(void);
 
 // Detect Doom graphics and prevent their display while chexquest mode.
 void* Chex_safe_pictures( char* name, void* lumpptr );

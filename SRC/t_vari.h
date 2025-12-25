@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: t_vari.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -94,9 +94,9 @@ enum
 
 // variables
 
-void T_ClearHubScript();
+void T_Clear_HubScript();
 
-void init_variables();
+void T_Init_variables();
 fs_variable_t * new_variable(script_t *script, char *name, int vtype);
 fs_variable_t * find_variable(char *name);
 fs_variable_t * variableforname(script_t *script, char *name);

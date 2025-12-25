@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01361]:  w107 initnames
+          Beschäftigungstherapie
+					
+[01360*]: w107 corpse color
 [01359 ]: w107 sprite rot16
 [01358 ]: w107 54 no net
 [01357 ]: w107 53 skins

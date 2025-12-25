@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1354 2017-07-29 18:34:55Z wesleyjohnson $
+// $Id: dehacked.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -2210,7 +2210,7 @@ void bex_include( char * inclfilename )
   
   include_nested = 1;
 //  DEH_LoadDehackedFile( inclfile );  // do the include file
-  W_LoadWadFile (inclfilename);
+  W_Load_WadFile (inclfilename);
   include_nested = 0;
    
   // restore state

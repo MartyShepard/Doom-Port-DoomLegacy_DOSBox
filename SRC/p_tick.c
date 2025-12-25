@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_tick.c 1344 2017-06-21 16:16:39Z wesleyjohnson $
+// $Id: p_tick.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -72,9 +72,9 @@ static byte  newthinkerpresent = true;
 
 
 //
-// P_InitThinkers
+// P_Init_Thinkers
 //
-void P_InitThinkers (void)
+void P_Init_Thinkers (void)
 {
     int i;
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: r_bsp.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -105,7 +105,7 @@ sector_t*       backsector;
 //      896 drawsegs! So too bad here's a limit removal …-la-Boom
 //Hurdler: with Legacy 1.43, drawseg_t is 6780 bytes and thus if having 512 segs, it will take 3.3 Mb of memory
 //         default is 128 segs, so it means nearly 1Mb allocated
-// Drawsegs set by R_StoreWallRange, used by R_CreateDrawNodes
+// Drawsegs set by R_StoreWallRange, used by R_Create_DrawNodes
 drawseg_t*      drawsegs=NULL;  // allocated drawsegs
 uint16_t        maxdrawsegs;    // number allocated
 drawseg_t*      ds_p = NULL;    // last drawseg used (tail)
@@ -113,10 +113,10 @@ drawseg_t*      firstnewseg = NULL;  // unused
 
 
 //
-// R_ClearDrawSegs
+// R_Clear_DrawSegs
 //
 // Called by R_RenderPlayerView
-void R_ClearDrawSegs (void)
+void R_Clear_DrawSegs (void)
 {
     ds_p = drawsegs;
 }
@@ -303,9 +303,9 @@ void R_ClipPassWallSegment ( int first, int last )
 
 
 //
-// R_ClearClipSegs
+// R_Clear_ClipSegs
 //
-void R_ClearClipSegs (void)
+void R_Clear_ClipSegs (void)
 {
     solidsegs[0].first = -0x7fffffff;
     solidsegs[0].last = -1;

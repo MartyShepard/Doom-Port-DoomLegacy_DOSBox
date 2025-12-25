@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: am_map.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -583,12 +583,13 @@ static void AM_loadPics(void)
         maplump = NULL;
 }
 
-static void AM_unloadPics(void)
+static void AM_Release_Pics(void)
 {
     int i;
 
-    //faB: GlidePatch_t are always purgeable
-    if (rendermode == render_soft) {
+    //faB: MipPatch_t are always purgeable
+    if( rendermode == render_soft )
+    {
         for (i=0;i<10;i++)
             Z_ChangeTag(marknums[i], PU_CACHE);
         if( maplump )
@@ -605,9 +606,9 @@ void AM_clearMarks(void)
     markpointnum = 0;
 }
 
-//
-// should be called at the start of every level
-// right now, i figure it out myself
+// Invoked when am_recalc, which is set by SCR_Recalc.
+// Should be called at the start of every level.
+// Right now, i figure it out myself.
 //
 void AM_LevelInit(void)
 {
@@ -651,7 +652,7 @@ void AM_Stop(void)
 {
     static event_t st_notify = { 0, ev_keyup, AM_MSGEXITED };
 
-    AM_unloadPics();
+    AM_Release_Pics();
     automapactive = false;
     ST_Responder(&st_notify);
     stopped = true;
@@ -897,16 +898,10 @@ void AM_Ticker (void)
 //
 // Clear automap frame buffer.
 //
-void AM_clearFB(int color)
+void AM_clear_FB(int color)
 {
     // vid : from video setup
-#ifdef HWRENDER
-    if (rendermode != render_soft)
-    {
-        HWR_clearAutomap ();
-        return;
-    }
-#endif
+    // Assert: rendermode == render_soft
 
     if( !maplump )
     {
@@ -1466,7 +1461,7 @@ void AM_drawMarks(void)
 void AM_drawCrosshair(int color)
 {
     // vid : from video setup
-    if( rendermode!=render_soft )
+    if( rendermode != render_soft )
     {
         // BP: should be putpixel here
         return;
@@ -1482,7 +1477,16 @@ void AM_Drawer (void)
 
     if (!automapactive) return;
 
-    AM_clearFB(BACKGROUND);
+#ifdef HWRENDER
+    if( rendermode != render_soft )
+    {
+        HWR_Clear_Automap ();
+    }else
+#endif
+    {
+        AM_clear_FB(BACKGROUND);
+    }
+
     if (grid)
         AM_drawGrid(GRIDCOLORS);
     AM_drawWalls();

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.c 1196 2015-12-26 19:12:28Z wesleyjohnson $
+// $Id: t_script.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -94,19 +94,18 @@ mobj_t *  fs_run_trigger; // the trigger parameter on RunScript
 //
 //    called at program start
 
-void T_Init( void )
+void T_Init_FS( void )
 {
-  init_variables();
-  init_functions();
+  T_Init_variables();
+  T_Init_functions();
 }
 
 //
-// T_ClearScripts()
+// T_Clear_Scripts()
 //
 // called at level start, clears all scripts
 //
-
-void T_ClearScripts( void )
+void T_Clear_Scripts( void )
 {
   int i;
   
@@ -774,7 +773,7 @@ err_scriptnum:
 
 /****** scripting command list *******/
 
-void T_AddCommands( void )
+void T_Register_Commands( void )
 {
 #ifdef FRAGGLESCRIPT
   COM_AddCommand("fs_dumpscript",  COM_T_DumpScript_f);

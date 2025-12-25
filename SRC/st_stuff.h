@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.h 1235 2016-05-24 17:33:58Z wesleyjohnson $
+// $Id: st_stuff.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -88,10 +88,10 @@ void ST_Start (void);
 void ST_Init (void);
 
 // Called by G_Responder() when pressing F12 while viewing a demo.
-void ST_changeDemoView (void);
+void ST_Change_DemoView (void);
 
 // Add status bar related commands & vars
-void ST_AddCommands (void);
+void ST_Register_Commands (void);
 
 // force redraw
 void ST_Invalidate(void);
@@ -123,8 +123,8 @@ typedef enum
 boolean ST_Responder(event_t* ev);
 
 // face load/unload graphics, called when skin changes
-void ST_loadFaceGraphics (char *facestr);
-void ST_unloadFaceGraphics (void);
+void ST_Load_FaceGraphics (char *facestr);
+void ST_Release_FaceGraphics (void);
 
 // return if player a is in the same team of the player b
 boolean ST_SameTeam(player_t *a,player_t *b);

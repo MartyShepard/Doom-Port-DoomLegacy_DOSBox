@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: console.h 1150 2015-04-03 13:53:52Z wesleyjohnson $
+// $Id: console.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -41,9 +41,9 @@
 #define LOG(x) CONS_Printf(x)
 #endif
 
-void CON_Init (void);
 void CON_Register (void);
-void CON_VideoInit (void);
+void CON_Init_Setup (void);
+void CON_Init_Video (void);
 
 boolean CON_Responder (event_t *ev);
 
@@ -66,16 +66,15 @@ extern boolean con_hudupdate;   // hud messages have changed, need refresh
 #if defined( __DJGPP__ )	
 extern int     con_keymap;      //0 english, 1 french
 #endif
-
 extern byte*   whitemap;
 extern byte*   greenmap;
 extern byte*   graymap;
 
-void CON_ClearHUD (void);       // clear heads up messages
+void CON_Clear_HUD (void);       // clear heads up messages
 
 void CON_Ticker (void);
 void CON_Drawer (void);       // full feature
-void CON_DrawConsole (void);  // text to console
+void CON_Draw_Console (void);  // text to console
 void CONS_Error (char *msg);       // print out error msg, and wait a key
 
 // force console to move out

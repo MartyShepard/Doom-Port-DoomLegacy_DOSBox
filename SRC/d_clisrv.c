@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1358 2017-08-20 21:04:50Z wesleyjohnson $
+// $Id: d_clisrv.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -941,7 +941,7 @@ static void SV_Send_NetWait( void )
 
 void D_WaitPlayer_Drawer( void )
 {
-    WI_draw_wait( num_netnodes, num_netplayer, wait_netplayer, wait_tics );
+    WI_Draw_wait( num_netnodes, num_netplayer, wait_netplayer, wait_tics );
 }
 
 void D_WaitPlayer_Setup( void )
@@ -1574,9 +1574,9 @@ void CL_Reset (void)
     SV_StopServer();
     SV_ResetServer();
 
-    T_ClearHubScript();	//DarkWolf95: Originally implemented by Exl
+    T_Clear_HubScript(); //DarkWolf95: Originally implemented by Exl
     fs_fadealpha = 0;
-    HU_ClearFSPics();
+    HU_Clear_FSPics();
 
     // reset game engine
     //D_StartTitle ();
@@ -1951,7 +1951,7 @@ void Got_NetXCmd_AddBot(xcmd_t * xc)  //added by AC for acbot
     strcpy(player_names[newplayernum], botinfo[newplayernum].name);
     players[newplayernum].skincolor = botinfo[newplayernum].colour;
     G_AddPlayer(newplayernum);
-    players[newplayernum].bot = B_CreateBot();
+    players[newplayernum].bot = B_Create_Bot();
     if( newplayernum+1>doomcom->numplayers )
         doomcom->numplayers=newplayernum+1;
 
@@ -3286,7 +3286,7 @@ void NetUpdate(void)
     {
         // Local Client
         I_OsPolling();       // i_getevent
-        D_ProcessEvents ();
+        D_Process_Events ();
           // menu responder ???!!!
           // Cons responder
           // game responder call :

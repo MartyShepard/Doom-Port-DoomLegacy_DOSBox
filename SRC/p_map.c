@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1346 2017-07-29 18:15:55Z wesleyjohnson $
+// $Id: p_map.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1355,7 +1355,7 @@ boolean P_TryMove ( mobj_t*       thing,
             if( cv_mbf_dropoff.EV )  // MBF dropoff
             {
                 if(  (allowdropoff == 0)
-#if 0		     
+#if 0
                   ||((allowdropoff == 1)  // drop off allowed
                     && (tmr_floorz - tmr_dropoffz > MAXSTEPMOVE))
 #endif
@@ -3154,7 +3154,7 @@ boolean P_CheckSector(sector_t* sector, boolean crunch)
 
 static msecnode_t* headsecnode = NULL;
 
-void P_Initsecnode( void )
+void P_Init_Secnode( void )
 {
     headsecnode = NULL;
 }
@@ -3331,10 +3331,10 @@ boolean PIT_GetSectors(line_t* ld)
 }
 
 
-// P_CreateSecNodeList alters/creates the sector_list that shows what sectors
+// P_Create_SecNodeList alters/creates the sector_list that shows what sectors
 // the object resides in.
 
-void P_CreateSecNodeList( mobj_t* thing, fixed_t x, fixed_t y )
+void P_Create_SecNodeList( mobj_t* thing, fixed_t x, fixed_t y )
 {
   int xl, xh;
   int yl, yh;

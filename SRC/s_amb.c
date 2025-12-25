@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: s_amb.c 1243 2016-06-14 17:19:23Z wesleyjohnson $
+// $Id: s_amb.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -224,11 +224,11 @@ ambseq_t * AmbientSfx[NUM_AMBIENT_SFX] =
 
 //----------------------------------------------------------------------------
 //
-// PROC P_InitAmbientSound
+// PROC P_Init_AmbientSound
 //
 //----------------------------------------------------------------------------
 
-void P_InitAmbientSound(void)
+void P_Init_AmbientSound(void)
 {
         AmbSfxCount = 0;
         AmbSfxVolume = 0;

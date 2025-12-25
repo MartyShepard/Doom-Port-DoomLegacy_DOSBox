@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.h 1323 2017-05-23 14:27:09Z wesleyjohnson $
+// $Id: r_draw.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -165,15 +165,13 @@ extern int st_borderflat_num;  // st_stuff.c
 //added:26-01-98: called by SCR_Recalc() when video mode changes
 void    R_RecalcFuzzOffsets (void);
 // Initialize color translation tables, for player rendering etc.
-void    R_InitTranslationTables (void);
+void    R_Init_TranslationTables (void);
 
-void    R_InitViewBuffer ( int   width,
-                           int   height );
+void    R_Init_ViewBuffer ( int width, int height );
 
-void    R_InitViewBorder (void);
+void    R_Init_ViewBorder (void);
 
-void    R_VideoErase ( unsigned      ofs,
-                       int           count );
+void    R_VideoErase ( unsigned int ofs, int count );
 
 // Rendering function.
 void    R_FillBackScreen (void);

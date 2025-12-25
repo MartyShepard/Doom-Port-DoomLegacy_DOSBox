@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: wi_stuff.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -467,11 +467,11 @@ static patch_t**        lnames;
 // slam background
 // UNUSED static unsigned char *background=0;
 
-// Called by WI_drawStats, WI_drawDeathmatchStats, WI_drawTeamsStats
-// Called by WI_drawNetgameStats, WI_drawShowNextLoc
-static void WI_slamBackground(void)
+// Called by WI_Draw_Stats, WI_Draw_DeathmatchStats, WI_Draw_TeamsStats
+// Called by WI_Draw_NetgameStats, WI_Draw_ShowNextLoc
+static void WI_Slam_Background(void)
 {
-    // all WI_draw is from WI_Drawer, draw screen0, scale
+    // all WI_Draw_ is from WI_Drawer, draw screen0, scale
    
     // vid : from video setup
     // draw background on screen0
@@ -502,7 +502,7 @@ boolean WI_Responder(event_t* ev)
 
 
 // Draws "<Levelname> Finished!"
-static void WI_drawLF(void)
+static void WI_Draw_LF(void)
 {
     int y = WI_TITLEY;
 
@@ -528,7 +528,7 @@ static void WI_drawLF(void)
 
 
 // Draws "Entering <LevelName>"
-static void WI_drawEL(void)
+static void WI_Draw_EL(void)
 {
     int y = WI_TITLEY;
 
@@ -554,7 +554,7 @@ static void WI_drawEL(void)
 
 }
 
-static void WI_drawOnLnode ( int           n,
+static void WI_Draw_OnLnode ( int           n,
                              patch_t*      c[] )
 {
 
@@ -601,10 +601,10 @@ static void WI_drawOnLnode ( int           n,
 
 //========================================================================
 //
-// IN_DrawYAH
+// WI_Draw_YAH
 //
 //========================================================================
-static void IN_DrawYAH(void)
+static void WI_Draw_YAH(void)
 {
     int i;
     int x;
@@ -635,11 +635,11 @@ static void IN_DrawYAH(void)
 
 
 
-// Called by WI_Start->WI_initStats
-// Called by WI_Start->WI_initDeathmatchStats
-// Called by WI_initShowNextLoc
+// Called by WI_Start->WI_Init_Stats
+// Called by WI_Start->WI_Init_DeathmatchStats
+// Called by WI_Init_ShowNextLoc
 // Called by WI_updateShowNextLoc
-static void WI_initAnimatedBack(void)
+static void WI_Init_AnimatedBack(void)
 {
     int         i;
     anim_inter_t*  ai;
@@ -721,7 +721,7 @@ static void WI_updateAnimatedBack(void)
 
 }
 
-static void WI_drawAnimatedBack(void)
+static void WI_Draw_AnimatedBack(void)
 {
     int  i;
     anim_inter_t*  ai; // interpic animation data
@@ -753,7 +753,7 @@ static void WI_drawAnimatedBack(void)
 //  n : number to be drawn.  NON_NUMBER is not drawn
 //  digits : number of digits,  -1 is variable length
 
-static int WI_drawNum ( int  x, int  y,
+static int WI_Draw_Num ( int  x, int  y,
                         int  n,
                         int  digits )
 {
@@ -808,7 +808,7 @@ static int WI_drawNum ( int  x, int  y,
 }
 
 // draw a percentage at x,y, blank when -1, a dash when -100
-static void WI_drawPercent( int  x, int  y, int  pernum )
+static void WI_Draw_Percent( int  x, int  y, int  pernum )
 {
     if (pernum < 0)
     {
@@ -818,7 +818,7 @@ static void WI_drawPercent( int  x, int  y, int  pernum )
     }
 
     V_DrawScaledPatch(x, y, percent);
-    WI_drawNum(x, y, pernum, -1);
+    WI_Draw_Num(x, y, pernum, -1);
 }
 
 
@@ -827,7 +827,7 @@ static void WI_drawPercent( int  x, int  y, int  pernum )
 // Display level completion time and par,
 //  or "sucks" message if overflow.
 //
-static void WI_drawTime ( int x, int y, int t )
+static void WI_Draw_Time ( int x, int y, int t )
 {
     int  timediv;  // div is keyword
     int  n;
@@ -845,7 +845,7 @@ static void WI_drawTime ( int x, int y, int t )
         do
         {
             n = (t / timediv) % 60;
-            x = WI_drawNum(x, y, n, 2) - (colon->width);
+            x = WI_Draw_Num(x, y, n, 2) - (colon->width);
             timediv *= 60;
 
             // draw
@@ -862,7 +862,7 @@ static void WI_drawTime ( int x, int y, int t )
 }
 
 // For startup wait, and deathmatch wait.
-void WI_draw_wait( int net_nodes, int net_players, int wait_players, int wait_tics )
+void WI_Draw_wait( int net_nodes, int net_players, int wait_players, int wait_tics )
 {
     int  length = 25, lines = 1;
     char * waitmsg;
@@ -895,15 +895,15 @@ void WI_draw_wait( int net_nodes, int net_players, int wait_players, int wait_ti
 
 
 
-static void WI_unloadData(void);
+static void WI_Release_Data(void);
 
 static void WI_End(void)
 {
-    WI_unloadData();
+    WI_Release_Data();
 }
 
 // used for write introduce next level
-static void WI_initNoState(void)
+static void WI_Init_NoState(void)
 {
     state = NoState;
     acceleratestage = 0;
@@ -926,13 +926,13 @@ static boolean          snl_pointeron = false;
 
 
 // Called by WI_updateNetgameStats, WI_updateStats
-static void WI_initShowNextLoc(void)
+static void WI_Init_ShowNextLoc(void)
 {
     state = ShowNextLoc;
     acceleratestage = 0;
     cnt = SHOWNEXTLOCDELAY * TICRATE;
 
-    WI_initAnimatedBack();
+    WI_Init_AnimatedBack();
 }
 
 static void WI_updateShowNextLoc(void)
@@ -940,13 +940,13 @@ static void WI_updateShowNextLoc(void)
     WI_updateAnimatedBack();
 
     if (!--cnt || acceleratestage)
-        WI_initNoState();
+        WI_Init_NoState();
     else
         snl_pointeron = (cnt & 31) < 20;
 }
 
-// Called by WI_Drawer, WI_drawNoState
-static void WI_drawShowNextLoc(void)
+// Called by WI_Drawer, WI_Draw_NoState
+static void WI_Draw_ShowNextLoc(void)
 {
 
     int  i;
@@ -955,15 +955,15 @@ static void WI_drawShowNextLoc(void)
     if (cnt<=0)  // all removed no draw !!!
         return;
 
-    WI_slamBackground();
+    WI_Slam_Background();
 
     // draw animated background
-    WI_drawAnimatedBack();
+    WI_Draw_AnimatedBack();
 
     if( EN_heretic )
     {
         if( gameepisode < 4 )
-            IN_DrawYAH();
+            WI_Draw_YAH();
     }
         //DarkWolf95:September 12, 2004: Don't draw YAH for FS changed interpic
     else
@@ -975,29 +975,29 @@ static void WI_drawShowNextLoc(void)
 
         // draw a splat on taken cities.
         for (i=0 ; i<=last ; i++)
-            WI_drawOnLnode(i, &splat);
+            WI_Draw_OnLnode(i, &splat);
 
         // splat the secret level?
         if (wbs->didsecret)
-            WI_drawOnLnode(8, &splat);
+            WI_Draw_OnLnode(8, &splat);
 
         // draw flashing ptr
         if (snl_pointeron)
-            WI_drawOnLnode(wbs->next, yah);
+            WI_Draw_OnLnode(wbs->next, yah);
     }
 
     // draws which level you are entering..
     if ( EN_doom_etc
          && !((gamemode == doom2_commercial) && (wbs->next == 30)) )
-        WI_drawEL();
+        WI_Draw_EL();
 
 }
 
 // Called by WI_Drawer
-static void WI_drawNoState(void)
+static void WI_Draw_NoState(void)
 {
     snl_pointeron = true;
-    WI_drawShowNextLoc();
+    WI_Draw_ShowNextLoc();
 }
 
 
@@ -1005,7 +1005,7 @@ static int              dm_frags[MAXPLAYERS][MAXPLAYERS];
 static int              dm_totals[MAXPLAYERS];
 
 // Called by WI_Start
-static void WI_initDeathmatchStats(void)
+static void WI_Init_DeathmatchStats(void)
 {
     int i, j;
 
@@ -1028,7 +1028,7 @@ static void WI_initDeathmatchStats(void)
          }
     }
 
-    WI_initAnimatedBack();
+    WI_Init_AnimatedBack();
 }
 
 // Called by WI_Ticker
@@ -1043,7 +1043,7 @@ static void WI_updateDeathmatchStats(void)
     {
         S_StartSound(sfx_slop);
 
-        WI_initNoState();
+        WI_Init_NoState();
     }
 }
 
@@ -1051,7 +1051,7 @@ static void WI_updateDeathmatchStats(void)
 //  Quick-patch for the Cave party 19-04-1998 !!
 //
 //  width : the column width
-void WI_drawRanking(char *title,int x,int y,fragsort_t *fragtable,
+void WI_Draw_Ranking(char *title,int x,int y,fragsort_t *fragtable,
                     int scorelines, boolean large, int white, int colwidth)
 {
     char  buf[33];
@@ -1119,7 +1119,7 @@ void WI_drawRanking(char *title,int x,int y,fragsort_t *fragtable,
 #define RANKINGY 60
 
 // Called by WI_Drawer
-static void WI_drawDeathmatchStats(void)
+static void WI_Draw_DeathmatchStats(void)
 {
     int          i,j;
     int          scorelines;
@@ -1127,11 +1127,11 @@ static void WI_drawDeathmatchStats(void)
     fragsort_t   fragtab[MAXPLAYERS];
 
     // all WI is draw screen0, scale
-    WI_slamBackground();
+    WI_Slam_Background();
 
     // draw animated background
-    WI_drawAnimatedBack();
-    WI_drawLF();
+    WI_Draw_AnimatedBack();
+    WI_Draw_LF();
 
     //Fab:25-04-98: when you play, you quickly see your frags because your
     //  name is displayed white, when playback demo, you quickly see who's the
@@ -1151,7 +1151,7 @@ static void WI_drawDeathmatchStats(void)
             scorelines++;
         }
     }
-    WI_drawRanking("Frags", 5, RANKINGY, fragtab, scorelines, false, whiteplayer, 6);
+    WI_Draw_Ranking("Frags", 5, RANKINGY, fragtab, scorelines, false, whiteplayer, 6);
 
     // count buchholz
     scorelines = 0;
@@ -1170,7 +1170,7 @@ static void WI_drawDeathmatchStats(void)
             scorelines++;
         }
     }
-    WI_drawRanking("Buchholz", 85, RANKINGY, fragtab, scorelines, false, whiteplayer, 6);
+    WI_Draw_Ranking("Buchholz", 85, RANKINGY, fragtab, scorelines, false, whiteplayer, 6);
 
     // count individual
     scorelines = 0;
@@ -1197,7 +1197,7 @@ static void WI_drawDeathmatchStats(void)
             scorelines++;
         }
     }
-    WI_drawRanking("indiv.", 165, RANKINGY, fragtab, scorelines, false, whiteplayer, 6);
+    WI_Draw_Ranking("indiv.", 165, RANKINGY, fragtab, scorelines, false, whiteplayer, 6);
 
     // count deads
     scorelines = 0;
@@ -1218,7 +1218,7 @@ static void WI_drawDeathmatchStats(void)
             scorelines++;
         }
     }
-    WI_drawRanking("deads", 245, RANKINGY, fragtab, scorelines, false, whiteplayer, 6);
+    WI_Draw_Ranking("deads", 245, RANKINGY, fragtab, scorelines, false, whiteplayer, 6);
 }
 
 boolean teamingame(int teamnum)
@@ -1246,7 +1246,7 @@ boolean teamingame(int teamnum)
 }
 
 // Called by WI_Drawer
-static void WI_drawTeamsStats(void)
+static void WI_Draw_TeamsStats(void)
 {
     int          i,j;
     int          scorelines;
@@ -1254,11 +1254,11 @@ static void WI_drawTeamsStats(void)
     fragsort_t   fragtab[MAXPLAYERS];
 
     // all WI is draw screen0, scale
-    WI_slamBackground();
+    WI_Slam_Background();
 
     // draw animated background
-    WI_drawAnimatedBack();
-    WI_drawLF();
+    WI_Draw_AnimatedBack();
+    WI_Draw_LF();
 
     //Fab:25-04-98: when you play, you quickly see your frags because your
     //  name is displayed white, when playback demo, you quickly see who's the
@@ -1271,9 +1271,9 @@ static void WI_drawTeamsStats(void)
                                    : consoleplayer_ptr->skin;
 
     // count frags for each present player
-    scorelines = HU_CreateTeamFragTbl(fragtab,dm_totals,dm_frags);
+    scorelines = HU_Create_TeamFragTbl(fragtab,dm_totals,dm_frags);
 
-    WI_drawRanking("Frags", 5, 80, fragtab, scorelines, false, whiteplayer, 6);
+    WI_Draw_Ranking("Frags", 5, 80, fragtab, scorelines, false, whiteplayer, 6);
 
     // count buchholz
     scorelines = 0;
@@ -1294,7 +1294,7 @@ static void WI_drawTeamsStats(void)
             scorelines++;
         }
     }
-    WI_drawRanking("Buchholz", 85, 80, fragtab, scorelines, false, whiteplayer, 6);
+    WI_Draw_Ranking("Buchholz", 85, 80, fragtab, scorelines, false, whiteplayer, 6);
 
     // count individuel
     scorelines = 0;
@@ -1321,7 +1321,7 @@ static void WI_drawTeamsStats(void)
             scorelines++;
         }
     }
-    WI_drawRanking("indiv.", 165, 80, fragtab, scorelines, false, whiteplayer, 6);
+    WI_Draw_Ranking("indiv.", 165, 80, fragtab, scorelines, false, whiteplayer, 6);
 
     // count deads
     scorelines = 0;
@@ -1342,7 +1342,7 @@ static void WI_drawTeamsStats(void)
             scorelines++;
         }
     }
-    WI_drawRanking("deads", 245, 80, fragtab, scorelines, false, whiteplayer, 6);
+    WI_Draw_Ranking("deads", 245, 80, fragtab, scorelines, false, whiteplayer, 6);
 }
 
 
@@ -1363,11 +1363,11 @@ static void WI_ddrawDeathmatchStats(void)
 
     lh = WI_SPACINGY;
 
-    WI_slamBackground();
+    WI_Slam_Background();
 
     // draw animated background
-    WI_drawAnimatedBack();
-    WI_drawLF();
+    WI_Draw_AnimatedBack();
+    WI_Draw_LF();
 
     // draw stat titles (top line)
     V_DrawScaledPatch(DM_TOTALSX - total->width/2,
@@ -1438,11 +1438,11 @@ static void WI_ddrawDeathmatchStats(void)
             for (j=0 ; j<MAXPLAYERS ; j++)
             {
                 if (playeringame[j])
-                    WI_drawNum(x+w, y, dm_frags[i][j], 2);
+                    WI_Draw_Num(x+w, y, dm_frags[i][j], 2);
 
                 x += DM_SPACINGX;
             }
-            WI_drawNum(DM_TOTALSX+w, y, dm_totals[i], 2);
+            WI_Draw_Num(DM_TOTALSX+w, y, dm_totals[i], 2);
         }
         y += WI_SPACINGY;
     }
@@ -1455,7 +1455,7 @@ static int      dofrags;
 static int      ng_state;
 
 // Called by WI_Start
-static void WI_initNetgameStats(void)
+static void WI_Init_NetgameStats(void)
 {
 
     int i;
@@ -1478,7 +1478,7 @@ static void WI_initNetgameStats(void)
 
     dofrags = !!dofrags;
 
-    WI_initAnimatedBack();
+    WI_Init_AnimatedBack();
 }
 
 
@@ -1620,9 +1620,9 @@ static void WI_updateNetgameStats(void)
         {
             S_StartSound(sfx_sgcock);
             if ( gamemode == doom2_commercial )
-                WI_initNoState();
+                WI_Init_NoState();
             else
-                WI_initShowNextLoc();
+                WI_Init_ShowNextLoc();
         }
         goto done;
     }
@@ -1651,7 +1651,7 @@ done:
 
 
 // Called by WI_Drawer
-static void WI_drawNetgameStats(void)
+static void WI_Draw_NetgameStats(void)
 {
     int         i;
     int         x, y;
@@ -1659,12 +1659,12 @@ static void WI_drawNetgameStats(void)
     byte*       colormap;   //added:08-02-98: remap STBP0 to player color
 
     // all WI is draw screen0, scale
-    WI_slamBackground();
+    WI_Slam_Background();
 
     // draw animated background
-    WI_drawAnimatedBack();
+    WI_Draw_AnimatedBack();
 
-    WI_drawLF();
+    WI_Draw_LF();
 
     // draw stat titles (top line)
     if( FontBBaseLump )
@@ -1696,7 +1696,7 @@ static void WI_drawNetgameStats(void)
     }
 
 
-    //added:08-02-98: p[i] replaced by stpb (see WI_loadData for more)
+    //added:08-02-98: p[i] replaced by stpb (see WI_Load_Data for more)
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
         if (!playeringame[i])
@@ -1713,12 +1713,12 @@ static void WI_drawNetgameStats(void)
             V_DrawScaledPatch(x-(stpb->width), y, star);
 
         x += NG_SPACINGX;
-        WI_drawPercent(x-pwidth, y+10, cnt_kills[i]);   x += NG_SPACINGX;
-        WI_drawPercent(x-pwidth, y+10, cnt_items[i]);   x += NG_SPACINGX;
-        WI_drawPercent(x-pwidth, y+10, cnt_secret[i]);  x += NG_SPACINGX;
+        WI_Draw_Percent(x-pwidth, y+10, cnt_kills[i]);   x += NG_SPACINGX;
+        WI_Draw_Percent(x-pwidth, y+10, cnt_items[i]);   x += NG_SPACINGX;
+        WI_Draw_Percent(x-pwidth, y+10, cnt_secret[i]);  x += NG_SPACINGX;
 
         if (dofrags)
-            WI_drawNum(x, y+10, cnt_frags[i], -1);
+            WI_Draw_Num(x, y+10, cnt_frags[i], -1);
 
         y += WI_SPACINGY;
     }
@@ -1728,7 +1728,7 @@ static void WI_drawNetgameStats(void)
 static int sp_state;
 
 // Called by WI_Start
-static void WI_initStats(void)
+static void WI_Init_Stats(void)
 {
     state = StatCount;
     acceleratestage = 0;
@@ -1737,7 +1737,7 @@ static void WI_initStats(void)
     cnt_time = cnt_par = -1;
     cnt_pause = TICRATE;
 
-    WI_initAnimatedBack();
+    WI_Init_AnimatedBack();
 }
 
 static void WI_updateStats(void)
@@ -1833,9 +1833,9 @@ static void WI_updateStats(void)
             S_StartSound(sfx_sgcock);
 
             if (gamemode == doom2_commercial)
-                WI_initNoState();
+                WI_Init_NoState();
             else
-                WI_initShowNextLoc();
+                WI_Init_ShowNextLoc();
         }
         goto done;
     }
@@ -1863,7 +1863,7 @@ done:
 }
 
 // Called by WI_Drawer
-static void WI_drawStats(void)
+static void WI_Draw_Stats(void)
 {
     // all WI is draw screen0, scale
     // [WDJ] Display PAR for certain id games, unless modified,
@@ -1877,12 +1877,12 @@ static void WI_drawStats(void)
     int lh = (3 * (num[0]->height))/2;
 
     // all WI is draw screen0, scale
-    WI_slamBackground();
+    WI_Slam_Background();
 
     // draw animated background
-    WI_drawAnimatedBack();
+    WI_Draw_AnimatedBack();
 
-    WI_drawLF();
+    WI_Draw_LF();
 
     if( FontBBaseLump )
     {
@@ -1903,13 +1903,13 @@ static void WI_drawStats(void)
         if (draw_pars)
             V_DrawScaledPatch(BASEVIDWIDTH/2 + SP_TIMEX, SP_TIMEY, par);
     }
-    WI_drawPercent(BASEVIDWIDTH - SP_STATSX, SP_STATSY, cnt_kills[0]);
-    WI_drawPercent(BASEVIDWIDTH - SP_STATSX, SP_STATSY+lh, cnt_items[0]);
-    WI_drawPercent(BASEVIDWIDTH - SP_STATSX, SP_STATSY+2*lh, cnt_secret[0]);
-    WI_drawTime(BASEVIDWIDTH/2 - SP_TIMEX, SP_TIMEY, cnt_time);
+    WI_Draw_Percent(BASEVIDWIDTH - SP_STATSX, SP_STATSY, cnt_kills[0]);
+    WI_Draw_Percent(BASEVIDWIDTH - SP_STATSX, SP_STATSY+lh, cnt_items[0]);
+    WI_Draw_Percent(BASEVIDWIDTH - SP_STATSX, SP_STATSY+2*lh, cnt_secret[0]);
+    WI_Draw_Time(BASEVIDWIDTH/2 - SP_TIMEX, SP_TIMEY, cnt_time);
 
     if (draw_pars)
-        WI_drawTime(BASEVIDWIDTH - SP_TIMEX, SP_TIMEY, cnt_par);
+        WI_Draw_Time(BASEVIDWIDTH - SP_TIMEX, SP_TIMEY, cnt_par);
 
 }
 
@@ -1985,7 +1985,7 @@ void WI_Ticker(void)
 
 }
 
-static void WI_loadData(void)
+static void WI_Load_Data(void)
 {
     // vid : from video setup
     int         i, j;
@@ -2165,7 +2165,7 @@ static void WI_loadData(void)
     stpb = W_CachePatchName("STPB0", PU_LOCK_SB);  // never unlocked
 }
 
-static void WI_unloadData(void)
+static void WI_Release_Data(void)
 {
     int i, j;
 
@@ -2246,30 +2246,30 @@ void WI_Drawer (void)
         if( cv_deathmatch.EV )
         {
             if( cv_teamplay.EV )
-                WI_drawTeamsStats();
+                WI_Draw_TeamsStats();
             else
-                WI_drawDeathmatchStats();
+                WI_Draw_DeathmatchStats();
 
-            WI_draw_wait( 0, 0, 0, cnt_pause );
+            WI_Draw_wait( 0, 0, 0, cnt_pause );
         }
         else if (multiplayer)
-            WI_drawNetgameStats();
+            WI_Draw_NetgameStats();
         else
-            WI_drawStats();
+            WI_Draw_Stats();
         break;
 
       case ShowNextLoc:
-        WI_drawShowNextLoc();
+        WI_Draw_ShowNextLoc();
         break;
 
       case NoState:
-        WI_drawNoState();
+        WI_Draw_NoState();
         break;
     }
 }
 
 
-static void WI_initVariables(wbstartstruct_t* wbstartstruct)
+static void WI_Init_Variables(wbstartstruct_t* wbstartstruct)
 {
 
     wbs = wbstartstruct;
@@ -2307,13 +2307,13 @@ static void WI_initVariables(wbstartstruct_t* wbstartstruct)
 void WI_Start(wbstartstruct_t* wbstartstruct)
 {
 
-    WI_initVariables(wbstartstruct);
-    WI_loadData();
+    WI_Init_Variables(wbstartstruct);
+    WI_Load_Data();
 
     if( cv_deathmatch.EV )
-        WI_initDeathmatchStats();
+        WI_Init_DeathmatchStats();
     else if (multiplayer)
-        WI_initNetgameStats();
+        WI_Init_NetgameStats();
     else
-        WI_initStats();
+        WI_Init_Stats();
 }

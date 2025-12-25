@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_node.h 1321 2017-05-23 14:23:52Z wesleyjohnson $
+// $Id: b_node.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -82,8 +82,7 @@ SearchNode_t* B_FindClosestNode(fixed_t x, fixed_t y);
 SearchNode_t* B_GetNodeAt(fixed_t x, fixed_t y);
 SearchNode_t* B_GetClosestReachableNode(fixed_t x, fixed_t y);
 boolean B_NodeReachable(mobj_t* mo, fixed_t x, fixed_t y, fixed_t destx, fixed_t desty);
-void B_BuildNodes(SearchNode_t* node);
-void B_InitNodes(void);
+void B_Init_Nodes(void);
 
 #endif
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 1318 2017-05-23 14:20:04Z wesleyjohnson $
+// $Id: r_draw.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -308,7 +308,7 @@ skin_trans_desc_t  heretic_skins =
 //  This is precalculated for drawing the player sprites in the player's
 //  chosen color
 //
-void R_InitTranslationTables (void)
+void R_Init_TranslationTables (void)
 {
     skin_trans_desc_t  * skindesc = & doom_skins;
     int i;
@@ -367,6 +367,7 @@ void R_InitTranslationTables (void)
 }
 
 
+
 // ==========================================================================
 //               COMMON DRAWER FOR 8 AND 16 BIT COLOR MODES
 // ==========================================================================
@@ -378,11 +379,11 @@ void R_InitTranslationTables (void)
 // put here
 
 
-// R_InitViewBuffer
+// R_Init_ViewBuffer
 // Creates lookup tables for getting the framebuffer address
 //  of a pixel to draw.
 //
-void R_InitViewBuffer ( int   width,
+void R_Init_ViewBuffer ( int   width,
                         int   height )
 {
     // ViewBuffer may be smaller than video or screen buffers
@@ -390,8 +391,10 @@ void R_InitViewBuffer ( int   width,
     int  i;
 
     if (bytesperpixel<1 || bytesperpixel>4)
-        I_Error ("R_InitViewBuffer : Invalid bytesperpixel value %d\n",
+    {
+        I_Error ("R_Init_ViewBuffer : Invalid bytesperpixel value %d\n",
                  bytesperpixel);
+    }
 
     // Handle resize,
     //  e.g. smaller view windows
@@ -439,7 +442,7 @@ void R_InitViewBuffer ( int   width,
 //
 int viewborderlump[8];
 
-void R_InitViewBorder (void)
+void R_Init_ViewBorder (void)
 {
     if( EN_heretic_hexen )
     {   // Heretic, Hexen

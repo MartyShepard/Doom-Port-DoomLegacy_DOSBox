@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1338 2017-06-21 16:07:52Z wesleyjohnson $
+// $Id: r_main.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -620,10 +620,7 @@ fixed_t R_PointToDist ( fixed_t x, fixed_t y )
 }
 
 
-//
-// R_InitPointToAngle
-//
-void R_InitPointToAngle (void)
+void R_Init_PointToAngle (void)
 {
     // UNUSED - now getting from tables.c
 #if 0
@@ -702,10 +699,7 @@ fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
 
 
 
-//
-// R_InitTables
-//
-void R_InitTables (void)
+void R_Init_Tables (void)
 {
     // UNUSED: now getting from tables.c
 #if 0
@@ -738,10 +732,10 @@ void R_InitTables (void)
 // consvar_t cv_fov = {"fov","2048", CV_CALL | CV_NOINIT, NULL, R_ExecuteSetViewSize};
 
 //
-// R_InitTextureMapping
+// R_Init_TextureMapping
 //
 // Called by R_ExecuteSetViewSize
-void R_InitTextureMapping (void)
+void R_Init_TextureMapping (void)
 {
     int  i;
     int  x;
@@ -807,13 +801,13 @@ void R_InitTextureMapping (void)
 
 
 //
-// R_InitLightTables
+// R_Init_LightTables
 // Only inits the zlight table,
 //  because the scalelight table changes with view size.
 //
 #define DISTMAP         2
 
-void R_InitLightTables (void)
+void R_Init_LightTables (void)
 {
     int         i;
     int         j;
@@ -846,7 +840,6 @@ void R_InitLightTables (void)
 }
 
 
-//
 // R_SetViewSize
 // Do not really change anything here,
 //  because it might be in the middle of a refresh.
@@ -893,7 +886,7 @@ void R_ExecuteSetViewSize (void)
 
     // added by Hurdler
 #ifdef HWRENDER
-    if ((rendermode!=render_soft) && (cv_viewsize.value < 6))
+    if((rendermode != render_soft) && (cv_viewsize.value < 6))
         CV_SetValue (&cv_viewsize, 6);
 #endif
 
@@ -916,7 +909,7 @@ void R_ExecuteSetViewSize (void)
     stbar_height = (EN_heretic)? H_STBAR_HEIGHT : ST_HEIGHT;
 
     if( cv_scalestatusbar.EV || (cv_viewsize.value>=11) )
-        stbar_height *= (rendermode==render_soft)? vid.dupy : vid.fdupy;
+        stbar_height *= (rendermode == render_soft)? vid.dupy : vid.fdupy;
 
     //added 01-01-98: full screen view, without statusbar
     if (cv_viewsize.value > 10)
@@ -956,13 +949,13 @@ void R_ExecuteSetViewSize (void)
     //
     // if (!detailshift) ... else ...
 
-    R_InitViewBuffer (rdraw_scaledviewwidth, rdraw_viewheight);
+    R_Init_ViewBuffer (rdraw_scaledviewwidth, rdraw_viewheight);
 
-    R_InitTextureMapping ();
+    R_Init_TextureMapping ();
 
 #ifdef HWRENDER // not win32 only 19990829 by Kin
-    if (rendermode != render_soft)
-        HWR_InitTextureMapping ();
+    if( rendermode != render_soft )
+        HWR_Init_TextureMapping ();
 #endif
 
     // psprite scales
@@ -987,7 +980,8 @@ void R_ExecuteSetViewSize (void)
     //added:02-02-98:now correct aspect ratio!
     aspectx = (((vid.height*centerx*BASEVIDWIDTH)/BASEVIDHEIGHT)/vid.width);
 
-    if ( rendermode == render_soft ) {
+    if( rendermode == render_soft )
+    {
         // this is only used for planes rendering in software mode
         j = rdraw_viewheight*4;
         for (i=0 ; i<j ; i++)
@@ -1027,7 +1021,7 @@ void R_ExecuteSetViewSize (void)
     //faB: continue to do the software setviewsize as long as we use
     //     the reference software view
 #ifdef HWRENDER // not win32 only 19990829 by Kin
-    if (rendermode!=render_soft)
+    if( rendermode != render_soft )
         HWR_SetViewSize (cv_viewsize.value);
 #endif
 
@@ -1048,39 +1042,39 @@ void R_Init (void)
 
     //added:24-01-98: screensize independent
     if(devparm)
-        GenPrintf(EMSG_dev, "\nR_InitData");
-    R_InitData ();
+        GenPrintf(EMSG_dev, "\nR_Init_Data");
+    R_Init_Data ();
 
     if(devparm)
-        GenPrintf(EMSG_dev, "\nR_InitPointToAngle");
-    R_InitPointToAngle ();
+        GenPrintf(EMSG_dev, "\nR_Init_PointToAngle");
+    R_Init_PointToAngle ();
 
     if(devparm)
-        GenPrintf(EMSG_dev, "\nR_InitTables");
-    R_InitTables ();
+        GenPrintf(EMSG_dev, "\nR_Init_Tables");
+    R_Init_Tables ();
 
-    R_InitViewBorder ();
+    R_Init_ViewBorder ();
 
     R_SetViewSize ();   // setsizeneeded is set true
 
     if(devparm)
-        GenPrintf(EMSG_dev, "\nR_InitPlanes");
-    R_InitPlanes ();
+        GenPrintf(EMSG_dev, "\nR_Init_Planes");
+    R_Init_Planes ();
 
     //added:02-02-98: this is now done by SCR_Recalc() at the first mode set
     if(devparm)
-        GenPrintf(EMSG_dev, "\nR_InitLightTables");
-    R_InitLightTables ();
+        GenPrintf(EMSG_dev, "\nR_Init_LightTables");
+    R_Init_LightTables ();
 
     if(devparm)
-        GenPrintf(EMSG_dev, "\nR_InitSkyMap");
-    R_InitSkyMap ();
+        GenPrintf(EMSG_dev, "\nR_Init_SkyMap");
+    R_Init_SkyMap ();
 
     if(devparm)
-        GenPrintf(EMSG_dev, "\nR_InitTranslationsTables");
-    R_InitTranslationTables ();
+        GenPrintf(EMSG_dev, "\nR_Init_TranslationsTables");
+    R_Init_TranslationTables ();
 
-    R_InitDrawNodes();
+    R_Init_DrawNodes();
 
     framecount = 0;
 }
@@ -1487,14 +1481,14 @@ void R_RenderPlayerView (player_t* player)
     R_SetupFrame (player);
 
     // Clear buffers.
-    R_ClearClipSegs ();
-    R_ClearDrawSegs ();
-    R_ClearPlanes (player);     //needs player for waterheight in occupied sector
-    //R_ClearPortals ();
-    R_ClearSprites ();
+    R_Clear_ClipSegs ();
+    R_Clear_DrawSegs ();
+    R_Clear_Planes (player);     //needs player for waterheight in occupied sector
+    //R_Clear_Portals ();
+    R_Clear_Sprites ();
 
 #ifdef FLOORSPLATS
-    R_ClearVisibleFloorSplats ();
+    R_Clear_VisibleFloorSplats ();
 #endif
 
     // check for new console commands.
@@ -1528,8 +1522,8 @@ void R_RenderPlayerView (player_t* player)
     // Check for new console commands.
     NetUpdate ();
 
-    //R_DrawPortals ();
-    R_DrawPlanes ();
+    //R_Draw_Portals ();
+    R_Draw_Planes ();
 
     // Check for new console commands.
     NetUpdate ();
@@ -1574,8 +1568,8 @@ void R_Register_EngineStuff (void)
     CV_RegisterVar (&cv_gravity);
 
     // Enough for ded. server
-    if(dedicated)
-    return;
+    if( dedicated )
+        return;
 
     CV_RegisterVar (&cv_chasecam);
     CV_RegisterVar (&cv_allowmlook);
@@ -1608,9 +1602,9 @@ void R_Register_EngineStuff (void)
 #endif
 
 //added by Hurdler
-#ifdef HWRENDER // not win32 only 19990829 by Kin
-    if (rendermode != render_soft)
-        HWR_AddCommands ();
+#ifdef HWRENDER
+    if( rendermode != render_soft )
+        HWR_Register_Gr1Commands ();
 #endif
 
     CV_RegisterVar (&cv_boom_colormap);

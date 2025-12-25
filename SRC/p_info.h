@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: p_info.h 1192 2015-12-01 22:21:42Z wesleyjohnson $
+// $Id: p_info.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -46,7 +46,7 @@
   // NUMWEAPONS
 #include "command.h"
 
-void P_LoadLevelInfo(void);
+void P_Load_LevelInfo(void);
 
 void P_CleanLine(char *line);
 
@@ -92,7 +92,7 @@ int isMAPxy(char *name);
                      (isnumchar((s)[4])) &&      \
                      ((s)[5] == '\0'))*/
 
-void P_Info_AddCommands(void);
+void P_Register_Info_Commands(void);
 char *P_LevelName(void);
 char *P_LevelNameByNum( int episode, int map );
 

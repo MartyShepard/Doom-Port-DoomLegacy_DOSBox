@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1357 2017-08-20 21:03:11Z wesleyjohnson $
+// $Id: hu_stuff.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -139,9 +139,9 @@ patch_t*           crosshair[3];     //3 precached crosshair graphics
 // -------
 // protos.
 // -------
-void   HU_drawDeathmatchRankings (void);
-void   HU_drawCrosshair (void);
-static void HU_DrawTip();
+void   HU_Draw_DeathmatchRankings (void);
+void   HU_Draw_Crosshair (void);
+static void HU_Draw_Tip();
 
 
 
@@ -567,7 +567,7 @@ boolean HU_Responder (event_t *ev)
 
 //  Draw chat input
 //
-static void HU_DrawChat (void)
+static void HU_Draw_Chat (void)
 {
     // vid : from video setup
     int  i,x,y;
@@ -609,18 +609,18 @@ void HU_Drawer(void)
 {
     // draw chat string plus cursor
     if (chat_on)
-        HU_DrawChat ();
+        HU_Draw_Chat ();
 
     // draw deathmatch rankings
     if (hu_showscores)
-        HU_drawDeathmatchRankings ();
+        HU_Draw_DeathmatchRankings ();
 
     // draw the crosshair, not when viewing demos nor with chasecam
     if (!automapactive && cv_crosshair.value && !demoplayback && !cv_chasecam.value)
-        HU_drawCrosshair ();
+        HU_Draw_Crosshair ();
 
-    HU_DrawTip();
-    HU_DrawFSPics();
+    HU_Draw_Tip();
+    HU_Draw_FSPics();
 }
 
 //======================================================================
@@ -688,7 +688,7 @@ void HU_SetTip(char *tip, int displaytics)
 
 
 
-static void HU_DrawTip()
+static void HU_Draw_Tip()
 {
   int    i;
   if(!numtiplines) return;
@@ -714,7 +714,7 @@ static void HU_DrawTip()
 }
 
 
-void HU_ClearTips()
+void HU_Clear_Tips()
 {
   int    i;
 
@@ -745,7 +745,7 @@ int        num_piclist_alloc = 0;
 // HU_InitFSPics
 // This function is called when Doom starts and every time the piclist needs
 // to be expanded.
-void HU_InitFSPics()
+void HU_Init_FSPics()
 {
   fspic_t * npp;
   int  newstart, newend, i;
@@ -783,12 +783,12 @@ void HU_InitFSPics()
 }
 
 // Return slot number (handle) for pic, [ 0 .. num_piclist_alloc-1 ].
-int  HU_GetFSPic(int lumpnum, int xpos, int ypos)
+int  HU_Get_FSPic(int lumpnum, int xpos, int ypos)
 {
   int  i;
 
   if(!num_piclist_alloc)
-    HU_InitFSPics();
+    HU_Init_FSPics();
 
 getpic_retry:  // retry
   for(i = 0; i < num_piclist_alloc; i++)
@@ -804,12 +804,12 @@ getpic_retry:  // retry
   }
 
   // Did not find an empty slot.
-  HU_InitFSPics();
+  HU_Init_FSPics();
   goto getpic_retry;
 }
 
 
-int  HU_DeleteFSPic(int handle)
+int  HU_Delete_FSPic(int handle)
 {
   if(handle < 0 || handle >= num_piclist_alloc)
     return -1;
@@ -820,7 +820,7 @@ int  HU_DeleteFSPic(int handle)
 }
 
 
-int  HU_ModifyFSPic(int handle, int lumpnum, int xpos, int ypos)
+int  HU_Modify_FSPic(int handle, int lumpnum, int xpos, int ypos)
 {
   if(handle < 0 || handle >= num_piclist_alloc)
     return -1;
@@ -837,7 +837,7 @@ int  HU_ModifyFSPic(int handle, int lumpnum, int xpos, int ypos)
 
 
 // Enable or disable the drawing of a Pic.
-int  HU_FSDisplay(int handle, boolean enable_draw)
+int  HU_FS_Display(int handle, boolean enable_draw)
 {
   if(handle < 0 || handle >= num_piclist_alloc)
     return -1;
@@ -849,7 +849,7 @@ int  HU_FSDisplay(int handle, boolean enable_draw)
 }
 
 
-void HU_DrawFSPics()
+void HU_Draw_FSPics()
 {
   // vid : from video setup
   int  i;
@@ -880,12 +880,12 @@ void HU_DrawFSPics()
   //V_SetupDraw( drawinfo.prev_screenflags );
 }
 
-void HU_ClearFSPics()
+void HU_Clear_FSPics()
 {
         piclist = NULL;
         num_piclist_alloc = 0;
 
-        HU_InitFSPics();
+        HU_Init_FSPics();
 }
 
 //======================================================================
@@ -963,7 +963,7 @@ void HU_Erase (void)
 //======================================================================
 
 // count frags for each team
-int HU_CreateTeamFragTbl(fragsort_t *fragtab,
+int HU_Create_TeamFragTbl(fragsort_t *fragtab,
                          int dmtotals[], int fragtbl[MAXPLAYERS][MAXPLAYERS])
 {
     int i,j,k,scorelines,team;
@@ -1041,7 +1041,7 @@ int HU_CreateTeamFragTbl(fragsort_t *fragtab,
 //
 //  draw Deathmatch Rankings
 //
-void HU_drawDeathmatchRankings (void)
+void HU_Draw_DeathmatchRankings (void)
 {
     fragsort_t   fragtab[MAXPLAYERS];
     int          i;
@@ -1099,16 +1099,16 @@ void HU_drawDeathmatchRankings (void)
     }
 
     if(cv_teamplay.EV==0)
-        WI_drawRanking(title, 80, y, fragtab, scorelines, large, whiteplayer, 32);
+        WI_Draw_Ranking(title, 80, y, fragtab, scorelines, large, whiteplayer, 32);
     else
     {
         // draw the frag to the right
-//        WI_drawRanking("Individual",170,70,fragtab,scorelines,true,whiteplayer);
+//        WI_Draw_Ranking("Individual",170,70,fragtab,scorelines,true,whiteplayer);
 
-        scorelines = HU_CreateTeamFragTbl(fragtab,NULL,NULL);
+        scorelines = HU_Create_TeamFragTbl(fragtab,NULL,NULL);
 
         // and the team frag to the left
-        WI_drawRanking("Teams", 80, y, fragtab, scorelines, large, players[whiteplayer].skincolor, 32);
+        WI_Draw_Ranking("Teams", 80, y, fragtab, scorelines, large, players[whiteplayer].skincolor, 32);
     }
 }
 
@@ -1121,7 +1121,7 @@ void HU_drawDeathmatchRankings (void)
     extern float gr_viewheight;
 #endif
 
-void HU_drawCrosshair (void)
+void HU_Draw_Crosshair (void)
 {
     // vid : from video setup
     int y;

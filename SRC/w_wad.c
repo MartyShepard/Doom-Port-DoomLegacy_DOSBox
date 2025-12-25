@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1355 2017-07-29 18:36:01Z wesleyjohnson $
+// $Id: w_wad.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -231,8 +231,8 @@ static char*  reload_filename;
 //  return -1 in case of problem
 //
 // BP: Can now load dehacked files (ext .deh)
-// Called by W_InitMultipleFiles, P_AddWadFile.
-int W_LoadWadFile (const char *filename)
+// Called by W_Init_MultipleFiles, P_AddWadFile.
+int W_Load_WadFile (const char *filename)
 {
     int              filenum = numwadfiles;  // return value
     filestatus_e     fs;
@@ -405,7 +405,7 @@ int W_LoadWadFile (const char *filename)
     memset (grPatch, 0, length);
     for (i=0; i<numlumps; i++)
     {
-        //store the software patch lump number for each GlidePatch
+        // store the software patch lump number for each MipPatch
         grPatch[i].patchlump = WADLUMP(filenum,i);  // form file/lump
     }
     wadfile->hwrcache = grPatch;
@@ -418,7 +418,7 @@ int W_LoadWadFile (const char *filename)
     numwadfiles++;
 
     GenPrintf(EMSG_info, "Added file %s (%i lumps)\n", filenamebuf, numlumps);
-    W_LoadDehackedLumps( filenum );
+    W_Load_DehackedLumps( filenum );
     return filenum;
 }
 
@@ -482,7 +482,7 @@ void W_Reload (void)
 
 
 //
-// W_InitMultipleFiles
+// W_Init_MultipleFiles
 // Pass a null terminated list of files to use.
 // All files are optional, but at least one file must be found.
 // Any load failure is indicated to the caller, for error handling.
@@ -495,7 +495,7 @@ void W_Reload (void)
 //  does override all earlier ones.
 //
 // Return 0 when any file load does not succeed
-int W_InitMultipleFiles (char** filenames)
+int W_Init_MultipleFiles (char** filenames)
 {
     int  rc = 1;
 
@@ -505,7 +505,7 @@ int W_InitMultipleFiles (char** filenames)
     // will be realloced as lumps are added
     for ( ; *filenames ; filenames++)
     {
-        if( W_LoadWadFile (*filenames) == -1 )
+        if( W_Load_WadFile (*filenames) == -1 )
         {
             rc = 0;
             GenPrintf( EMSG_warn, "File not found: %s\n", *filenames );
@@ -514,7 +514,7 @@ int W_InitMultipleFiles (char** filenames)
 
     if (!numwadfiles)
     {
-        I_SoftError ("W_InitMultipleFiles: no files found\n");
+        I_SoftError ("W_Init_MultipleFiles: no files found\n");
         fatal_error = 1;
     }
 
@@ -884,7 +884,7 @@ void* W_CachePatchNum_Endian ( int lump, int ztag )
 }
 
 
-#ifdef HWRENDER // not win32 only 19990829 by Kin
+#ifdef HWRENDER
 
 // Called from many draw functions
 void* W_CachePatchNum ( int lump, int ztag )
@@ -1054,7 +1054,7 @@ void* W_CachePicName( char* name, int tag )
 
 
 // Search for all DEHACKED lump in all wads and load it.
-void W_LoadDehackedLumps( int wadnum )
+void W_Load_DehackedLumps( int wadnum )
 {
     int clump = 0;
     

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1359 2017-10-16 16:23:17Z wesleyjohnson $
+// $Id: r_data.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1372,8 +1372,8 @@ int R_CheckNumForNameList(char *name, lumplist_t* list, int listsize)
 lumplist_t*  colormaplumps;
 int          numcolormaplumps;
 
-// called by R_InitColormaps
-void R_InitExtraColormaps()
+// called by R_Init_Colormaps
+void R_Init_ExtraColormaps()
 {
     int       startnum;
     int       endnum;
@@ -1393,10 +1393,10 @@ void R_InitExtraColormaps()
         endnum = W_CheckNumForNamePwad("C_END", cfile, clump);
 
         if(endnum == -1)
-            I_Error("R_InitColormaps: C_START without C_END\n");
+            I_Error("R_Init_Colormaps: C_START without C_END\n");
 
         if(WADFILENUM(startnum) != WADFILENUM(endnum))
-            I_Error("R_InitColormaps: C_START and C_END in different wad files!\n");
+            I_Error("R_Init_Colormaps: C_START and C_END in different wad files!\n");
 
         colormaplumps = (lumplist_t *)realloc(colormaplumps, sizeof(lumplist_t) * (numcolormaplumps + 1));
         colormaplumps[numcolormaplumps].wadfile = WADFILENUM(startnum);
@@ -1412,7 +1412,7 @@ lumplist_t*  flats;
 int          numflatlists;
 
 
-void R_InitFlats ()
+void R_Init_Flats ()
 {
   int       startnum;
   int       endnum;
@@ -1483,7 +1483,7 @@ void R_InitFlats ()
   }
 
   if(!numflatlists)
-    I_Error("R_InitFlats: No flats found!\n");
+    I_Error("R_Init_Flats: No flats found!\n");
 }
 
 
@@ -1546,7 +1546,7 @@ int  R_Get_spritelump( void )
 }
 
 //
-// R_InitSpriteLumps
+// R_Init_SpriteLumps
 // Finds the width and hoffset of all sprites in the wad,
 //  so the sprite does not need to be cached completely
 //  just for having the header info ready during rendering.
@@ -1555,7 +1555,7 @@ int  R_Get_spritelump( void )
 //
 //   allocate sprite lookup tables
 //
-void R_InitSpriteLumps (void)
+void R_Init_SpriteLumps (void)
 {
     // the original Doom used to set numspritelumps from S_END-S_START+1
 
@@ -1584,14 +1584,11 @@ void R_InitSpriteLumps (void)
 // size and format as the Doom colormap.
 // WATERMAP is predefined by Boom, but may be overloaded.
 
-void R_InitExtraColormaps();
-void R_ClearColormaps();
+void R_Init_ExtraColormaps();
+void R_Clear_Colormaps();
 
-//
-// R_InitColormaps
-//
-// called by R_InitData
-void R_InitColormaps (void)
+// called by R_Init_Data
+void R_Init_Colormaps (void)
 {
     int lump;
 
@@ -1603,8 +1600,8 @@ void R_InitColormaps (void)
 
     //SoM: 3/30/2000: Init Boom colormaps.
     {
-      R_ClearColormaps();
-      R_InitExtraColormaps();
+      R_Clear_Colormaps();
+      R_Init_ExtraColormaps();
     }
 }
 
@@ -1613,8 +1610,8 @@ int    fnd_colormap_lump[MAXCOLORMAPS];  // lump number
 
 //SoM: Clears out extra colormaps between levels.
 // called by P_SetupLevel after ZFree(PU_LEVEL,..)
-// called by R_InitColormaps
-void R_ClearColormaps()
+// called by R_Init_Colormaps
+void R_Clear_Colormaps()
 {
   int   i;
 #if 0   
@@ -1836,8 +1833,10 @@ int R_ColormapNumForName(char *name)
   }
 
   for(i = 0; i < num_extra_colormaps; i++)
+  {
     if(lump == fnd_colormap_lump[i])
       return i;
+  }
 
   // Add another colormap
   if(num_extra_colormaps == MAXCOLORMAPS)
@@ -1866,7 +1865,7 @@ int R_ColormapNumForName(char *name)
 
 // SoM:
 //
-// R_CreateColormap
+// R_Create_Colormap
 // This is a more GL friendly way of doing colormaps: Specify colormap
 // data in a special linedef's texture areas and use that to generate
 // custom colormaps at runtime. NOTE: For GL mode, we only need to color
@@ -1892,7 +1891,7 @@ int  RoundUp(double number);
 //   FADE_BEGIN: 2-digit decimal (0..32) colormap where fade begins
 //   FADE_END:   2-digit decimal (1..33) colormap where fade-to color is reached.
 // Return the new colormap id number
-int R_CreateColormap(char *colorstr, char *ctrlstr, char *fadestr)
+int R_Create_Colormap(char *colorstr, char *ctrlstr, char *fadestr)
 {
   double color_r, color_g, color_b; // color RGB from top-texture
   double cfade_r, cfade_g, cfade_b; // fade-to color from bottom-texture
@@ -2001,7 +2000,7 @@ int R_CreateColormap(char *colorstr, char *ctrlstr, char *fadestr)
 
   if(num_extra_colormaps == MAXCOLORMAPS)
   {
-    I_SoftError("R_CreateColormap: Too many colormaps!\n");
+    I_SoftError("R_Create_Colormap: Too many colormaps!\n");
     return 0;
   }
   num_extra_colormaps++;
@@ -2718,25 +2717,23 @@ int R_Create_FW_effect( int special_linedef, char * tstr )
 }
 
 
-//
-// R_InitData
-// Locates all the lumps
-//  that will be used by all views
+// R_Init_Data
+// Locates all the lumps that will be used by all views
 // Must be called after W_Init.
 //
-void R_InitData (void)
+void R_Init_Data (void)
 {
     CONS_Printf ("\nInitTextures...");
     R_LoadTextures ();
     CONS_Printf ("\nInitFlats...");
-    R_InitFlats ();
+    R_Init_Flats ();
 
     CONS_Printf ("\nInitSprites...\n");
-    R_InitSpriteLumps ();
-    R_InitSprites (sprnames);
+    R_Init_SpriteLumps ();
+    R_Init_Sprites (sprnames);
 
     CONS_Printf ("\nInitColormaps...\n");
-    R_InitColormaps ();
+    R_Init_Colormaps ();
 #ifdef ANALYZE_GAMEMAP
     Analyze_gamemap();
 #endif
@@ -2920,7 +2917,7 @@ void R_PrecacheLevel (void)
             for (k=0 ; k<n ; k++)
             {
                 sv = get_framerotation( &sprites[i], j, k );
-                //Fab: see R_InitSprites for more about lumppat,lumpid
+                //Fab: see R_Init_Sprites for more about lumppat,lumpid
                 lump = sv->lumppat;
                 if(devparm)
                    spritememory += W_LumpLength(lump);

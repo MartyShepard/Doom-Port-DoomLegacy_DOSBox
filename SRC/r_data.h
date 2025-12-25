@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 1192 2015-12-01 22:21:42Z wesleyjohnson $
+// $Id: r_data.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -168,7 +168,7 @@ byte* R_GetColumn (int texnum, int col);
 byte* R_GetFlat (int  flatnum);
 
 // I/O, setting up the stuff.
-void R_InitData (void);
+void R_Init_Data (void);
 void R_PrecacheLevel (void);
 
 
@@ -184,13 +184,16 @@ int R_TextureNumForName (char *name);
 int R_CheckTextureNumForName (char *name);
 
 
-void R_ClearColormaps();
+void R_Clear_Colormaps();
 int R_ColormapNumForName(char *name);
 
 // The colorstr is the toptexture name.
 // The ctrlstr is the midtexture name.
 // The fadestr is the bottomtexture name.
-int R_CreateColormap(char *colorstr, char *ctrlstr, char *fadestr);
+int R_Create_Colormap(char *colorstr, char *ctrlstr, char *fadestr);
+
+// [WDJ] Analyze an extra colormap to derive some GL parameters
+void  R_Colormap_Analyze( int mapnum );
 
 char *R_ColormapNameForNum(int num);
 

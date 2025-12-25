@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_sky.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_sky.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -65,17 +65,17 @@
 //
 // sky mapping
 //
-int                     skyflatnum;
-int                     skytexture;
-int                     skytexturemid;
+int     skyflatnum;
+int     skytexture;
+int     skytexturemid;
 
-fixed_t                 skyscale;
-int                     skymode=0;  // old (0), new (1) (quick fix!)
+fixed_t skyscale;
+byte    sky_240=0;  // 0=std 128 sky, 1=240 high sky
 
 //
-// R_InitSkyMap called at startup, once.
+// R_Init_SkyMap called at startup, once.
 //
-void R_InitSkyMap (void)
+void R_Init_SkyMap (void)
 {
     // set at P_LoadSectors
     //skyflatnum = R_FlatNumForName ( SKYFLATNAME );
@@ -89,12 +89,12 @@ void R_InitSkyMap (void)
 //  NOTE: skycolfunc should be set at R_ExecuteSetViewSize ()
 //        I dont bother because we don't use low detail no more
 //
-void R_SetupSkyDraw (void)
+void R_Setup_SkyDraw (void)
 {
     texpatch_t*  texpatch;
     patch_t      wpatch;
     int          count;
-    int          height;
+    int          max_height;
     int          i;
 
 
@@ -106,32 +106,34 @@ void R_SetupSkyDraw (void)
 
     count   = textures[skytexture]->patchcount;
     texpatch = &textures[skytexture]->patches[0];
-    for (height=0,i=0;i<count;i++,texpatch++)
+    max_height = 0;
+    for (i=0;i<count;i++)
     {
         W_ReadLumpHeader (texpatch->patchnum, &wpatch, sizeof(patch_t));
         // [WDJ] Do endian fix as this is read.
         wpatch.height = LE_SWAP16(wpatch.height);
-        if (wpatch.height>height)
-            height = wpatch.height;
+        if( wpatch.height > max_height )
+            max_height = wpatch.height;
+        texpatch++;
     }
 
     // DIRTY : should set the routine depending on colormode in screen.c
-    if (height>128)
+    if(max_height > 128)
     {
         // horizon line on 256x240 freelook textures of Legacy or heretic
         skytexturemid = 200<<FRACBITS;
-        skymode = 1;
+        sky_240 = 1;
     }
     else
     {
         // the horizon line in a 256x128 sky texture
         skytexturemid = 100<<FRACBITS;
-        skymode = 0;
+        sky_240 = 0;
     }
 
     // get the right drawer, it was set by screen.c, depending on the
     // current video mode bytes per pixel (quick fix)
-    skycolfunc = skydrawerfunc[skymode];
+    skycolfunc = skydrawerfunc[sky_240];
 
     R_SetSkyScale ();
 }
@@ -141,7 +143,7 @@ void R_SetupSkyDraw (void)
 void R_SetSkyScale (void)
 {
     //fix this quick mess
-    if (skytexturemid>100<<FRACBITS)
+    if( skytexturemid > (100<<FRACBITS))
     {
         // normal aspect ratio corrected scale
         skyscale = FixedDiv (FRACUNIT, pspriteyscale);

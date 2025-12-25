@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1351 2017-07-29 18:28:41Z wesleyjohnson $
+// $Id: p_saveg.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -2194,7 +2194,7 @@ void P_UnArchiveThinkers(void)
     }
     // BP: we don't want the removed mobj come back !!!
     iquetail = iquehead = 0;
-    P_InitThinkers();
+    P_Init_Thinkers();
 
     // read in saved thinkers
     while (1)

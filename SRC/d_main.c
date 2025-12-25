@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1336 2017-05-30 15:39:21Z wesleyjohnson $
+// $Id: d_main.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -312,7 +312,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1359"
+#define SVN_REV "1361"
 #endif
 
 // Version number: major.minor.revision
@@ -339,8 +339,8 @@ static char * pagename = "TITLEPIC";
 //  PROTOS
 static void Help(void);
 static void Clear_SoftError(void);
-void HereticPatchEngine(void);
-//void Chex1PatchEngine(void);
+void Heretic_PatchEngine(void);
+//void Chex1_PatchEngine(void);
 
 // Null terminated list of files.
 char * startupwadfiles[MAX_WADFILES+1];
@@ -518,17 +518,18 @@ void D_PostEvent_end(void)
 #endif
 
 // Clear the input events before re-enabling play
-void D_ClearEvents( void )
+static
+void D_Clear_Events( void )
 {
    eventhead = eventtail = 0;
    mousex = mousey = 0;  // clear accumulated motion
 }
 
 //
-// D_ProcessEvents
+// D_Process_Events
 // Send all the events of the given timestamp down the responder chain
 //
-void D_ProcessEvents(void)
+void D_Process_Events(void)
 {
     event_t *ev;
 
@@ -774,7 +775,7 @@ void D_Display(void)
 #endif
         {
             // Fade for software draw.
-            V_DrawFade(0, vid.width, vid.height, (0xFF - fs_fadealpha),
+            V_FadeRect(0, vid.width, vid.height, (0xFF - fs_fadealpha),
                        (fs_fadealpha * 32 / 0x100), fs_fadecolor );
         }
     }
@@ -882,7 +883,7 @@ void D_DoomLoop(void)
     if( access( "autoexec.cfg", R_OK) == 0 )
     {
         // user settings
-        COM_BufAddText("exec autoexec.cfg\n");	
+        COM_BufAddText("exec autoexec.cfg\n");
     }
     // end of loading screen: CONS_Printf() will no more call FinishUpdate()
     con_self_refresh = false;
@@ -893,7 +894,7 @@ void D_DoomLoop(void)
     SCR_SetMode();      // change video mode
     SCR_Recalc();
 
-    D_ClearEvents();  // clear input events to prevent startup jerks,
+    D_Clear_Events();  // clear input events to prevent startup jerks,
                          // motion during screen wipe still gets through
 
     while (1)
@@ -1250,7 +1251,7 @@ void D_AddFile(char *filename)
 
 
 #ifdef LAUNCHER
-static void D_ClearFiles( void )
+static void D_Clear_Files( void )
 {
     int i;
     for (i = 0; startupwadfiles[i]; i++)
@@ -1867,7 +1868,7 @@ fatal_err:
 #ifdef SMIF_PC_DOS
 void D_Titlebar(const char *title1, const char *title2)
 {
-    // DOOM LEGACY banner 
+    // DOOM LEGACY banner
     clrscr();
     textattr((BLUE << 4) + WHITE);
     clreol();
@@ -1994,7 +1995,8 @@ void D_DoomMain()
     D_Make_legacytitle();
 
     memset( startupwadfiles, 0, sizeof(startupwadfiles) );
-    CON_Init();  // vid, zone independent
+   
+    CON_Init_Setup();  // vid, zone independent
     EOUT_flags |= EOUT_con;  // all msgs to CON buffer
     use_font1 = 1;  // until PLAYPAL and fonts loaded
     vid.draw_ready = 0;  // disable print reaching console
@@ -2110,6 +2112,7 @@ void D_DoomMain()
 #endif
 
     EOUT_flags = EOUT_text | EOUT_log | EOUT_con;
+
     CONS_Printf(text[Z_INIT_NUM]);
     // Cannot Init nor register cv_ vars until after Z_Init and some
     // other systems are init first.
@@ -2509,7 +2512,7 @@ restart_command:
 
     // Load wad, including the main wad file.
     // This will read DEH and BEX files.  Need devparm and verbose.
-    if( W_InitMultipleFiles(startupwadfiles) == 0 )
+    if( W_Init_MultipleFiles(startupwadfiles) == 0 )
     {
        // Some wad failed to load.
        if( !M_CheckParm( "-noloadfail" ) )
@@ -2580,8 +2583,8 @@ restart_command:
     EOUT_flags = EOUT_text | EOUT_log | EOUT_con;
 
 #if defined( __DJGPP__ )   
-        V_ClearDisplay();		
-		    I_RequestConGraphics();
+    V_Clear_Display();		
+    I_RequestConGraphics();
 #endif  
 #ifdef LAUNCHER   
     if ( fatal_error || init_sequence == 1 || (init_sequence == 0 && myargc < 2 ))
@@ -2601,9 +2604,9 @@ restart_command:
             con_destlines = BASEVIDHEIGHT;
             do
             {
-                CON_DrawConsole();
+                CON_Draw_Console();
                 I_OsPolling();
-                D_ProcessEvents ();  // menu and console responder
+                D_Process_Events ();  // menu and console responder
                 CON_Ticker ();
                 I_UpdateNoBlit();
                 I_FinishUpdate();       // page flip or blit buffer
@@ -2614,7 +2617,7 @@ restart_command:
 
         // restart
         Clear_SoftError();
-        D_ClearFiles();
+        D_Clear_Files();
         con_Printf( "Launcher restart:\n" );
         goto restart_command;
     }
@@ -2685,18 +2688,18 @@ restart_command:
 #endif
         SCR_Recalc();
         V_SetPalette (0);  // on new screen
-        V_ClearDisplay();	
+        V_Clear_Display();
 
 #ifdef HWRENDER
         EN_HWR_flashpalette = 0;  // software and default
         if( rendermode != render_soft )
-            HWR_Startup();  // hardware render init
+            HWR_Startup_Render();  // hardware render init
 #endif
-        // we need the font of the console       
-        CONS_Printf(text[HU_INIT_NUM]);      
-        // switch off use_font1 when hu_font is loaded       
-        HU_Init();  // dependent upon dedicated and raven        
-        CON_VideoInit();  // dependent upon vid, hu_font
+        // we need the font of the console
+        CONS_Printf(text[HU_INIT_NUM]);
+        // switch off use_font1 when hu_font is loaded
+        HU_Init();  // dependent upon dedicated and raven
+        CON_Init_Video();  // dependent upon vid, hu_font
         EOUT_flags = EOUT_log | EOUT_con;
     }
 
@@ -2743,10 +2746,10 @@ restart_command:
     D_Register_ClientCommands(); //Hurdler: be sure that this is called before D_Setup_NetGame
 
     D_Register_MiscCommands();	//[WDJ] more than just DeathMatch
-    ST_AddCommands();
-    T_AddCommands();
-    B_AddCommands();    //added by AC for acbot
-    P_Info_AddCommands();
+    ST_Register_Commands();
+    T_Register_Commands();
+    B_Register_Commands();    //added by AC for acbot
+    P_Register_Info_Commands();
     R_Register_EngineStuff();
     S_Register_SoundStuff();
     CV_RegisterVar(&cv_screenslink);
@@ -2757,7 +2760,7 @@ restart_command:
 
     if (gamemode == heretic)
     {
-        HereticPatchEngine();
+        Heretic_PatchEngine();
 #ifdef FRENCH_INLINE
         french_heretic();
 #endif
@@ -2765,13 +2768,13 @@ restart_command:
 
     if(gamemode == chexquest1)
     {
-        Chex1PatchEngine();
+        Chex1_PatchEngine();
 #ifdef FRENCH_INLINE
         french_chexquest();
 #endif
     }
 
-    B_InitBots();       //added by AC for acbot
+    B_Init_Bots();       //added by AC for acbot
 
     //Fab:29-04-98: do some dirty chatmacros strings initialisation
     HU_HackChatmacros();
@@ -2875,7 +2878,7 @@ restart_command:
     ////////////////////////////////
     // SoM: Init FraggleScript
     ////////////////////////////////
-    T_Init();
+    T_Init_FS();
     
     // init all NETWORK
     CONS_Printf(text[D_CHECKNET_NUM]);
@@ -2956,7 +2959,7 @@ restart_command:
     p = M_CheckParm("-loadgame");
     if (p && p < myargc - 1)
     {
-        G_LoadGame(atoi(myargv[p + 1]));
+        G_Load_Game(atoi(myargv[p + 1]));
     }
     else
     {

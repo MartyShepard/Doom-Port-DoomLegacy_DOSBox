@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 1338 2017-06-21 16:07:52Z wesleyjohnson $
+// $Id: r_plane.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -184,11 +184,10 @@ fixed_t                 cachedystep[MAXVIDHEIGHT];
 
 fixed_t   xoffs, yoffs;
 
-//
-// R_InitPlanes
+// R_Init_Planes
 // Only at game startup.
 //
-void R_InitPlanes (void)
+void R_Init_Planes (void)
 {
   // Doh!
 }
@@ -309,13 +308,13 @@ void R_MapPlane ( int y, int x1, int x2 )
 
 
 //
-// R_ClearPlanes
+// R_Clear_Planes
 // At begining of frame.
 //
 //Fab:26-04-98:
 // NOTE : uses con_clipviewtop, so that when console is on,
 //        don't draw the part of the view hidden under the console
-void R_ClearPlanes (player_t *player)
+void R_Clear_Planes (player_t *player)
 {
     int  i, p;
     int  angf;
@@ -677,7 +676,7 @@ void R_MakeSpans ( int x, int t1, int b1, int t2, int b2 )
 byte* R_GetFlat (int  flatnum);
 
 // Draw the visplanes list
-void R_DrawPlanes (void)
+void R_Draw_Planes (void)
 {
     visplane_t*         pl;
     int                 x;

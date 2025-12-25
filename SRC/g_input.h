@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.h 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: g_input.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -175,7 +175,7 @@ char* G_KeynumToString (int keynum);
 int   G_KeyStringtoNum(char *keystr);
 
 // detach any keys associated to the given game control
-void  G_ClearControlKeys (int (*setupcontrols)[2], int control);
+void  G_Clear_ControlKeys (int (*setupcontrols)[2], int control);
 void  Command_Setcontrol_f(void);
 void  Command_Setcontrol2_f(void);
 void  G_Controldefault(void);

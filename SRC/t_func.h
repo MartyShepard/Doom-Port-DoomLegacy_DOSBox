@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: t_func.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: t_func.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -41,7 +41,7 @@
 extern camera_t script_camera;
 extern boolean  script_camera_on;
 
-void init_functions( void );
+void T_Init_functions( void );
 
 #define AngleToFixed(x)  (((double) x) / ((double) ANG45/45)) * FRACUNIT
 #define FixedToAngle(x)  (((double) x) / FRACUNIT) * ANG45/45;

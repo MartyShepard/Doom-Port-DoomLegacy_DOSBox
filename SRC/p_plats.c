@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_plats.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_plats.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -387,7 +387,7 @@ void P_RemoveActivePlat(plat_t* plat)
 
 
 //SoM: 3/7/2000: Removes all active plats.
-void P_RemoveAllActivePlats(void)
+void P_Remove_AllActivePlats(void)
 {
   while (activeplats)
   {  

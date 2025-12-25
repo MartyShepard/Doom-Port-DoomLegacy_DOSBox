@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_maputl.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
+// $Id: p_maputl.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -537,7 +537,7 @@ void P_SetThingPosition (mobj_t* thing)
         // at sector_t->touching_thinglist) are broken. When a node is
         // added, new sector links are created.
 
-        P_CreateSecNodeList(thing,thing->x,thing->y);
+        P_Create_SecNodeList(thing, thing->x, thing->y);
         thing->touching_sectorlist = sector_list; // Attach to Thing's mobj_t
         sector_list = NULL; // clear for next time
     }

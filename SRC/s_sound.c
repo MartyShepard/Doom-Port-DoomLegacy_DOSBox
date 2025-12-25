@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: s_sound.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -541,14 +541,14 @@ void S_Init(int sfxVolume, int musicVolume)
 //
 
 //SoM: Stop all sounds, load level info, THEN start sounds.
-void S_StopLevelSound(void)
+void S_Stop_LevelSound(void)
 {
     int cnum;
 
 #ifdef HW3SOUND
     if (hws_mode != HWS_DEFAULT_MODE)
     {
-        HW3S_StopLevelSound();
+        HW3S_Stop_LevelSound();
         return;
     }
 #endif
@@ -562,7 +562,7 @@ void S_StopLevelSound(void)
 }
 
 // Called by P_SetupLevel.
-void S_StartLevelSound(void)
+void S_Start_LevelSound(void)
 {
     int mnum;
 

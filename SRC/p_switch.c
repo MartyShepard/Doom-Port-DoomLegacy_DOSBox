@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_switch.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_switch.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -138,11 +138,11 @@ button_t      buttonlist[MAXBUTTONS];
 
 
 //
-// P_InitSwitchList
+// P_Init_SwitchList
 // - this is now called at P_SetupLevel () time.
 //
 //SoM: 3/22/2000: Use boom code.
-void P_InitSwitchList(void)
+void P_Init_SwitchList(void)
 {
   int            i, index = 0;
   int            episode; // select switches based on game

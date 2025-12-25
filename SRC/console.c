@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: console.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -200,13 +200,13 @@ static pic_t*  con_bordright;  // console borders in translucent mode
 
 
 // protos.
-static void CON_InputInit (void);
+static void CON_Init_Input (void);
 static void CON_Print (byte control, char *msg);
 static void CONS_Clear_f (void);
 static void CON_RecalcSize ( int width );
 
 static void CONS_speed_Change (void);
-static void CON_DrawBackpic (pic_t *pic, int startx, int destwidth);
+static void CON_Draw_Backpic (pic_t *pic, int startx, int destwidth);
 
 
 //======================================================================
@@ -378,7 +378,7 @@ static void CON_SetupBackColormap (void)
 //
 // Init messaging, before zone memory, before video
 // CON buffer will save all messages for display, so must be started very early
-void CON_Init(void)
+void CON_Init_Setup(void)
 {
     int i;
 
@@ -390,10 +390,10 @@ void CON_Init(void)
     con_curlines = INITIAL_WINDOW_HEIGHT;
 
     con_hudlines = CON_MAXHUDLINES;
-    CON_ClearHUD ();
+    CON_Clear_HUD ();
 
     // setup console input filtering
-    CON_InputInit ();
+    CON_Init_Input ();
 
     for(i=0;i<NUMINPUTS;i++)
         bindtable[i]=NULL;
@@ -415,7 +415,7 @@ void CON_Register(void)
 }
 
 // after FullGraphics
-void CON_VideoInit(void)
+void CON_Init_Video(void)
 {
     // vid : from video setup
     if(dedicated)
@@ -448,7 +448,7 @@ void CON_VideoInit(void)
 
 //  Console input initialization
 //
-static void CON_InputInit (void)
+static void CON_Init_Input (void)
 {
     int    i;
 
@@ -577,7 +577,7 @@ static void CON_MoveConsole (void)
 
 //  Clear time of console heads up messages
 //
-void CON_ClearHUD (void)
+void CON_Clear_HUD (void)
 {
     int    i;
 
@@ -595,7 +595,7 @@ void CON_ToggleOff (void)
 
     con_destlines = 0;
     con_curlines = 0;
-    CON_ClearHUD ();
+    CON_Clear_HUD ();
     con_forcepic = 0;
     con_clipviewtop = -1;       //remove console clipping of view
     console_open = false;  // instant off
@@ -627,7 +627,7 @@ void CON_Ticker (void)
         {
             // toggle off console
             con_destlines = 0;
-            CON_ClearHUD ();
+            CON_Clear_HUD ();
         }
         else
         {
@@ -1273,10 +1273,10 @@ void GenPrintf_va (const byte emsg, const char *fmt, va_list ap)
 #if defined(SMIF_WIN_NATIVE) || defined(SMIF_OS2_NATIVE) 
         // show startup screen and message using only 'software' graphics
         // (rendermode may be hardware accelerated, but the video mode is not set yet)
-        CON_DrawBackpic (con_backpic, 0, vid.width);    // put console background
+        CON_Draw_Backpic (con_backpic, 0, vid.width);    // put console background
         I_LoadingScreen ( txt );
 #else
-        V_ClearDisplay();
+        V_Clear_Display();
         // here we display the console background and console text
         // (no hardware accelerated support for these versions)
         CON_Drawer ();
@@ -1288,7 +1288,7 @@ void GenPrintf_va (const byte emsg, const char *fmt, va_list ap)
         // Protect against segfaults during video mode switch.
         if( ! vid.draw_ready )   goto done;
         // Text messages without con_video graphics.
-        CON_DrawConsole ();  // Text with or without con_video
+        CON_Draw_Console ();  // Text with or without con_video
         I_FinishUpdate ();
     }
  done:
@@ -1423,7 +1423,7 @@ static void CON_DrawInput ( int y )
                                 //halfway down
 #endif
 
-static void CON_DrawHudlines (void)
+static void CON_Draw_Hudlines (void)
 {
     fontinfo_t * fip = V_FontInfo();  // draw font1 and wad font strings
     byte     viewnum;
@@ -1499,7 +1499,7 @@ static void CON_DrawHudlines (void)
 //
 //  TODO: ASM routine!!! lazy Fab!!
 //
-static void CON_DrawBackpic (pic_t *pic, int startx, int destwidth)
+static void CON_Draw_Backpic (pic_t *pic, int startx, int destwidth)
 {
     // vid : from video setup
     int   pic_h = pic->height;
@@ -1549,7 +1549,7 @@ static void CON_DrawBackpic (pic_t *pic, int startx, int destwidth)
 // May use font1 or wad fonts.
 // Uses screens[0].
 //
-void CON_DrawConsole (void)
+void CON_Draw_Console (void)
 {
     // vid : from video setup
     fontinfo_t * fip = V_FontInfo();  // draw font1 and wad font strings
@@ -1572,7 +1572,7 @@ void CON_DrawConsole (void)
     // draw console background
     if (!con_video)
     {
-        V_ClearDisplay();
+        V_Clear_Display();
     }
     else
     if (cons_backpic.value || con_forcepic)
@@ -1583,7 +1583,7 @@ void CON_DrawConsole (void)
                                 W_GetNumForName ("CONSBACK") );
         else
 #endif
-            CON_DrawBackpic (con_backpic,0,vid.width);   // picture as background
+            CON_Draw_Backpic (con_backpic,0,vid.width);   // picture as background
     }
     else
     {
@@ -1593,19 +1593,19 @@ void CON_DrawConsole (void)
         {
             w = fip->xinc * vid.dupx;  // font1 or wad font
             x2 = vid.width - w;
-            CON_DrawBackpic (con_bordleft,0,w);
-            CON_DrawBackpic (con_bordright,x2,w);
+            CON_Draw_Backpic (con_bordleft,0,w);
+            CON_Draw_Backpic (con_bordright,x2,w);
         }
         // translucent background
         //Hurdler: what's the correct value of w and x2 in hardware mode ???
 #if 0
         // Darken the borders too
         if( cv_darkback.value )
-            V_DrawFadeConsBack (0, vid.width, con_curlines);
+            V_FadeConsBack (0, vid.width, con_curlines);
         else
-            V_DrawFadeConsBack (w, x2, con_curlines);
+            V_FadeConsBack (w, x2, con_curlines);
 #else
-        V_DrawFadeConsBack (w, x2, con_curlines);
+        V_FadeConsBack (w, x2, con_curlines);
 #endif
     }
 
@@ -1674,10 +1674,10 @@ void CON_Drawer (void)
 #endif
 
     if (con_curlines>0)
-        CON_DrawConsole ();
+        CON_Draw_Console ();
     else
     if (gamestate==GS_LEVEL)
-        CON_DrawHudlines ();
+        CON_Draw_Hudlines ();
 
 #ifndef CONSOLE_PROPORTIONAL
     hu_font['I'-HU_FONTSTART]->leftoffset = 0;
