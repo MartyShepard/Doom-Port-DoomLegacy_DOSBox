@@ -6307,3 +6307,9 @@ patchfile = w107_61_TRAN.patch
 Comments and brackets, to clarify problems discovered by
 Adam Stylinkski.
 
+*** W107_TRAN
+patchfile = w107_62_patch_list.patch
+- commit revision 1366
+Make functions for handling patch lists.
+These allow simpler loading and release of patches.
+Some simplifications in wi_stuff, st_stuff, and sb_bar.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1363 2017-10-16 16:29:18Z wesleyjohnson $
+// $Id: st_stuff.c 1366 2017-11-01 01:14:15Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -437,11 +437,11 @@ static int   sbo_ammo[NUMWEAPONS];
 //        Doom status bar
 // ------------------------------------------
 
-
-
 //
 // STATUS BAR CODE
 //
+
+
 // Single player only, when stbar_on.
 //  Global : st_plyr
 static void ST_Refresh_Background( void )
@@ -497,16 +497,16 @@ boolean ST_Responder (event_t* ev)
 static int ST_calcPainOffset(void)
 {
     // [WDJ] FIXME : This thrashes when splitplayer, but it is correct.
-    static int  lastcalc;
+    static int  st_pain;
     static int  oldhealth = -1;
 
     int  health = st_plyr->health > 100 ? 100 : st_plyr->health;
     if (health != oldhealth)
     {
-        lastcalc = ST_FACESTRIDE * (((100 - health) * ST_NUMPAINFACES) / 101);
+        st_pain = ST_FACESTRIDE * (((100 - health) * ST_NUMPAINFACES) / 101);
         oldhealth = health;
     }
-    return lastcalc;
+    return st_pain;
 }
 
 
@@ -986,7 +986,7 @@ static void ST_Draw_Widgets( void )
                 w_keyboxes[i].command = STLIB_FLASH;
         }
         else if( w_keyboxes[0].command == STLIB_FLASH_CLEAR
-	         && rendermode == render_soft )
+                 && rendermode == render_soft )
         {
             // Restore the background
             V_CopyRect(stbar_x + ST_KEYSBOX_X, stbar_y + ST_KEYSBOX_Y, BG,
@@ -1118,6 +1118,15 @@ void ST_Drawer ( boolean refresh )
 }
 
 
+byte st_patches_loaded = 0;
+load_patch_t  st_patches[13] =
+{
+  { &armsbg, "STARMS" }, // arms background
+  { &sbar, "STBAR" },    // status bar background bits
+  { NULL, NULL }
+};
+
+
 static void ST_Load_Graphics(void)
 {
 
@@ -1126,17 +1135,20 @@ static void ST_Load_Graphics(void)
     // [WDJ] all ST graphics are loaded endian fixed
     // [WDJ] Lock the status bar graphics against other texture users.
 
+    st_patches_loaded = 1;
+    load_patch_list( st_patches );
+
     // Load the numbers, tall and short
     for (i=0;i<10;i++)
     {
         sprintf(namebuf, "STTNUM%d", i);
-        tallnum[i] = (patch_t *) W_CachePatchName(namebuf, PU_LOCK_SB);
+        tallnum[i] = W_CachePatchName(namebuf, PU_LOCK_SB);
 
         sprintf(namebuf, "STYSNUM%d", i);
-        shortnum[i] = (patch_t *) W_CachePatchName(namebuf, PU_LOCK_SB);
+        shortnum[i] = W_CachePatchName(namebuf, PU_LOCK_SB);
     }
-    tallnum[10] = (patch_t *) W_CachePatchName("STTMINUS", PU_LOCK_SB);
-    tallnum[11] = (patch_t *) W_CachePatchName("STTPRCNT", PU_LOCK_SB);
+    tallnum[10] = W_CachePatchName("STTMINUS", PU_LOCK_SB);
+    tallnum[11] = W_CachePatchName("STTPRCNT", PU_LOCK_SB);
     shortnum[10] = NULL; // has no minus
     shortnum[11] = NULL; // has no percent
 
@@ -1146,11 +1158,8 @@ static void ST_Load_Graphics(void)
     for (i=0;i<NUMCARDS;i++)
     {
         sprintf(namebuf, "STKEYS%d", i);
-        keys[i] = (patch_t *) W_CachePatchName(namebuf, PU_LOCK_SB);
+        keys[i] = W_CachePatchName(namebuf, PU_LOCK_SB);
     }
-
-    // arms background
-    armsbg = (patch_t *) W_CachePatchName("STARMS", PU_LOCK_SB);
 
     // arms ownership widgets
     for (i=0;i<6;i++)
@@ -1158,14 +1167,11 @@ static void ST_Load_Graphics(void)
         sprintf(namebuf, "STGNUM%d", i+2);
 
         // gray #
-        arms[i][0] = (patch_t *) W_CachePatchName(namebuf, PU_LOCK_SB);
+        arms[i][0] = W_CachePatchName(namebuf, PU_LOCK_SB);
 
         // yellow #
-        arms[i][1] = shortnum[i+2];
+        arms[i][1] = shortnum[i+2];  // shared patch
     }
-
-    // status bar background bits
-    sbar = (patch_t *) W_CachePatchName("STBAR", PU_LOCK_SB);
 
     // the original Doom uses 'STF' as base name for all face graphics
     ST_Load_FaceGraphics ("STF");
@@ -1223,9 +1229,9 @@ void ST_Load_FaceGraphics (char *facestr)
     strcpy (namebuf, "B0");
     i = W_CheckNumForName(namelump);
     if( i!=-1 )
-        faceback = (patch_t *) W_CachePatchNum(i, PU_LOCK_SB);
+        faceback = W_CachePatchNum(i, PU_LOCK_SB);
     else
-        faceback = (patch_t *) W_CachePatchName("STFB0", PU_LOCK_SB);
+        faceback = W_CachePatchName("STFB0", PU_LOCK_SB);
 
     ST_Invalidate();
 }
@@ -1241,33 +1247,24 @@ static void ST_Load_Data(void)
 
 void ST_Release_Graphics(void)
 {
-
     int i;
 
     //faB: GlidePatch_t are always purgeable
-    if (rendermode==render_soft)
+    if( rendermode==render_soft && st_patches_loaded )
     {
+        st_patches_loaded = 0;
+        release_patch_list( st_patches );
+
         // unload the numbers, tall and short
-        for (i=0;i<10;i++)
-        {
-            Z_ChangeTag(tallnum[i], PU_UNLOCK_CACHE);
-            Z_ChangeTag(shortnum[i], PU_UNLOCK_CACHE);
-        }
-        Z_ChangeTag(tallnum[10], PU_UNLOCK_CACHE);  // minus
-        Z_ChangeTag(tallnum[11], PU_UNLOCK_CACHE);  // percent
-        
-        // unload arms background
-        Z_ChangeTag(armsbg, PU_UNLOCK_CACHE);
+	release_patch_array( tallnum, 12 );
+        release_patch_array( shortnum, 10 );
         
         // unload gray #'s
         for (i=0;i<6;i++)
             Z_ChangeTag(arms[i][0], PU_UNLOCK_CACHE);
-        
+
         // unload the key cards
-        for (i=0;i<NUMCARDS;i++)
-            Z_ChangeTag(keys[i], PU_UNLOCK_CACHE);
-        
-        Z_ChangeTag(sbar, PU_UNLOCK_CACHE);
+        release_patch_array( keys, NUMCARDS );
     }
 
     ST_Release_FaceGraphics ();
@@ -1277,13 +1274,10 @@ void ST_Release_Graphics(void)
 // Called by SetPlayerSkin, ST_Release_Graphics
 void ST_Release_FaceGraphics (void)
 {
-    int    i;
-
     //faB: GlidePatch_t are always purgeable
     if (rendermode==render_soft)
     {
-        for (i=0;i<ST_NUMFACES;i++)
-            Z_ChangeTag(faces[i], PU_UNLOCK_CACHE);
+        release_patch_array( faces, ST_NUMFACES );
         
         // face background
         Z_ChangeTag(faceback, PU_UNLOCK_CACHE);

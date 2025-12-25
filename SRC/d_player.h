@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_player.h 1304 2017-04-07 17:17:47Z wesleyjohnson $
+// $Id: d_player.h 1366 2017-11-01 01:14:15Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -261,7 +261,7 @@ typedef struct
     int         score;  // current score on entry, modified on return
     // BP: unused for now but don't forget....
     uint16_t    addfrags;
-} wbplayerstruct_t;
+} wb_player_t;
 
 typedef struct
 {
@@ -271,8 +271,8 @@ typedef struct
     boolean     didsecret;
 
     // previous and next levels, origin 0
-    int         last;
-    int         next;
+    int         lev_prev;
+    int         lev_next;
 
     int         maxkills;
     int         maxitems;
@@ -285,9 +285,9 @@ typedef struct
     // index of this player in game
     int         pnum;
 
-    wbplayerstruct_t    plyr[MAXPLAYERS];
+    wb_player_t    plyr[MAXPLAYERS];
 
-} wbstartstruct_t;
+} wb_start_t;
 
 void A_TicWeapon( player_t *player,  pspdef_t *psp );
 

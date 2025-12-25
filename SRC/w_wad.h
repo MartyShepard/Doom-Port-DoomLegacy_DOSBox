@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: w_wad.h 1366 2017-11-01 01:14:15Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -56,6 +56,9 @@
 #define W_WAD_H
 
 #include "doomtype.h"
+
+#include "r_defs.h"
+// patch_t
 
 #ifdef HWRENDER
 #include "hardware/hw_data.h"
@@ -218,11 +221,31 @@ void*   W_CachePatchNum_Endian ( int lump, int ztag );
 void*   W_CacheMappedPatchNum ( int lump, uint32_t drawflags );
 #endif
 
+
+// These are used for loading, and releasing patches.
+typedef struct {
+   patch_t ** patch;
+   char     * name;
+} load_patch_t;
+
+
+//  pl : a patch list, maybe offset into a patch list
+void load_patch_list( load_patch_t * pl );
+
+//  pl : a patch list, maybe offset into a patch list
+void release_patch_list( load_patch_t * pl );
+
+//  pp : an array of patch_t ptr
+//  count : number of patches to release
+void release_patch_array( patch_t ** pp, int count );
+
+
 void*   W_CacheRawAsPic( int lump, int width, int height, int ztag); // return a pic_t
 
 // Cache and endian convert a pic_t
 void*   W_CachePicNum( int lumpnum, int ztag );
 void*   W_CachePicName( char* name, int ztag );
+
 
 // [WDJ] Return a sum unique to a lump, to detect replacements.
 // The lumpptr must be to a Z_Malloc lump.

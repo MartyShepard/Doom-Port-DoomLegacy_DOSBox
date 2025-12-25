@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: wi_stuff.h 1366 2017-11-01 01:14:15Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -36,7 +36,7 @@
 
 #include "doomtype.h"
 #include "d_player.h"
-  // wbstartstruct_t
+  // wb_start_t
 
 //added:05-02-98:
 typedef struct {
@@ -54,7 +54,7 @@ void WI_Ticker (void);
 void WI_Drawer (void);
 
 // Setup for an intermission screen.
-void WI_Start(wbstartstruct_t*   wbstartstruct);
+void WI_Start(wb_start_t *  wb_start);
 
 boolean teamingame(int teamnum);
 

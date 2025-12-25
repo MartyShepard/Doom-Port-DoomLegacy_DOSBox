@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sb_bar.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: sb_bar.c 1366 2017-11-01 01:14:15Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -48,7 +48,6 @@
 #include "z_zone.h"
 
 #include "r_local.h"
-#include "p_local.h"
 #include "p_inter.h"
 #include "m_random.h"
 
@@ -176,26 +175,47 @@ static int spinflylump;
 //
 //---------------------------------------------------------------------------
 
+byte heretic_sb_patches_loaded = 0;
+load_patch_t  heretic_sb_patches[] = 
+{
+  { &PatchLTFACE, "LTFACE" },
+  { &PatchRTFACE, "RTFACE" },
+  { &PatchBARBACK, "BARBACK" },
+  { &PatchINVBAR, "INVBAR" },
+  { &PatchCHAIN, "CHAIN" },
+  { &PatchLTFCTOP, "LTFCTOP" },
+  { &PatchRTFCTOP, "RTFCTOP" },
+  { &PatchSELECTBOX, "SELECTBOX" },
+  { &PatchINVLFGEM1, "INVGEML1" },
+  { &PatchINVLFGEM2, "INVGEML2" },
+  { &PatchINVRTGEM1, "INVGEMR1" },
+  { &PatchINVRTGEM2, "INVGEMR2" },
+  { &PatchBLACKSQ, "BLACKSQ" },
+  { &PatchARMCLEAR, "ARMCLEAR" },
+  { &PatchCHAINBACK, "CHAINBACK" },
+  { &PatchNEGATIVE, "NEGNUM" },
+  { NULL, NULL }
+};
+
+load_patch_t  heretic_sb_release_patches[] =
+{
+  { &PatchSTATBAR, NULL },
+  { &PatchLIFEGEM, NULL },
+  { NULL, NULL }
+};
+
+
 void SB_Heretic_Init(void)
 {
     int i;
     int startLump;
 
     // [WDJ] all patches are endian fixed
-    PatchLTFACE = W_CachePatchName("LTFACE", PU_LOCK_SB);
-    PatchRTFACE = W_CachePatchName("RTFACE", PU_LOCK_SB);
-    PatchBARBACK = W_CachePatchName("BARBACK", PU_LOCK_SB);
-    PatchINVBAR = W_CachePatchName("INVBAR", PU_LOCK_SB);
-    PatchCHAIN = W_CachePatchName("CHAIN", PU_LOCK_SB);
+    load_patch_list( heretic_sb_patches );
+    heretic_sb_patches_loaded = 1;
 
-    if( cv_deathmatch.EV )
-    {
-        PatchSTATBAR = W_CachePatchName("STATBAR", PU_LOCK_SB);
-    }
-    else
-    {
-        PatchSTATBAR = W_CachePatchName("LIFEBAR", PU_LOCK_SB);
-    }
+    PatchSTATBAR = W_CachePatchName(
+        (( cv_deathmatch.EV )? "STATBAR" : "LIFEBAR" ), PU_LOCK_SB );
 
     if(!multiplayer)
     { // single player game uses red life gem
@@ -207,24 +227,12 @@ void SB_Heretic_Init(void)
             + consoleplayer, PU_LOCK_SB);
     }
 
-    PatchLTFCTOP = W_CachePatchName("LTFCTOP", PU_LOCK_SB);
-    PatchRTFCTOP = W_CachePatchName("RTFCTOP", PU_LOCK_SB);
-    PatchSELECTBOX = W_CachePatchName("SELECTBOX", PU_LOCK_SB);
-    PatchINVLFGEM1 = W_CachePatchName("INVGEML1", PU_LOCK_SB);
-    PatchINVLFGEM2 = W_CachePatchName("INVGEML2", PU_LOCK_SB);
-    PatchINVRTGEM1 = W_CachePatchName("INVGEMR1", PU_LOCK_SB);
-    PatchINVRTGEM2 = W_CachePatchName("INVGEMR2", PU_LOCK_SB);
-    PatchBLACKSQ = W_CachePatchName("BLACKSQ", PU_LOCK_SB);
-    PatchARMCLEAR = W_CachePatchName("ARMCLEAR", PU_LOCK_SB);
-    PatchCHAINBACK = W_CachePatchName("CHAINBACK", PU_LOCK_SB);
-
     startLump = W_GetNumForName("IN0");
     for(i = 0; i < 10; i++)
     {
         PatchINumbers[i] = W_CachePatchNum(startLump+i, PU_LOCK_SB);
     }
 
-    PatchNEGATIVE = W_CachePatchName("NEGNUM", PU_LOCK_SB);
     FontBNumBase = W_GetNumForName("FONTB16");
 
     startLump = W_GetNumForName("SMALLIN0");
@@ -239,6 +247,20 @@ void SB_Heretic_Init(void)
     spinbooklump = W_GetNumForName("SPINBK0");
     spinflylump = W_GetNumForName("SPFLY0");
 }
+
+
+void SB_Heretic_Release_Graphics(void)
+{
+    if( ! heretic_sb_patches_loaded )   return;
+    heretic_sb_patches_loaded = 0;
+
+    release_patch_list( heretic_sb_patches );
+    release_patch_list( heretic_sb_release_patches );
+    release_patch_array( PatchINumbers, 10 );
+    release_patch_array( PatchSmNumbers, 10 );
+}
+
+
 
 //---------------------------------------------------------------------------
 //

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1363 2017-10-16 16:29:18Z wesleyjohnson $
+// $Id: wi_stuff.c 1366 2017-11-01 01:14:15Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -92,13 +92,14 @@
 // This is supposedly ignored for commercial
 //  release (aka DOOM II) (doom2_commercial), which had 34 maps
 //  in one episode. So there.
-#define NUMEPISODES     4
-#define NUMMAPS         9
+#define NUM_EPISODES     4
+#define NUM_MAPS_PER_EPI        9
 
 
 // GLOBAL LOCATIONS
 #define WI_TITLEY               2
-#define WI_SPACINGY             16 //TODO: was 33
+#define WI_SPACINGY             16
+  //TODO: was 33
 
 // SINGPLE-PLAYER STUFF
 #define SP_STATSX               50
@@ -137,14 +138,12 @@ typedef enum
     ANIM_ALWAYS,
     ANIM_RANDOM,
     ANIM_LEVEL
-
 } animtype_e;
 
 typedef struct
 {
     int         x;
     int         y;
-
 } point_t;
 
 
@@ -154,34 +153,38 @@ typedef struct
 //
 typedef struct
 {
-    animtype_e  type;
+    // Setup data (Constant)
+    byte        type;  // animtype_e
 
     // period in tics between animations
-    int         period;
+    uint16_t    period;  // nominal  35/3
 
     // number of animation frames
-    int         nanims;
+    byte        num_anims;  // nominal 3
 
     // location of animation
     point_t     loc;
 
+    // type specific setup information
     // ALWAYS: n/a,
     // RANDOM: period deviation (<256),
     // LEVEL: level
-    int         data1;
+    byte        data1;
 
     // ALWAYS: n/a,
     // RANDOM: random base period,
     // LEVEL: n/a
-    int         data2;
+    byte        data2;
 
+    // Variables
+   
     // actual graphics for frames of animations
     patch_t*    p[3];
-
+   
     // following must be initialized to zero before use!
 
     // next value of bcnt (used in conjunction with period)
-    int         nexttic;
+    uint32_t    nexttic;
 
     // last drawn animation frame
     int         lastdrawn;
@@ -194,7 +197,8 @@ typedef struct
 
 } anim_inter_t;
 
-static point_t doomlnodes[NUMEPISODES][NUMMAPS] =
+// Doom YAH nodes (lnode)
+static point_t doom_YAH_nodes[NUM_EPISODES][NUM_MAPS_PER_EPI] =
 {
     // Episode 0 World Map
     {
@@ -236,7 +240,8 @@ static point_t doomlnodes[NUMEPISODES][NUMMAPS] =
     }
 };
 
-static point_t YAHspot[3][9] =
+// Heretic YAH
+static point_t Heretic_YAHspot[3][9] =
 {
     {
         { 172, 78 },
@@ -279,7 +284,7 @@ static point_t YAHspot[3][9] =
 // Using patches saves a lot of space,
 //  as they replace 320x200 full screen frames.
 //
-static anim_inter_t epsd0animinfo[] =
+static anim_inter_t epsd0_animinfo[] =
 {
     { ANIM_ALWAYS, TICRATE/3, 3, { 224, 104 } },
     { ANIM_ALWAYS, TICRATE/3, 3, { 184, 160 } },
@@ -293,7 +298,7 @@ static anim_inter_t epsd0animinfo[] =
     { ANIM_ALWAYS, TICRATE/3, 3, { 64, 24 } }
 };
 
-static anim_inter_t epsd1animinfo[] =
+static anim_inter_t epsd1_animinfo[] =
 {
     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 1 },
     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 2 },
@@ -306,7 +311,7 @@ static anim_inter_t epsd1animinfo[] =
     { ANIM_LEVEL, TICRATE/3, 1, { 128, 136 }, 8 }
 };
 
-static anim_inter_t epsd2animinfo[] =
+static anim_inter_t epsd2_animinfo[] =
 {
     { ANIM_ALWAYS, TICRATE/3, 3, { 104, 168 } },
     { ANIM_ALWAYS, TICRATE/3, 3, { 40, 136 } },
@@ -316,18 +321,18 @@ static anim_inter_t epsd2animinfo[] =
     { ANIM_ALWAYS, TICRATE/4, 3, { 40, 0 } }
 };
 
-static int NUMANIMS[NUMEPISODES] =
+static byte  num_anim[NUM_EPISODES] =
 {
-    sizeof(epsd0animinfo)/sizeof(anim_inter_t),
-    sizeof(epsd1animinfo)/sizeof(anim_inter_t),
-    sizeof(epsd2animinfo)/sizeof(anim_inter_t)
+    sizeof(epsd0_animinfo)/sizeof(anim_inter_t),
+    sizeof(epsd1_animinfo)/sizeof(anim_inter_t),
+    sizeof(epsd2_animinfo)/sizeof(anim_inter_t)
 };
 
-static anim_inter_t * anim_inter_info[NUMEPISODES] =
+static anim_inter_t * anim_inter_info[NUM_EPISODES] =
 {
-    epsd0animinfo,
-    epsd1animinfo,
-    epsd2animinfo
+    epsd0_animinfo,
+    epsd1_animinfo,
+    epsd2_animinfo
 };
 
 
@@ -347,7 +352,7 @@ typedef enum
     StatCount,
     ShowNextLoc
 
-} stateenum_t;
+} state_e;
 
 // States for single-player
 #define SP_KILLS                0
@@ -365,18 +370,21 @@ typedef enum
 
 
 // used to accelerate or skip a stage
-static int              acceleratestage;
+static byte             accelerate_stage;
+
+// signals to refresh everything for one frame
+static byte             first_refresh;
 
 // wbs->pnum
 static int              me;
 
  // specifies current state
-static stateenum_t      state;
+static state_e          state;
 
 // contains information passed into intermission
-static wbstartstruct_t* wbs;
+static wb_start_t     * wbs;
 
-static wbplayerstruct_t* plrs;  // wbs->plyr[]
+static wb_player_t    * wb_plyr;  // wbs->plyr[]
 
 // used for general timing
 static int              cnt;
@@ -384,18 +392,12 @@ static int              cnt;
 // used for timing of background animation
 static int              bcnt;
 
-// signals to refresh everything for one frame
-static int              firstrefresh;
-
 static int              cnt_kills[MAXPLAYERS];
 static int              cnt_items[MAXPLAYERS];
 static int              cnt_secret[MAXPLAYERS];
 static int              cnt_time;
 static int              cnt_par;
 static int              cnt_pause;
-
-// # of doom2_commercial levels
-static int              NUMCMAPS;
 
 
 //
@@ -408,10 +410,8 @@ static int              NUMCMAPS;
 static char             bgname[9];
 
 // You Are Here graphic
-static patch_t*         yah[2];
-
-// splat
-static patch_t*         splat;
+// [2]  - You Were Here - splat
+static patch_t*         yah[3];
 
 // %, : graphics
 static patch_t*         percent;
@@ -423,10 +423,8 @@ static patch_t*         num[10];
 // minus sign
 static patch_t*         wiminus;
 
-// "Finished!" graphics
+// "Entering" and "Finished!" graphics
 static patch_t*         finished;
-
-// "Entering" graphic
 static patch_t*         entering;
 
 // "secret"
@@ -449,14 +447,18 @@ static patch_t*         victims;
 
 // "Total", your face, your dead face
 static patch_t*         total;
-static patch_t*         star;
-static patch_t*         bstar;
+static patch_t*         pl_face;
+static patch_t*         dead_face;
 
 //added:08-02-98: use STPB0 for all players, but translate the colors
 static patch_t*         stpb;
 
 // Name graphics of each level (centered)
-static patch_t**        lnames;
+static patch_t**        lnames = NULL;
+
+// # of doom2_commercial levels
+static int              num_lnames = 0;
+
 
 // [WDJ] All patch endian conversion is done in W_CachePatchNum
 
@@ -478,7 +480,7 @@ static void WI_Slam_Background(void)
     if( EN_heretic && state == StatCount)
         V_ScreenFlatFill( W_CheckNumForName("FLOOR16") );
     else
-    if (rendermode==render_soft) 
+    if( rendermode == render_soft ) 
     {
         memcpy(screens[0], screens[1], vid.screen_size);  // background to display
 #ifdef DIRTY_RECT
@@ -518,7 +520,7 @@ static void WI_Draw_LF(void)
     else
     {
         //[segabor]: 'SHORT' BUG !  [WDJ] Patch read does endian conversion
-        pp = lnames[wbs->last];
+        pp = lnames[wbs->lev_prev];
         pf = V_patch( pp );  // access patch fields
         V_DrawScaledPatch ((BASEVIDWIDTH - pf->width)/2, y, pp);
         y += (5 * pf->height)/4;
@@ -540,10 +542,10 @@ static void WI_Draw_EL(void)
     // draw "Entering"
     if( FontBBaseLump )
     {
+        char * levname = P_LevelNameByNum(wbs->epsd+1, wbs->lev_next+1);
         V_DrawTextB("Entering", (BASEVIDWIDTH - V_TextBWidth("Entering"))/2, y);
         y += (5*V_TextBHeight("Entering"))/4;
-        V_DrawTextB(P_LevelNameByNum(wbs->epsd+1, wbs->next+1), 
-                    (BASEVIDWIDTH - V_TextBWidth(P_LevelNameByNum(wbs->epsd+1, wbs->next+1)))/2, y);
+        V_DrawTextB( levname, (BASEVIDWIDTH - V_TextBWidth(levname))/2, y);
     }
     else
     {
@@ -551,7 +553,7 @@ static void WI_Draw_EL(void)
         V_DrawScaledPatch((BASEVIDWIDTH - (V_patch(entering)->width))/2,
                           y, entering);
         // draw level
-        pp = lnames[wbs->next];
+        pp = lnames[wbs->lev_next];
         pf = V_patch( pp );  // access patch fields
         y += (5 * pf->height)/4;
 
@@ -560,85 +562,76 @@ static void WI_Draw_EL(void)
 
 }
 
-static void WI_Draw_OnLnode ( int           n,
-                             patch_t*      c[] )
+// [WDJ] Made more resistent to segfault.
+// Doom YAH draw
+//  n : YAH index
+//  yi : yah index, 2=splat
+static void WI_Doom_Draw_YAH ( int  n, int yi )
 {
-
     // Hardware or software render.
+    patch_t   * p;
     patch_t   * pf;
-    int         i;
-    int         left;
-    int         top;
-    int         right;
-    int         bottom;
-    boolean     fits = false;
+    point_t   * lnodes;
+    int         left, top;
 
-    point_t     *lnodes;
+    lnodes = &doom_YAH_nodes[wbs->epsd][n];
 
-    lnodes = &doomlnodes[wbs->epsd][n];
-
-    i = 0;
-    do
+    for(;;)
     {
-        pf = V_patch( c[i] );
+        p = yah[yi];
+        pf = V_patch( p );
         left   = lnodes->x - pf->leftoffset;
         top    = lnodes->y - pf->topoffset;
-        right  = left + pf->width;
-        bottom = top + pf->height;
         if (left >= 0
-            && right < BASEVIDWIDTH
+            && (left + pf->width) < BASEVIDWIDTH
             && top >= 0
-            && bottom < BASEVIDHEIGHT)
+            && (top + pf->height) < BASEVIDHEIGHT)
         {
-            fits = true;
+            V_DrawScaledPatch(lnodes->x, lnodes->y, p);
+            return;
         }
-        else
-        {
-            i++;
-        }
-    } while (!fits && i!=2);
 
-    if (fits && i<2)
-        V_DrawScaledPatch(lnodes->x, lnodes->y, c[i]);
-    else
-    {
-        // DEBUG
-        debug_Printf("Could not place patch on level %d\n", n+1);
+        // yah[0] -> yah[1]
+        if( yi > 0 )  break;
+        yi++;
     }
+
+    // DEBUG
+    debug_Printf("Could not place patch on level %d\n", n+1);
 }
 
 
 //========================================================================
 //
-// WI_Draw_YAH
+// WI_Heretic_Draw_YAH
 //
 //========================================================================
-static void WI_Draw_YAH(void)
+static void WI_Heretic_Draw_YAH(void)
 {
     int i;
     int x;
     int prevmap;
+    point_t *  yah_pts = Heretic_YAHspot[gameepisode-1];
 
     x = (BASEVIDWIDTH-V_StringWidth("NOW ENTERING:"))/2;
     V_DrawString(x, 10, 0, "NOW ENTERING:");
 
-    x = (BASEVIDWIDTH-V_TextBWidth(P_LevelNameByNum(wbs->epsd+1, wbs->next+1)))/2;
-    V_DrawTextB(P_LevelNameByNum(wbs->epsd+1, wbs->next+1), x, 20);
+    x = (BASEVIDWIDTH-V_TextBWidth(P_LevelNameByNum(wbs->epsd+1, wbs->lev_next+1)))/2;
+    V_DrawTextB(P_LevelNameByNum(wbs->epsd+1, wbs->lev_next+1), x, 20);
 
-    prevmap = (wbs->last == 8) ? wbs->next - 1 : wbs->last;
+    prevmap = (wbs->lev_prev == 8) ? wbs->lev_next - 1 : wbs->lev_prev;
 
     for(i=0; i<=prevmap; i++)
     {
-        V_DrawScaledPatch(YAHspot[gameepisode-1][i].x, YAHspot[gameepisode-1][i].y, splat);
+        V_DrawScaledPatch(yah_pts[i].x, yah_pts[i].y, yah[2]);  // splat
     }
     if(players[consoleplayer].didsecret)
     {
-        V_DrawScaledPatch(YAHspot[gameepisode-1][8].x, YAHspot[gameepisode-1][8].y, splat);
+        V_DrawScaledPatch(yah_pts[8].x, yah_pts[8].y, yah[2]);  // splat
     }
     if(!(bcnt&16) || state == ShowNextLoc)
     { // draw the destination 'X'
-        V_DrawScaledPatch(YAHspot[gameepisode-1][wbs->next].x,
-                          YAHspot[gameepisode-1][wbs->next].y, yah[0]);
+        V_DrawScaledPatch(yah_pts[wbs->lev_next].x, yah_pts[wbs->lev_next].y, yah[0]);
     }
 }
 
@@ -647,10 +640,10 @@ static void WI_Draw_YAH(void)
 // Called by WI_Start->WI_Init_Stats
 // Called by WI_Start->WI_Init_DeathmatchStats
 // Called by WI_Init_ShowNextLoc
-// Called by WI_updateShowNextLoc
+// Called by WI_update_ShowNextLoc
 static void WI_Init_AnimatedBack(void)
 {
-    int         i;
+    byte       i;
     anim_inter_t*  ai;
 
         //DarkWolf95:September 12, 2004: Don't draw animations for FS changed interpic
@@ -660,7 +653,7 @@ static void WI_Init_AnimatedBack(void)
     if (wbs->epsd > 2)
         return;
 
-    for (i=0; i<NUMANIMS[wbs->epsd]; i++)
+    for (i=0; i<num_anim[wbs->epsd]; i++)
     {
         ai = &anim_inter_info[wbs->epsd][i];
 
@@ -671,16 +664,19 @@ static void WI_Init_AnimatedBack(void)
         if (ai->type == ANIM_ALWAYS)
             ai->nexttic = bcnt + 1 + (M_Random()%ai->period);
         else if (ai->type == ANIM_RANDOM)
+        {
+            // data1 = period deviation, data2 = period base
             ai->nexttic = bcnt + 1 + ai->data2+(M_Random()%ai->data1);
+        }
         else if (ai->type == ANIM_LEVEL)
             ai->nexttic = bcnt + 1;
     }
 
 }
 
-static void WI_updateAnimatedBack(void)
+static void WI_update_AnimatedBack(void)
 {
-    int         i;
+    byte       i;
     anim_inter_t*  ai;
 
         //DarkWolf95:September 12, 2004: Don't draw animations for FS changed interpic
@@ -690,49 +686,51 @@ static void WI_updateAnimatedBack(void)
     if (wbs->epsd > 2)
         return;
 
-    for (i=0;i<NUMANIMS[wbs->epsd];i++)
+    for (i=0; i<num_anim[wbs->epsd]; i++)
     {
         ai = &anim_inter_info[wbs->epsd][i];
 
-        if (bcnt >= ai->nexttic)
+        if( ai->nexttic < bcnt )  continue;
+
+        switch (ai->type)
         {
-            switch (ai->type)
+          case ANIM_ALWAYS:
+            if (++ai->ctr >= ai->num_anims) ai->ctr = 0;
+            ai->nexttic = bcnt + ai->period;
+            break;
+
+          case ANIM_RANDOM:
+            ai->ctr++;
+            if (ai->ctr == ai->num_anims)
             {
-              case ANIM_ALWAYS:
-                if (++ai->ctr >= ai->nanims) ai->ctr = 0;
-                ai->nexttic = bcnt + ai->period;
-                break;
-
-              case ANIM_RANDOM:
-                ai->ctr++;
-                if (ai->ctr == ai->nanims)
-                {
-                    ai->ctr = -1;
-                    ai->nexttic = bcnt + ai->data2 + (M_Random()%ai->data1);
-                }
-                else ai->nexttic = bcnt + ai->period;
-                break;
-
-              case ANIM_LEVEL:
-                // gawd-awful hack for level anims
-                if (!(state == StatCount && i == 7)
-                    && wbs->next == ai->data1)
-                {
-                    ai->ctr++;
-                    if (ai->ctr == ai->nanims) ai->ctr--;
-                    ai->nexttic = bcnt + ai->period;
-                }
-                break;
+                ai->ctr = -1;
+                // data1 = period deviation, data2 = period base
+                ai->nexttic = bcnt + ai->data2 + (M_Random()%ai->data1);
             }
+            else
+            {
+                ai->nexttic = bcnt + ai->period;
+            }
+            break;
+
+          case ANIM_LEVEL:
+            // gawd-awful hack for level anims
+            // data1 = level
+            if (!(state == StatCount && i == 7)
+                && wbs->lev_next == ai->data1)
+            {
+                ai->ctr++;
+                if (ai->ctr == ai->num_anims) ai->ctr--;
+                ai->nexttic = bcnt + ai->period;
+            }
+            break;
         }
-
     }
-
 }
 
 static void WI_Draw_AnimatedBack(void)
 {
-    int  i;
+    byte  i;
     anim_inter_t*  ai; // interpic animation data
 
     //BP: fixed it was "if (doom2_commercial)" 
@@ -743,7 +741,7 @@ static void WI_Draw_AnimatedBack(void)
     if (wbs->epsd > 2)
         return;
 
-    for (i=0 ; i<NUMANIMS[wbs->epsd] ; i++)
+    for (i=0 ; i<num_anim[wbs->epsd] ; i++)
     {
         ai = &anim_inter_info[wbs->epsd][i];
 
@@ -907,26 +905,22 @@ void WI_Draw_wait( int net_nodes, int net_players, int wait_players, int wait_ti
 
 static void WI_Release_Data(void);
 
-static void WI_End(void)
-{
-    WI_Release_Data();
-}
 
 // used for write introduce next level
 static void WI_Init_NoState(void)
 {
     state = NoState;
-    acceleratestage = 0;
+    accelerate_stage = 0;
     cnt = 10;
 }
 
-static void WI_updateNoState(void) {
+static void WI_update_NoState(void) {
 
-    WI_updateAnimatedBack();
+    WI_update_AnimatedBack();
 
     if (--cnt==0)
     {
-        WI_End();
+        WI_Release_Data();
         G_NextLevel();
     }
 
@@ -935,21 +929,21 @@ static void WI_updateNoState(void) {
 static boolean          snl_pointeron = false;
 
 
-// Called by WI_updateNetgameStats, WI_updateStats
+// Called by WI_update_NetgameStats, WI_update_Stats
 static void WI_Init_ShowNextLoc(void)
 {
     state = ShowNextLoc;
-    acceleratestage = 0;
+    accelerate_stage = 0;
     cnt = SHOWNEXTLOCDELAY * TICRATE;
 
     WI_Init_AnimatedBack();
 }
 
-static void WI_updateShowNextLoc(void)
+static void WI_update_ShowNextLoc(void)
 {
-    WI_updateAnimatedBack();
+    WI_update_AnimatedBack();
 
-    if (!--cnt || acceleratestage)
+    if (!--cnt || accelerate_stage)
         WI_Init_NoState();
     else
         snl_pointeron = (cnt & 31) < 20;
@@ -973,7 +967,7 @@ static void WI_Draw_ShowNextLoc(void)
     if( EN_heretic )
     {
         if( gameepisode < 4 )
-            WI_Draw_YAH();
+            WI_Heretic_Draw_YAH();
     }
         //DarkWolf95:September 12, 2004: Don't draw YAH for FS changed interpic
     else
@@ -981,24 +975,24 @@ static void WI_Draw_ShowNextLoc(void)
          && wbs->epsd<=2 && !*info_interpic)
     {
         // You are here  (YAH).
-        last = (wbs->last == 8) ? wbs->next - 1 : wbs->last;
+        last = (wbs->lev_prev == 8) ? wbs->lev_next - 1 : wbs->lev_prev;
 
-        // draw a splat on taken cities.
+        // draw a yah splat on taken cities.
         for (i=0 ; i<=last ; i++)
-            WI_Draw_OnLnode(i, &splat);
+            WI_Doom_Draw_YAH(i, 2);  // splat
 
-        // splat the secret level?
+        // yah splat the secret level?
         if (wbs->didsecret)
-            WI_Draw_OnLnode(8, &splat);
+            WI_Doom_Draw_YAH(8, 2);  // splat
 
         // draw flashing ptr
         if (snl_pointeron)
-            WI_Draw_OnLnode(wbs->next, yah);
+            WI_Doom_Draw_YAH(wbs->lev_next, 0);  // yah[0] or yah[1]
     }
 
     // draws which level you are entering..
     if ( EN_doom_etc
-         && !((gamemode == doom2_commercial) && (wbs->next == 30)) )
+         && !((gamemode == doom2_commercial) && (wbs->lev_next == 30)) )
         WI_Draw_EL();
 
 }
@@ -1020,7 +1014,7 @@ static void WI_Init_DeathmatchStats(void)
     int i, j;
 
     state = StatCount;
-    acceleratestage = 0;
+    accelerate_stage = 0;
 
     cnt_pause = TICRATE*DM_WAIT;
 
@@ -1031,7 +1025,7 @@ static void WI_Init_DeathmatchStats(void)
              for(j=0; j<MAXPLAYERS; j++)
              {
                  if( playeringame[j] )
-                     dm_frags[i][j] = plrs[i].frags[j];
+                     dm_frags[i][j] = wb_plyr[i].frags[j];
              }
              
              dm_totals[i] = ST_PlayerFrags(i);
@@ -1042,9 +1036,9 @@ static void WI_Init_DeathmatchStats(void)
 }
 
 // Called by WI_Ticker
-static void WI_updateDeathmatchStats(void)
+static void WI_update_DeathmatchStats(void)
 {
-    WI_updateAnimatedBack();
+    WI_update_AnimatedBack();
 
     if( paused )
         return;
@@ -1114,7 +1108,7 @@ void WI_Draw_Ranking(char *title,int x,int y,fragsort_t *fragtable,
         V_DrawString (x+(large ? 32 : 24)-V_StringWidth(buf), y, 0, buf);
 
         // draw name, truncate to colwidth
-	memset(buf, ' ', 32);  // to defeat string centering
+        memset(buf, ' ', 32);  // to defeat string centering
         snprintf(buf, 31, "%s", fragtable[i].name );
         buf[colwidth] = 0;  // truncate to column width
         V_DrawString (x+(large ? 64 : 29), y,
@@ -1417,11 +1411,11 @@ static void WI_ddrawDeathmatchStats(void)
             {
                 V_DrawScaledPatch(x - (V_patch(stpb)->width/2),
                             DM_MATRIXY - WI_SPACINGY,
-                            bstar);
+                            dead_face);
 
                 V_DrawScaledPatch(DM_MATRIXX - (V_patch(stpb)->width/2),
                             y,
-                            star);
+                            pl_face);
             }
         }
         else
@@ -1461,17 +1455,17 @@ static void WI_ddrawDeathmatchStats(void)
 */
 
 static int      cnt_frags[MAXPLAYERS];
-static int      dofrags;
 static int      ng_state;
+static byte     dofrags;
 
 // Called by WI_Start
 static void WI_Init_NetgameStats(void)
 {
-
     int i;
+    int cnt_playfrags = 0;
 
     state = StatCount;
-    acceleratestage = 0;
+    accelerate_stage = 0;
     ng_state = 1;
 
     cnt_pause = TICRATE;
@@ -1483,27 +1477,27 @@ static void WI_Init_NetgameStats(void)
 
         cnt_kills[i] = cnt_items[i] = cnt_secret[i] = cnt_frags[i] = 0;
 
-        dofrags += ST_PlayerFrags(i);
+        cnt_playfrags += ST_PlayerFrags(i);
     }
 
-    dofrags = !!dofrags;
+    dofrags = (cnt_playfrags > 0);
 
     WI_Init_AnimatedBack();
 }
 
 
 
-static void WI_updateNetgameStats(void)
+static void WI_update_NetgameStats(void)
 {
 
     int  i, cnt_target;
     boolean     stillticking = false;
 
-    WI_updateAnimatedBack();
+    WI_update_AnimatedBack();
 
-    if (acceleratestage && ng_state != 10)
+    if (accelerate_stage && ng_state != 10)
     {
-        acceleratestage = 0;
+        accelerate_stage = 0;
 
         for (i=0 ; i<MAXPLAYERS ; i++)
         {
@@ -1511,11 +1505,11 @@ static void WI_updateNetgameStats(void)
                 continue;
 
             cnt_kills[i] = ( wbs->maxkills > 0 ) ?
-               (plrs[i].skills * 100) / wbs->maxkills : -100;
+               (wb_plyr[i].skills * 100) / wbs->maxkills : -100;
             cnt_items[i] = ( wbs->maxitems > 0 ) ?
-               (plrs[i].sitems * 100) / wbs->maxitems : -100;
+               (wb_plyr[i].sitems * 100) / wbs->maxitems : -100;
             cnt_secret[i] = ( wbs->maxsecret > 0 ) ?
-               (plrs[i].ssecret * 100) / wbs->maxsecret : -100;
+               (wb_plyr[i].ssecret * 100) / wbs->maxsecret : -100;
 
             if (dofrags)
                 cnt_frags[i] = ST_PlayerFrags(i);
@@ -1538,7 +1532,7 @@ static void WI_updateNetgameStats(void)
                continue;
             }
 
-            cnt_target = (plrs[i].skills * 100) / wbs->maxkills;
+            cnt_target = (wb_plyr[i].skills * 100) / wbs->maxkills;
             cnt_kills[i] += 2;
             if (cnt_kills[i] >= cnt_target)
                 cnt_kills[i] = cnt_target;
@@ -1563,7 +1557,7 @@ static void WI_updateNetgameStats(void)
                continue;
             }
 
-            cnt_target = (plrs[i].sitems * 100) / wbs->maxitems;
+            cnt_target = (wb_plyr[i].sitems * 100) / wbs->maxitems;
             cnt_items[i] += 2;
             if (cnt_items[i] >= cnt_target)
                 cnt_items[i] = cnt_target;
@@ -1587,7 +1581,7 @@ static void WI_updateNetgameStats(void)
                continue;
             }
 
-            cnt_target = (plrs[i].ssecret * 100) / wbs->maxsecret;
+            cnt_target = (wb_plyr[i].ssecret * 100) / wbs->maxsecret;
             cnt_secret[i] += 2;
             if (cnt_secret[i] >= cnt_target)
                 cnt_secret[i] = cnt_target;
@@ -1626,7 +1620,7 @@ static void WI_updateNetgameStats(void)
     }
     else if (ng_state == 10)
     {
-        if (acceleratestage)
+        if (accelerate_stage)
         {
             S_StartSound(sfx_sgcock);
             if ( gamemode == doom2_commercial )
@@ -1676,7 +1670,7 @@ static void WI_Draw_NetgameStats(void)
 
     WI_Draw_LF();
 
-    ngsx = NG_STATSX + (V_patch(star)->width/2) + (dofrags? 0 : 32);
+    ngsx = NG_STATSX + (V_patch(pl_face)->width/2) + (dofrags? 0 : 32);
     // draw stat titles (top line)
     if( FontBBaseLump )
     {
@@ -1722,7 +1716,7 @@ static void WI_Draw_NetgameStats(void)
         V_DrawMappedPatch(x - (V_patch(stpb)->width), y, stpb, colormap);
 
         if (i == me)
-            V_DrawScaledPatch(x - (V_patch(stpb)->width), y, star);
+            V_DrawScaledPatch(x - (V_patch(stpb)->width), y, pl_face);
 
         x += NG_SPACINGX;
         WI_Draw_Percent(x-pwidth, y+10, cnt_kills[i]);
@@ -1746,7 +1740,7 @@ static int sp_state;
 static void WI_Init_Stats(void)
 {
     state = StatCount;
-    acceleratestage = 0;
+    accelerate_stage = 0;
     sp_state = 1;
     cnt_kills[0] = cnt_items[0] = cnt_secret[0] = -1;
     cnt_time = cnt_par = -1;
@@ -1755,21 +1749,21 @@ static void WI_Init_Stats(void)
     WI_Init_AnimatedBack();
 }
 
-static void WI_updateStats(void)
+static void WI_update_Stats(void)
 {
 
-    WI_updateAnimatedBack();
+    WI_update_AnimatedBack();
 
-    if (acceleratestage && sp_state != 10)
+    if (accelerate_stage && sp_state != 10)
     {
-        acceleratestage = 0;
+        accelerate_stage = 0;
         cnt_kills[0] = ( wbs->maxkills > 0 ) ?
-           (plrs[me].skills * 100) / wbs->maxkills : -100;
+           (wb_plyr[me].skills * 100) / wbs->maxkills : -100;
         cnt_items[0] = ( wbs->maxitems > 0 ) ?
-           (plrs[me].sitems * 100) / wbs->maxitems : -100;
+           (wb_plyr[me].sitems * 100) / wbs->maxitems : -100;
         cnt_secret[0] = ( wbs->maxsecret > 0 ) ?
-           (plrs[me].ssecret * 100) / wbs->maxsecret : -100;
-        cnt_time = plrs[me].stime / TICRATE;
+           (wb_plyr[me].ssecret * 100) / wbs->maxsecret : -100;
+        cnt_time = wb_plyr[me].stime / TICRATE;
         cnt_par = wbs->partime / TICRATE;
         S_StartSound(sfx_barexp);
         sp_state = 10;
@@ -1785,9 +1779,9 @@ static void WI_updateStats(void)
 
         cnt_kills[0] += 2;
 
-        if (cnt_kills[0] >= (plrs[me].skills * 100) / wbs->maxkills)
+        if (cnt_kills[0] >= (wb_plyr[me].skills * 100) / wbs->maxkills)
         {
-            cnt_kills[0] = (plrs[me].skills * 100) / wbs->maxkills;
+            cnt_kills[0] = (wb_plyr[me].skills * 100) / wbs->maxkills;
             goto next_state;
         }
     }
@@ -1801,9 +1795,9 @@ static void WI_updateStats(void)
 
         cnt_items[0] += 2;
 
-        if (cnt_items[0] >= (plrs[me].sitems * 100) / wbs->maxitems)
+        if (cnt_items[0] >= (wb_plyr[me].sitems * 100) / wbs->maxitems)
         {
-            cnt_items[0] = (plrs[me].sitems * 100) / wbs->maxitems;
+            cnt_items[0] = (wb_plyr[me].sitems * 100) / wbs->maxitems;
             goto next_state;
         }
     }
@@ -1817,9 +1811,9 @@ static void WI_updateStats(void)
 
         cnt_secret[0] += 2;
 
-        if (cnt_secret[0] >= (plrs[me].ssecret * 100) / wbs->maxsecret)
+        if (cnt_secret[0] >= (wb_plyr[me].ssecret * 100) / wbs->maxsecret)
         {
-            cnt_secret[0] = (plrs[me].ssecret * 100) / wbs->maxsecret;
+            cnt_secret[0] = (wb_plyr[me].ssecret * 100) / wbs->maxsecret;
             goto next_state;
         }
     }
@@ -1828,8 +1822,8 @@ static void WI_updateStats(void)
     {
         cnt_time += 3;
 
-        if (cnt_time >= plrs[me].stime / TICRATE)
-            cnt_time = plrs[me].stime / TICRATE;
+        if (cnt_time >= wb_plyr[me].stime / TICRATE)
+            cnt_time = wb_plyr[me].stime / TICRATE;
 
         cnt_par += 3;
 
@@ -1837,13 +1831,13 @@ static void WI_updateStats(void)
         {
             cnt_par = wbs->partime / TICRATE;
 
-            if (cnt_time >= plrs[me].stime / TICRATE)
+            if (cnt_time >= wb_plyr[me].stime / TICRATE)
                 goto next_state;
         }
     }
     else if (sp_state == 10)
     {
-        if (acceleratestage)
+        if (accelerate_stage)
         {
             S_StartSound(sfx_sgcock);
 
@@ -1943,7 +1937,7 @@ static void WI_checkForAccelerate(void)
             if (player->cmd.buttons & BT_ATTACK)
             {
                 if (!player->attackdown)
-                    acceleratestage = 1;
+                    accelerate_stage = 1;
                 player->attackdown = true;
             }
             else
@@ -1951,7 +1945,7 @@ static void WI_checkForAccelerate(void)
             if (player->cmd.buttons & BT_USE)
             {
                 if (!player->usedown)
-                    acceleratestage = 1;
+                    accelerate_stage = 1;
                 player->usedown = true;
             }
             else
@@ -1983,51 +1977,98 @@ void WI_Ticker(void)
     {
       case StatCount:
         if( cv_deathmatch.EV )
-            WI_updateDeathmatchStats();
+            WI_update_DeathmatchStats();
         else if (multiplayer)
-            WI_updateNetgameStats();
+            WI_update_NetgameStats();
         else
-            WI_updateStats();
+            WI_update_Stats();
         break;
 
       case ShowNextLoc:
-        WI_updateShowNextLoc();
+        WI_update_ShowNextLoc();
         break;
 
       case NoState:
-        WI_updateNoState();
+        WI_update_NoState();
         break;
     }
 
 }
 
+// [WDJ] Patch lists.
+
+byte doom_wi_patches_loaded = 0;
+load_patch_t  doom_wi_patches[] =
+{
+  { &finished, "WIF" },
+  { &entering, "WIENTER" },
+  { &kills, "WIOSTK" },
+  { &secret, "WIOSTS" },
+  { &sp_secret, "WISCRT2" },
+  { &items, "WIOSTI" },
+  { &frags, "WIFRGS" },
+  { &timePatch, "WITIME" },
+  { &sucks, "WISUCKS" },
+  { &par, "WIPAR" },
+  { &killers, "WIKILRS" },  // vertical
+  { &victims, "WIVCTMS" },  // horiz
+  { &total, "WIMSTT" },
+  { &yah[0], "WIURH0" },   // yah point RH
+  { &yah[1], "WIURH1" },   // yad point LH
+  { &yah[2], "WISPLAT" },  // yah splat
+  { &colon, "WICOLON" },
+  { &percent, "WIPCNT" },
+  { &wiminus, "WIMINUS" },
+  { NULL, NULL }
+};
+
+
+byte heretic_wi_patches_loaded = 0;
+load_patch_t  heretic_wi_patches[13] =
+{
+  { &yah[0], "IN_YAH" }, // yah point
+  { &yah[2], "IN_X" },  // yah splat
+  { &colon, "FONTB26" },
+  { &percent, "FONTB05" },
+  { &wiminus, "FONTB13" },
+  { NULL, NULL }
+};
+
+     
+
 static void WI_Load_Data(void)
 {
     // vid : from video setup
-    int         i, j;
+    int   i;
     anim_inter_t*  ai; // interpic animation data
     char        name[9];
+    byte  j;
+    byte  wb_epsd;
+
+
+    if( (info_interpic == NULL) || (wbs == NULL) )  return;
    
     // [WDJ] Lock the interpic graphics against release by other users.
 
+    wb_epsd = wbs->epsd;
     // choose the background of the intermission
     if (*info_interpic)
         strcpy(bgname, info_interpic);
     else if (gamemode == doom2_commercial)
         strcpy(bgname, "INTERPIC");
     else if( gamemode == heretic )
-        sprintf(bgname, "MAPE%d", wbs->epsd+1);
+        sprintf(bgname, "MAPE%d", wb_epsd+1);
     else
-        sprintf(bgname, "WIMAP%d", wbs->epsd);
+        sprintf(bgname, "WIMAP%d", wb_epsd);
 
     if ( gamemode == ultdoom_retail )
     {
-        if (wbs->epsd == 3)
+        if (wb_epsd == 3)
             strcpy(bgname,"INTERPIC");
     }
     
     
-    if (rendermode == render_soft)
+    if( rendermode == render_soft )
     {
         memset(screens[0], 0, vid.screen_size);
 
@@ -2053,10 +2094,10 @@ static void WI_Load_Data(void)
 
     if (gamemode == doom2_commercial)
     {
-        NUMCMAPS = 32;
-        lnames = (patch_t **) Z_Malloc(sizeof(patch_t*) * NUMCMAPS,
+        num_lnames = 32;
+        lnames = (patch_t **) Z_Malloc(sizeof(patch_t*) * num_lnames,
                                        PU_STATIC, 0);
-        for (i=0 ; i<NUMCMAPS ; i++)
+        for (i=0 ; i<num_lnames ; i++)
         {
             sprintf(name, "CWILV%2.2d", i);
             lnames[i] = W_CachePatchName(name, PU_LOCK_SB);
@@ -2064,49 +2105,37 @@ static void WI_Load_Data(void)
     }
     else
     {
-        lnames = (patch_t **) Z_Malloc(sizeof(patch_t*) * NUMMAPS,
+        // doom1, doom, doomu
+        num_lnames = NUM_MAPS_PER_EPI;
+        lnames = (patch_t **) Z_Malloc(sizeof(patch_t*) * NUM_MAPS_PER_EPI,
                                        PU_STATIC, 0);
-        for (i=0 ; i<NUMMAPS ; i++)
+        for (i=0 ; i<NUM_MAPS_PER_EPI ; i++)
         {
-            sprintf(name, "WILV%d%d", wbs->epsd, i);
+            sprintf(name, "WILV%d%d", wb_epsd, i);
             lnames[i] = W_CachePatchName(name, PU_LOCK_SB);
         }
 
-        // you are here
-        yah[0] = W_CachePatchName(((EN_heretic)? "IN_YAH" : "WIURH0"), PU_LOCK_SB);
-
-        // you are here (alt.)
-        yah[1] = W_CachePatchName("WIURH1", PU_LOCK_SB);
-
-        // splat
-        splat = W_CachePatchName(((EN_heretic)? "IN_X" : "WISPLAT"), PU_LOCK_SB);
-
-        if (wbs->epsd < 3)
+        if (wb_epsd < 3)
         {
-            for (j=0; j<NUMANIMS[wbs->epsd]; j++)
+            for (j=0; j<num_anim[wb_epsd]; j++)
             {
-                ai = &anim_inter_info[wbs->epsd][j];
-                for (i=0; i<ai->nanims; i++)
+                ai = &anim_inter_info[wb_epsd][j];
+                for (i=0; i<ai->num_anims; i++)
                 {
-                    // MONDO HACK!
-                    if (wbs->epsd != 1 || j != 8)
+                    if(wb_epsd == 1 && j == 8)  // shares
                     {
-                        // animations
-                        sprintf(name, "WIA%d%.2d%.2d", wbs->epsd, j, i);
-                        ai->p[i] = W_CachePatchName(name, PU_LOCK_SB);
-                    }
-                    else
-                    {
-                        // HACK ALERT!
+                        // [1][8] shares the patch of [1][4]
                         ai->p[i] = anim_inter_info[1][4].p[i];
+                        continue;
                     }
+
+                    // animations
+                    sprintf(name, "WIA%d%.2d%.2d", wb_epsd, j, i);
+                    ai->p[i] = W_CachePatchName(name, PU_LOCK_SB);
                 }
             }
         }
     }
-
-    // More hacks on minus sign.
-    wiminus = W_CachePatchName(((EN_heretic)? "FONTB13" : "WIMINUS"), PU_LOCK_SB);
 
     for (i=0;i<10;i++)
     {
@@ -2118,60 +2147,22 @@ static void WI_Load_Data(void)
         num[i] = W_CachePatchName(name, PU_LOCK_SB);
     }
 
-    // percent sign
-    percent = W_CachePatchName(((EN_heretic)? "FONTB05" : "WIPCNT"), PU_LOCK_SB);
-
     if( EN_doom_etc )
     {
-        // "finished"
-        finished = W_CachePatchName("WIF", PU_LOCK_SB);
-        
-        // "entering"
-        entering = W_CachePatchName("WIENTER", PU_LOCK_SB);
-        
-        // "kills"
-        kills = W_CachePatchName("WIOSTK", PU_LOCK_SB);
-        
-        // "scrt"
-        secret = W_CachePatchName("WIOSTS", PU_LOCK_SB);
-        
-        // "secret"
-        sp_secret = W_CachePatchName("WISCRT2", PU_LOCK_SB);
-        
-        // "items"
-        items = W_CachePatchName("WIOSTI", PU_LOCK_SB);
-        
-        // "frgs"
-        frags = W_CachePatchName("WIFRGS", PU_LOCK_SB);
-        
-        // "time"
-        timePatch = W_CachePatchName("WITIME", PU_LOCK_SB);
-        
-        // "sucks"
-        sucks = W_CachePatchName("WISUCKS", PU_LOCK_SB);
-        
-        // "par"
-        par = W_CachePatchName("WIPAR", PU_LOCK_SB);
-
-        
-        // "killers" (vertical)
-        killers = W_CachePatchName("WIKILRS", PU_LOCK_SB);
-        
-        // "victims" (horiz)
-        victims = W_CachePatchName("WIVCTMS", PU_LOCK_SB);
-        
-        // "total"
-        total = W_CachePatchName("WIMSTT", PU_LOCK_SB);
+        load_patch_list( doom_wi_patches );
+        doom_wi_patches_loaded = 1;
+    }
+    else if( EN_heretic )
+    {
+        load_patch_list( heretic_wi_patches );
+        heretic_wi_patches_loaded = 1;
     }
     
-    // ":"
-    colon = W_CachePatchName(((EN_heretic)? "FONTB26" : "WICOLON"), PU_LOCK_SB);
-
     // your face
-    star = W_CachePatchName("STFST01", PU_LOCK_SB);  // never unlocked
+    pl_face = W_CachePatchName("STFST01", PU_LOCK_SB);  // never unlocked
 
     // dead face
-    bstar = W_CachePatchName("STFDEAD0", PU_LOCK_SB);  // never unlocked
+    dead_face = W_CachePatchName("STFDEAD0", PU_LOCK_SB);  // never unlocked
 
 
     //added:08-02-98: now uses a single STPB0 which is remapped to the
@@ -2183,71 +2174,45 @@ static void WI_Load_Data(void)
 
 static void WI_Release_Data(void)
 {
-    int i, j;
+    byte j;
+    byte wb_epsd;
 
     //faB: never Z_ChangeTag() a pointer returned by W_CachePatchxxx()
     //     it doesn't work and is unecessary
-    if (rendermode==render_soft)
+    if( lnames )
     {
-      Z_ChangeTag(wiminus, PU_UNLOCK_CACHE);
+      release_patch_array( num, 10 );
+      release_patch_array( lnames, num_lnames );
 
-      for (i=0 ; i<10 ; i++)
-        Z_ChangeTag(num[i], PU_UNLOCK_CACHE);
+      Z_Free(lnames);
+      lnames = NULL;
 
-      if (gamemode == doom2_commercial)
+      if( (gamemode != doom2_commercial) && wbs )
       {
-        for (i=0 ; i<NUMCMAPS ; i++)
-            Z_ChangeTag(lnames[i], PU_UNLOCK_CACHE);
-      }
-      else
-      {
-        Z_ChangeTag(yah[0], PU_UNLOCK_CACHE);
-        Z_ChangeTag(yah[1], PU_UNLOCK_CACHE);
-
-        Z_ChangeTag(splat, PU_UNLOCK_CACHE);
-
-        for (i=0 ; i<NUMMAPS ; i++)
-            Z_ChangeTag(lnames[i], PU_UNLOCK_CACHE);
-
-        if (wbs->epsd < 3)
+        wb_epsd = wbs->epsd;
+        if (wb_epsd < 3)
         {
-            for (j=0; j<NUMANIMS[wbs->epsd]; j++)
+            for (j=0; j<num_anim[wb_epsd]; j++)
             {
-                if (wbs->epsd != 1 || j != 8)
-                {
-                    for (i=0; i<anim_inter_info[wbs->epsd][j].nanims; i++)
-                        Z_ChangeTag( anim_inter_info[wbs->epsd][j].p[i], PU_UNLOCK_CACHE);
-                }
+                if(wb_epsd == 1 && j == 8)  continue;  // shared
+
+                release_patch_array( anim_inter_info[wb_epsd][j].p,
+                                     anim_inter_info[wb_epsd][j].num_anims );
             }
         }
       }
     }
 
-    Z_Free(lnames);
-
-    if (rendermode==render_soft)
+    if( doom_wi_patches_loaded )
     {
-        Z_ChangeTag(percent, PU_UNLOCK_CACHE);
-        Z_ChangeTag(colon, PU_UNLOCK_CACHE);
+        release_patch_list( doom_wi_patches );
+        doom_wi_patches_loaded = 0;
+    }
 
-        if( EN_doom_etc )
-        {
-
-            Z_ChangeTag(finished, PU_UNLOCK_CACHE);
-            Z_ChangeTag(entering, PU_UNLOCK_CACHE);
-            Z_ChangeTag(kills, PU_UNLOCK_CACHE);
-            Z_ChangeTag(secret, PU_UNLOCK_CACHE);
-            Z_ChangeTag(sp_secret, PU_UNLOCK_CACHE);
-            Z_ChangeTag(items, PU_UNLOCK_CACHE);
-            Z_ChangeTag(frags, PU_UNLOCK_CACHE);
-            Z_ChangeTag(timePatch, PU_UNLOCK_CACHE);
-            Z_ChangeTag(sucks, PU_UNLOCK_CACHE);
-            Z_ChangeTag(par, PU_UNLOCK_CACHE);
-            
-            Z_ChangeTag(victims, PU_UNLOCK_CACHE);
-            Z_ChangeTag(killers, PU_UNLOCK_CACHE);
-            Z_ChangeTag(total, PU_UNLOCK_CACHE);
-        }
+    if( heretic_wi_patches_loaded )
+    {
+        release_patch_list( heretic_wi_patches );
+        heretic_wi_patches_loaded = 0;
     }
 }
 
@@ -2285,10 +2250,10 @@ void WI_Drawer (void)
 }
 
 
-static void WI_Init_Variables(wbstartstruct_t* wbstartstruct)
+static void WI_Init_Variables( wb_start_t * wb_start)
 {
 
-    wbs = wbstartstruct;
+    wbs = wb_start;
 
 #ifdef RANGECHECKING
     if (gamemode != doom2_commercial)
@@ -2300,18 +2265,18 @@ static void WI_Init_Variables(wbstartstruct_t* wbstartstruct)
     }
     else
     {
-        RNGCHECK(wbs->last, 0, 8);
-        RNGCHECK(wbs->next, 0, 8);
+        RNGCHECK(wbs->lev_prev, 0, 8);
+        RNGCHECK(wbs->lev_next, 0, 8);
     }
     RNGCHECK(wbs->pnum, 0, MAXPLAYERS);
     RNGCHECK(wbs->pnum, 0, MAXPLAYERS);
 #endif
 
-    acceleratestage = 0;
+    accelerate_stage = 0;
     cnt = bcnt = 0;
-    firstrefresh = 1;
+    first_refresh = 1;
     me = wbs->pnum;
-    plrs = wbs->plyr;
+    wb_plyr = wbs->plyr;
 
     if ( gamemode != ultdoom_retail )
     {
@@ -2320,10 +2285,10 @@ static void WI_Init_Variables(wbstartstruct_t* wbstartstruct)
     }
 }
 
-void WI_Start(wbstartstruct_t* wbstartstruct)
+void WI_Start(wb_start_t * wb_start)
 {
 
-    WI_Init_Variables(wbstartstruct);
+    WI_Init_Variables(wb_start);
     WI_Load_Data();
 
     if( cv_deathmatch.EV )

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 1337 2017-06-21 16:06:55Z wesleyjohnson $
+// $Id: doomstat.h 1366 2017-11-01 01:14:15Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -335,7 +335,7 @@ extern  mapthing_t      *playerstarts[MAXPLAYERS];
 
 // Intermission stats.
 // Parameters for world map / intermission.
-extern  wbstartstruct_t         wminfo;
+extern  wb_start_t      wminfo;
 
 
 // LUT of ammunition limits for each kind.
