@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: hu_stuff.h 1370 2017-11-01 01:20:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -48,13 +48,16 @@
 //------------------------------------
 //           heads up font
 //------------------------------------
-#define HU_FONTSTART    '!'     // the first font characters
-#define HU_FONTEND      '_'     // the last font characters
+// the first font characters
+#define HU_FONTSTART    '!'
+// the last font characters
+#define HU_FONTEND      '_'
 
 #define HU_FONTSIZE     (HU_FONTEND - HU_FONTSTART + 1)
 
 
-#define HU_CROSSHAIRS   3       // maximum 9 see HU_Init();
+// maximum 9
+#define HU_CROSSHAIRS   3
 
 extern char*   shiftxform;   // french/english translation shift table
 
@@ -75,9 +78,10 @@ extern boolean chat_on;
 extern boolean hu_showscores;
 extern boolean playerdeadview;
 
+void HU_Register_Commands( void );
 
-// init heads up data at game startup.
-void    HU_Init(void);
+void HU_Load_Graphics( void );
+void HU_Release_Graphics( void );
 
 // reset heads up when consoleplayer respawns.
 void    HU_Start(void);

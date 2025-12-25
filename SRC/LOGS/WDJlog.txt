@@ -6341,3 +6341,9 @@ patchfile = w107_65_netid.patch
 - commit revision 1369
 Compute netid as unit16_t (instead of unsigned short)
 to prevent machine differences.
+
+*** W107_hu
+patchfile = w107_66_hu.patch
+- commit revision 1370
+Split hu init into load graphics, release graphics,
+and register functions.

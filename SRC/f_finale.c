@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 1359 2017-10-16 16:23:17Z wesleyjohnson $
+// $Id: f_finale.c 1370 2017-11-01 01:20:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -413,7 +413,7 @@ void F_TextWrite (void)
         }
 
         // hu_font is endian fixed
-        w =  (hu_font[c]->width);
+        w = V_patch( hu_font[c] )->width;
         if (cx+w > vid.width)
             break;
         V_DrawScaledPatch(cx, cy, hu_font[c]);
@@ -733,7 +733,7 @@ void F_BunnyScroll (void)
     if (scrolled < 0)
         scrolled = 0;
     //faB:do equivalent for hw mode ?
-    if (rendermode==render_soft)
+    if( rendermode == render_soft )
     {
         for ( sx=0 ; sx<320 ; sx++)
         {
@@ -745,6 +745,7 @@ void F_BunnyScroll (void)
     }
     else
     {
+        // HWR render
         if( scrolled>0 )
             V_DrawScaledPatch(320-scrolled, 0, p2 );
         if( scrolled<320 )
