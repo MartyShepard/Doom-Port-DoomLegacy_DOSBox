@@ -6272,3 +6272,10 @@ Rename functions with Init, Clear, Create, Load, Setup, so
 read clearer.  Get away from the run-together name syntax.
 Fix P_Setup_LevelSky to call R_TextureNumForName in only one place,
 and add one safety test.
+
+*** W107_texname
+patchfile = w107_58_texname.patch
+- commit revision 1362
+Add a test to exclude texture names that start with '#' (which
+are used for parameters) from error messages about textures
+not found.

@@ -1,6 +1,7 @@
 * Not need to Compile.
 
-[01361]:  w107 initnames
+[01362 ]: w107 texname error
+[01361 ]: w107 initnames
           Beschäftigungstherapie
 					
 [01360*]: w107 corpse color

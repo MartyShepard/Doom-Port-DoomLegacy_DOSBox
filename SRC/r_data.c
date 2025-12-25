@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: r_data.c 1362 2017-10-16 16:27:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2784,6 +2784,7 @@ int R_TextureNumForName (char* name)
     int i;
 
     i = R_CheckTextureNumForName (name);
+
 #if 0
 // [WDJ] DEBUG TRACE, to see where textures have ended up and which are accessed.
 #  define trace_SIZE 512
@@ -2795,10 +2796,12 @@ int R_TextureNumForName (char* name)
 #  undef trace_SIZE   
 #endif   
 
-    if (i==-1)
+    if( i == -1 )
     {
-        //I_Error ("R_TextureNumForName: %.8s not found", name);
-        I_SoftError("R_TextureNumForName: %.8s not found\n", name);
+        // Exclude # parameters from "not found" message.
+        if( isalpha(name[0]) )
+            I_SoftError("R_TextureNumForName: %.8s not found\n", name);
+
         i=1;	// default to texture[1]
     }
     return i;
