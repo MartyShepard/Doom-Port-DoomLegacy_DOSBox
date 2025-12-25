@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: st_stuff.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -123,7 +123,7 @@ typedef enum
 boolean ST_Responder(event_t* ev);
 
 // face load/unload graphics, called when skin changes
-void ST_Load_FaceGraphics (char *facestr);
+void ST_Load_FaceGraphics (const char *facestr);
 void ST_Release_FaceGraphics (void);
 
 // return if player a is in the same team of the player b

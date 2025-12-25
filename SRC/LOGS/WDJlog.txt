@@ -6328,3 +6328,10 @@ Example> make DEBUG=1
 
 Removed the MFT_TRANSSHIFT compile-time test.  Instead included some
 PARANOIA tests that detect inconsistencies in the values.
+
+*** W107_const_char
+patchfile = w107_64_const_char.patch
+- commit revision 1368
+Compiled with the -Wwrite-string flag to detect problems.
+Change many function parameters from char* to const char*.
+Fixed some functions to not modify their string parameters.

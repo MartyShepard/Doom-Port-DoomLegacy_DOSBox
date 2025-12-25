@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 1366 2017-11-01 01:14:15Z wesleyjohnson $
+// $Id: doomstat.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -170,12 +170,12 @@ typedef enum {
 
 typedef struct
 {
-    char * 	gname;	       // game name, used in savegame
-    char *	startup_title; // startup page
-    char *	idstr;	       // used for directory and command line
-    char * 	iwad_filename[3]; // possible filenames
+    const char * gname;	       // game name, used in savegame
+    const char * startup_title; // startup page
+    const char * idstr;	       // used for directory and command line
+    const char * iwad_filename[3]; // possible filenames
                                // doom, doom2, heretic, heretic1, hexen, etc.
-    char *	support_wad;   // another wad to support the game
+    const char * support_wad;   // another wad to support the game
     const char * keylump[2];   // required lump names
     byte	require_lump;  // lumps that must appear (bit set)
     byte	reject_lump;   // lumps that must not appear (bit set)

@@ -106,7 +106,7 @@ void  I_Error (const char *error, ...);
 void  I_SoftError (const char *errmsg, ...);
 
 // m_misc.h
-char  *va(char *format, ...);
+char  *va(const char *format, ...);
 char  *Z_StrDup (const char *in);
 
 // Network

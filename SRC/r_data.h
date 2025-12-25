@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: r_data.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -175,17 +175,17 @@ void R_PrecacheLevel (void);
 // Retrieval.
 // Floor/ceiling opaque texture tiles,
 // lookup by name. For animation?
-int R_FlatNumForName (char *name);
+int R_FlatNumForName (const char *name);
 
 
 // Called by P_Ticker for switches and animations,
 // returns the texture number for the texture name.
-int R_TextureNumForName (char *name);
-int R_CheckTextureNumForName (char *name);
+int R_TextureNumForName (const char *name);
+int R_CheckTextureNumForName (const char *name);
 
 
 void R_Clear_Colormaps();
-int R_ColormapNumForName(char *name);
+int R_ColormapNumForName(const char *name);
 
 // The colorstr is the toptexture name.
 // The ctrlstr is the midtexture name.

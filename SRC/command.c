@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: command.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -79,8 +79,8 @@
 //========
 // protos.
 //========
-static boolean COM_Exists (char *com_name);
-static void    COM_ExecuteString (char *text, boolean script);
+static boolean COM_Exists (const char * com_name);
+static void    COM_ExecuteString (const char * text, boolean script);
 
 static void    COM_Alias_f (void);
 static void    COM_Echo_f (void);
@@ -90,12 +90,12 @@ static void    COM_Help_f (void);
 static void    COM_Toggle_f (void);
 
 static boolean    CV_Command (void);
-static char      *CV_StringValue (char *var_name);
+static char *  CV_StringValue (const char * var_name);
 static consvar_t  *consvar_vars;       // list of registered console variables
 
 #define COM_TOKEN_MAX   1024
 static char    com_token[COM_TOKEN_MAX];
-static char    *COM_Parse (char *data, boolean script);
+static const char *  COM_Parse (const char * data, boolean script);
 
 CV_PossibleValue_t CV_OnOff[] =    {{0,"Off"}, {1,"On"},    {0,NULL}};
 CV_PossibleValue_t CV_YesNo[] =     {{0,"No"} , {1,"Yes"},   {0,NULL}};
@@ -128,7 +128,7 @@ static vsbuf_t com_text;     // variable sized buffer
 
 //  Add text (a NUL-terminated string) in the command buffer (for later execution)
 //
-void COM_BufAddText (char *text)
+void COM_BufAddText (const char *text)
 {
   if (!VS_Print(&com_text, text))
     CONS_Printf ("Command buffer full!\n");
@@ -138,7 +138,7 @@ void COM_BufAddText (char *text)
 // Adds command text immediately after the current command
 // Adds a \n to the text
 //
-void COM_BufInsertText (char *text)
+void COM_BufInsertText (const char *text)
 {
     char    *temp;
 
@@ -287,8 +287,8 @@ void COM_BufExecute ( void )
 
 typedef struct xcommand_s
 {
-    char               *name;
-    struct xcommand_s  *next;
+    const char       * name;
+    struct xcommand_s * next;
     com_func_t         function;
 } xcommand_t;
 
@@ -299,7 +299,7 @@ static  xcommand_t  *com_commands = NULL;     // current commands
 static int         com_argc;
 static char        *com_argv[MAX_ARGS];
 static char        *com_null_string = "";
-static char        *com_args = NULL;          // current command args or NULL
+static const char * com_args = NULL;          // current command args or NULL
 
 
 //  Initialize command buffer and add basic commands
@@ -365,7 +365,7 @@ char *COM_Args (void)
 #endif
 
 
-int COM_CheckParm (char *check)
+int COM_CheckParm (const char *check)
 {
     int         i;
 
@@ -382,7 +382,7 @@ int COM_CheckParm (char *check)
 //
 // Takes a null terminated string.  Does not need to be /n terminated.
 // breaks the string up into arg tokens.
-static void COM_TokenizeString (char *text, boolean script)
+static void COM_TokenizeString (const char * text, boolean script)
 {
     int  i;
 
@@ -432,9 +432,9 @@ static void COM_TokenizeString (char *text, boolean script)
 
 // Add a command before existing ones.
 //
-void COM_AddCommand (char *name, com_func_t func)
+void COM_AddCommand (const char *name, com_func_t func)
 {
-    xcommand_t  *cmd;
+    xcommand_t * cmd;
 
     // fail if the command is a variable name
     if (CV_StringValue(name)[0])
@@ -463,9 +463,9 @@ void COM_AddCommand (char *name, com_func_t func)
 
 //  Returns true if a command by the name given exists
 //
-static boolean COM_Exists (char *com_name)
+static boolean COM_Exists (const char * com_name)
 {
-    xcommand_t  *cmd;
+    xcommand_t * cmd;
 
     for (cmd=com_commands ; cmd ; cmd=cmd->next)
     {
@@ -480,7 +480,8 @@ static boolean COM_Exists (char *com_name)
 //  Command completion using TAB key like '4dos'
 //  Will skip 'skips' commands
 //
-char *COM_CompleteCommand (char *partial, int skips)
+//  partial : a partial keyword
+const char * COM_CompleteCommand (const char *partial, int skips)
 {
     xcommand_t  *cmd;
     int        len;
@@ -494,8 +495,10 @@ char *COM_CompleteCommand (char *partial, int skips)
     for (cmd=com_commands ; cmd ; cmd=cmd->next)
     {
         if (!strncmp (partial,cmd->name, len))
+        {
             if (!skips--)
                 return cmd->name;
+        }
     }
 
     return NULL;
@@ -506,7 +509,7 @@ char *COM_CompleteCommand (char *partial, int skips)
 // Parses a single line of text into arguments and tries to execute it.
 // The text can come from the command buffer, a remote client, or stdin.
 //
-static void COM_ExecuteString (char *text, boolean script)
+static void COM_ExecuteString (const char *text, boolean script)
 {
     xcommand_t  *cmd;
     cmdalias_t *a;
@@ -844,7 +847,7 @@ boolean VS_Write (vsbuf_t *buf, void *data, int length)
 
 //  Print text in variable size buffer, like VS_Write + trailing 0
 //
-boolean VS_Print (vsbuf_t *buf, char *data)
+boolean VS_Print (vsbuf_t *buf, const char *data)
 {
   int len = strlen(data) + 1;
   int old_size = buf->cursize;  // VS_GetSpace modifies cursize
@@ -888,7 +891,7 @@ static char       *cv_null_string = "";
 //  Search if a variable has been registered
 //  returns true if given variable has been registered
 //
-consvar_t *CV_FindVar (char *name)
+consvar_t * CV_FindVar (const char * name)
 {
     consvar_t  *cvar;
 
@@ -905,7 +908,7 @@ consvar_t *CV_FindVar (char *name)
 //  Build a unique Net Variable identifier number, that is used
 //  in network packets instead of the fullname
 //
-unsigned short CV_ComputeNetid (char *s)
+unsigned short  CV_ComputeNetid (const char * s)
 {
     unsigned short ret;
     static int premiers[16] = {2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53};
@@ -925,7 +928,7 @@ unsigned short CV_ComputeNetid (char *s)
 
 //  Return the Net Variable, from it's identifier number
 //
-static consvar_t *CV_FindNetVar (unsigned short netid)
+static consvar_t * CV_FindNetVar (unsigned short netid)
 {
     consvar_t  *cvar;
 
@@ -938,7 +941,7 @@ static consvar_t *CV_FindNetVar (unsigned short netid)
     return NULL;
 }
 
-static void Setvalue (consvar_t *var, char *valstr);
+static void Setvalue (consvar_t *var, const char * valstr);
 
 //  Register a variable, that can be used later at the console
 //
@@ -998,7 +1001,7 @@ void CV_RegisterVar (consvar_t *variable)
 
 //  Returns the string value of a console var
 //
-static char *CV_StringValue (char *var_name)
+static char * CV_StringValue (const char * var_name)
 {
     consvar_t *var;
 
@@ -1011,7 +1014,7 @@ static char *CV_StringValue (char *var_name)
 
 //  Completes the name of a console var
 //
-char *CV_CompleteVar (char *partial, int skips)
+const char * CV_CompleteVar (const char * partial, int skips)
 {
     consvar_t   *cvar;
     int         len;
@@ -1025,8 +1028,10 @@ char *CV_CompleteVar (char *partial, int skips)
     for (cvar=consvar_vars ; cvar ; cvar=cvar->next)
     {
         if (!strncmp (partial,cvar->name, len))
+        {
             if (!skips--)
                 return cvar->name;
+        }
     }
 
     return NULL;
@@ -1035,7 +1040,7 @@ char *CV_CompleteVar (char *partial, int skips)
 
 // Set value to the variable, no check only for internal use
 //
-static void Setvalue (consvar_t *var, char *valstr)
+static void Setvalue (consvar_t *var, const char * valstr)
 {
     char  value_str[64];  // print %d cannot exceed 64
 
@@ -1108,8 +1113,9 @@ error:      // not found
                 I_Error("Variable %s default value \"%s\" is not a possible value\n",var->name,var->defaultvalue);
             return;
 found:
+            // When value is from PossibleValue, string is a const char *.
             var->value =var->PossibleValue[i].value;
-            var->string=var->PossibleValue[i].strvalue;
+            var->string= (char*) var->PossibleValue[i].strvalue;
             goto finish;
         }
     }
@@ -1243,7 +1249,7 @@ buff_overrun:
 
 //  does as if "<varname> <value>" is entered at the console
 //
-void CV_Set (consvar_t *var, char *value)
+void CV_Set (consvar_t *var, const char *value)
 {
     //changed = strcmp(var->string, value);
 #ifdef PARANOIA
@@ -1412,7 +1418,7 @@ void CV_SaveVariables (FILE *f)
 //  Parse a token out of a string, handles script files too
 //  returns the data pointer after the token
 //  Do not mangle filenames, set script only where strings might have '\' escapes.
-static char *COM_Parse (char *data, boolean script)
+static const char * COM_Parse (const char * data, boolean script)
 {
     int c;
     int len = 0;

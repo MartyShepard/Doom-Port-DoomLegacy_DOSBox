@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 1366 2017-11-01 01:14:15Z wesleyjohnson $
+// $Id: w_wad.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -192,13 +192,13 @@ int     W_Check_Namespace (const char* name, lump_namespace_e within_namespace);
 //  Return lump id, or -1 if name not found.
 int     W_CheckNumForName (const char* name);
 // this one checks only in one pwad
-int     W_CheckNumForNamePwad (char* name, int wadid, int startlump);
-int     W_GetNumForName (char* name);
+int     W_CheckNumForNamePwad (const char* name, int wadid, int startlump);
+int     W_GetNumForName (const char* name);
 
 // modified version that scan forwards
 // used to get original lump instead of patched using -file
-int     W_CheckNumForNameFirst (char* name);
-int     W_GetNumForNameFirst (char* name);  
+int     W_CheckNumForNameFirst (const char* name);
+int     W_GetNumForNameFirst (const char* name);  
 
 int     W_LumpLength (int lump);
 //added:06-02-98: read all or a part of a lump size==0 meen read all
@@ -210,9 +210,9 @@ void    W_ReadLump (int lump, void *dest);
 //  lump : lump number with embedded wad number
 
 void*   W_CacheLumpNum (int lump, int ztag);
-void*   W_CacheLumpName (char* name, int ztag);
+void*   W_CacheLumpName (const char* name, int ztag);
 
-void*   W_CachePatchName (char* name, int ztag);
+void*   W_CachePatchName (const char* name, int ztag);
 
 void*   W_CachePatchNum (int lump, int ztag);                        // return a patch_t
 void*   W_CachePatchNum_Endian ( int lump, int ztag );
@@ -244,7 +244,7 @@ void*   W_CacheRawAsPic( int lump, int width, int height, int ztag); // return a
 
 // Cache and endian convert a pic_t
 void*   W_CachePicNum( int lumpnum, int ztag );
-void*   W_CachePicName( char* name, int ztag );
+void*   W_CachePicName( const char* name, int ztag );
 
 
 // [WDJ] Return a sum unique to a lump, to detect replacements.

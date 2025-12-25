@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: g_game.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -78,7 +78,7 @@ extern team_info_t*  team_info[MAXTEAMS];
 extern byte          num_teams;  // limited to MAXTEAMS (32)
 
 team_info_t*  get_team( int team_num );
-void  set_team_name( int team_num, char * str );
+void  set_team_name( int team_num, const char * str );
 char * get_team_name( int team_num );
 
 extern  player_t  players[MAXPLAYERS];
@@ -170,15 +170,15 @@ void  G_KillDog( mobj_t * mo );
 
 // ---- Game load
 
-void G_InitNew (skill_e skill, char* mapname, boolean resetplayer);
+void G_InitNew (skill_e skill, const char* mapname, boolean resetplayer);
 
 // Can be called by the startup code or M_Responder.
 // A normal game starts at map 1,
 // but a warp test can start elsewhere
-void G_DeferedInitNew (skill_e skill, char* mapname, boolean StartSplitScreenGame);
+void G_DeferedInitNew (skill_e skill, const char* mapname, boolean StartSplitScreenGame);
 void G_DoLoadLevel (boolean resetplayer);
 
-void G_DeferedPlayDemo (char* demo);
+void G_DeferedPlayDemo (const char* demo);
 
 // [WDJ] Set the gamemode, and all EN_ that are dependent upon it.
 void G_set_gamemode( byte new_gamemode );
@@ -189,14 +189,14 @@ boolean G_Downgrade(int version);
 // Can be called by the startup code or M_Responder,
 // calls P_SetupLevel or W_EnterWorld.
 #ifdef SAVEGAMEDIR
-//void G_Load_Game ( char * savegamedir, int slot );
+//void G_Load_Game ( const char * savegamedir, int slot );
 #endif
 void G_Load_Game (int slot);
 void G_DoLoadGame (int slot);
 
 // Called by M_Responder.
-void G_Save_Game  (int slot, char* description);
-void G_DoSaveGame(int slot, char* description);
+void G_Save_Game  (int slot, const char* description);
+void G_DoSaveGame(int slot, const char* description);
 
 extern char savegamename[MAX_WADPATH];
 
@@ -206,12 +206,12 @@ void CheckSaveGame(size_t size);
 
 // --- Demo
 // Only called by startup code.
-void G_RecordDemo (char* name);
+void G_RecordDemo (const char* name);
 
 void G_BeginRecording (void);
 
-void G_DoPlayDemo (char *defdemoname);
-void G_TimeDemo (char* name);
+void G_DoPlayDemo (const char *defdemoname);
+void G_TimeDemo (const char* name);
 void G_DoneLevelLoad(void);
 void G_StopDemo(void);
 boolean G_CheckDemoStatus (void);

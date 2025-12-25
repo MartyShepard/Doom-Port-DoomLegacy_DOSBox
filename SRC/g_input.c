@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: g_input.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -641,7 +641,8 @@ void G_CheckDoubleUsage(int keynum)
     }
 }
 
-void setcontrol(int (*gc)[2], char * cstr)
+static
+void setcontrol(int (*gc)[2], const char * cstr)
 {
     int numctrl;
     char *namectrl;

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: t_func.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -190,7 +190,6 @@
 
 
 fs_value_t  evaluate_expression(int start, int stop);
-int find_operator(int start, int stop, char *value);
 
 
 // array functions in t_array.c
@@ -4205,7 +4204,7 @@ err_handle:
 
 #ifdef USE_STRING_TO_RGBA
 // [WDJ] Rewritten to process Hex ARGB and RGB string, any length, any machine.
-uint32_t String_to_RGBA(char *s)
+uint32_t String_to_RGBA( const char *s)
 {
     // [WDJ] Handles any length hex value, and no macros.
     RGBA_t   valrgb;  // Cannot trust byte order of rgba component.

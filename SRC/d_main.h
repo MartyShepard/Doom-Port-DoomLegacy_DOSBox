@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: d_main.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -82,7 +82,7 @@ void D_DoAdvanceDemo (void);
 //
 void D_PageTicker (void);
 // pagename is lumpname of a 320x200 patch to fill the screen
-void D_PageDrawer (char* pagename);
+void D_PageDrawer (const char* pagename);
 void D_AdvanceDemo (void);
 void D_DisableDemo (void);
 void D_StartTitle (void);

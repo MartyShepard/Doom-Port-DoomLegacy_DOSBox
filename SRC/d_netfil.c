@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1311 2017-04-20 21:25:29Z wesleyjohnson $
+// $Id: d_netfil.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -155,7 +155,7 @@ static transfer_t transfer[MAXNETNODES];
 int cl_num_fileneed;
 fileneed_t cl_fileneed[MAX_WADFILES];
 
-char * downloaddir = "DOWNLOAD";
+const char * downloaddir = "DOWNLOAD";
 
 static void SV_SendFile(byte to_node, char *filename, char fileid);
 

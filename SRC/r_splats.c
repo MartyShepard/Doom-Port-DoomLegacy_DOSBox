@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_splats.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: r_splats.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -147,7 +147,7 @@ static wallsplat_t* R_AllocWallSplat (void)
 // splatpatchname : name of patch to draw
 void R_AddWallSplat (line_t*    wallline,
                      int        sectorside,
-                     char*      patchname,
+                     const char*  patchname,
                      fixed_t    top,
                      fixed_t    wallfrac,
                      int        flags)

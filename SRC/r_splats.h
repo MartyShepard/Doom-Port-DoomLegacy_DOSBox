@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_splats.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: r_splats.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -91,7 +91,8 @@ extern float P_SegLength (seg_t* seg);
 // call at P_SetupLevel()
 void R_Clear_LevelSplats (void);
 
-void R_AddWallSplat (line_t* wallline, int sectorside, char* patchname, fixed_t top, fixed_t wallfrac, int flags);
+void R_AddWallSplat (line_t* wallline, int sectorside, const char* patchname,
+                     fixed_t top, fixed_t wallfrac, int flags);
 void R_AddFloorSplat (subsector_t* subsec, char* picname, fixed_t x, fixed_t y, fixed_t z, int flags);
 
 void R_Clear_VisibleFloorSplats (void);

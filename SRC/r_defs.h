@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: r_defs.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -785,13 +785,13 @@ typedef struct drawseg_s
 
 // Patches.
 // A patch holds one or more columns.
-// Patches are used for sprites and all masked pictures,
-// and we compose textures from the TEXTURE1/2 lists
+// Patches are used for sprites and all masked pictures.
+// We compose textures from the TEXTURE1 and TEXTURE2 lists
 // of patches.
 //
 //WARNING: this structure is cloned in GlidePatch_t
 // [WDJ] This is used for reading patches from wad.
-struct patch_s
+typedef struct
 {
     uint16_t            width;          // bounding box size
     uint16_t            height;
@@ -803,9 +803,7 @@ struct patch_s
     // This is used as the head of a patch, and columnofs[8] provides
     // access to an array that is usually [64], [128], or [256].
     // This would not work if the [8] was actually enforced.
-};
-typedef struct patch_s patch_t;
-
+} patch_t;
 
 typedef enum {
     PALETTE         = 0,  // 1 byte is the index in the doom palette (as usual)

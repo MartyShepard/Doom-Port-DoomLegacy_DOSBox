@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1363 2017-10-16 16:29:18Z wesleyjohnson $
+// $Id: v_video.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -220,7 +220,7 @@ void V_DrawMappedPatch_Box(int x, int y, patch_t * patch, byte * colormap,
 
 // with temp patch load to cache
 void V_DrawMappedPatch_Name ( int x, int y,
-                              char*         name,
+                              const char*   name,
                               byte*         colormap );
 
 //added:05-02-98:V_DrawPatch scaled 2,3,4 times size and position.
@@ -229,7 +229,7 @@ void V_DrawScaledPatch ( int x, int y,
                          patch_t*   patch );
 
 // with temp patch load to cache
-void V_DrawScaledPatch_Name(int x, int y, char * name );
+void V_DrawScaledPatch_Name(int x, int y, const char * name );
 void V_DrawScaledPatch_Num(int x, int y, int patch_num );
 
 //added:16-02-98: like V_DrawScaledPatch, plus translucency
@@ -312,20 +312,20 @@ void V_FadeRect(int x1, int x2, int y2,
 int V_DrawCharacter (int x, int y, byte c);
 
 //added:05-02-98: draw a string using the hu_font
-void V_DrawString (int x, int y, int option, char* string);
+void V_DrawString (int x, int y, int option, const char* string);
 
 // Find string width from hu_font chars
-int V_StringWidth (char* string);
+int V_StringWidth (const char* string);
 
 // Find string height from hu_font chars
-int V_StringHeight (char* string);
+int V_StringHeight (const char* string);
 
 // draw text with fontB (big font)
 extern int FontBBaseLump;
-void V_DrawTextB(char *text, int x, int y);
-void V_DrawTextBGray(char *text, int x, int y);
-int V_TextBWidth(char *text);
-int V_TextBHeight(char *text);
+void V_DrawTextB(const char *text, int x, int y);
+void V_DrawTextBGray(const char *text, int x, int y);
+int V_TextBWidth(const char *text);
+int V_TextBHeight(const char *text);
 
 //added:12-02-98:
 void V_DrawTiltView (byte *viewbuffer);

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_spec.c 1193 2015-12-01 22:23:46Z wesleyjohnson $
+// $Id: t_spec.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -57,7 +57,6 @@
 #include "t_spec.h"
 #include "t_vari.h"
 
-int find_operator(int start, int stop, char *value);
 
 // ending brace found in parsing
 
@@ -266,7 +265,7 @@ static void create_variable(int start, int stop)
   
   // check if already exists, only checking
   // the current script
-  if( variableforname(newvar_script, tokens[start]) )  goto done;  // already one
+  if( variable_for_name(newvar_script, tokens[start]) )  goto done;  // already one
   
   new_variable(newvar_script, tokens[start], newvar_type);
   

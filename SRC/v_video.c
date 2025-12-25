@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1363 2017-10-16 16:29:18Z wesleyjohnson $
+// $Id: v_video.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1217,7 +1217,7 @@ void V_DrawMappedPatch_Box(int x, int y, patch_t * patch, byte * colormap, int b
 
 //  per drawinfo
 // with temp patch load to cache
-void V_DrawMappedPatch_Name ( int x, int y, char* name, byte* colormap )
+void V_DrawMappedPatch_Name ( int x, int y, const char* name, byte* colormap )
 {
    // The patch is used only in this function
    V_DrawMappedPatch ( x, y,
@@ -1359,7 +1359,7 @@ void V_DrawScaledPatch(int x, int y, patch_t * patch)
 
 //  per drawinfo, with V_SCALESTART, V_SCALEPATCH
 // with temp patch load to cache
-void V_DrawScaledPatch_Name(int x, int y, char * name )
+void V_DrawScaledPatch_Name(int x, int y, const char * name )
 {
    // The patch is used only in this function
    V_DrawScaledPatch ( x, y,
@@ -2450,13 +2450,13 @@ int  V_Drawfont1_char(int x, int y, byte c)
 //  NOT FOR OPENGL ***
 //  Scaled or Unscaled x, y.
 //  Called by V_DrawString.
-void V_Drawfont1_string(int x, int y, int option, char *string)
+void V_Drawfont1_string(int x, int y, int option, const char *string)
 {
     // vid : from video setup
     // drawinfo : from V_SetupDraw
     int  fb, fy, i, d, chwidth, chwidth_bytes, chspace_bytes, x0, cx;
     byte *dp0, *dp;
-    char *ch = string;
+    const char * ch = string;
     byte fbit, c;
     byte fcolor = (option & V_WHITEMAP)? ci_white : ci_green;  // white : green
     byte * lbp;
@@ -2626,7 +2626,7 @@ int V_DrawCharacter(int x, int y, byte c)
 // Called st_stuff status overlay: (does its own scaling), option=0
 //    within SetupDraw( NOSCALE, SCALEPATCH )
 // Called wi_stuff YAH: option 0 or V_WHITEMAP, within SetupDraw(SCALESTART, SCALEPATCH)
-void V_DrawString(int x, int y, int option, char *string)
+void V_DrawString(int x, int y, int option, const char *string)
 {
     // Save draw SCALESTART setting, and switch to NO SCALESTART drawing.
     // The combination of SCALESTART to this DrawString, and NO SCALEPATCH
@@ -2634,7 +2634,7 @@ void V_DrawString(int x, int y, int option, char *string)
     // vid : from video setup
     // drawinfo : from V_SetupDraw
     float w;
-    char *ch;
+    const char *ch;
     int c;
     float cx, cy;  // to support hw_draw
     float dupx, dupy; // to fix spacing scaling
@@ -2724,7 +2724,7 @@ void V_DrawString(int x, int y, int option, char *string)
 // Find string width from hu_font chars
 //
 // Used extensively
-int V_StringWidth(char *string)
+int V_StringWidth( const char *string)
 {
     int i;
     int sw = 0;
@@ -2760,7 +2760,7 @@ int V_StringWidth(char *string)
 //
 // Find string height from hu_font chars
 //
-int V_StringHeight(char *string)
+int V_StringHeight( const char *string)
 {
     return (hu_font[0]->height);
 }
@@ -2776,7 +2776,7 @@ int V_StringHeight(char *string)
 int FontBBaseLump;
 
 // per drawinfo
-void V_DrawTextB(char *text, int x, int y)
+void V_DrawTextB(const char *text, int x, int y)
 {
     char c;
     patch_t *p;
@@ -2799,7 +2799,7 @@ void V_DrawTextB(char *text, int x, int y)
 }
 
 // per drawinfo
-void V_DrawTextBGray(char *text, int x, int y)
+void V_DrawTextBGray(const char *text, int x, int y)
 {
     char c;
     patch_t *p;
@@ -2829,7 +2829,7 @@ void V_DrawTextBGray(char *text, int x, int y)
 //
 //---------------------------------------------------------------------------
 
-int V_TextBWidth(char *text)
+int V_TextBWidth(const char *text)
 {
     char c;
     int width;
@@ -2853,7 +2853,7 @@ int V_TextBWidth(char *text)
     return (width);
 }
 
-int V_TextBHeight(char *text)
+int V_TextBHeight(const char *text)
 {
     return 16;
 }

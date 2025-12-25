@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sounds.h 1348 2017-07-29 18:25:36Z wesleyjohnson $
+// $Id: sounds.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -92,7 +92,10 @@ struct sfxinfo_struct
 {
 // fields loaded by sounds init
     // up to 6-character name
-    char*       name;
+    char * name;
+      // Assigned const strings for built-in names.
+      // Allocated strings for loaded names and deh.
+      // If name is const char *, then cannot remove loadable sounds.
 
     // Sfx priority, 1 is highest, 64 is avg.
     uint16_t    priority;
@@ -139,7 +142,9 @@ typedef struct {
 typedef struct
 {
     // up to 6-character name
-    char*       name;
+    char * name;
+      // Assigned const strings for built-in names.
+      // Allocated strings for loaded names and deh.
 
     // lump number of music
     int         lumpnum;
@@ -608,6 +613,6 @@ sfxid_t  S_AddSoundFx (const char *name, uint32_t flags);
 void   S_RemoveSoundFx (sfxid_t sfxid);
 
 
-int    S_AddMusic  (char *name);
-int    S_FindMusic (char *name);
+int    S_AddMusic  (const char *name);
+int    S_FindMusic (const char *name);
 #endif

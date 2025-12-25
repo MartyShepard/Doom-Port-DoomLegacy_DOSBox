@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: m_misc.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -18,6 +18,8 @@
 //
 //
 // $Log: m_misc.c,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.10  2004/04/18 12:40:14  hurdler
 // Jive's request for saving screenshots
 //
@@ -192,7 +194,7 @@ void FIL_ExtFile_Close ( ExtFIL_t * ft )
 //
 // checks if needed, and add default extension to filename
 // in path[MAX_WADPATH]
-void FIL_DefaultExtension (char *path, char *extension)
+void FIL_DefaultExtension (char *path, const char *extension)
 {
     char    *src;
     // [WDJ] assume MAX_WADPATH buffer
@@ -219,8 +221,10 @@ char * FIL_Filename_of( char * nstr )
     int i;
     // point to start of filename only
     for (i = strlen(nstr) - 1; i >= 0; i--)
+    {
       if (nstr[i] == '\\' || nstr[i] == '/' || nstr[i] == ':')
         break;
+    }
     return &nstr[i+1];
 }
 
@@ -262,7 +266,7 @@ void FIL_ExtractFileBase ( char*  path,  char* dest )
 //  Returns true if a filename extension is found
 //  There are no '.' in wad resource name
 //
-boolean FIL_CheckExtension (char *in)
+boolean FIL_CheckExtension (const char * in)
 {
     while (*in++)
     {
@@ -386,7 +390,7 @@ void M_FirstLoadConfig(void)
 
 //  Save all game config here
 //
-void M_SaveConfig (char *filename)
+void M_SaveConfig (const char *filename)
 {
     FILE    *f;
 
@@ -602,7 +606,7 @@ void M_ScreenShot (void)
 #define VA_BUF_SIZE 1024
 static char  va_buffer[VA_BUF_SIZE];
 //
-char*   va(char *format, ...)
+char*   va(const char *format, ...)
 {
     va_list      argptr;
 
@@ -631,7 +635,7 @@ char *Z_StrDup (const char *in)
 // If directory dn does not end in '/', then a separator will be included.
 void cat_filename( char * dest, const char * dn, const char * fn )
 {
-    char * format = "%s%s";
+    const char * format = "%s%s";
     int dnlen = strlen( dn );
     if( dnlen )
     {
@@ -639,11 +643,10 @@ void cat_filename( char * dest, const char * dn, const char * fn )
         char ch = dn[ dnlen-1 ]; // last char
         if( ! ( ch == '/' || ch == '\\' ))
         #if defined (__DJGPP__)
-					format = "%s\\%s";
-				#else
-					format = "%s/%s";
-				#endif
-				
+          format = "%s\\%s";
+        #else
+          format = "%s/%s";
+        #endif
     }
     snprintf(dest, MAX_WADPATH-1, format, dn, fn);
     dest[MAX_WADPATH-1] = '\0';
@@ -652,7 +655,7 @@ void cat_filename( char * dest, const char * dn, const char * fn )
 #if 0
 // [WDJ] No longer used
 // s1=s2+s3+s1
-void strcatbf(char *s1,char *s2,char *s3)
+void strcatbf(char *s1, const char *s2, const char *s3)
 {
     char tmp[1024];
 

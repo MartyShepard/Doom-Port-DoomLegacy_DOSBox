@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: d_clisrv.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -395,7 +395,7 @@ static void D_Clear_ticcmd(int tic)
 }
 
 
-static void ExtraDataTicker(void)
+void ExtraDataTicker(void)
 {
     int btic = BTIC_INDEX( gametic );
     int pn;

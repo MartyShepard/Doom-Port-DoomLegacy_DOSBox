@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: console.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -692,7 +692,7 @@ boolean CON_Responder(event_t *ev)
 static char    completion[80];
 static int     comskips,varskips;
 
-    char *cmd = NULL;
+    const char * cmd = NULL;
 
     // [WDJ]  The compiler re-optimizes the returns.  Collecting them
     // into common return true, and return false, has no net effect.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: d_main.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -313,7 +313,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1367"
+#define SVN_REV "1368"
 #endif
 
 // Version number: major.minor.revision
@@ -335,7 +335,7 @@ const short min_wadversion = 144;
 //
 int demosequence;
 int pagetic;
-static char * pagename = "TITLEPIC";
+static const char * pagename = "TITLEPIC";
 
 //  PROTOS
 static void Help(void);
@@ -984,7 +984,7 @@ void D_PageTicker(void)
 //                fill the borders with a background pattern (a flat)
 //                if the patch doesn't fit all the screen.
 //
-void D_PageDrawer(char *lumpname)
+void D_PageDrawer(const char *lumpname)
 {
     int x, y;
     byte *src;
@@ -1055,7 +1055,7 @@ void D_AdvanceDemo(void)
 // Called by TryRunTics when demo_ctrl == DEMO_seq_advance
 void D_DoAdvanceDemo(void)
 {
-    char * demo_name;
+    const char * demo_name;
 
     demo_ctrl = 0;  // cancel DEMO_seq_advance
     players[consoleplayer].playerstate = PST_LIVE;      // not reborn
@@ -1230,7 +1230,7 @@ void  Print_search_directories( byte emf, byte enables )
 // D_AddFile
 //
 static
-void D_AddFile(char *filename)
+void D_AddFile(const char *filename)
 {
     int numwadfiles;
     char *newfile;
@@ -1444,7 +1444,7 @@ byte  Check_lumps( const char * wadname, const char * lumpnames[], int count )
     wadinfo_t   header;
     filelump_t  lumpx;
     FILE * 	wadfile;
-    char *      reason;
+    const char * reason;
     int         hli, lc;
     byte        result = 0;
 
@@ -2210,7 +2210,7 @@ restart_command:
         CONS_Printf("Find HOME\n");
     // userhome section
     {
-        char * userhome = NULL;
+        const char * userhome = NULL;
 #ifdef LAUNCHER
         byte   userhome_parm = 0;
 #endif
@@ -2364,7 +2364,7 @@ restart_command:
        
         // [WDJ] configfile must be set whereever legacyhome is on DOS or WIN32
         {
-            char * cfgstr;
+            const char * cfgstr;
             // user specific config file
             // little hack to allow a different config file for opengl
             // may be a problem if opengl cannot really be started

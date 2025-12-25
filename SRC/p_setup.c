@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: p_setup.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1097,9 +1097,6 @@ void P_LoadSideDefs (int lump)
 
 // SoM: 3/22/2000: Delay loading texture names until after loaded linedefs.
 
-//Hurdler: 04/04/2000: proto added
-int R_ColormapNumForName(char *name);
-
 // Interpret Linedef specials in sidedefs,
 // after other supporting data has been loaded.
 void P_LoadSideDefs2(int lump)
@@ -1700,7 +1697,7 @@ boolean P_SetupLevel (int      to_episode,
                       skill_e  to_skill,
                       char*    map_wadname)      // for wad files
 {
-    char  *errstr;
+    const char  *errstr;
     char  *sl_mapname = NULL;
     int   i;
 
@@ -1922,13 +1919,13 @@ boolean P_SetupLevel (int      to_episode,
     //Fab:19-07-98:start cd music for this level (note: can be remapped)
     if (gamemode==doom2_commercial)
 #if defined (__DJGPP__)			
-        I_PlayCD (to_map+1, true);                // Doom2, 32 maps
+        I_PlayCD (to_map+1, true);              // Doom2, 32 maps
 #else
         I_PlayCD (to_map, true);                // Doom2, 32 maps
 #endif			
     else
 #if defined (__DJGPP__)				
-        I_PlayCD ((to_episode-1)*9+ to_map+1, true);  // Doom1, 9maps per episode
+        I_PlayCD ((to_episode-1)*9+ to_map+1, true);// Doom1, 9maps per episode
 #else
         I_PlayCD ((to_episode-1)*9+ to_map, true);  // Doom1, 9maps per episode
 #endif

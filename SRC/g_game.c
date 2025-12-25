@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1366 2017-11-01 01:14:15Z wesleyjohnson $
+// $Id: g_game.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -206,7 +206,7 @@
 boolean G_CheckDemoStatus (void);
 void    G_ReadDemoTiccmd (ticcmd_t* cmd,int playernum);
 void    G_WriteDemoTiccmd (ticcmd_t* cmd,int playernum);
-void    G_InitNew (skill_e skill, char* mapname, boolean resetplayer);
+void    G_InitNew (skill_e skill, const char* mapname, boolean resetplayer);
 
 void    G_DoCompleted (void);
 void    G_DoVictory (void);
@@ -451,7 +451,8 @@ tic_t  basetic;
 int             totalkills, totalitems, totalsecret;    // for intermission
 
 // Demo state
-char            demoname[32];
+#define DEMONAME_LEN  32
+char            demoname[DEMONAME_LEN+5];
 boolean         demorecording;
 boolean         demoplayback;
 byte*           demobuffer;
@@ -565,7 +566,7 @@ team_info_t*  get_team( int team_num )
 
 // Set the team name.
 // Create the team if it does not exist.
-void  set_team_name( int team_num, char * str )
+void  set_team_name( int team_num, const char * str )
 {
     // Create the team if it does not exist.
     // Because of the complexity, for now, will create team at init.
@@ -2399,7 +2400,8 @@ void G_DoWorldDone (void)
 
 
 // compose menu message from strings
-void compose_message( char * str1, char * str2 )
+static
+void compose_message( const char * str1, const char * str2 )
 {
     char msgtemp[128];
     if( str2 == NULL )  str2 = "";
@@ -2581,7 +2583,7 @@ failed_exit:
 // Description is a 24 byte text string
 //
 // Called from menu M_DoSave from M_Responder.
-void G_Save_Game ( int   slot, char* description )
+void G_Save_Game ( int   slot, const char* description )
 {
     // Solo player has server, net player without server cannot save.
     if (server)
@@ -2594,7 +2596,7 @@ void G_Save_Game ( int   slot, char* description )
 
 // Called from network command sent from G_SaveGame.
 // Writes the save game file.
-void G_DoSaveGame (int   savegameslot, char* savedescription)
+void G_DoSaveGame (int   savegameslot, const char* savedescription)
 {
     char        savename[256];
 
@@ -2631,7 +2633,7 @@ void G_DoSaveGame (int   savegameslot, char* savedescription)
 // Boris comment : single player start game
 // Called by SF_StartSkill, M_ChooseSkill, M_VerifyNightmare
 // Called by cht_Responder on clev, CheatWarpFunc
-void G_DeferedInitNew (skill_e skill, char* mapname, boolean StartSplitScreenGame)
+void G_DeferedInitNew (skill_e skill, const char* mapname, boolean StartSplitScreenGame)
 {
     paused = false;
     
@@ -2655,7 +2657,7 @@ void G_DeferedInitNew (skill_e skill, char* mapname, boolean StartSplitScreenGam
 // This is the map command interpretation something like Command_Map_f
 //
 // called at : map cmd execution, doloadgame, doplaydemo
-void G_InitNew (skill_e skill, char* mapname, boolean resetplayer)
+void G_InitNew (skill_e skill, const char* mapname, boolean resetplayer)
 {
     //added:27-02-98: disable selected features for compatibility with
     //                older demos, plus reset new features as default
@@ -3149,12 +3151,13 @@ void G_WriteDemoTiccmd (ticcmd_t* cmd,int playernum)
 //
 // G_RecordDemo
 //
-void G_RecordDemo (char* name)
+void G_RecordDemo (const char* name)
 {
     int             i;
     int             maxsize;
 
-    strcpy (demoname, name);
+    strncpy (demoname, name, DEMONAME_LEN);
+    demoname[DEMONAME_LEN-1] = 0;
     strcat (demoname, ".lmp");
     maxsize = 0x20000;
     i = M_CheckParm ("-maxdemo");
@@ -3300,7 +3303,7 @@ void playdemo_restore_settings( void )
 // Called by D_DoAdvanceDemo to start a demo
 // Called by D_DoomMain to play a command line demo
 // Called by G_TimeDemo to play and time a demo
-void G_DeferedPlayDemo (char* name)
+void G_DeferedPlayDemo (const char* name)
 {
     // [WDJ] All as one string, or else it executes partial string
     COM_BufAddText(va("playdemo \"%s\"\n", name));
@@ -3312,7 +3315,7 @@ void G_DeferedPlayDemo (char* name)
 //
 // Called from SF_PlayDemo, fragglescript plays a demo lump
 // Called from Command_Playdemo_f, command play demo file or lump
-void G_DoPlayDemo (char *defdemoname)
+void G_DoPlayDemo (const char *defdemoname)
 {
     skill_e skill;
     int     i, episode, map;
@@ -3338,12 +3341,15 @@ void G_DoPlayDemo (char *defdemoname)
 //
 
     //it's an internal demo
+    strncpy (demoname, defdemoname, DEMONAME_LEN);
+    demoname[DEMONAME_LEN-1] = 0;
+    strcat (demoname, ".lmp");
     if ((i=W_CheckNumForName(defdemoname)) == -1)
     {
-        FIL_DefaultExtension(defdemoname,".lmp");
-        if (!FIL_ReadFile (defdemoname, &demobuffer) )
+        FIL_DefaultExtension(demoname,".lmp");
+        if (!FIL_ReadFile (demoname, &demobuffer) )
         {
-            GenPrintf(EMSG_warn, "\2ERROR: couldn't open file '%s'.\n", defdemoname);
+            GenPrintf(EMSG_warn, "\2ERROR: couldn't open file '%s'.\n", demoname);
             goto no_demo;
         }
         demo_p = demobuffer;
@@ -3783,7 +3789,7 @@ no_demo:
 //
 static byte EV_restore_cv_vidwait = 0;
 
-void G_TimeDemo (char* name)
+void G_TimeDemo (const char* name)
 {
     nodrawers = M_CheckParm ("-nodraw");
     noblit = M_CheckParm ("-noblit");

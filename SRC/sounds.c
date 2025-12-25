@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sounds.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: sounds.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -600,6 +600,7 @@ void S_RemoveSoundFx (sfxid_t sfxid)
         if( verbose > 1 )
             GenPrintf(EMSG_ver, "RemoveSoundFx: %s\n", S_sfx[sfxid].name );
         S_FreeSfx(&S_sfx[sfxid]);
+        // If name is const char *, then this fails.
         Z_Free(S_sfx[sfxid].name);
         S_sfx[sfxid].lumpnum=-1;
         S_sfx[sfxid].name=NULL;  // free sfx slot to use again
@@ -610,7 +611,7 @@ void S_RemoveSoundFx (sfxid_t sfxid)
 //
 // S_AddMusic
 // Adds a single song to the runtime songs.
-int S_AddMusic(char *name)
+int S_AddMusic( const char * name)
 {
   int    i;
   char   lumpname[9];
@@ -633,7 +634,7 @@ int S_AddMusic(char *name)
 }
 
 
-int S_FindMusic(char *name)
+int S_FindMusic( const char * name)
 {
   int   i;
 

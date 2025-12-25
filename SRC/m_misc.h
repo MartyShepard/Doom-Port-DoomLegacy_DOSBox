@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: m_misc.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -77,15 +77,18 @@ int FIL_ExtReadFile ( ExtFIL_t * ft, size_t length );
 void FIL_ExtFile_Close ( ExtFIL_t * ft );
 
 
-void FIL_DefaultExtension (char *path, char *extension);
+//  path : extension is added to path parameter
+void FIL_DefaultExtension (char *path, const char *extension);
 
 // Point to start of the filename in longer string
 char * FIL_Filename_of( char * nstr );
 
+#if 0
 //added:11-01-98:now declared here for use by G_DoPlayDemo(), see there...
 void FIL_ExtractFileBase (char* path, char* dest);
+#endif
 
-boolean FIL_CheckExtension (char *in);
+boolean FIL_CheckExtension (const char * in);
 
 //===========================================================================
 
@@ -101,12 +104,10 @@ void Command_ChangeConfig_f (void);
 
 void M_FirstLoadConfig(void);
 //Fab:26-04-98: save game config : cvars, aliases..
-void M_SaveConfig (char *filename);
+void M_SaveConfig (const char *filename);
 
 //===========================================================================
 
-int M_DrawText ( int x, int y, boolean direct,
-                 char* string );
 
 // dest must be filename buffer of MAX_WADPATH
 // If directory dn does not end in '/', then a separator will be included.
@@ -114,7 +115,7 @@ void cat_filename( char * dest, const char * dn, const char * fn );
 
 #if 0
 // s1=s2+s3+s1 (1024 lenghtmax)
-void strcatbf(char *s1,char *s2,char *s3);
+void strcatbf(char *s1, const char *s2, const char *s3);
 #endif
 
 #endif

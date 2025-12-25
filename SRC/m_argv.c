@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_argv.c 1070 2013-12-14 00:27:19Z wesleyjohnson $
+// $Id: m_argv.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -55,7 +55,7 @@ static int      found;
 // in the program's command line arguments.
 // Returns the argument number (1 to argc-1)
 // or 0 if not present
-int M_CheckParm (char *check)
+int M_CheckParm (const char *check)
 {
     int         i;
 
@@ -266,9 +266,12 @@ int    addparm_count = 0;
 
 
 // alloc memory for addparam, keep bounds
-static void  M_Arg_string( const char * s1, int atindex )
+//  s1 : source string ptr, to add to parameters
+//  count : count of characters of source string
+//  atindex : parameter num
+static void  M_Arg_string( const char * s1, int count, int atindex )
 {
-    char * sp = strdup( s1 );  // malloc
+    char * sp = strndup( s1, count );  // malloc
     if( addparm_low )
     {
         // bounds on memory alloc
@@ -306,7 +309,7 @@ void M_Remove_Param( int i )
 }
 
 
-void M_Remove_matching_Param( char * p1, char * p2 )
+void M_Remove_matching_Param( const char * p1, const char * p2 )
 {
     while( M_CheckParm ( p1 ) )  // if already exists, then erase it
     {
@@ -322,10 +325,12 @@ void M_Remove_matching_Param( char * p1, char * p2 )
 }
 
 
-// add a param from Launcher, p2 is optional
-void M_Add_Param( char * p1, char * p2 )
+// add a param from Launcher
+//  p1 : parameter string (one or more parameters)
+//  p2 : optional additional parameter string (NULL)
+void M_Add_Param( const char * p1, const char * p2 )
 {
-    char * pa, * ps;
+    const char * pa, * ps;
 
     M_Remove_matching_Param( p1, p2 );  // if already exists, then erase it
 
@@ -341,11 +346,8 @@ void M_Add_Param( char * p1, char * p2 )
         ps = strchr( pa, ' ' );  // more than one param in the string
         if( ps )  // found a delimiter
 	{
-	    // temporary delimit of the param in the string
-	    *ps = '\0';
-	    M_Arg_string( pa, myargc );
+	    M_Arg_string( pa, ps-pa, myargc );
 	    myargc ++;
-	    *ps = ' ';
 	    pa = ps;
 	    while( *pa == ' ' )  pa++;  // skip space (1 or more)
 	    if( *pa )   continue;
@@ -354,7 +356,7 @@ void M_Add_Param( char * p1, char * p2 )
         else
         {
 	    // copy the rest of the string
-	    M_Arg_string( pa, myargc );
+	    M_Arg_string( pa, strlen(pa), myargc );
 	    myargc ++;
 	}
         if( ! p2 )  break;
@@ -366,7 +368,7 @@ void M_Add_Param( char * p1, char * p2 )
 
 
 // add two param from Launcher, or remove them if p2==NULL or empty string
-void M_Change_2Param( char * p1, char * p2 )
+void M_Change_2Param( const char * p1, const char * p2 )
 {
     if( p2 && p2[0] )  // not an empty string
         M_Add_Param( p1, p2 );

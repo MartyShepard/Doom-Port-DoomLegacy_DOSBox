@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: s_sound.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -174,7 +174,7 @@ void S_StartMusic(int music_id);
 // Start music using <music_id> from sounds.h.
 //   looping : non-zero if continuous looping of music
 void S_ChangeMusic (int music_num, byte looping);
-void S_ChangeMusicName(char *name, byte looping);
+void S_ChangeMusicName( const char * name, byte looping);
 
 // Stops the music fer sure.
 void S_StopMusic(void);

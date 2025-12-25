@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: m_menu.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -656,7 +656,7 @@ void M_DrawGenericMenu(void)
                            w = V_StringWidth(cv->string);
                            if( use_font1 )
                            {
-                               char * sp = cv->string;
+                               const char * sp = cv->string;
                                // Setup is centered, but this needs left justify.
                                M_DrawTextBox(-BASEVIDWIDTH/2,y+12,BASEVIDWIDTH/7,1);
                                while( *sp && w > BASEVIDWIDTH - 8 )
@@ -5473,7 +5473,7 @@ static void CV_game_OnChange(void)
 {
     // Strings come from GameDesc, not a CV_PossibleValue_t
     // Cannot call CV_Set within CV_CALL routine
-    char * rs;
+    const char * rs;
     game_desc_t * gamedesc = D_GameDesc( cv_game.value );
     if( gamedesc )
     {

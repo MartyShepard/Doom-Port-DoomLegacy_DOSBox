@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1366 2017-11-01 01:14:15Z wesleyjohnson $
+// $Id: st_stuff.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1179,7 +1179,7 @@ static void ST_Load_Graphics(void)
 
 
 // made separate so that skins code can reload custom face graphics
-void ST_Load_FaceGraphics (char *facestr)
+void ST_Load_FaceGraphics (const char *facestr)
 {
     int   i,j;
     int   facenum;
@@ -1189,9 +1189,9 @@ void ST_Load_FaceGraphics (char *facestr)
 
     //hack: make sure base face name is no more than 3 chars
     // bug: core dump fixed 19990220 by Kin
-    if( strlen(facestr)>3 )
-        facestr[3]='\0';
-    strcpy (namelump, facestr);  // copy base name
+    // [WDJ] Cannot modify facestr.
+    strncpy (namelump, facestr, 3);  // copy base name
+    namelump[3] = '\0';
     // namebuf points after base face name, for appending to base name
     namebuf = namelump;
     while (*namebuf>' ') namebuf++;
@@ -1713,7 +1713,7 @@ void  ST_drawOverlayKeys( int x, int y, player_t * plyr )
 static
 void ST_overlayDrawer ( byte status_position, player_t * plyr )
 {
-    char*  cmds;
+    const char *  cmds;
     char   c;
     int    i;
     // [WDJ] 8/2012 fix opengl overlay position to use fdupy

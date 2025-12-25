@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.h 1322 2017-05-23 14:25:46Z wesleyjohnson $
+// $Id: command.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -52,7 +52,7 @@
 
 typedef void (*com_func_t) (void);
 
-void    COM_AddCommand (char *name, com_func_t func);
+void  COM_AddCommand (const char * name, com_func_t func);
 
 typedef struct {
   byte   num;     // number of actual args
@@ -64,17 +64,17 @@ void  COM_Args( COM_args_t * comargs );
 
 // Any args
 int     COM_Argc (void);
-char    *COM_Argv (int arg);   // if argv>argc, returns empty string
-int     COM_CheckParm (char *check); // like M_CheckParm :)
+char *  COM_Argv (int arg);   // if argv>argc, returns empty string
+int     COM_CheckParm (const char * check); // like M_CheckParm :)
 
 // match existing command or NULL
-char    *COM_CompleteCommand (char *partial, int skips);
+const char *  COM_CompleteCommand (const char * partial, int skips);
 
 // insert at queu (at end of other command)
-void    COM_BufAddText (char *text);
+void    COM_BufAddText (const char * text);
 
 // insert in head (before other command)
-void    COM_BufInsertText (char *text);
+void    COM_BufInsertText (const char * text);
 
 // Execute commands in buffer, flush them
 void    COM_BufExecute (void);
@@ -101,7 +101,8 @@ void VS_Free  (vsbuf_t *buf);
 void VS_Clear (vsbuf_t *buf);
 void *VS_GetSpace (vsbuf_t *buf, int length);
 boolean VS_Write (vsbuf_t *buf, void *data, int length);
-boolean VS_Print (vsbuf_t *buf, char *data); // strcats onto the sizebuf
+// strcats onto the buf
+boolean VS_Print (vsbuf_t *buf, const char * data);
 
 // ======================
 
@@ -136,7 +137,7 @@ typedef enum
 
 struct CV_PossibleValue_s {
     int   value;
-    char  *strvalue;
+    const char * strvalue;
 };
 
 typedef struct CV_PossibleValue_s CV_PossibleValue_t;
@@ -148,8 +149,8 @@ typedef struct CV_PossibleValue_s CV_PossibleValue_t;
 // [WDJ] Ptrs together for better packing. Beware many consts of this type.
 typedef struct consvar_s
 {
-    char    *name;
-    char    *defaultvalue;
+    const char * name;
+    const char * defaultvalue;
     uint32_t flags;            // flags see cvflags_t above
     CV_PossibleValue_t *PossibleValue;  // table of possible values
     void    (*func) (void);    // called on change, if CV_CALL set
@@ -163,7 +164,9 @@ typedef struct consvar_s
        // For most user settings this is slightly easier to manage than
        // creating more EN vars.  For the exceptions, create a setting function
        // to pass consvar settings to EN vars.
-    char    *string;           // value in string
+    char *  string;      // value in string
+       // When pointing to a PossibleValue, it will need to be a const char *.
+       // Otherwise, it is allocated with Z_Alloc, and freeded with Z_Free.
     struct  consvar_s *next;
 
 } consvar_t;
@@ -175,10 +178,11 @@ extern CV_PossibleValue_t CV_Unsigned[];
 void  CV_RegisterVar (consvar_t *variable);
 
 // returns the name of the nearest console variable name found
-char *CV_CompleteVar (char *partial, int skips);
+//  partial : partial variable name
+const char * CV_CompleteVar (const char * partial, int skips);
 
 // equivalent to "<varname> <value>" typed at the console
-void  CV_Set (consvar_t *var, char *value);
+void  CV_Set (consvar_t *var, const char * value);
 
 // expands value to a string and calls CV_Set
 void  CV_SetValue (consvar_t *var, int value);
@@ -192,6 +196,6 @@ void  CV_Restore_User_Settings( void );
 // write all CV_SAVE variables to config file
 void  CV_SaveVariables (FILE *f);
 
-consvar_t *CV_FindVar (char *name);
+consvar_t *CV_FindVar (const char * name);
 
 #endif // COMMAND_H

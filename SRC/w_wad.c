@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1366 2017-11-01 01:14:15Z wesleyjohnson $
+// $Id: w_wad.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -584,7 +584,7 @@ int W_CheckNumForName (const char* name)
 //    wadid :  the wad number
 //    startlump : the lump number to start the search
 //  Return lump number.
-int W_CheckNumForNamePwad (char* name, int wadid, int startlump)
+int W_CheckNumForNamePwad (const char* name, int wadid, int startlump)
 {
     int         i;
     lump_name_t name8;
@@ -621,7 +621,7 @@ int W_CheckNumForNamePwad (char* name, int wadid, int startlump)
 // W_GetNumForName
 //   Calls W_CheckNumForName, but bombs out if not found.
 //
-int W_GetNumForName (char* name)
+int W_GetNumForName (const char* name)
 {
     int i;
 
@@ -640,7 +640,7 @@ int W_GetNumForName (char* name)
 }
 
 // Scan wads files forward, IWAD precedence.
-int W_CheckNumForNameFirst (char* name)
+int W_CheckNumForNameFirst (const char* name)
 {
     int i, j;
     lump_name_t name8;
@@ -669,7 +669,7 @@ int W_CheckNumForNameFirst (char* name)
 //  W_GetNumForNameFirst : like W_GetNumForName, but scans FORWARD
 //                         so it gets resources from the original wad first
 //  (this is used only to get S_START for now, in r_data.c)
-int W_GetNumForNameFirst (char* name)
+int W_GetNumForNameFirst (const char* name)
 {
     int i;
 
@@ -827,7 +827,7 @@ void* W_CacheLumpNum ( int lump, int ztag )
 // ==========================================================================
 // W_CacheLumpName
 // ==========================================================================
-void* W_CacheLumpName ( char* name, int ztag )
+void* W_CacheLumpName ( const char* name, int ztag )
 {
     return W_CacheLumpNum (W_GetNumForName(name), ztag);
 }
@@ -988,7 +988,7 @@ void* W_CachePatchNum ( int lump, int ztag )
 
 
 // Find patch in LNS_patch namespace
-void* W_CachePatchName ( char* name, int ztag )
+void* W_CachePatchName ( const char* name, int ztag )
 {
     int lumpid;
     // substitute known name for name not found
@@ -1077,7 +1077,7 @@ void* W_CachePicNum( int lumpnum, int ztag )
 }
 
 // Cache and endian convert a pic_t
-void* W_CachePicName( char* name, int tag )
+void* W_CachePicName( const char* name, int tag )
 {
     return W_CachePicNum( W_GetNumForName(name), tag);
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: p_info.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -176,7 +176,7 @@ enum
 typedef struct
 {
   int type;
-  char *name;
+  const char *name;
   void *variable;
 } levelvar_t;
 
@@ -438,7 +438,7 @@ void P_InitWeapons(void)
 #define HU_TITLEH (text[HERETIC_E1M1_NUM + (gameepisode-1)*9+gamemap-1])
 #endif
 
-static char *levelname;
+static char * levelname;
 
 // Determine game specific level name.
 // From P_SetupLevel, level_mapname.
@@ -659,7 +659,7 @@ void P_Register_Info_Commands(void)
 
 
 
-char *P_LevelName(void)
+char * P_LevelName(void)
 {
   return levelname;
 }
@@ -667,9 +667,9 @@ char *P_LevelName(void)
 // todo : make this use mapinfo lump
 // Called by WI_Draw_EL "Entering <LevelName>"
 // Called by IN_Draw_YAH "NOW ENTERING"
-char *P_LevelNameByNum( int episode, int map )
+const char * P_LevelNameByNum( int episode, int map )
 {
-    register char * levnam = "New map";
+    register const char * levnam = "New map";
     switch(gamemode) 
     {
        case  doom_shareware :

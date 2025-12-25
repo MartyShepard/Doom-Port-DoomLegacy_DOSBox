@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: t_vari.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -97,21 +97,21 @@ enum
 void T_Clear_HubScript();
 
 void T_Init_variables();
-fs_variable_t * new_variable(script_t *script, char *name, int vtype);
-fs_variable_t * find_variable(char *name);
-fs_variable_t * variableforname(script_t *script, char *name);
+fs_variable_t * new_variable(script_t *script, const char *name, int vtype);
+fs_variable_t * find_variable(const char *name);
+fs_variable_t * variable_for_name(script_t *script, const char *name);
 fs_value_t getvariablevalue(fs_variable_t *v);
 void setvariablevalue(fs_variable_t *v, fs_value_t newvalue);
 void clear_variables(script_t *script);
 
-fs_variable_t * add_game_int(char *name, int *var);
-fs_variable_t * add_game_string(char *name, char **var);
-fs_variable_t * add_game_mobj(char *name, mobj_t **mo);
+fs_variable_t * add_game_int(const char *name, int *var);
+fs_variable_t * add_game_string(const char *name, char **var);
+fs_variable_t * add_game_mobj(const char *name, mobj_t **mo);
 
 // functions
 
 fs_value_t evaluate_function(int start, int stop);   // actually run a function
-fs_variable_t * new_function(char *name, void (*handler)() );
+fs_variable_t * new_function(const char *name, void (*handler)() );
 
 // arguments to handler functions
 

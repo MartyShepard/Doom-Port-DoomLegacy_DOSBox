@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: p_info.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: p_info.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 //
@@ -93,7 +93,7 @@ int isMAPxy(char *name);
                      ((s)[5] == '\0'))*/
 
 void P_Register_Info_Commands(void);
-char *P_LevelName(void);
-char *P_LevelNameByNum( int episode, int map );
+char * P_LevelName(void);
+const char * P_LevelNameByNum( int episode, int map );
 
 #endif

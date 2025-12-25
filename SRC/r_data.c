@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1362 2017-10-16 16:27:48Z wesleyjohnson $
+// $Id: r_data.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1353,7 +1353,7 @@ void R_LoadTextures (void)
 }
 
 
-int R_CheckNumForNameList(char *name, lumplist_t* list, int listsize)
+int R_CheckNumForNameList(const char *name, lumplist_t* list, int listsize)
 {
   int   i;
   int   lump;
@@ -1489,7 +1489,7 @@ void R_Init_Flats ()
 
 
 // [WDJ] was R_GetFlatNumForName, but it does not cache like GetFlat
-int R_FlatNumForName(char *name)
+int R_FlatNumForName(const char *name)
 {
   // [WDJ] No use in saving F_START if are not going to use them.
   // FreeDoom, where a flat and sprite both had same name,
@@ -1520,7 +1520,7 @@ int R_FlatNumForName(char *name)
 // [WDJ] Manage the spritelump_t allocations
 // Still use this array so that rot=0 sprite can share one entry for all 8 rotations.
 
-void expand_spritelump( void )
+void expand_spritelump_alloc( void )
 {
     // [WDJ] Expand array and copy
     num_free_spritelump = 256;
@@ -1540,7 +1540,7 @@ void expand_spritelump( void )
 int  R_Get_spritelump( void )
 {
     if( num_free_spritelump == 0 )
-       expand_spritelump();
+       expand_spritelump_alloc();
     num_free_spritelump--;
     return  num_spritelump ++;
 }
@@ -1560,7 +1560,7 @@ void R_Init_SpriteLumps (void)
     // the original Doom used to set numspritelumps from S_END-S_START+1
 
     // [WDJ] Initial allocation, will be expanded as needed
-    expand_spritelump();
+    expand_spritelump_alloc();
 }
 
 
@@ -1654,7 +1654,7 @@ void  R_Colormap_Analyze( int mapnum )
 #ifdef HWRENDER
   // Hardware renderer does not use, nor allocate, the colormap.
   // It uses the rgba field instead.
-  if(rendermode == render_soft)
+  if( rendermode == render_soft )
 #endif     
   {
     // Software renderer defaults.
@@ -1820,7 +1820,7 @@ void  R_Colormap_Analyze( int mapnum )
 // [WDJ] The name parameter has trailing garbage, but the name lookup
 // only uses the first 8 chars.
 // Return the new colormap id number
-int R_ColormapNumForName(char *name)
+int R_ColormapNumForName(const char *name)
 {
   int lump, i;
 
@@ -2749,7 +2749,7 @@ void R_Init_Data (void)
 // 
 // Parameter name is 8 char without term.
 // Return -1 for not found, 0 for no texture
-int  R_CheckTextureNumForName (char *name)
+int  R_CheckTextureNumForName (const char *name)
 {
     int  i;
 
@@ -2779,12 +2779,11 @@ int  R_CheckTextureNumForName (char *name)
 // Parameter name is 8 char without term.
 // Is used for side_t texture fields, which are used for array access
 // without further error checks, so never returns -1.
-int R_TextureNumForName (char* name)
+int R_TextureNumForName (const char* name)
 {
     int i;
 
     i = R_CheckTextureNumForName (name);
-
 #if 0
 // [WDJ] DEBUG TRACE, to see where textures have ended up and which are accessed.
 #  define trace_SIZE 512
@@ -2796,7 +2795,7 @@ int R_TextureNumForName (char* name)
 #  undef trace_SIZE   
 #endif   
 
-    if( i == -1 )
+    if(i==-1)
     {
         // Exclude # parameters from "not found" message.
         if( isalpha(name[0]) )

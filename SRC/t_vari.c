@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: t_vari.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -103,7 +103,7 @@ void T_Clear_HubScript( void )
 // find_variable checks through the current script, level script
 // and global script to try to find the variable of the name wanted
 
-fs_variable_t * find_variable(char *name)
+fs_variable_t * find_variable( const char *name)
 {
   fs_variable_t *var;
   script_t *current;
@@ -113,7 +113,7 @@ fs_variable_t * find_variable(char *name)
   while(current)
   {
       // check this script
-      if((var = variableforname(current, name)))
+      if((var = variable_for_name(current, name)))
         return var;
       current = current->parent;    // try the parent of this one
   }
@@ -124,7 +124,7 @@ fs_variable_t * find_variable(char *name)
 // create a new variable in a particular script.
 // returns a pointer to the new variable.
 
-fs_variable_t * new_variable(script_t *script, char *name, int vtype)
+fs_variable_t * new_variable(script_t *script, const char *name, int vtype)
 {
   int n;
   fs_variable_t *newvar;
@@ -163,7 +163,7 @@ fs_variable_t * new_variable(script_t *script, char *name, int vtype)
 // search a particular script for a variable, which
 // is returned if it exists
 
-fs_variable_t * variableforname(script_t *script, char *name)
+fs_variable_t * variable_for_name(script_t *script, const char * name)
 {
   int n;
   fs_variable_t *current;
@@ -341,7 +341,7 @@ err_function:
 
 
 
-fs_variable_t * add_game_int(char *name, int *var)
+fs_variable_t * add_game_int( const char *name, int *var)
 {
   fs_variable_t* newvar;
   newvar = new_variable(&global_script, name, FSVT_pInt);
@@ -351,7 +351,7 @@ fs_variable_t * add_game_int(char *name, int *var)
 }
 
 
-fs_variable_t * add_game_fixed(char *name, fixed_t *fixed)
+fs_variable_t * add_game_fixed( const char *name, fixed_t *fixed)
 {
   fs_variable_t *newvar;
   newvar = new_variable(&global_script, name, FSVT_pFixed);
@@ -360,7 +360,7 @@ fs_variable_t * add_game_fixed(char *name, fixed_t *fixed)
   return newvar;
 }
 
-fs_variable_t * add_game_string(char *name, char **var)
+fs_variable_t * add_game_string( const char *name, char **var)
 {
   fs_variable_t* newvar;
   newvar = new_variable(&global_script, name, FSVT_pString);
@@ -371,7 +371,7 @@ fs_variable_t * add_game_string(char *name, char **var)
 
 
 
-fs_variable_t * add_game_mobj(char *name, mobj_t **mo)
+fs_variable_t * add_game_mobj( const char *name, mobj_t **mo)
 {
   fs_variable_t* newvar;
   newvar = new_variable(&global_script, name, FSVT_pMobj);
@@ -424,7 +424,7 @@ fs_value_t evaluate_function(int start, int stop)
     script_error("misplaced closing bracket\n");
 
   // all the functions are stored in the global script
-  else if( !(func = variableforname(&global_script, tokens[start]))  )
+  else if( !(func = variable_for_name(&global_script, tokens[start]))  )
     script_error("no such function: '%s'\n",tokens[start]);
 
   else if(func->type != FSVT_function)
@@ -494,7 +494,7 @@ fs_value_t OPstructure(int start, int n, int stop)
   fs_value_t argv[MAXARGS];
 
   // all the functions are stored in the global script
-  if( !(func = variableforname(&global_script, tokens[n+1]))  )
+  if( !(func = variable_for_name(&global_script, tokens[n+1]))  )
     script_error("no such function: '%s'\n",tokens[n+1]);
   
   else if(func->type != FSVT_function)
@@ -554,7 +554,7 @@ done_null:
 
 // create a new function. returns the function number
 
-fs_variable_t * new_function(char *name, void (*handler)() )
+fs_variable_t * new_function(const char *name, void (*handler)() )
 {
   fs_variable_t *newvar;
 

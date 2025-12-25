@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: p_saveg.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -289,6 +289,7 @@ void  P_Savegame_Error_Closefile( void )
 }
 
 // write out buffer or expand it
+static
 void SG_Writebuf( void )
 {
     size_t length = P_Savegame_length();
@@ -337,6 +338,7 @@ done:
 }
 
 // read in buffer
+static
 void SG_Readbuf( void )
 {
     size_t len1 = P_Savegame_length();  // used
@@ -406,6 +408,7 @@ typedef enum {
   SYNC_sync = 253
 } save_game_section_e;
 
+static
 void SG_SaveSync( save_game_section_e sgs )
 {
 #ifdef SAVEBUF_REPORT_MIN_FREE
@@ -417,6 +420,7 @@ void SG_SaveSync( save_game_section_e sgs )
 }
 
 // required or conditional section
+static
 boolean SG_ReadSync( save_game_section_e sgs, boolean cond )
 {
    if( save_game_abort )   return 0;	// all sync reads repeat the abort
@@ -441,6 +445,7 @@ boolean SG_ReadSync( save_game_section_e sgs, boolean cond )
 // =======================================================================
 
 // write null term string
+static
 void SG_write_string( const char * sp )
 {
 #if 1
@@ -454,7 +459,10 @@ void SG_write_string( const char * sp )
 #endif   
 }
 
+#if 0
+// unused
 // return string allocated using Z_Strdup, PU_LEVEL
+static
 char * SG_read_string( void )
 {
     char * spdest;
@@ -475,8 +483,12 @@ char * SG_read_string( void )
     save_p += len;
     return spdest;
 }
+#endif
 
+#if 0
+// unused
 // write fixed length string
+static
 void SG_write_nstring( const char * sp, int field_length )
 {
 #if 1
@@ -493,8 +505,12 @@ void SG_write_nstring( const char * sp, int field_length )
     }
 #endif   
 }
+#endif
 
+#if 0
+// unused
 // return string allocated using Z_Strdup, PU_LEVEL
+static
 char * SG_read_nstring( int field_length )
 {
     char * spdest = Z_Malloc( field_length, PU_LEVEL, NULL );
@@ -502,6 +518,7 @@ char * SG_read_nstring( int field_length )
     save_p += field_length;
     return spdest;
 }
+#endif
 
 
 // =======================================================================
@@ -541,6 +558,7 @@ typedef enum
 //
 // P_ArchivePlayers
 //
+static
 void P_ArchivePlayers(void)
 {
     int i, j;
@@ -682,6 +700,7 @@ void P_ArchivePlayers(void)
 //
 // P_UnArchivePlayers
 //
+static
 void P_UnArchivePlayers(void)
 {
     int i, j;
@@ -837,6 +856,7 @@ void P_UnArchivePlayers(void)
 //
 // P_ArchiveWorld
 //
+static
 void P_ArchiveWorld(void)
 {
     int i;
@@ -1051,6 +1071,7 @@ void P_ArchiveWorld(void)
 //
 // P_UnArchiveWorld
 //
+static
 void P_UnArchiveWorld(void)
 {
     int i;
@@ -1528,7 +1549,7 @@ static void P_Archive_Mapthing(void)
 
 static void P_UnArchive_Mapthing( void )
 {
-    char * reason;
+    const char * reason;
     uint32_t   mtid;  // mapthing id
     mapthing_t * mthing;  // extra mapthing
 
@@ -1718,6 +1739,7 @@ enum
 
 // Called for stopped ceiling or active ceiling.
 // Must be consistent, there is one reader for both.
+static
 void  WRITE_ceiling( ceiling_t* ceilp, byte active )
 {
     WRITEBYTE(save_p, tc_ceiling); // ceiling marker
@@ -1729,6 +1751,7 @@ void  WRITE_ceiling( ceiling_t* ceilp, byte active )
 
 // Called for stopped platform or active platform.
 // Must be consistent, there is one reader for both.
+static
 void  WRITE_plat( plat_t* platp, byte active )
 {
     WRITEBYTE(save_p, tc_plat);  // platform marker
@@ -1753,6 +1776,7 @@ void  WRITE_plat( plat_t* platp, byte active )
     WRITEBYTE(save_p, active); // active or stopped plat
 }
 
+static
 void P_ArchiveThinkers(void)
 {
     thinker_t *th;
@@ -2162,13 +2186,14 @@ void P_ArchiveThinkers(void)
 //
 // P_UnArchiveThinkers
 //
+static
 void P_UnArchiveThinkers(void)
 {
     mobj_t *mobj;
     uint32_t diff;
     int i;
     byte tclass;
-    char * reason; // err
+    const char * reason; // err
    
     // remove all the current thinkers
     thinker_t *currentthinker = thinkercap.next;
@@ -2692,6 +2717,7 @@ err_exit:
 
 // BP: added : itemrespawnqueue
 //
+static
 void P_ArchiveSpecials(void)
 {
     int i;
@@ -2713,6 +2739,7 @@ void P_ArchiveSpecials(void)
 //
 // P_UnArchiveSpecials
 //
+static
 void P_UnArchiveSpecials(void)
 {
     int i;
@@ -2801,6 +2828,7 @@ static fs_array_t * READ_SFArrayPtr( void )
 // we need to save fs_levelscript (all global variables) and
 // fs_runningscripts (scripts currently suspended)
 
+static
 void P_ArchiveSValue(fs_value_t *s)
 {
   switch (s->type)   // store depending on type
@@ -2864,7 +2892,7 @@ void P_UnArchiveSValue(fs_value_t *s)
 
 
 
-
+static
 void P_ArchiveFSVariables(fs_variable_t **vars)
 {
   int i;
@@ -2926,7 +2954,7 @@ void P_ArchiveFSVariables(fs_variable_t **vars)
 }
 
 
-
+static
 void P_UnArchiveFSVariables(fs_variable_t **vars)
 {
   int i;
@@ -2974,12 +3002,14 @@ void P_UnArchiveFSVariables(fs_variable_t **vars)
 // make sure we remember all the global
 // variables.
 
+static
 void P_ArchiveLevelScript()
 {
   // all we really need to do is save the variables
   P_ArchiveFSVariables(fs_levelscript.variables);
 }
 
+static
 void P_UnArchiveLevelScript()
 {
   int i;
@@ -3008,6 +3038,7 @@ runningscript_t * new_runningscript();   // t_script.c
 void clear_runningscripts();    // t_script.c
 
 // save a given runningscript
+static
 void P_ArchiveRunningScript(runningscript_t * rs)
 {
     //CheckSaveGame(sizeof(short) * 8); // room for 8 shorts
@@ -3025,6 +3056,7 @@ void P_ArchiveRunningScript(runningscript_t * rs)
 }
 
 // get the next runningscript
+static
 runningscript_t *P_UnArchiveRunningScript()
 {
     int i;
@@ -3060,6 +3092,7 @@ runningscript_t *P_UnArchiveRunningScript()
 }
 
 // archive all runningscripts in chain
+static
 void P_ArchiveRunningScripts()
 {
     runningscript_t *rs;
@@ -3084,6 +3117,7 @@ void P_ArchiveRunningScripts()
 }
 
 // restore all runningscripts from save_p
+static
 void P_UnArchiveRunningScripts()
 {
     runningscript_t *rs;
@@ -3125,6 +3159,7 @@ void P_UnArchiveRunningScripts()
 
 
 // must be called before running/level script archiving
+static
 void P_ArchiveFSArrays(void)
 {
   // [smite] FIXME can we have several array variables reference the same object? 
@@ -3162,6 +3197,7 @@ void P_ArchiveFSArrays(void)
 }
 
 // must be called before unarchiving running/level scripts
+static
 void P_UnArchiveFSArrays(void)
 {
   T_Init_FSArrayList(); // reinitialize the save list
@@ -3209,7 +3245,7 @@ void P_UnArchiveFSArrays(void)
 }
 
 
-
+static
 void P_ArchiveScripts()
 {
     // save FS arrays
@@ -3229,6 +3265,7 @@ void P_ArchiveScripts()
     SG_Writebuf();
 }
 
+static
 void P_UnArchiveScripts()
 {
     // restore FS arrays
@@ -3250,6 +3287,7 @@ void P_UnArchiveScripts()
 }
 
 // [WDJ] return true if there is fragglescript state to be saved
+static
 boolean SG_fragglescript_detect( void )
 {
 #ifdef FS_ARRAYLIST_STRUCTHEAD
@@ -3275,6 +3313,7 @@ boolean SG_fragglescript_detect( void )
 // =======================================================================
 //          Misc
 // =======================================================================
+static
 void P_ArchiveMisc()
 {
     uint32_t pig = 0;
@@ -3294,6 +3333,7 @@ void P_ArchiveMisc()
     SG_Writebuf();
 }
 
+static
 boolean P_UnArchiveMisc()
 {
     uint32_t pig;
@@ -3328,6 +3368,7 @@ boolean P_UnArchiveMisc()
 // =======================================================================
 
 // load cv_ vars, variable length
+static
 void P_LoadNetVars( void )
 {
     const int mincnt = 23; // Smallest number of netvar in a 144 savegame
@@ -3366,7 +3407,8 @@ void P_LoadNetVars( void )
 
 // Get the name of the wad containing the current level map
 // Write operation for :map: line.
-char * level_wad( void )
+static
+const char * level_wad( void )
 {
     char * mapwad;
     // level_lumpnum contains index to the wad containing current map.
@@ -3382,6 +3424,7 @@ char * level_wad( void )
 
 // Check if the wad name is in the wadfiles
 // Read operation for :map: line.
+static
 boolean  check_have_wad( char * ckwad )
 {
     int i;
@@ -3397,6 +3440,7 @@ boolean  check_have_wad( char * ckwad )
 
 // Write the command line switches to savebuffer.
 // Write operation for :cmd: line.
+static
 void WRITE_command_line( void )
 {
     int i;
@@ -3496,7 +3540,7 @@ void  term_header_line( char * infodest )
 // Returns 1 when header is correct.
 boolean P_Read_Savegame_Header( savegame_info_t * infop)
 {
-    char * reason;
+    const char * reason;
 
     // Read header
     save_game_abort = 0;	// all sync reads will check this
