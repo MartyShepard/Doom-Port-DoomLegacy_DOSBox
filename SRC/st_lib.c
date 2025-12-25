@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_lib.c 1247 2016-08-04 14:24:34Z wesleyjohnson $
+// $Id: st_lib.c 1363 2017-10-16 16:29:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -97,8 +97,10 @@ void STlib_updateNum ( st_number_t*  ni )
       // number to be drawn.  NON_NUMBER is not drawn
     boolean   neg;
     // [WDJ] all ST patches are already endian fixed
-    int    w = ni->patches[0]->width;
-    int    h = ni->patches[0]->height;
+    // Hardware or software render.
+    patch_t * pf = V_patch( ni->patches[0] );  // patch fields
+    int    w = pf->width;
+    int    h = pf->height;
     int    x;
    
     // Draw to stbar_fg, screen0 status bar
@@ -120,7 +122,10 @@ void STlib_updateNum ( st_number_t*  ni )
         // Clear to background, except when overlay or hardware draw.
         //faB:current hardware mode always refresh the statusbar
         if(stlib_enable_erase)
+        {
+           // Software render only.
            V_CopyRect(x, ni->y, BG, w*numdigits, h, x, ni->y, stbar_fg);
+	}
 
         ni->command = 0;
     }
@@ -213,7 +218,8 @@ void STlib_updateMultIcon ( st_multicon_t*  mi )
             if( stlib_enable_erase )
             {
                 int erase_index = (mi->prev_icon_index >= 0)? mi->prev_icon_index : 0;
-                patch_t * pp = mi->patches[erase_index];
+                // Hardware or software render.
+                patch_t * pp = V_patch( mi->patches[erase_index] );  // patch fields
                 int x = mi->x - pp->leftoffset;
                 int y = mi->y - pp->topoffset;
                 int w = pp->width;
@@ -265,12 +271,14 @@ void STlib_updateBinIcon ( st_binicon_t*   bi )
             V_DrawScaledPatch(bi->x, bi->y, bi->patch);
         else if (stlib_enable_erase)
         {
+            // Software render only.
             //faB:current hardware mode always refresh the statusbar
             // Erase icon by copying background.
-            int x = bi->x - bi->patch->leftoffset;
-            int y = bi->y - bi->patch->topoffset;
-            int w = bi->patch->width;
-            int h = bi->patch->height;
+            patch_t * pf = bi->patch;  // patch fields
+            int x = bi->x - pf->leftoffset;
+            int y = bi->y - pf->topoffset;
+            int w = pf->width;
+            int h = pf->height;
 
 #ifdef DEBUG
        CONS_Printf("V_CopyRect3: %d %d %d %d %d %d %d %d\n",

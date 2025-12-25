@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: st_stuff.c 1363 2017-10-16 16:29:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1618,8 +1618,10 @@ void ST_drawOverlayNum (int x, int y,
                         patch_t*  percent,
                         byte      pickup_flash )
 {
-    int  hf = numpat[0]->height;
-    int  wf = numpat[0]->width;
+    // Hardware or software draw.
+    patch_t * pf = V_patch( numpat[0] );
+    int  hf = pf->height;
+    int  wf = pf->width;
     int  wfv = wf * vid.dupx;
     boolean   neg;
 

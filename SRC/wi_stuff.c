@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: wi_stuff.c 1363 2017-10-16 16:29:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -110,7 +110,7 @@
 
 // NET GAME STUFF
 #define NG_STATSY               50
-#define NG_STATSX               (32 + (star->width)/2 + 32*!dofrags)
+#define NG_STATSX               32
 
 #define NG_SPACINGX             64
 
@@ -504,6 +504,8 @@ boolean WI_Responder(event_t* ev)
 // Draws "<Levelname> Finished!"
 static void WI_Draw_LF(void)
 {
+    // Hardware or software render.
+    patch_t * pp, * pf;
     int y = WI_TITLEY;
 
     // draw <LevelName>
@@ -516,11 +518,12 @@ static void WI_Draw_LF(void)
     else
     {
         //[segabor]: 'SHORT' BUG !  [WDJ] Patch read does endian conversion
-        V_DrawScaledPatch ((BASEVIDWIDTH - (lnames[wbs->last]->width))/2,
-                            y, lnames[wbs->last]);
-        y += (5 * (lnames[wbs->last]->height))/4;
+        pp = lnames[wbs->last];
+        pf = V_patch( pp );  // access patch fields
+        V_DrawScaledPatch ((BASEVIDWIDTH - pf->width)/2, y, pp);
+        y += (5 * pf->height)/4;
         // draw "Finished!"
-        V_DrawScaledPatch ((BASEVIDWIDTH - (finished->width))/2,
+        V_DrawScaledPatch ((BASEVIDWIDTH - (V_patch(finished)->width))/2,
                             y, finished);
     }
 }
@@ -530,6 +533,8 @@ static void WI_Draw_LF(void)
 // Draws "Entering <LevelName>"
 static void WI_Draw_EL(void)
 {
+    // Hardware or software render.
+    patch_t * pp, * pf;
     int y = WI_TITLEY;
 
     // draw "Entering"
@@ -543,13 +548,14 @@ static void WI_Draw_EL(void)
     else
     {
         //[segabor]: 'SHORT' BUG !    [WDJ] Patch read does endian conversion
-        V_DrawScaledPatch((BASEVIDWIDTH - (entering->width))/2,
+        V_DrawScaledPatch((BASEVIDWIDTH - (V_patch(entering)->width))/2,
                           y, entering);
         // draw level
-        y += (5 * (lnames[wbs->next]->height))/4;
+        pp = lnames[wbs->next];
+        pf = V_patch( pp );  // access patch fields
+        y += (5 * pf->height)/4;
 
-        V_DrawScaledPatch((BASEVIDWIDTH - (lnames[wbs->next]->width))/2,
-                           y, lnames[wbs->next]);
+        V_DrawScaledPatch((BASEVIDWIDTH - pf->width)/2, y, pp);
     }
 
 }
@@ -558,6 +564,8 @@ static void WI_Draw_OnLnode ( int           n,
                              patch_t*      c[] )
 {
 
+    // Hardware or software render.
+    patch_t   * pf;
     int         i;
     int         left;
     int         top;
@@ -572,10 +580,11 @@ static void WI_Draw_OnLnode ( int           n,
     i = 0;
     do
     {
-        left   = lnodes->x - (c[i]->leftoffset);
-        top    = lnodes->y - (c[i]->topoffset);
-        right  = left + (c[i]->width);
-        bottom = top + (c[i]->height);
+        pf = V_patch( c[i] );
+        left   = lnodes->x - pf->leftoffset;
+        top    = lnodes->y - pf->topoffset;
+        right  = left + pf->width;
+        bottom = top + pf->height;
         if (left >= 0
             && right < BASEVIDWIDTH
             && top >= 0
@@ -757,8 +766,8 @@ static int WI_Draw_Num ( int  x, int  y,
                         int  n,
                         int  digits )
 {
-
-    int  fontwidth = num[0]->width;
+    // Hardware or software render, access patch fields.
+    int  fontwidth = V_patch( num[0] )->width;
     int  neg;
     int  temp;
 
@@ -842,10 +851,11 @@ static void WI_Draw_Time ( int x, int y, int t )
     {
         timediv = 1;
 
+        // Hardware or software render.
         do
         {
             n = (t / timediv) % 60;
-            x = WI_Draw_Num(x, y, n, 2) - (colon->width);
+            x = WI_Draw_Num(x, y, n, 2) - V_patch(colon)->width;
             timediv *= 60;
 
             // draw
@@ -857,7 +867,7 @@ static void WI_Draw_Time ( int x, int y, int t )
     else
     {
         // "sucks"
-        V_DrawScaledPatch(x - (sucks->width), y, sucks);
+        V_DrawScaledPatch(x - (V_patch(sucks)->width), y, sucks);
     }
 }
 
@@ -1370,7 +1380,7 @@ static void WI_ddrawDeathmatchStats(void)
     WI_Draw_LF();
 
     // draw stat titles (top line)
-    V_DrawScaledPatch(DM_TOTALSX - total->width/2,
+    V_DrawScaledPatch(DM_TOTALSX - V_patch(total)->width/2,
                 DM_MATRIXY-WI_SPACINGY+10,
                 total);
 
@@ -1393,32 +1403,32 @@ static void WI_ddrawDeathmatchStats(void)
             else
                 colormap = (byte *) translationtables - 256 + (players[i].skincolor<<8);
 
-            V_DrawMappedPatch(x-stpb->width/2,
+            V_DrawMappedPatch(x - (V_patch(stpb)->width/2),
                         DM_MATRIXY - WI_SPACINGY,
                         stpb,      //p[i], now uses a common STPB0 translated
                         colormap); //      to the right colors
 
-            V_DrawMappedPatch(DM_MATRIXX-stpb->width/2,
+            V_DrawMappedPatch(DM_MATRIXX - (V_patch(stpb)->width/2),
                         y,
                         stpb,      //p[i]
                         colormap);
 
             if (i == me)
             {
-                V_DrawScaledPatch(x-stpb->width/2,
+                V_DrawScaledPatch(x - (V_patch(stpb)->width/2),
                             DM_MATRIXY - WI_SPACINGY,
                             bstar);
 
-                V_DrawScaledPatch(DM_MATRIXX-stpb->width/2,
+                V_DrawScaledPatch(DM_MATRIXX - (V_patch(stpb)->width/2),
                             y,
                             star);
             }
         }
         else
         {
-            // V_DrawPatch(x-bp[i]->width/2,
+            // V_DrawPatch(x - (V_patch(bp[i])->width/2),
             //   DM_MATRIXY - WI_SPACINGY, FB, bp[i]);
-            // V_DrawPatch(DM_MATRIXX-bp[i]->width/2,
+            // V_DrawPatch(DM_MATRIXX - (V_patch(bp[i])->width/2),
             //   y, FB, bp[i]);
         }
         x += DM_SPACINGX;
@@ -1427,7 +1437,7 @@ static void WI_ddrawDeathmatchStats(void)
 
     // draw stats
     y = DM_MATRIXY+10;
-    w = num[0]->width;
+    w = V_patch(num[0])->width;
 
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
@@ -1653,9 +1663,9 @@ done:
 // Called by WI_Drawer
 static void WI_Draw_NetgameStats(void)
 {
-    int         i;
-    int         x, y;
-    int         pwidth = percent->width;
+    // Hardware or software render.
+    int  i, x, y;
+    int  pwidth, ngsx;
     byte*       colormap;   //added:08-02-98: remap STBP0 to player color
 
     // all WI is draw screen0, scale
@@ -1666,56 +1676,61 @@ static void WI_Draw_NetgameStats(void)
 
     WI_Draw_LF();
 
+    ngsx = NG_STATSX + (V_patch(star)->width/2) + (dofrags? 0 : 32);
     // draw stat titles (top line)
     if( FontBBaseLump )
     {
         // use FontB if any
-        V_DrawTextB("Kills", NG_STATSX+  NG_SPACINGX-V_TextBWidth("Kills"), NG_STATSY);
-        V_DrawTextB("Items", NG_STATSX+2*NG_SPACINGX-V_TextBWidth("Items"), NG_STATSY);
-        V_DrawTextB("Scrt", NG_STATSX+3*NG_SPACINGX-V_TextBWidth("Scrt"), NG_STATSY);
+        V_DrawTextB("Kills", ngsx +  NG_SPACINGX - V_TextBWidth("Kills"), NG_STATSY);
+        V_DrawTextB("Items", ngsx + 2*NG_SPACINGX - V_TextBWidth("Items"), NG_STATSY);
+        V_DrawTextB("Scrt", ngsx + 3*NG_SPACINGX - V_TextBWidth("Scrt"), NG_STATSY);
         if (dofrags)
-            V_DrawTextB("Frgs", NG_STATSX+4*NG_SPACINGX-V_TextBWidth("Frgs"), NG_STATSY);
+            V_DrawTextB("Frgs", ngsx + 4*NG_SPACINGX - V_TextBWidth("Frgs"), NG_STATSY);
 
         y = NG_STATSY + V_TextBHeight("Kills");
     }
     else
     {
-        V_DrawScaledPatch(NG_STATSX+NG_SPACINGX-(kills->width),
+        V_DrawScaledPatch(ngsx + NG_SPACINGX - (V_patch(kills)->width),
             NG_STATSY, kills);
         
-        V_DrawScaledPatch(NG_STATSX+2*NG_SPACINGX-(items->width),
+        V_DrawScaledPatch(ngsx + 2*NG_SPACINGX - (V_patch(items)->width),
             NG_STATSY, items);
         
-        V_DrawScaledPatch(NG_STATSX+3*NG_SPACINGX-(secret->width),
+        V_DrawScaledPatch(ngsx + 3*NG_SPACINGX - (V_patch(secret)->width),
             NG_STATSY, secret);
         if (dofrags)
-            V_DrawScaledPatch(NG_STATSX+4*NG_SPACINGX-(frags->width),
+            V_DrawScaledPatch(ngsx + 4*NG_SPACINGX - (V_patch(frags)->width),
                               NG_STATSY, frags);
         // draw stats
-        y = NG_STATSY + (kills->height);
+        y = NG_STATSY + (V_patch(kills)->height);
     }
 
 
+    pwidth = V_patch(percent)->width;
     //added:08-02-98: p[i] replaced by stpb (see WI_Load_Data for more)
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
         if (!playeringame[i])
             continue;
 
-        x = NG_STATSX;
+        x = ngsx;
         colormap = (players[i].skincolor) ?
              SKIN_TO_SKINMAP( players[i].skincolor ) // skins 1..
            : & reg_colormaps[0]; // no translation table for green guy
 
-        V_DrawMappedPatch(x-(stpb->width), y, stpb, colormap);
+        V_DrawMappedPatch(x - (V_patch(stpb)->width), y, stpb, colormap);
 
         if (i == me)
-            V_DrawScaledPatch(x-(stpb->width), y, star);
+            V_DrawScaledPatch(x - (V_patch(stpb)->width), y, star);
 
         x += NG_SPACINGX;
-        WI_Draw_Percent(x-pwidth, y+10, cnt_kills[i]);   x += NG_SPACINGX;
-        WI_Draw_Percent(x-pwidth, y+10, cnt_items[i]);   x += NG_SPACINGX;
-        WI_Draw_Percent(x-pwidth, y+10, cnt_secret[i]);  x += NG_SPACINGX;
+        WI_Draw_Percent(x-pwidth, y+10, cnt_kills[i]);
+        x += NG_SPACINGX;
+        WI_Draw_Percent(x-pwidth, y+10, cnt_items[i]);
+        x += NG_SPACINGX;
+        WI_Draw_Percent(x-pwidth, y+10, cnt_secret[i]);
+        x += NG_SPACINGX;
 
         if (dofrags)
             WI_Draw_Num(x, y+10, cnt_frags[i], -1);
@@ -1873,8 +1888,9 @@ static void WI_Draw_Stats(void)
           && (gamedesc.gameflags & GD_idwad)
           && (wbs->epsd < 3)
           && !modifiedgame );
+    // Hardware or softare render.
     // line height
-    int lh = (3 * (num[0]->height))/2;
+    int lh = (3 * (V_patch(num[0])->height))/2;
 
     // all WI is draw screen0, scale
     WI_Slam_Background();

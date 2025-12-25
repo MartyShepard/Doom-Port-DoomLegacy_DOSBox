@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: v_video.c 1363 2017-10-16 16:29:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -2597,7 +2597,8 @@ int V_DrawCharacter(int x, int y, byte c)
     if (c >= HU_FONTSIZE)
         return  4 * drawinfo.dupx;  // space and non-printing chars
 
-    w = hu_font[c]->width * drawinfo.dupx;  // proportional width
+    // Hardware or software render, access patch fields.
+    w = V_patch( hu_font[c] )->width * drawinfo.dupx;  // proportional width
     if (((x * drawfont.dupx0) + w) > vid.width)
         return 0;
 
@@ -2648,7 +2649,7 @@ void V_DrawString(int x, int y, int option, char *string)
     }
 #endif
 
-    if ( use_font1 && (rendermode==render_soft))
+    if ( use_font1 && (rendermode == render_soft))
     {
          V_Drawfont1_string( x, y, option, string);
          return;
@@ -2704,7 +2705,8 @@ void V_DrawString(int x, int y, int option, char *string)
 
         //[segabor]
         // hu_font is endian fixed
-        w = hu_font[c]->width * dupx;	// proportional width
+        // Hardware or software render, access patch fields.
+        w = V_patch( hu_font[c] )->width * dupx;  // proportional width
         if (cx + w > vid.width)
             break;
         if (option & V_WHITEMAP)
@@ -2725,7 +2727,7 @@ void V_DrawString(int x, int y, int option, char *string)
 int V_StringWidth(char *string)
 {
     int i;
-    int w = 0;
+    int sw = 0;
     int c;
     int ln = strlen(string);
 
@@ -2740,13 +2742,17 @@ int V_StringWidth(char *string)
         // hufont only has uppercase
         c = toupper(string[i]) - HU_FONTSTART;
         if (c < 0 || c >= HU_FONTSIZE)
-            w += 4;
+            sw += 4;
         else
+        {
             //[segabor]
-            w += hu_font[c]->width;  // hu_font is endian fixed
+            // hu_font is endian fixed
+            // Hardware or software render, access patch fields.
+            sw += V_patch( hu_font[c] )->width;
+        }
     }
 
-    return w;
+    return sw;
 }
 
 #if 0
@@ -2786,7 +2792,8 @@ void V_DrawTextB(char *text, int x, int y)
             // FontB only has uppercase
             p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);  // endian fix
             V_DrawScaledPatch(x, y, p);
-            x += p->width - 1;
+            // Hardware or software render, access patch fields.
+            x += V_patch(p)->width - 1;
         }
     }
 }
@@ -2808,7 +2815,8 @@ void V_DrawTextBGray(char *text, int x, int y)
             // FontB only has uppercase
             p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);  // endian fix
             V_DrawMappedPatch(x, y, p, graymap);
-            x += p->width - 1;
+            // Hardware or software render, access patch fields.
+            x += V_patch(p)->width - 1;
         }
     }
 }
@@ -2838,7 +2846,8 @@ int V_TextBWidth(char *text)
         {
             // FontB only has uppercase
             p = W_CachePatchNum(FontBBaseLump + toupper(c) - 33, PU_CACHE);  // endian fix
-            width += p->width - 1;
+            // Hardware or software render, access patch fields.
+            width += V_patch(p)->width - 1;
         }
     }
     return (width);

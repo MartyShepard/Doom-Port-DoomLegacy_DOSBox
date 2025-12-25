@@ -6279,3 +6279,15 @@ patchfile = w107_58_texname.patch
 Add a test to exclude texture names that start with '#' (which
 are used for parameters) from error messages about textures
 not found.
+
+*** W107_patch_width
+patchfile = w107_59_patch_width.patch
+- commit revision 1363
+Modify access to patch fields where the patch might be a patch_t
+or a MipPatch_t (hardware draw).  In such places run the patch
+access through the function V_patch(p), which returns a patch
+field compatible structure when given MipPatch_t.
+For now this function is a dummy, because the patch_t and MipPatch_t
+have identical patch width, height, topoffset, and leftoffset fields.
+This identifies where there are going to be problems if this
+should ever change.
