@@ -6377,3 +6377,42 @@ Depends upon CV_STRING, CV_VALUE, and EV values.
 This makes it possible to see both user settings and param settings.
 Testing shows that bug 0136 had been fixed at some point.
 
+*** W107_textcmd
+patchfile = w107_70_textcmd.patch
+- commit revision 1374
+Update network version to 24.  Some changes make the new network
+code incompatible.
+
+Added the PT_ACKS message type, which moves some of the existing
+PT_ message types.  Message acks had been using the PT_NOTHING message
+type.  This resolves a long standing FIXME.
+Added 3 more dummy message codes to avoid having to move codes again
+if a priority message type needs to be added later.
+
+Reworked the textcmd record formats and code to fix suspected faults.
+Gave the textcmd a specific format (textbuf_t), with an explicit
+length field.  This removes the odd usage of the first text byte as
+the text length.  The text buffer indexing got simpler and much
+easier to understand.
+Made all textcmd storage use the textbuf_t record type.
+Fixed the code to use the length field explicitly.
+Fixed tests against the buffer length.
+Changed MAXTEXTCMD from 256 to 255, as 256 is impossible to represent
+in a 1 byte length field.
+The textbuf_t format has room for an additional 0 byte termination
+to protect against malicious packets.
+
+Changed other XCmd that used the textbuf as a raw byte buffer
+to use the byte_pak_t record format instead.
+This does not actually change the packet content but makes
+examination and debugging easier.
+
+The PT_SERVERREFUSE message uses a stringpak_t record type.
+
+Made the PT_REQUESTFILE message send multiple messages when the
+needed file names get too long, too avoid overrunning the buffer
+or aborting.
+
+Changed all packet record formats to have conforming type names,
+such as serverconfig_pak_t.
+

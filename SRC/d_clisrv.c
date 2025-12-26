@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
+// $Id: d_clisrv.c 1374 2017-12-18 17:22:05Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -176,7 +176,7 @@
 
 // The addition of wait messages should be transparent to previous network
 // versions.
-const int  NETWORK_VERSION = 23; // separate version number for network protocol (obsolete)
+const int  NETWORK_VERSION = 24; // separate version number for network protocol (obsolete)
 
 
 #define JOININGAME
@@ -242,12 +242,8 @@ byte            servernode = 255; // server net node, 255=none
 // Index for netcmds and textcmds
 #define BTIC_INDEX( tic )  ((tic)%BACKUPTICS)
 // Text buffer for textcmds.
-typedef struct {
-   // The first byte is the length of the text, excluding the length byte.
-   // One extra byte at end for 0 termination, to protect against malicious use.
-   byte  buff[MAXTEXTCMD + 1];
-} textbuf_t;
-  // The first byte of buff is the length.
+// One extra byte at end for 0 termination, to protect against malicious use.
+// Use textbuf_t from textcmdpak
 
 static ticcmd_t localcmds;
 static textbuf_t  localtextcmd;
@@ -257,7 +253,6 @@ static textbuf_t  localtextcmd2; // splitscreen player2
 // engine
 ticcmd_t        netcmds[BACKUPTICS][MAXPLAYERS];
 static textbuf_t  textcmds[BACKUPTICS][MAXPLAYERS];
-  // The first byte of textcmd is the length.
 
 consvar_t cv_playdemospeed  = {"playdemospeed","0",CV_VALUE,CV_Unsigned};
 
@@ -314,13 +309,16 @@ void Register_NetXCmd(netxcmd_e cmd_id, void (*cmd_f) (xcmd_t * xc))
    netxcmd_func[cmd_id] = cmd_f;
 }
 
-void Send_NetXCmd(byte cmd_id, void *param, int nparam)
+//  cmd_id :  X command, XD_
+//  param : parameter strings
+//  param_len : number of parameter strings
+void Send_NetXCmd(byte cmd_id, void *param, int param_len)
 {
    if(demoplayback)
        return;
 
-   int textlen = localtextcmd.buff[0];
-   if( (textlen + 1 + nparam) > MAXTEXTCMD)
+   int textlen = localtextcmd.len;
+   if( (textlen + 1 + param_len) > MAXTEXTCMD)  // with XD_ and param
    {
 #ifdef PARANOIA
        I_SoftError("Net command [%i] exceeds buffer: netcmd %d\n", cmd_id, 1);
@@ -329,26 +327,25 @@ void Send_NetXCmd(byte cmd_id, void *param, int nparam)
 #endif
        return;
    }
-   // Append
+   // Append to player1 text commands.
    // First byte is the cmd, followed by its parameters (binary or string).
-   textlen++;
-   localtextcmd.buff[textlen] = cmd_id;
-   if(param && nparam)
+   localtextcmd.text[textlen++] = cmd_id; // XD_
+   if(param && param_len)
    {
-       memcpy(&localtextcmd.buff[textlen+1], param, nparam);
-       textlen += nparam;
+       memcpy(&localtextcmd.text[textlen], param, param_len);
+       textlen += param_len;
    }
-   localtextcmd.buff[0] = textlen;
+   localtextcmd.len = textlen;
 }
 
 // splitscreen player
-void Send_NetXCmd2(byte cmd_id, void *param, int nparam)
+void Send_NetXCmd2(byte cmd_id, void *param, int param_len)
 {
    if(demoplayback)
        return;
 
-   int textlen = localtextcmd2.buff[0];
-   if( (textlen + 1 + nparam) > MAXTEXTCMD)
+   int textlen = localtextcmd2.len;
+   if( (textlen + 1 + param_len) > MAXTEXTCMD) // with XD_ and param
    {
 #ifdef PARANOIA
        I_SoftError("Net command [%i] exceeds buffer: netcmd %d\n", cmd_id, 2);
@@ -358,14 +355,13 @@ void Send_NetXCmd2(byte cmd_id, void *param, int nparam)
        return;
    }
    // Append
-   textlen++;
-   localtextcmd2.buff[textlen] = cmd_id;
-   if(param && nparam)
+   localtextcmd2.text[textlen++] = cmd_id;  // XD_
+   if(param && param_len)
    {
-       memcpy(&localtextcmd2.buff[textlen+1], param, nparam);
-       textlen += nparam;
+       memcpy(&localtextcmd2.text[textlen], param, param_len);
+       textlen += param_len;
    }
-   localtextcmd2.buff[0] = textlen;
+   localtextcmd2.len = textlen;
 }
 
 
@@ -387,7 +383,7 @@ static void D_Clear_ticcmd(int tic)
 
     for(i=0;i<MAXPLAYERS;i++)
     {
-        textcmds[btic][i].buff[0]=0;  // textlen
+        textcmds[btic][i].len = 0;  // textlen
         netcmds[btic][i].angleturn = 0; //&= ~TICCMD_RECEIVED;
     }
     DEBFILE(va("Clear tic %5d [%2d]\n", tic, btic));
@@ -401,7 +397,7 @@ void ExtraDataTicker(void)
     textbuf_t * textbuf;
     byte * endbuf;
     byte * endtxt;  // independent of changes by called xfunc
-    int textlen;
+    unsigned int textlen;
     xcmd_t  xcmd;
 
     for(pn=0; pn<MAXPLAYERS; pn++)
@@ -411,23 +407,25 @@ void ExtraDataTicker(void)
 
         xcmd.playernum = pn;
         textbuf = & textcmds[btic][pn];
-        endbuf = & textbuf->buff[MAXTEXTCMD-1];
-        endbuf[1] = 0;  // Protect against malicious strings.
-        textlen = textbuf->buff[0];  // 0..255
-#if 256 > MAXTEXTCMD
-        if( textlen > MAXTEXTCMD-1 )   textlen = MAXTEXTCMD-1;  // bad length
+        textlen = textbuf->len;  // 0..255
+        if( textlen == 0 )  continue;  // empty text
+#if MAXTEXTCMD < 255
+        if( textlen > MAXTEXTCMD )   textlen = MAXTEXTCMD;  // bad length
 #endif       
-        // Not all commands have strings, some have two strings.
+        // set extra termination byte at end of buffer (text[MAXTEXTCMD+1])
+        endbuf = & textbuf->text[MAXTEXTCMD]; // last char
+        endbuf[0] = 0;  // Protect against malicious strings.
+        // Commands can have 0 strings, 1 string, or 2 strings.
         // Inventory has just a byte number.
-        xcmd.curpos = (byte*)&(textbuf->buff[1]);  // start of text
-        endtxt = &(textbuf->buff[textlen]);  // end of text
-        if( endtxt > endbuf )  endtxt = endbuf;
-        endtxt[1] = 0;  // Protect against malicious strings.
-        xcmd.endpos = endtxt;
-        // One or more commands are within curpos..endpos
-        while(xcmd.curpos <= endtxt)
+        xcmd.curpos = (byte*)&(textbuf->text[0]);  // start of command
+        endtxt = &(textbuf->text[textlen]);  // after last char of text
+        if( endtxt >= endbuf )  endtxt = endbuf;
+        endtxt[0] = 0;  // Protect against malicious strings.
+        xcmd.endpos = endtxt;  // end of text + 1
+        // One or more commands are within curpos..endpos-1
+        while(xcmd.curpos < endtxt)
         {
-            xcmd.cmd = *(xcmd.curpos++);
+            xcmd.cmd = *(xcmd.curpos++);  // XD_ command
             if(xcmd.cmd < MAXNETXCMD && netxcmd_func[xcmd.cmd])
             {
                 // Execute a NetXCmd.
@@ -441,7 +439,7 @@ void ExtraDataTicker(void)
             {
                 // [WDJ] Why should a bad demo command byte be fatal.
                 I_SoftError("Got unknown net/demo command [%d]=%d len=%d\n",
-                           (xcmd.curpos - &(textbuf->buff[0])),
+                           (xcmd.curpos - &(textbuf->text[0])),
                            xcmd.cmd, textlen);
                 D_Clear_ticcmd(btic);
                 return;
@@ -468,8 +466,11 @@ void ExtraDataTicker(void)
 //   type   |  description
 // ---------+--------------
 //   byte   | size of the extradata
-//   byte   | the extradata (xd) bits : see XD_...
-//            with this byte you know what parameter follow
+//   byte   | LEGACY 1.13:  XDNAMEANDCOLOR, XD_WEAPON_PREF bits
+//            LEGACY 1.20:  XD_ codes
+//            Determines what parameters follow.
+//
+// LEGACY 1.12 XD bits
 // if(xd & XDNAMEANDCOLOR)
 //   byte   | color
 //   char[MAXPLAYERNAME] | name of the player
@@ -480,64 +481,83 @@ void ExtraDataTicker(void)
 //   char[NUMWEAPONS] | the weapon switch priority
 //   byte   | autoaim : true if use the old autoaim system
 // endif
+
+// Save textcmd to demo using textbuf_t format.
 boolean AddLmpExtradata(byte **demo_point, int playernum)
 {
     int  btic = BTIC_INDEX( gametic );
     textbuf_t * textbuf = & textcmds[btic][playernum];
-    int  textlen = textbuf->buff[0];
+    int  textlen = textbuf->len;
 
     if(textlen == 0)  // anything in the buffer
         return false;
 
-    memcpy(*demo_point, textbuf->buff, textlen+1);
+    // Demo format matches textbuf_t, length limited
+    memcpy(*demo_point, textbuf, textlen+1);  // len,text
     *demo_point += textlen+1;
     return true;
 }
 
 void ReadLmpExtraData(byte **demo_pointer, int playernum)
 {
-    unsigned char nextra,ex;
+    unsigned int extra_len;
     int btic = BTIC_INDEX( gametic );
     textbuf_t * textbuf = & textcmds[btic][playernum];
+    byte  * dp;
 
-    if(!demo_pointer)
-    {
-        textbuf->buff[0] = 0;  // text len
-        return;
-    }
-    nextra=**demo_pointer;
+    if(!demo_pointer)  goto no_text_cmd;
+
+    dp = *demo_pointer;
+    if( dp == NULL )  goto no_text_cmd;
+
+    extra_len = dp[0];   // textbuf->len
+    // [WDJ] Clean separation of old and new formating.
     if(demoversion==112) // support old demos v1.12
     {
+        // Different, limited, XCmd format.
+        byte  * p = dp;
         int  textlen = 0;
-        byte  *p = *demo_pointer+1; // skip nextra
+        byte  ex;
 
-        ex=*p++;
+        // extra_len is length of extra data, incl length.
+        ex = p[1];  // XCmd bits
+        p += 2;  // skip extra_len and XCmd
         if(ex & 1)
         {
-            textbuf->buff[textlen+1] = XD_NAMEANDCOLOR;
-            memcpy(&textbuf->buff[textlen+2],
+            textbuf->text[textlen++] = XD_NAMEANDCOLOR;
+            memcpy(&textbuf->text[textlen],
                    p,
                    MAXPLAYERNAME+1);
             p+=MAXPLAYERNAME+1;
-            textlen += MAXPLAYERNAME+1+1;
+            textlen += MAXPLAYERNAME+1;
         }
         if(ex & 2)
         {
-            textbuf->buff[textlen+1] = XD_WEAPONPREF;
-            memcpy(&textbuf->buff[textlen+2],
+            textbuf->text[textlen++] = XD_WEAPONPREF;
+            memcpy(&textbuf->text[textlen],
                    p,
                    NUMWEAPONS+2);
             p+=NUMWEAPONS+2;
-            textlen += NUMWEAPONS+2+1;
+            textlen += NUMWEAPONS+2;
         }
-        textbuf->buff[0] = textlen;
-        nextra--;
+        textbuf->len = textlen;
     }
     else
-        memcpy(textbuf->buff, *demo_pointer, nextra+1);
-    // increment demo pointer
-    *demo_pointer +=nextra+1;
+    {
+        // Demo format matches textbuf_t, length limited.
+	// extra_len is textbuf->len, excluding len field.
+        extra_len ++;
+        memcpy(textbuf, dp, extra_len);  // len,text
+    }
+    // update demo pointer
+    *demo_pointer = dp + extra_len;
+    return;
+
+no_text_cmd:
+    textbuf->len = 0;  // empty text cmd
+    return;
 }
+
 
 // -----------------------------------------------------------------
 //  end extra data function for lmps
@@ -584,7 +604,7 @@ static boolean  CL_Send_Join( void )
     netbuffer->u.clientcfg.version = VERSION;
     netbuffer->u.clientcfg.subversion = LE_SWAP32(NETWORK_VERSION);
 
-    return HSendPacket(servernode,true,0,sizeof(clientconfig_pak));
+    return HSendPacket(servernode,true,0,sizeof(clientconfig_pak_t));
 }
 
 
@@ -598,7 +618,7 @@ static void SV_Send_ServerInfo(int to_node, tic_t reqtime)
     netbuffer->packettype=PT_SERVERINFO;
     netbuffer->u.serverinfo.version = VERSION;
     netbuffer->u.serverinfo.subversion = LE_SWAP32(NETWORK_VERSION);
-    // return back the time value so client can compute there ping
+    // return back the time value so client can compute their ping
     netbuffer->u.serverinfo.trip_time = LE_SWAP32(reqtime);
     netbuffer->u.serverinfo.numberofplayer = doomcom->numplayers;
     netbuffer->u.serverinfo.maxplayer = cv_maxplayers.value;
@@ -753,7 +773,7 @@ static void SV_Send_player_repair( int pn, byte to_node )
     netbuffer->u.repair.pos.momx = mo->momx;
     netbuffer->u.repair.pos.momy = mo->momy;
     netbuffer->u.repair.pos.momz = mo->momz;
-    HSendPacket(to_node, false, 0, sizeof(repair_pak));
+    HSendPacket(to_node, false, 0, sizeof(repair_pak_t));
 }
 
 
@@ -791,7 +811,7 @@ static void SV_Send_Pos_repair( byte repair_type, byte to_node )
     if( repair_type == RQ_SUG_SAVEGAME )
     {
         netbuffer->u.repair.repair_type = RQ_SUG_SAVEGAME;
-        HSendPacket(to_node, false, 0, sizeof(repair_pak));
+        HSendPacket(to_node, false, 0, sizeof(repair_pak_t));
         return;
     }
 #endif
@@ -814,7 +834,7 @@ static void CL_Send_Req_repair( repair_type_e msg_type )
     netbuffer->packettype=PT_REPAIR;
     netbuffer->u.repair.repair_type = msg_type;
 
-    HSendPacket(servernode, true, 0, sizeof(repair_pak));
+    HSendPacket(servernode, true, 0, sizeof(repair_pak_t));
 }
 #endif
 
@@ -930,7 +950,7 @@ static void SV_Send_NetWait( void )
     {
         if(nodeingame[nn])
         {
-            HSendPacket(nn, false, 0, sizeof(netwait_pak));
+            HSendPacket(nn, false, 0, sizeof(netwait_pak_t));
 #ifdef WAITPLAYER_DEBUG
             debug_Printf( "  sent to player[ %d ]\n", nn );
 #endif
@@ -1079,18 +1099,20 @@ boolean  D_WaitPlayer_Response( int key )
 // By Client.
 // Ask the server for some info.
 //   to_node : when BROADCASTADDR then all servers will respond
+// Called by: CL_Broadcast_AskInfo, CL_Update_ServerList, CL_ConnectToServer
 static void CL_Send_AskInfo( int to_node )
 {
     netbuffer->packettype = PT_ASKINFO;
     netbuffer->u.askinfo.version = VERSION;
     netbuffer->u.askinfo.send_time = LE_SWAP32(I_GetTime());
-    HSendPacket(to_node, false, 0, sizeof(askinfo_pak));
+    HSendPacket(to_node, false, 0, sizeof(askinfo_pak_t));
 }
 
 
 // By Client.
 // Broadcast to find some servers.
 //   addrstr: broadcast addr string
+// Called by: CL_Update_ServerList
 static void CL_Broadcast_AskInfo( char * addrstr )
 {
     // Modifies the broadcast address.
@@ -1108,13 +1130,13 @@ server_info_t serverlist[MAXSERVERLIST];
 int serverlistcount=0;
 
 // Clear the serverlist, closing connections.
-//  connectedserver: except this server
-static void SL_Clear_ServerList( int connectedserver )
+//  keep_node: except this server node
+static void SL_Clear_ServerList( int keep_node )
 {
     int i;
     for( i=0; i<serverlistcount; i++ )
     {
-        if( connectedserver != serverlist[i].server_node )
+        if( serverlist[i].server_node != keep_node )
         {
             Net_CloseConnection(serverlist[i].server_node);
             serverlist[i].server_node = 0;
@@ -1124,6 +1146,7 @@ static void SL_Clear_ServerList( int connectedserver )
 }
 
 // Find the server in the serverlist.
+// Called by: SL_InsertServer, CL_ConnectToServer
 static int SL_Find_Server( byte nnode )
 {
     int i;
@@ -1137,7 +1160,7 @@ static int SL_Find_Server( byte nnode )
 }
 
 // Insert the server into the serverlist.
-static void SL_InsertServer( serverinfo_pak *info, byte nnode)
+static void SL_InsertServer( serverinfo_pak_t * info, byte nnode)
 {
     tic_t  test_time;
     server_info_t se;
@@ -1966,7 +1989,7 @@ boolean SV_AddWaitingPlayers(void)
 {
     boolean  newplayer_added = false;  // return
     byte nnode, nn;
-    byte newplayernum, playernum_param;
+    byte newplayernum, addplayer_param;
 
     newplayernum=0;
     for(nnode=0; nnode<MAXNETNODES; nnode++)
@@ -2003,16 +2026,16 @@ boolean SV_AddWaitingPlayers(void)
             if( playerpernode[nnode]<1 )
             {
                 nnode_to_player[nnode] = newplayernum;
-                playernum_param = newplayernum;
+                addplayer_param = newplayernum;
             }
             else
             {
                 nnode_to_player2[nnode] = newplayernum;
-                playernum_param = newplayernum | 0x80;  // player 2 flag
+                addplayer_param = newplayernum | 0x80;  // player 2 flag
             }
             playerpernode[nnode]++;
 
-            Send_NetXCmd_p2(XD_ADDPLAYER, nnode, playernum_param);
+            Send_NetXCmd_p2(XD_ADDPLAYER, nnode, addplayer_param);
             if( doomcom->numplayers==0 )
                 doomcom->numplayers++;  //we must send the change to other players
             
@@ -2088,8 +2111,8 @@ void SV_StopServer( void )
 
     gamestate = wipegamestate = GS_NULL;
 
-    localtextcmd.buff[0]=0;  // text len
-    localtextcmd2.buff[0]=0; // text len
+    localtextcmd.len = 0;  // text len
+    localtextcmd2.len = 0; // text len
 
     for(i=0; i<BACKUPTICS; i++)
         D_Clear_ticcmd(i);
@@ -2119,10 +2142,11 @@ void SV_StartSinglePlayerServer(void)
 // Called by client_join_handler.
 static void SV_Send_Refuse(int to_node, char *reason)
 {
-    strcpy(netbuffer->u.serverrefuse.reason, reason);
+    strncpy(netbuffer->u.stringpak.str, reason, MAX_STRINGPAK_LEN-1);
+    netbuffer->u.stringpak.str[MAX_STRINGPAK_LEN-1] = 0;
 
-    netbuffer->packettype=PT_SERVERREFUSE;
-    HSendPacket(to_node, true, 0, strlen(netbuffer->u.serverrefuse.reason)+1);
+    netbuffer->packettype = PT_SERVERREFUSE;
+    HSendPacket(to_node, true, 0, strlen(netbuffer->u.stringpak.str)+1);
     Net_CloseConnection(to_node);
 }
 
@@ -2237,6 +2261,7 @@ static void client_quit_handler( byte nnode, int netconsole )
 
 // By Client
 // PT_SERVERINFO from Server.
+//  nnode : remote node
 static void server_info_handler( byte nnode )
 {
     // Compute ping in ms.
@@ -2256,7 +2281,7 @@ static void server_refuse_handler( byte nnode )
     {
         M_SimpleMessage(va("Server %i refuses connection\n\nReason :\n%s",
                            nnode,
-                           netbuffer->u.serverrefuse.reason));
+                           netbuffer->u.stringpak.str));
         CL_Reset();
         D_StartTitle();
     }
@@ -2409,7 +2434,7 @@ static int TotalTextCmdPerTic(int tic)
     {
         if( (i==0) || playeringame[i] )
         {
-            int textlen = textcmds[btic][i].buff[0];
+            int textlen = textcmds[btic][i].len;
             if( textlen )
                total += textlen + 2; // "+2" for size and playernum
         }
@@ -2443,26 +2468,28 @@ static void TicCmdCopy(ticcmd_t * dst, ticcmd_t * src, int n)
 //   netconsole : playernum
 static void net_textcmd_handler( byte nnode, int netconsole )
 {
-    int ntextsize = netbuffer->u.textcmd[0];
-    int mpsize;  // Max size of packet than can be sent with the text
+    int nbtc_len = netbuffer->u.textcmdpak.len;  // incoming length
+    int tc_limit;  // Max size of existing textcmd that can be included with this textcmd.
     int textlen, btic;
     tic_t tic;
-    textbuf_t *  textbuf;  // first byte of this buffer is the cur usage
+    textbuf_t *  textbuf;
+
+    // Move textcmd from netbuffer to a textbuf.
 
     // Check if tic that we are making isn't too large,
     // else we cannot send it :(
     // Note: doomcom->numplayers+1 is "+1" because doomcom->numplayers
     // can change within this time and sent time.
-    mpsize = software_MAXPACKETLENGTH
-         - ( ntextsize + 2 + SERVER_TIC_BASE_SIZE
+    tc_limit = software_MAXPACKETLENGTH
+         - ( nbtc_len + 2 + SERVER_TIC_BASE_SIZE
             + ((doomcom->numplayers+1) * sizeof(ticcmd_t)) );
 
     // Search for a tic that has enough space in the ticcmd.
     tic = maketic;
-    while( TotalTextCmdPerTic(tic) > mpsize )
+    while( TotalTextCmdPerTic(tic) > tc_limit )
     {
         textbuf = & textcmds[ BTIC_INDEX( tic ) ][netconsole];
-        if( (ntextsize + textbuf->buff[0]) <= MAXTEXTCMD )
+        if( (nbtc_len + textbuf->len) < MAXTEXTCMD )
           break; // found one
         tic++;
         if( tic >= (next_tic_send+BACKUPTICS) )  goto drop_packet;
@@ -2470,20 +2497,20 @@ static void net_textcmd_handler( byte nnode, int netconsole )
 
     btic = BTIC_INDEX( tic );
     textbuf = & textcmds[btic][netconsole];
-    textlen = textbuf->buff[0];
-    DEBFILE(va("Textcmd: btic %d buff[%d] player %d nxttic %d maketic %d\n",
-               btic, textlen+1, netconsole, next_tic_send, maketic));
+    textlen = textbuf->len;
+    DEBFILE(va("Textcmd: btic %d text[%d] player %d nxttic %d maketic %d\n",
+               btic, textlen, netconsole, next_tic_send, maketic));
     // Append to the selected buffer.
-    memcpy(&textbuf->buff[ textlen+1 ],
-           netbuffer->u.textcmd+1,  // the text
-           ntextsize);
-    textbuf->buff[0] += ntextsize;  // text len
+    memcpy(&textbuf->text[ textlen ],
+           &netbuffer->u.textcmdpak.text[0],  // the text
+           nbtc_len);
+    textbuf->len += nbtc_len;  // text len
     return;
    
 drop_packet:
     // Drop the packet, let the node resend it.
     DEBFILE(va("Textcmd too long: max %d used %d maketic %d nxttic %d node %d player %d\n",
-               mpsize, TotalTextCmdPerTic(maketic), maketic, next_tic_send,
+               tc_limit, TotalTextCmdPerTic(maketic), maketic, next_tic_send,
                nnode, netconsole));
     Net_Cancel_Packet_Ack(nnode);
     return;
@@ -2595,7 +2622,7 @@ static void servertic_handler( byte nnode )
     tic_t  start_tic, end_tic, ti;
     ticcmd_t * ticp;  // net tics
     byte * txtp;  // net txtcmd text
-    byte * endcmds;  // for buffer overrun tests
+    byte * endbuffer;  // for buffer overrun tests
     byte   num_txt;
     int    btic, j, k;
 
@@ -2614,7 +2641,8 @@ static void servertic_handler( byte nnode )
     // The needed tic is within this packet.
     // Nettics
     ticp = netbuffer->u.serverpak.cmds;
-    endcmds = (byte*)&ticp[NUM_SERVERTIC_CMD];
+    endbuffer = (byte*)&ticp[NUM_SERVERTIC_CMD];  // after last content
+
     // After the nettics are the net textcmds
     k = netbuffer->u.serverpak.numplayers * netbuffer->u.serverpak.numtics;
     if( k >= NUM_SERVERTIC_CMD )  goto exceed_buffer;
@@ -2632,20 +2660,26 @@ static void servertic_handler( byte nnode )
         TicCmdCopy(netcmds[btic], ticp, netbuffer->u.serverpak.numplayers);
         ticp += netbuffer->u.serverpak.numplayers;
 
-        // Copy the textcmds
-        num_txt = *(txtp++);  // number of txtcmd
+        // Copy the incoming textcmds.
+        num_txt = *(txtp++);  // num_textcmd field, number of txtcmd
         for(j=0; j<num_txt; j++)
         {
+            // Format:
+            //  byte: playernum
+            //  textbuf_t: textcmd
             int pn = *(txtp++); // playernum
-            int len = txtp[0]+1;  // max len of 256
-            if( txtp + len > endcmds )  goto exceed_buffer;
-#if 256 > MAXTEXTCMD
-            if( len < MAXTEXTCMD )  // prevent dest overrun
+            textbuf_t * tc = & textcmds[btic][pn];
+            int tc_len = txtp[0]+1;  // max len of 256
+              // length of whole textbuf_t 
+            if( txtp + tc_len > endbuffer )  goto exceed_buffer;
+#if MAXTEXTCMD < 255
+            if( tc_len > MAXTEXTCMD+1 )  goto exceed_buffer;  // prevent dest overrun
 #endif
+            memcpy( tc, txtp, tc_len);
             // force string termination to defend against malicious packets
-            //pn[len-1] = 0;  ?? are they all strings
-            memcpy(textcmds[btic][pn].buff, txtp, len);
-            txtp += len;
+            tc->text[tc->len] = 0;
+            tc->text[MAXTEXTCMD] = 0;
+            txtp += tc_len;
         }
     }
 
@@ -2654,7 +2688,7 @@ static void servertic_handler( byte nnode )
 
    
  exceed_buffer:
-    I_SoftError("Nettics exceed buffer\n");
+    I_SoftError("Nettics textcmd exceed buffer\n");
     return;
  not_in_packet:
     DEBFILE(va("Needed tic not in packet tic bounds: tic %u\n", cl_need_tic));
@@ -2830,8 +2864,8 @@ static void CL_Send_ClientCmd (void)
         // Server is waiting for network players before starting the game.
         // send NODEKEEPALIVE, or NODEKEEPALIVEMIS packet
         netbuffer->packettype = PT_NODEKEEPALIVE + cmd_options;
-//        packetsize = sizeof(clientcmd_pak)-sizeof(ticcmd_t)-sizeof(int16_t);
-        packetsize = offsetof(clientcmd_pak, consistency);
+//        packetsize = sizeof(clientcmd_pak_t)-sizeof(ticcmd_t)-sizeof(int16_t);
+        packetsize = offsetof(clientcmd_pak_t, consistency);
         HSendPacket (servernode,false,0,packetsize);
     }
     else
@@ -2847,10 +2881,10 @@ static void CL_Send_ClientCmd (void)
             // send PT_CLIENT2CMD, or PT_CLIENT2CMDMIS packet
             netbuffer->packettype = PT_CLIENT2CMD + cmd_options;
             TicCmdCopy(&netbuffer->u.client2pak.cmd2, &localcmds2, 1);
-            packetsize = sizeof(client2cmd_pak);
+            packetsize = sizeof(client2cmd_pak_t);
         }
         else
-            packetsize = sizeof(clientcmd_pak);
+            packetsize = sizeof(clientcmd_pak_t);
         
         HSendPacket (servernode,false,0,packetsize);
     }
@@ -2858,32 +2892,32 @@ static void CL_Send_ClientCmd (void)
     if( cl_mode == CLM_connected )
     {
         // send extra data if needed
-        if (localtextcmd.buff[0]) // text len
+        if (localtextcmd.len) // text len
         {
-            int len = localtextcmd.buff[0]+1;  // text len + cmd
-            netbuffer->packettype=PT_TEXTCMD;
-            memcpy(netbuffer->u.textcmd, localtextcmd.buff, len);
+            int tc_len = localtextcmd.len+1;  // text len + cmd
+            netbuffer->packettype = PT_TEXTCMD;
+            memcpy(&netbuffer->u.textcmdpak, &localtextcmd, tc_len);
             // all extra data have been sended
-            if( HSendPacket(servernode, true, 0, len)) // send can fail for some reasons...
-                localtextcmd.buff[0] = 0;  // text len
+            if( HSendPacket(servernode, true, 0, tc_len)) // send can fail for some reasons...
+                localtextcmd.len = 0;  // text len
         }
         
         // send extra data if needed for player 2 (splitscreen)
-        if (localtextcmd2.buff[0]) // text len
+        if (localtextcmd2.len) // text len
         {
-            int len = localtextcmd2.buff[0]+1;  // text len + cmd
-            netbuffer->packettype=PT_TEXTCMD2;
-            memcpy(netbuffer->u.textcmd, localtextcmd2.buff, len);
+            int tc_len = localtextcmd2.len+1;  // text len + cmd
+            netbuffer->packettype = PT_TEXTCMD2;
+            memcpy(&netbuffer->u.textcmdpak, &localtextcmd2, tc_len);
             // all extra data have been sended
-            if( HSendPacket(servernode, true, 0, len)) // send can fail for some reasons...
-                localtextcmd2.buff[0] = 0; // text len
+            if( HSendPacket(servernode, true, 0, tc_len)) // send can fail for some reasons...
+                localtextcmd2.len = 0; // text len
         }
     }
     else
     {
         // Clear XCmds that would overflow the buffers.
-        localtextcmd.buff[0] = 0;
-        localtextcmd2.buff[0] = 0;
+        localtextcmd.len = 0;
+        localtextcmd2.len = 0;
     }
 }
 
@@ -2994,31 +3028,36 @@ static void SV_Send_Tics (void)
             TicCmdCopy((ticcmd_t*) bufpos, netcmds[btic], doomcom->numplayers);
             bufpos += doomcom->numplayers * sizeof(ticcmd_t);
         }
-            
+
         // All the textcmd, start_tic..(end_tic-1)
         for(ti=start_tic; ti<end_tic; ti++)
         {
             btic = BTIC_INDEX( ti );
-            num_txt_p = bufpos++; // the num textcmd field
+            // There must be a num_txtcmd field for every tic, even if 0.
+            num_txt_p = bufpos++; // the num_textcmd field
             num_txt = 0;
             for(pn=0; pn<MAXPLAYERS; pn++)
             {
+                // Format:
+                //  byte: playernum
+                //  textbuf_t: textcmd
                 if((pn==0) || playeringame[pn])
                 {
-                    int textlen = textcmds[btic][pn].buff[0];
+                    int textlen = textcmds[btic][pn].len;
                     if(textlen)
                     {
                         *(bufpos++) = pn;  // playernum
-                        // The textcmd is textlen, text.
-                        memcpy(bufpos, textcmds[btic][pn].buff, textlen+1);
+                        // Send the textbuf_t, length limited.
+                        memcpy(bufpos, &textcmds[btic][pn], textlen+1);
                         bufpos += textlen+1;
-                        num_txt++; // inc the number of textcmd
+                        num_txt++; // inc the number of textcmd sent
                     }
                 }
             }
-            // There must be a num txtcmd field for every tic, even if 0.
+            // Update the num_txtcmd field, even if it is 0.
             *num_txt_p = num_txt; // the number of textcmd
         }
+
         packsize = bufpos - (char *)&(netbuffer->u);
 
         HSendPacket(nnode, false, 0, packsize);

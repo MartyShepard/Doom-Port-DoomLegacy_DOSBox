@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1281 2016-12-09 02:21:16Z wesleyjohnson $
+// $Id: d_clisrv.h 1374 2017-12-18 17:22:05Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -86,7 +86,6 @@
 #define BACKUPTICS            32
 #define DRONE               0x80    // bit set in consoleplayer
 
-#define MAXTEXTCMD           256
 //
 // Packet structure
 //
@@ -111,6 +110,10 @@ typedef enum   {
     PT_SERVERINFO,    // send game & server info (gamespy)
     PT_REQUESTFILE,   // client request a file transfer
     PT_REPAIR,        // repair position, consistency fix
+    PT_ACKS,          // all acks
+    PT_DUMMY17,
+    PT_DUMMY18,
+    PT_DUMMY19,
 
  // Low Priority
     PT_CANFAIL,       // A priority boundary
@@ -134,7 +137,7 @@ typedef struct {
    byte        resendfrom;
    int16_t     consistency;
    ticcmd_t    cmd;
-} clientcmd_pak;
+} clientcmd_pak_t;
 
 // splitscreen packet
 // WARNING : must have the same format of clientcmd_pak, for more easy use
@@ -144,7 +147,7 @@ typedef struct {
    int16_t     consistency;
    ticcmd_t    cmd;
    ticcmd_t    cmd2;
-} client2cmd_pak;
+} client2cmd_pak_t;
 
 // Server to client packet
 // this packet is too large !!!!!!!!!
@@ -153,9 +156,11 @@ typedef struct {
    byte        starttic;
    byte        numtics;
    byte        numplayers;
-   ticcmd_t    cmds[NUM_SERVERTIC_CMD]; // normaly [BACKUPTIC][MAXPLAYERS] but too large
+   ticcmd_t    cmds[NUM_SERVERTIC_CMD];
+     // number of cmds used is (numtics*numplayers)
+     // normaly [BACKUPTIC][MAXPLAYERS] but too large
 //   char        textcmds[BACKUPTICS][MAXTEXTCMD];
-} servertics_pak;
+} servertics_pak_t;
 
 // Repair messages triggered by consistency fault.
 typedef enum   {
@@ -184,7 +189,7 @@ typedef struct {
    byte        p_rand_index; // to sync P_Random
    tic_t       gametic;
    pos_repair_t  pos;
-} repair_pak;
+} repair_pak_t;
 
 // [WDJ] As of 9/2016 there are 37 CV_NETVAR.
 #define NETCVAR_BUFF_LEN  4096
@@ -201,28 +206,28 @@ typedef struct {
    
    uint32_t    playerdetected; // playeringame vector in bit field
    byte        netcvarstates[NETCVAR_BUFF_LEN];
-} serverconfig_pak;
+} serverconfig_pak_t;
 
 typedef struct {
    byte        version;    // exe from differant version don't work
    uint32_t    subversion; // contain build version and maybe crc
    byte        localplayers;
    byte        mode;
-} clientconfig_pak;
+} clientconfig_pak_t;
 
 typedef struct {
    char        fileid;
    uint32_t    position;
    uint16_t    size;
    byte        data[100];  // size is variable using hardare_MAXPACKETLENGTH
-} filetx_pak;
+} filetx_pak_t;
 
 typedef struct {
     byte       num_netplayer;  // count players due to 2 player nodes
     byte       wait_netplayer;  // if non-zero, wait for player net nodes
     uint16_t   wait_tics;  // if non-zero, the timeout tics
     byte       p_rand_index; // to sync P_Random
-} netwait_pak;
+} netwait_pak_t;
 
 #define MAXSERVERNAME 32
 #define FILENEED_BUFF_LEN  4096
@@ -238,11 +243,11 @@ typedef struct {
     char       servername[MAXSERVERNAME];
     byte       num_fileneed;
     byte       fileneed[FILENEED_BUFF_LEN];   // is filled with writexxx (byteptr.h)
-} serverinfo_pak;
+} serverinfo_pak_t;
 
 #define MAXSERVERLIST 32  // limited by the display
 typedef struct { 
-    serverinfo_pak info;
+    serverinfo_pak_t   info;
     byte  server_node;  // network node this server is on
 } server_info_t;
 
@@ -253,12 +258,34 @@ extern int serverlistcount;
 typedef struct {
    byte        version;
    tic_t       send_time;      // used for ping evaluation
-} askinfo_pak;
+} askinfo_pak_t;
 
+#define MAX_STRINGPAK_LEN  255
+// Used by: Server Refuse: PT_SERVERREFUSE
 typedef struct {
-    char       reason[255];
-} serverrefuse_pak;
+    char       str[MAX_STRINGPAK_LEN];
+} string_pak_t;
 
+#define MAXTEXTCMD           255
+#if MAXTEXTCMD > 255
+# error  Textcmd len is a byte, cannot hold MAXTEXTCMD
+#endif
+// One extra byte at end for 0 termination, to protect against malicious use.
+// Used by: Text Cmd: PT_TEXTCMD, PT_TEXTCMD2
+// Compatible format with DoomLegacy demo version 1.13 ..
+// Actual transmission and saved copies are limited to the actual used length.
+typedef struct {
+      byte     len;  // 0..MAXTEXTCMD
+      byte     text[MAXTEXTCMD+1];
+} textbuf_t;
+
+#define MAX_NETBYTE_LEN  256
+// Used by: Send_AcksPacket: PT_ACKS
+// Used by: Net_ConnectionTimeout: PT_NODE_TIMEOUT
+// Used by: Send_RequestFile: PT_REQUESTFILE
+typedef struct {
+      byte     b[MAX_NETBYTE_LEN];
+} byte_pak_t;
 
 //
 // Network packet data.
@@ -274,18 +301,19 @@ typedef struct
     byte       packettype;
     byte       reserved;      // padding
     union  {
-      clientcmd_pak     clientpak;
-      client2cmd_pak    client2pak;
-      servertics_pak    serverpak;
-      serverconfig_pak  servercfg;
-      byte              textcmd[MAXTEXTCMD+1];
-      filetx_pak        filetxpak;
-      clientconfig_pak  clientcfg;
-      serverinfo_pak    serverinfo;
-      serverrefuse_pak  serverrefuse;
-      askinfo_pak       askinfo;
-      netwait_pak       netwait;
-      repair_pak        repair;
+      byte_pak_t         bytepak;
+      clientcmd_pak_t    clientpak;
+      client2cmd_pak_t   client2pak;
+      servertics_pak_t   serverpak;
+      serverconfig_pak_t servercfg;
+      textbuf_t          textcmdpak;
+      filetx_pak_t       filetxpak;
+      clientconfig_pak_t clientcfg;
+      serverinfo_pak_t   serverinfo;
+      string_pak_t       stringpak;
+      askinfo_pak_t      askinfo;
+      netwait_pak_t      netwait;
+      repair_pak_t       repair;
            } u;
 
 } netbuffer_t;
@@ -306,7 +334,7 @@ extern consvar_t cv_wait_timeout;
 //#define PACKET_BASE_SIZE     ((int)&( ((netbuffer_t *)0)->u))
 #define PACKET_BASE_SIZE     offsetof(netbuffer_t, u)
 //#define FILETX_HEADER_SIZE       ((int)   ((filetx_pak *)0)->data)
-#define FILETX_HEADER_SIZE   offsetof(filetx_pak, data)
+#define FILETX_HEADER_SIZE   offsetof(filetx_pak_t, data)
 //#define SERVER_TIC_BASE_SIZE  ((int)&( ((netbuffer_t *)0)->u.serverpak.cmds[0]))
 #define SERVER_TIC_BASE_SIZE offsetof(netbuffer_t, u.serverpak.cmds[0])
 

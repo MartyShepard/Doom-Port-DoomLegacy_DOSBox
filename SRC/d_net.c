@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1299 2017-02-18 21:12:00Z wesleyjohnson $
+// $Id: d_net.c 1374 2017-12-18 17:22:05Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -597,15 +597,17 @@ ret_fail:
    return false;
 }
 
+#if MAXACKTOSEND > MAX_NETBYTE_LEN
+# error  Netbuffer: MAXACKTOSEND > MAX_NETBYTE_LEN
+#endif
 
 // Send a special packet with only the ack queue.
 //  to_node: 0..(MAXNETNODES-1)
 void Net_Send_AcksPacket(int to_node)
 {
     // Send an packet with the ack queue.
-    // FIXME: this should have its own packet type.
-    netbuffer->packettype = PT_NOTHING;
-    memcpy(netbuffer->u.textcmd, net_nodes[to_node].acktosend, MAXACKTOSEND);
+    netbuffer->packettype = PT_ACKS;
+    memcpy(netbuffer->u.bytepak.b, net_nodes[to_node].acktosend, MAXACKTOSEND);
     HSendPacket(to_node,false,0,MAXACKTOSEND);
 }
 
@@ -621,10 +623,10 @@ static void Got_AcksPacket(void)
     if( rnode >= MAXNETNODES )
        return;  // not a player packet
 
-    // The body of the packet is the ack queue.
+    // The body of the packet bytepak is the ack queue.
     for(j=0;j<MAXACKTOSEND;j++)
     {
-        recv_acknum = netbuffer->u.textcmd[j];  // from the queue in the packet
+        recv_acknum = netbuffer->u.bytepak.b[j];  // from the queue in the packet
         if( recv_acknum == 0 )  continue;  // 0=invalid
 
         // Find recv_acknum in our ack packets queue.
@@ -669,7 +671,8 @@ void Net_ConnectionTimeout( byte nnode )
     rebp->packettype = PT_NODE_TIMEOUT;
     rebp->ack_req = 0;
     rebp->ack_return = 0;
-    rebp->u.textcmd[0] = nnode;
+    rebp->u.bytepak.b[0] = nnode;
+
     reboundsize[rebound_head] = PACKET_BASE_SIZE+1;
     rebound_head=(rebound_head+1)%MAXREBOUND;
 
@@ -1028,6 +1031,11 @@ static char *packettypename[NUMPACKETTYPE]={
     "ASKINFO",
     "SERVERINFO",
     "REQUESTFILE",
+    "REPAIR",
+    "ACKS",
+    "DUMMY17",
+    "DUMMY18",
+    "DUMMY19",
 
     "FILEFRAGMENT",
     "TEXTCMD",
@@ -1086,8 +1094,8 @@ static void DebugPrintpacket(char *header)
        case PT_TEXTCMD2:
            fprintf(debugfile
                   ,"    length %d\n    "
-                  ,*(unsigned char*)netbuffer->u.textcmd);
-           fprintfstring(netbuffer->u.textcmd+1,netbuffer->u.textcmd[0]);
+                  ,*(unsigned char*)netbuffer->u.textcmdpak.len);
+           fprintfstring(netbuffer->u.textcmdpak.text,netbuffer->u.textcmdpak.len);
            break;
        case PT_SERVERCFG:
            fprintf(debugfile
@@ -1123,8 +1131,10 @@ static void DebugPrintpacket(char *header)
                   ,(unsigned long)netbuffer->u.filetxpak.position);
            break;
        case PT_REQUESTFILE :
+       case PT_NODE_TIMEOUT :
+       case PT_ACKS :
        default : // write as a raw packet
-         fprintfstring(netbuffer->u.textcmd,(char *)netbuffer+doomcom->datalength-(char *)netbuffer->u.textcmd);
+         fprintfstring(netbuffer->u.bytepak.b, (char *)netbuffer + doomcom->datalength - (char *)netbuffer->u.bytepak.b);
            break;
 
     }
@@ -1262,9 +1272,9 @@ boolean HGetPacket (void)
         memcpy(netbuffer,&reboundstore[rebound_tail],reboundsize[rebound_tail]);
         doomcom->datalength = reboundsize[rebound_tail];
         if( netbuffer->packettype == PT_NODE_TIMEOUT )
-            doomcom->remotenode = netbuffer->u.textcmd[0];
+            doomcom->remotenode = netbuffer->u.bytepak.b[0];  // to node timeout
         else
-            doomcom->remotenode = 0;
+            doomcom->remotenode = 0;  // from self
 
         rebound_tail=(rebound_tail+1)%MAXREBOUND;
 #ifdef DEBUGFILE
@@ -1298,7 +1308,7 @@ boolean HGetPacket (void)
     if(!Process_packet_ack())    goto fail_ret;    // discated (duplicated)
 
     // a packet with just ack_return
-    if( netbuffer->packettype == PT_NOTHING)
+    if( netbuffer->packettype == PT_ACKS)
     {
         // Detect the special acks packet.
         Got_AcksPacket();

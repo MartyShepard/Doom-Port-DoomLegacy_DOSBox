@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.h 1269 2016-09-20 17:28:00Z wesleyjohnson $
+// $Id: d_netcmd.h 1374 2017-12-18 17:22:05Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -95,6 +95,8 @@ extern consvar_t   cv_splats;
 extern consvar_t   cv_maxsplats;
 extern consvar_t   cv_screenslink;
 
+// Network XCmd.
+// These are also saved in DoomLegacy demo, do not alter the order.
 typedef enum {
     XD_NAMEANDCOLOR=1,
     XD_WEAPONPREF,

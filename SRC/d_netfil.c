@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: d_netfil.c 1374 2017-12-18 17:22:05Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -306,7 +306,9 @@ void CL_Prepare_Download_SaveGame(const char *tmpsave)
 // Return RFR_success when request succeeds.
 reqfile_e  Send_RequestFile(void)
 {
-    int   i;
+    char filetmp[ MAX_WADPATH ];
+    int   i, fcnt;
+    uint64_t  availablefreespace;
     uint32_t  totalfreespaceneeded=0;
     fileneed_t * fnp;
 
@@ -366,37 +368,59 @@ reqfile_e  Send_RequestFile(void)
         return RFR_nodownload;
     }
 
-    // Make up a request packet to get files from the server.
-    netbuffer->packettype = PT_REQUESTFILE;
-    byte *p = netbuffer->u.textcmd;
-    for(i=0; i<cl_num_fileneed; i++)
-    {
-        fnp = & cl_fileneed[i];
-        if( fnp->status==FS_NOTFOUND || fnp->status == FS_MD5SUMBAD)
-        {
-            char filetmp[ MAX_WADPATH ];
-            if( fnp->status==FS_NOTFOUND )
-                totalfreespaceneeded += fnp->totalsize;
-            strcpy( filetmp, fnp->filename );
-            nameonly(filetmp);
-            WRITECHAR(p,i);  // fileid
-            p = write_string(p, filetmp);
-            // put it in download dir 
-            cat_filename( fnp->filename, downloaddir, filetmp );
-            fnp->status = FS_REQUESTED;
-        }
-    }
-    WRITECHAR(p,-1);
-    uint64_t availablefreespace = I_GetDiskFreeSpace();
-    // debug_Printf("free byte %d\n",availablefreespace);
-    if(totalfreespaceneeded > availablefreespace)  goto insufficient_space;
 
     // prepare to download
     I_mkdir(downloaddir,0755);
-    if( ! HSendPacket(servernode, true, 0, p-netbuffer->u.textcmd) )
-        return RFR_send_fail;
+    // Make up one or more request packet to get files from the server.
+    fcnt = 0;
+    do{
+        // Format: one or more file requests.
+        //   byte    fileid;  // 0xFF = terminate
+        //   string  filename;  // 0 term
+        byte *p = netbuffer->u.bytepak.b;
+        int bcnt = 0;
+        for(; fcnt<cl_num_fileneed; fcnt++)
+        {
+            fnp = & cl_fileneed[fcnt];
+            if( fnp->status == FS_NOTFOUND || fnp->status == FS_MD5SUMBAD)
+            {
+                if( fnp->status == FS_NOTFOUND )
+                    totalfreespaceneeded += fnp->totalsize;
+                strcpy( filetmp, fnp->filename );
+                nameonly(filetmp);
+
+                // [WDJ] Check for net buffer overflow.
+                int nxt_bcnt = bcnt + strlen( filetmp ) + 1;
+                if( nxt_bcnt > MAX_NETBYTE_LEN-1 )  break;
+                bcnt = nxt_bcnt;
+
+                WRITECHAR(p,fcnt);  // fileid
+                p = write_string(p, filetmp);
+
+                // put it in download dir 
+                cat_filename( fnp->filename, downloaddir, filetmp );
+                fnp->status = FS_REQUESTED;
+            }
+        }
+        WRITECHAR(p,-1);
+        netbuffer->packettype = PT_REQUESTFILE;
+
+        if( bcnt == 0 )  goto broken_format;  // broken, filename too long
+
+        availablefreespace = I_GetDiskFreeSpace();
+        // debug_Printf("free byte %d\n",availablefreespace);
+        if(totalfreespaceneeded > availablefreespace)  goto insufficient_space;
+	   
+        if( ! HSendPacket(servernode, true, 0, p - netbuffer->u.bytepak.b) )
+            return RFR_send_fail;
+       
+    }while( fcnt<cl_num_fileneed );
     return RFR_success;
 
+broken_format:       
+    I_SoftError("Cannot form File Request for file %s\n", filetmp );
+    return RFR_nodownload;
+       
     // Rare errors
 insufficient_space:
     I_SoftError("To play on this server you should download %dKb\n"
@@ -410,7 +434,7 @@ insufficient_space:
 // Received request filepak. Put the files to the send queue.
 void Got_RequestFilePak(byte nnode)
 {
-    char *p = (char *)netbuffer->u.textcmd;
+    char *p = (char *)netbuffer->u.bytepak.b;
 
     while((byte)*p!=0xFF)
     {
@@ -680,7 +704,7 @@ void Filetx_Ticker(void)
     int        tcnt;
     int        packet_cnt;
     FILE * fp;  // (ref) tnnp current file
-    filetx_pak * pak;
+    filetx_pak_t * pak;
     filetx_t   * ftxp;
     transfer_t * tnnp;  // transfer for net node
 

@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01374 ]: w107 70 textcmd, net ver 24
 [01373 ]: w107 show cvar
 [01372 ]: w107 demo cv
 [01371 ]: w107 cv
