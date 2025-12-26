@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1367 2017-11-01 01:15:56Z wesleyjohnson $
+// $Id: r_main.c 1388 2018-04-15 02:10:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -250,7 +250,13 @@ consvar_t cv_scalestatusbar = {"scalestatusbar","0",CV_SAVE|CV_CALL,CV_YesNo,R_S
 CV_PossibleValue_t grtranslucenthud_cons_t[] = { {1, "MIN"}, {255, "MAX"}, {0, NULL} };
 consvar_t cv_grtranslucenthud = {"gr_translucenthud","255",CV_SAVE|CV_CALL,grtranslucenthud_cons_t,R_SetViewSize}; //Hurdler: support translucent HUD
 
-consvar_t cv_screenshotdir = { "screenshotdir", "", CV_SAVE, NULL };
+CV_PossibleValue_t screenshot_type_cons_t[]={{0,"Compact"},{1,"Full"},
+#ifdef SMIF_PC_DOS
+   {8,"PCX"},
+#endif
+   {0,NULL}};
+consvar_t cv_screenshot_type = { "screenshottype", "", CV_SAVE, NULL };
+consvar_t cv_screenshot_dir = { "screenshotdir", "", CV_SAVE, NULL };
 
 // Boom Colormap Selection
 CV_PossibleValue_t boom_colormap_cons_t[]={
@@ -1597,7 +1603,8 @@ void R_Register_EngineStuff (void)
     CV_RegisterVar (&cv_scalestatusbar);
     CV_RegisterVar (&cv_grtranslucenthud);
 
-    CV_RegisterVar(&cv_screenshotdir);
+    CV_RegisterVar(&cv_screenshot_dir);
+    CV_RegisterVar(&cv_screenshot_type);
 
     // unfinished, not for release
 #ifdef PERSPCORRECT

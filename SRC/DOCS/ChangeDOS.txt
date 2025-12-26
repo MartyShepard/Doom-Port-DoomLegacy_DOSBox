@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01388 ]: w107 84 screenshot
 [01387 ]: w107 83 command menu
           Added Screenshot Command to Setup Control Menu
 					

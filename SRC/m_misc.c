@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: m_misc.c 1388 2018-04-15 02:10:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -140,9 +140,9 @@ int FIL_ExtFile_Open ( ExtFIL_t * ft,  char const* name, boolean write_flag )
     ft->bufcnt = 0;  // buffer empty
     ft->handle =
       open ( name,
-	     ( (write_flag)? O_WRONLY | O_CREAT | O_TRUNC | O_BINARY // write
-	                    :O_RDONLY | O_BINARY  // read
-	     ), 0666);
+             ( (write_flag)? O_WRONLY | O_CREAT | O_TRUNC | O_BINARY // write
+                            :O_RDONLY | O_BINARY  // read
+             ), 0666);
     if( ft->handle < 0) // file not found, or not created
         ft->stat_error = ft->handle; // error
     return ft->stat_error;
@@ -439,46 +439,142 @@ void M_SaveConfig (const char *filename)
 //                            SCREEN SHOTS
 // ==========================================================================
 
+// Make filename for screen shot.
+// return 1 when have filename.
+byte  M_Make_Screenshot_Filename( char * lbmname, const char * ext )
+{
+    int i;
+    char wadname[MAX_WADPATH];
+    char * s;
+    char * wn;
+    char * vernum;
+    const char * savedir;
+
+    // Defaults
+    savedir = ".";
+    switch( gamemode )
+    {
+     case heretic :
+       wn = "HRTC";
+       break;
+     case chexquest1 :
+       wn = "CHXQ";
+       break;
+     default :
+       wn = "DOOM";
+       break;
+    }
+
+    if (cv_screenshot_dir.string[0]) // Hurdler: Jive's request (save file in other directory)
+    {
+        savedir = (const char *) cv_screenshot_dir.string;
+        for (i=1; ; i++) // seach the first "real" wad file (also skip iwad).
+        {
+            char * wadfile = startupwadfiles[i];
+            if( ! wadfile )  break;
+            // Examine extension
+            int pos = strlen(wadfile) - 4;
+            if ((pos >= 0) && !strncmp(&wadfile[pos], ".wad", 4))
+            {
+                // Wad file name copied to screenshot name.
+                strcpy(wadname, wadfile);
+                wadname[pos] = '\0';  // eliminate wad extension
+                wn = wadname;
+                // Eliminate wad directory name
+                s = strrchr(wn, '/');
+                if( s )  wn = s + 1;
+#if defined( SMIF_PC_DOS) || defined( WIN32 ) || defined( SMIF_OS2_NATIVE )
+                s = strrchr(wn, '\\');  // DOS
+                if( s )  wn = s + 1;
+#endif
+                break;
+            }
+        }
+        snprintf(lbmname, MAX_WADPATH-1, "%s/%s0000.%s", cv_screenshot_dir.string, wn, ext );
+        lbmname[MAX_WADPATH-1] = 0;
+    }
+    else
+    {
+        sprintf(lbmname, "%s0000.%s", wn, ext );
+    }
+
+    vernum = strrchr( lbmname, '.') - 4;
+    if( ( strlen( lbmname ) > (MAX_WADPATH-2) )
+        || vernum == NULL )
+    {
+        CONS_Printf("Screenshot directory or name too long: %s\n", lbmname );
+        return 0;
+    }
+
+    if( access( savedir, 0 ) < 0 )
+    {
+        CONS_Printf("Screenshot directory error: %s\n", savedir);
+        return 0;
+    }
+
+    // Find unused file name version.
+    for (i=0 ; i<10000; i++)
+    {
+        vernum[0] = '0' + ((i/1000) % 10);
+        vernum[1] = '0' + ((i/100) % 10);
+        vernum[2] = '0' + ((i/10) % 10);
+        vernum[3] = '0' + ((i/1) % 10);
+        if (access(lbmname,0) == -1)
+            return 1;      // file doesn't exist
+    }
+
+    CONS_Printf("Screenshot: Failed to find unused filename: %s\n", lbmname);
+    return 0;
+}
+
+
+// Graphic File types
+// pcx
+// ppm
+// Targa
+// bmp (windows and DOS)
+// png (requires LIBPNG)
+
+#ifdef SMIF_PC_DOS
 
 // PCX file format
+#pragma pack(1)
 typedef struct
 {
-    char                manufacturer;
-    char                version;
-    char                encoding;
-    char                bits_per_pixel;
+    uint8_t       manufacturer;
+    uint8_t       version;
+    uint8_t       encoding;
+    uint8_t       bits_per_pixel;
 
-    unsigned short      xmin;
-    unsigned short      ymin;
-    unsigned short      xmax;
-    unsigned short      ymax;
+    uint16_t      xmin;
+    uint16_t      ymin;
+    uint16_t      xmax;
+    uint16_t      ymax;
 
-    unsigned short      hres;
-    unsigned short      vres;
+    uint16_t      hres;
+    uint16_t      vres;
 
-    unsigned char       palette[48];
+    uint8_t       palette[48];
 
-    char                reserved;
-    char                color_planes;
-    unsigned short      bytes_per_line;
-    unsigned short      palette_type;
+    uint8_t       reserved;
+    uint8_t       color_planes;
+    uint16_t      bytes_per_line;
+    uint16_t      palette_type;
 
-    char                filler[58];
-    unsigned char       data;           // unbounded
+    uint8_t       filler[58];
+    uint8_t       data;           // unbounded
 } pcx_t;
+#pragma pack()
 
 
 //
 // WritePCXfile
 //
-boolean WritePCXfile ( char*         filename,
-                    byte*         data,
-                    int           width,
-                    int           height,
-                    byte*         palette )
+boolean Write_PCXfile ( const char * file_name, int width, int height, byte* data, byte* palette )
 {
     int         i;
     int         length;
+    boolean     br;
     pcx_t*      pcx;
     byte*       pack;
 
@@ -498,7 +594,7 @@ boolean WritePCXfile ( char*         filename,
     memset (pcx->palette,0,sizeof(pcx->palette));
     pcx->color_planes = 1;              // chunky image
     pcx->bytes_per_line = LE_SWAP16(width);
-    pcx->palette_type = LE_SWAP16(1);       // not a grey scale
+    pcx->palette_type = LE_SWAP16(1);   // Color (2=grey scale)
     memset (pcx->filler,0,sizeof(pcx->filler));
 
 
@@ -523,74 +619,294 @@ boolean WritePCXfile ( char*         filename,
 
     // write output file
     length = pack - (byte *)pcx;
-    i = FIL_WriteFile (filename, pcx, length);
+    br = FIL_WriteFile (file_name, pcx, length);
 
     Z_Free (pcx);
-    return i;
+    return br;
 }
 
+#endif
+
+
+
+// --------------------------------------------------------------------------
+// save screenshots with TGA format
+// --------------------------------------------------------------------------
+// This will not be packed under Linux, GNU, or WIN32, unless it is explicit.
+#pragma pack(1)
+typedef struct {  // sizeof() = 18
+  byte      id_field_length;
+  byte      color_map_type;
+  byte      image_type;
+  int16_t   c_map_origin;
+  int16_t   c_map_length;
+  byte      c_map_depth;
+  int16_t   x_origin;
+  int16_t   y_origin;
+  uint16_t  width;
+  uint16_t  height;
+  byte      image_pix_size;  // 16, 24, 32
+  byte      image_descriptor;
+} TGAHeader_t;
+#pragma pack()
+
+boolean  Write_TGA( const char * filename, int width, int height, int bitpp, byte* colormap, byte* buffer, size_t size )
+{
+    int fd;
+    size_t count = 0;
+    TGAHeader_t tga_hdr;
+
+    fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0666);
+    if (fd < 0)
+        return false;
+
+    memset(&tga_hdr, 0, sizeof(tga_hdr));
+    // TGA format is little-endian
+    tga_hdr.width = LE_SWAP16(width);
+    tga_hdr.height = LE_SWAP16(height);
+    tga_hdr.image_pix_size = bitpp;  // normal, 24 bits per pixel
+    tga_hdr.image_type = 2;  // Uncompressed, RGB
+    tga_hdr.image_descriptor = 0x20;  // bit 5, origin in upper left-hand corner
+   
+    if( colormap )
+    {
+        tga_hdr.image_type = 1;  // Uncompressed, colormap image
+        tga_hdr.color_map_type = 1;
+        tga_hdr.c_map_origin = 0;
+        tga_hdr.c_map_length = LE_SWAP16( 256 );
+        tga_hdr.c_map_depth = 24;
+    }
+   
+    count = write(fd, &tga_hdr, sizeof(TGAHeader_t));
+    if( count != sizeof(TGAHeader_t) )  goto write_fail;
+
+    if( colormap )
+    {
+        count = write(fd, colormap, 256*3);
+        if( count != 256*3 )  goto write_fail;
+    }
+
+    count = write(fd, buffer, size);
+    if( count != size )  goto write_fail;
+
+    close(fd);
+    return true;
+
+write_fail:
+    close(fd);
+    return false;
+}
+
+
+// indexed by drawmode:  DRAW8PAL, DRAW15, DRAW16, DRAW24, DRAW32
 
 //
 // M_ScreenShot
 //
 void M_ScreenShot (void)
 {
+    char   filename[MAX_WADPATH];
     // vid : from video setup
-    int         i;
-    byte*       linear;
-    char        lbmname[MAX_WADPATH];
-    boolean     ret = false;
+    byte*  bufs;  // source buffer ( screen[2] or hw_bufr )
+    byte*  hw_bufr = NULL;  // allocated
+    byte*  bufw = NULL;  // allocated
+    byte*  bp;
+    int i;
+    int num_pixels = vid.width * vid.height;
+    size_t  bufsize;
+    byte   wr_bytepp = 3;
+    byte   src_bitpp;
+    boolean  br = false;
 
 #ifdef HWRENDER
     if (rendermode!=render_soft)
-        ret = HWR_Screenshot (lbmname);
+    {
+        // Hardware draw.
+        // Save as Targa format.
+        hw_bufr = HWR_Get_Screenshot( & src_bitpp );
+        if( ! hw_bufr )  goto done;
+        bufs = hw_bufr;
+    }
     else
 #endif
     {
-// FIXME: 8 bit palette only       
-        // munge planar buffer to linear
-        linear = screens[2];
-        I_ReadScreen (linear);
-       
+        // Software draw.
+        // munge planar buffer to bufs
+        bufs = screens[2];  // Take screenshot to screens[2]
+        I_ReadScreen (bufs);
+        src_bitpp = vid.bitpp;
+   
         if( vid.ybytes != vid.width )
         {
-	    // eliminate padding in the buffer
-	    byte *dest, *src;
-	    dest = src = &linear[0];
-	    for( i=1; i<vid.height; i++ )
-	    {
-	        src += vid.ybytes;
-	        dest += vid.widthbytes;
-	        // overlapping copy
-	        memmove(dest, src, vid.width);
-	    }
-        }
-
-        // find a file name to save it to
-        strcpy(lbmname,"DOOM0000.pcx");
-        for (i=0 ; i<10000; i++)
-        {
-            lbmname[4] = '0' + ((i/1000) % 10);
-            lbmname[5] = '0' + ((i/100) % 10);
-            lbmname[6] = '0' + ((i/10) % 10);
-            lbmname[7] = '0' + ((i/1) % 10);
-            if (access(lbmname,0) == -1)
-                break;      // file doesn't exist
-        }
-        if (i<10000)
-        {
-            // save the pcx file
-            ret = WritePCXfile (lbmname, linear,
-                                vid.width, vid.height,
-                                W_CacheLumpName ("PLAYPAL",PU_CACHE));
+            // eliminate padding in the buffer
+            byte *dest, *src;
+            dest = src = &bufs[0];
+            for( i=1; i<vid.height; i++ )
+            {
+                src += vid.ybytes;
+                dest += vid.widthbytes;
+                // overlapping copy
+                memmove(dest, src, vid.width);
+            }
         }
     }
 
-    if( ret )
-        CONS_Printf("screen shot %s saved\n", lbmname);
+#ifdef SMIF_PC_DOS
+    if( (vid.drawmode == DRAW8PAL) && (cv_screenshot_type.EV == 8) )
+    {
+        // Save screenshot in PCX format
+
+        if( ! M_Make_Screenshot_Filename( filename, "pcx" ) )
+            return;
+
+        GenPrintf( EMSG_ver, "Save PCX: %s\n", filename );
+       
+        // save the pcx file
+        br = Write_PCXfile ( filename, vid.width, vid.height, bufs,
+                            W_CacheLumpName ("PLAYPAL",PU_CACHE));
+        goto done;
+    }
+#endif
+   
+    // Software draw, Targa format.
+    // Targa allows 24 bit, 32 bit (with alpha), and 16 bit (5,5,5) formats.
+
+    if( ! M_Make_Screenshot_Filename( filename, "tga" ) )
+        return;
+
+    GenPrintf( EMSG_ver, "Save Targa: %s\n", filename );
+//    printf("Write Targa %s, drawmode=%i, wr_bytepp= %i, bitpp= %i\n", filename, vid.drawmode, wr_bytepp, wr_bytepp*8 );
+    bufsize = (size_t)num_pixels * wr_bytepp;
+    bufw = malloc( bufsize );
+    if (!bufw)  goto done;
+
+    bp = bufw;
+
+    // conversions
+    switch( src_bitpp )
+    {
+     case 8:
+        {
+            // PAL 8 bit format.
+            // To Targa 8 bit, color mapped.
+            byte  pal24[256*3];
+            RGBA_t * pal32 = pLocalPalette;
+
+            // Convert palette from RGBA to 24bit RGB.
+            bp = pal24;
+            for (i=0; i<256; i++)
+            {
+                *(bp++) = pal32[i].s.blue;
+                *(bp++) = pal32[i].s.green;
+                *(bp++) = pal32[i].s.red;
+            }
+      
+            br = Write_TGA( filename, vid.width, vid.height, 8, pal24, bufs, num_pixels );
+            goto done;
+        }
+
+#ifdef ENABLE_DRAW15
+     case 15:
+        {
+            // Screen (5,5,5) format.
+            uint16_t * r16 = (uint16_t*) bufs;
+            if(cv_screenshot_type.EV == 1)  // Full
+            {
+                for (i=0; i<num_pixels; i++)
+                {
+                    // Convert 15bit 555 RGB to 24 bit RGB.
+                    uint16_t rgb555 = *(r16++);
+                    *(bp++) = (rgb555 & 0x001F) << 3;
+                    *(bp++) = (rgb555 & 0x03E0) >> (5-3);
+                    *(bp++) = (rgb555 & 0x7C00) >> (10-3);
+                }
+                wr_bytepp = 3;
+            }
+            else
+            {   // compact
+                // To Targa 16 bit, (5,5,5) format.
+                uint16_t * w16 = (uint16_t*) bufw;
+                for (i=0; i<num_pixels; i++)
+                {
+                    // Convert 15bit 555 RGB to Targa 15 bit RGB.
+                    // Set alpha channel (0x8000)
+                    *(w16++) = *(r16++) | 0x8000;
+                }
+                wr_bytepp = 2;
+            }
+        }
+        break;
+#endif
+#if defined( ENABLE_DRAW16 ) || defined( HWRENDER )
+     // HWRENDER Glide uses this.
+     case 16:
+        {
+            // Screen (5,6,5) format.
+            uint16_t * r16 = (uint16_t*) bufs;
+            if(cv_screenshot_type.EV == 1)  // Full
+            {
+                // To Targa 24 bit format.
+                for (i=0; i<num_pixels; i++)
+                {
+                    // Convert 16bit 565 RGB to 24 bit RGB.
+                    uint16_t rgb565 = *(r16++);
+                    *(bp++) = (rgb565 & 0x001F) << 3;
+                    *(bp++) = (rgb565 & 0x07E0) >> (5-2);
+                    *(bp++) = (rgb565 & 0xF800) >> (11-3);
+                }
+                wr_bytepp = 3;
+            }
+            else
+            {   // compact
+                // To Targa 16 bit, (5,5,5) format.
+                uint16_t * w16 = (uint16_t*) bufw;
+                for (i=0; i<num_pixels; i++)
+                {
+                    // Convert 16bit 565 RGB to Targa 15 bit RGB.
+                    uint16_t rgb565 = *(r16++);
+                    // Set alpha channel (0x8000)
+                    *(w16++) = (rgb565 & 0x001F) | ((rgb565 >> 1) & 0x7FE0) | 0x8000;
+                }
+                wr_bytepp = 2;
+            }
+        }
+        break;
+#endif
+#if defined( ENABLE_DRAW24 ) || defined( HWRENDER )
+     // HWRENDER OpenGL uses this.
+     case 24:
+        // Screen 3 byte format.
+        // Already in Targa 3 byte format.
+        memcpy( bufw, bufs, bufsize );
+        break;
+#endif
+#ifdef ENABLE_DRAW32
+     case 32:
+        // Screen 4 byte format.
+        for (i=0; i<num_pixels; i++)
+        {
+            *(bp++) = *(bufs++);
+            *(bp++) = *(bufs++);
+            *(bp++) = *(bufs++);
+            bufs++;  // alpha
+        }
+        break;
+#endif
+     default:
+        goto done;
+    }
+
+    br = Write_TGA( filename, vid.width, vid.height, wr_bytepp*8, NULL, bufw, bufsize );
+
+done:   
+    if( bufw )  free(bufw);
+    if( hw_bufr )  free(hw_bufr);
+
+    if( br )
+        CONS_Printf("screen shot %s saved\n", filename);
     else
         //CONS_Printf("Couldn't create screen shot\n");
-        CONS_Printf("%s\n", lbmname);
+        CONS_Printf("%s\n", filename);
 }
 
 
@@ -646,7 +962,7 @@ void cat_filename( char * dest, const char * dn, const char * fn )
           format = "%s\\%s";
         #else
           format = "%s/%s";
-        #endif
+        #endif        
     }
     snprintf(dest, MAX_WADPATH-1, format, dn, fn);
     dest[MAX_WADPATH-1] = '\0';

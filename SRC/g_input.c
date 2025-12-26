@@ -614,7 +614,7 @@ void G_SaveKeySetting(FILE *f)
             fprintf(f,"\n");
     }
 
-#if !defined( __DJGPP__ )
+//#if !defined( __DJGPP__ )
     // Writes the joystick axis binding commands to the config file.
     for (i=0; i<num_joybindings; i++)
     {
@@ -622,7 +622,7 @@ void G_SaveKeySetting(FILE *f)
         fprintf(f, "bindjoyaxis %d %d %d %d %f\n",
                 j.joynum, j.axisnum, j.playnum, (int)(j.action), j.scale);
     }
-#endif
+//#endif
 }
 
 void G_CheckDoubleUsage(int keynum)
