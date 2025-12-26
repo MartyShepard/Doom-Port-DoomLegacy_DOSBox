@@ -6416,3 +6416,10 @@ or aborting.
 Changed all packet record formats to have conforming type names,
 such as serverconfig_pak_t.
 
+*** W107_version_147
+patchfile = w107_71_version_147.patch
+- commit revision 1375
+Update VERSION to  147.1.
+This is not the release yet, but it is too difficult to deal
+with changes in the savegame format without bumping the version.
+Can still read version 146 savegames.
