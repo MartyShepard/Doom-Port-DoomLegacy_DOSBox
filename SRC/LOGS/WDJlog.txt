@@ -6368,3 +6368,12 @@ patchfile = w107_68_demo_cv.patch
 Add respawnmonstertime and itemrespawntime to be saved in the demo.
 Fixed the demo playback to not duplicate the .lmp extension.
 Cleanup some other demo specific code.
+
+*** W107_show_cvar
+patchfile = w107_69_show_cvar.patch
+- commit revision 1373
+Also show temporary values of variables on the console.
+Depends upon CV_STRING, CV_VALUE, and EV values.
+This makes it possible to see both user settings and param settings.
+Testing shows that bug 0136 had been fixed at some point.
+

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
+// $Id: command.c 1373 2017-12-18 17:19:58Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1476,7 +1476,9 @@ void CV_AddValue (consvar_t *cvar, int increment)
 static boolean CV_Var_Command (void)
 {
     consvar_t   *cvar;
+    const char * tstr;
     COM_args_t  carg;
+    int tval, i;
     
     COM_Args( &carg );
 
@@ -1486,14 +1488,50 @@ static boolean CV_Var_Command (void)
         return false;
 
     // perform a variable print or set
-    if ( carg.num == 1 )
-    {
-        CONS_Printf ("\"%s\" is \"%s\" default is \"%s\"\n",
-                     cvar->name, cvar->string, cvar->defaultvalue);
-        return true;
-    }
+    if ( carg.num == 1 )  goto show_value;
 
     CV_Set (cvar, carg.arg[1] );
+    return true;
+
+show_value:
+    if( cvar->flags & CV_STRING )  goto std_show_str;
+    if( cvar->flags & CV_VALUE )
+    {
+        if( cvar->value == atoi(cvar->string) )  goto std_show_str;
+        tval = cvar->value;
+    }
+    else if( (cvar->flags & CV_EV_PARAM)
+        || (cvar->EV != (byte)cvar->value) )
+    {
+        tval = cvar->EV;
+    }
+    else goto std_show_str;
+   
+    if( cvar->PossibleValue )
+    {
+        for( i = 0;  ; i++ )
+        {
+	    if( cvar->PossibleValue[i].strvalue == NULL )  break;
+            if( cvar->PossibleValue[i].value == tval )
+            {
+                tstr = cvar->PossibleValue[i].strvalue;
+                goto show_by_str;
+            }
+        }
+    }
+
+    CONS_Printf ("\"%s\" is \"%i\" config \"%s\" default is \"%s\"\n",
+                 cvar->name, tval, cvar->string, cvar->defaultvalue);
+    return true;
+	
+show_by_str:
+    CONS_Printf ("\"%s\" is \"%s\" config \"%s\" default is \"%s\"\n",
+                 cvar->name, tstr, cvar->string, cvar->defaultvalue);
+    return true;
+
+std_show_str:
+    CONS_Printf ("\"%s\" is \"%s\" default is \"%s\"\n",
+                 cvar->name, cvar->string, cvar->defaultvalue);
     return true;
 }
 
