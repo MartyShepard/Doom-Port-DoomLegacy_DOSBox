@@ -1,9 +1,12 @@
 * Not need to Compile.
 
+[01386 ]: w107 82 search default dir
+          DOS: Aber nicht für dos...
+					
 [01385 ]: Fix svn 1337
           DOS: Fix Demoplay and then Gamestart
           Bug kam mit version Legacy v1337 (EN_Legacy)
-					
+
 [01385 ]: w107 81 ANGLE_1 error
 [01384 ]: w107 80 reset freelook
 [01383 ]: w107 79 release patches

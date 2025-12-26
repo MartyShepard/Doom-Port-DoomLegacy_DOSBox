@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1375 2017-12-18 17:24:42Z wesleyjohnson $
+// $Id: d_main.c 1386 2018-04-15 02:08:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -276,45 +276,46 @@
 #include "d_french.h"
 #endif
 
-#if defined( __DJGPP__ )	
+#if defined( __DJGPP__ )
 #define I_Sleep(int) usleep(int);
 
   // From MakeDOS File
-	#ifdef PCDOSi386
-	#define DOSNAME "386DX/SX"
-	#endif
-	#ifdef PCDOSi486
-	#define DOSNAME "486DX/SX"
-	#endif
-	#ifdef PCDOSi586
-	#define DOSNAME "Pentium"
-	#endif
+  #ifdef PCDOSi386
+  #define DOSNAME "386DX/SX"
+  #endif
+  #ifdef PCDOSi486
+  #define DOSNAME "486DX/SX"
+  #endif
+  #ifdef PCDOSi586
+  #define DOSNAME "Pentium"
+  #endif
 
   #if !defined( PCDOSi386 ) && !defined( PCDOSi486 ) && !defined( PCDOSi586 )
     #define DOSNAME ""
-	#endif
-	
-	static const char DOSSTRING[] = "[" DOSNAME "]";
-	
-	// Proto
-	void ListSupportetWads(void);
-		
+  #endif
+
+  static const char DOSSTRING[] = "[" DOSNAME "]";
+
+  // Proto
+  void ListSupportetWads(void);
+  void ListSupportetWads_Command(void);  
+
   char *Posix_Deform_Path(char *path)
   {
     char *p = path;
     for (*p = path[0]; p && *p; p++)
          if (*p == '/') *p = '\\';
     
-		return path;
+  return path;
   }
-	
+
 #else
-	static const char DOSSTRING[] = "";	
+  static const char DOSSTRING[] = "";	
 #endif
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1385"
+#define SVN_REV "1386"
 #endif
 
 // Version number: major.minor.revision
@@ -453,6 +454,7 @@ char *dirlist[] =
 char * doomwaddir[MAX_NUM_DOOMWADDIR];
 
 static byte defdir_stat = 0;  // when defdir valid
+static byte defdir_search = 0;  // when defdir search is reasonable
 static char * defdir = NULL;  // default dir  (malloc)
 static char * progdir = NULL;  // program dir  (malloc)
 static char * progdir_wads = NULL;  // program wads directory  (malloc)
@@ -480,8 +482,26 @@ void  owner_wad_search_order( void )
     // Wad search order.
     if( defdir_stat )
     {
-        // Search current dir near first, for other wad searches.
-        doomwaddir[1] = defdir;
+#if !defined( __DJGPP__ )	
+        if( ( access( "Desktop", R_OK) == 0 )
+          ||( access( "Pictures", R_OK) == 0 )
+          ||( access( "Music", R_OK) == 0 ) )
+        {
+            if( verbose )
+                GenPrintf( EMSG_ver, "Desktop, Pictures, or Music dir detected, default dir not searched.\n");
+        }
+        else
+        if(    (strcmp( defdir, cv_home.string ) != 0) // not home directory
+	    && (strcmp( defdir, progdir ) != 0)        // not program directory
+            && (strcmp( defdir, progdir_wads ) != 0) ) // not wads directory
+        {
+#endif
+            defdir_search = 1;
+            // Search current dir near first, for other wad searches.
+            doomwaddir[1] = defdir;
+#if !defined( __DJGPP__ )	
+	}
+#endif
     }
     // Search progdir/wads early, for other wad searches.
     doomwaddir[2] = progdir_wads;
@@ -1215,7 +1235,7 @@ void  Print_search_directories( byte emf, byte enables )
     // Verbose only. For IWAD or legacy.wad they are in doomwaddir entries.
     if( (enables==0x0F) && progdir_wads )
         GenPrintf(emf, "        : %s\n", progdir_wads );
-    if( (enables==0x0F) && defdir )
+    if( (enables==0x0F) && defdir && defdir_search )
         GenPrintf(emf, " defdir: %s\n", defdir );
 #ifdef LEGACYWADDIR
     GenPrintf(emf, " LEGACYWADDIR: %s\n", LEGACYWADDIR );
@@ -1989,9 +2009,9 @@ void D_DoomMain()
 #ifdef FRENCH_INLINE
     french_early_text();
 #endif
-#if defined( __DJGPP__ )		
+#if defined( __DJGPP__ )
     char dosroot[MAX_WADPATH]; 
-#endif				
+#endif
     // print version banner just once here, use it anywhere
     sprintf(VERSION_BANNER, "Doom Legacy %d.%d.%d %s %s", VERSION/100, VERSION%100, REVISION, VERSIONSTRING, DOSSTRING);
     demoversion = VERSION;
@@ -2037,12 +2057,7 @@ void D_DoomMain()
     }
 
 #if defined( __DJGPP__ )
-    if (M_CheckParm("-listwads") || M_CheckParm("-lw"))
-    {
-      printf("%s\n", legacytitle);
-      ListSupportetWads();
-      exit(0);
-    }
+    if (M_CheckParm("-listwads") || M_CheckParm("-lw")) ListSupportetWads_Command();
 #endif       
     GenPrintf( EMSG_info|EMSG_all, "%s\n", legacytitle);
 
@@ -3316,7 +3331,7 @@ void ListSupportetWads(void)
  int gmi;
  int wad;
  game_desc_t     iWadSupport;	 // active desc 
-				
+
  printf("DoomLegacy Supportet: %d Games\n",iWad_index);
 
  for( gmi=0; gmi<iWad_index-1; gmi++ )
@@ -3341,7 +3356,7 @@ void ListSupportetWads(void)
    }
    else
      printf("\n");
-				
+
     if (iWadSupport.startup_title == NULL)
     {
         if (iWadSupport.gameflags & GD_unsupported)
@@ -3358,7 +3373,7 @@ void ListSupportetWads(void)
     }
 
     printf("Directory: C:\\%s\\\n",iWadSupport.idstr);
-					
+
     for( wad=0; wad<3-1; wad++ )
     {
       if (iWadSupport.iwad_filename[wad] == NULL)
@@ -3371,5 +3386,13 @@ void ListSupportetWads(void)
         printf("Support : %s\n",iWadSupport.support_wad);			
     }
 }
+
+void ListSupportetWads_Command(void)
+{
+    printf("%s\n", legacytitle);
+    ListSupportetWads();
+    exit(0);    
+}
+  
 #endif
 

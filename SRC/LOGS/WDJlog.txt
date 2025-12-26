@@ -6504,3 +6504,36 @@ Other uses of it have caused demo sync problems.
 This restores the vanilla calculation to P_SpawnMapThing,
 and fixes a fragglescript usage of it.
 
+*** W107_search
+patchfile = w107_82_search.patch
+- commit revision 1386
+Check search directories for case where the default dir is
+the home directory, or if it contains "Desktop", "Pictures", or "Music"
+directories.  If one of these is detected, the default dir
+will not be searched.  This is to avoid long searches due
+to the depth of wad search, and to avoid searching the users
+home directory, or exposing it to wad loading searches.
+
+*** W107_command_menu
+patchfile = w107_83_command_menu.patch
+- commit revision 1387
+Add a third page of command key settings menu, and move
+some of the misc. keys to the third menu.
+Add a settable command key for screenshot.
+
+*** W107_screenshot
+patchfile = w107_84_screenshot.patch
+- commit revision 1388
+General rewrite of the screenshot code.
+Added a console control to select compact, full, or PCX, for
+screenshot type.  This does not appear in the options menus.
+PCX file type is only available with PC_DOS.
+The Targa file type is used otherwise for screenshots.
+The "compact" setting will save the screen in the closest format
+of the drawing (8 bit with colormap, 16 bit, or 24 bit).
+The "full" setting will convert to RGB 24 bit Targa format.
+The hardware screenshot code has been changed to only get the screen
+and to use the common Targa writing code to save it
+to the Targa file format.
+
+
