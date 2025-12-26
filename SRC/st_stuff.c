@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: st_stuff.c 1382 2018-03-04 06:48:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1129,9 +1129,9 @@ load_patch_t  st_patches[13] =
 
 static void ST_Load_Graphics(void)
 {
-
     int         i;
-    char        namebuf[9];
+    // [Stylinkski] Compiler complains of possible buffer overrun, requires [10].
+    char        namebuf[12];
     // [WDJ] all ST graphics are loaded endian fixed
     // [WDJ] Lock the status bar graphics against other texture users.
 

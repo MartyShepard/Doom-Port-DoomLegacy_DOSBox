@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_lib.c 1363 2017-10-16 16:29:18Z wesleyjohnson $
+// $Id: st_lib.c 1382 2018-03-04 06:48:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -234,7 +234,7 @@ void STlib_updateMultIcon ( st_multicon_t*  mi )
             mi->command = 0;
         }
         // Draw icon patch.       
-        if(iconindex >= 0)
+        if(iconindex >= 0 && mi->patches[iconindex])
             V_DrawScaledPatch(mi->x, mi->y, mi->patches[iconindex]);
 
         mi->prev_icon_index = iconindex;

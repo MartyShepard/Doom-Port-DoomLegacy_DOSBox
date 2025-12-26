@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1381 2018-03-04 06:46:19Z wesleyjohnson $
+// $Id: wi_stuff.c 1382 2018-03-04 06:48:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2045,7 +2045,8 @@ static void WI_Load_Data(void)
     // vid : from video setup
     int   i;
     anim_inter_t*  ai; // interpic animation data
-    char        name[9];
+    // [Stylinski] Compiler warns buffer overrun, requires [17], maybe up to [27].
+    char  name[28];
     byte  j;
     byte  wb_epsd;
 
