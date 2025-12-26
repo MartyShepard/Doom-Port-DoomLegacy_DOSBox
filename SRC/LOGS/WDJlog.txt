@@ -6423,3 +6423,16 @@ Update VERSION to  147.1.
 This is not the release yet, but it is too difficult to deal
 with changes in the savegame format without bumping the version.
 Can still read version 146 savegames.
+
+*** W107_save147
+patchfile = w107_72_save147.patch
+- commit revision 1376
+Update the savegame writing to VERSION 147.
+This not all the changes yet for the savegame VERSION 147.
+Add a netgame samegame header.
+Fix problem of netgames reading savegame in wrong format.
+This was triggering a consistency failure in network games.
+There is savegame read setup done in the savegame header read.
+
+
+

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1374 2017-12-18 17:22:05Z wesleyjohnson $
+// $Id: d_clisrv.c 1376 2017-12-18 17:28:23Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -545,7 +545,7 @@ void ReadLmpExtraData(byte **demo_pointer, int playernum)
     else
     {
         // Demo format matches textbuf_t, length limited.
-	// extra_len is textbuf->len, excluding len field.
+        // extra_len is textbuf->len, excluding len field.
         extra_len ++;
         memcpy(textbuf, dp, extra_len);  // len,text
     }
@@ -685,8 +685,8 @@ static void SV_Send_SaveGame(int to_node)
 
     P_Alloc_savebuffer( 1 );	// large buffer, but no header
     if(! savebuffer)   return;
-    // No savegame header
-   
+
+    P_Write_Savegame_Header( NULL, 1 );  // Netgame header
     P_SaveGame();  // fill buffer with game data
     // buffer will automatically grow as needed.
 
@@ -705,12 +705,17 @@ static const char *tmpsave="$$$.sav";
 // Act upon the received save game from server.
 static void CL_Load_Received_Savegame(void)
 {
+    savegame_info_t   sginfo;  // read header info
+
     // Use savebuffer and save_p from p_saveg.c.
     // There cannot be another savegame in progress when this occurs.
     // [WDJ] Changed to use new load savegame file, with smaller buffer.
     if( P_Savegame_Readfile( tmpsave ) < 0 )  goto cannot_read_file;
     // file is open and savebuffer allocated
-    // No Header on network sent savegame
+
+    // Read netgame header.
+    sginfo.msg[0] = 0;
+    if( ! P_Read_Savegame_Header( & sginfo, 1 ) )  goto load_failed;
 
     GenPrintf(EMSG_hud, "Loading savegame\n");
 
@@ -738,7 +743,7 @@ cannot_read_file:
     goto failed_exit; // must deallocate savebuffer
 
 load_failed:
-    GenPrintf(EMSG_error, "Can't load the level !!!\n");
+    GenPrintf(EMSG_error, "Can't load the level !!!\n%s", sginfo.msg);
 failed_exit:
     // needed when there are error tests before Closefile.
     P_Savegame_Error_Closefile();  // deallocate savebuffer

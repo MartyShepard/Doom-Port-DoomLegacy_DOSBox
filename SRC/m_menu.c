@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
+// $Id: m_menu.c 1376 2017-12-18 17:28:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -3261,7 +3261,7 @@ void M_ReadSaveStrings( int scroll_direction )
             // read the savegame header and react
             read( handle, savebuffer, savebuffer_size );
             close (handle);
-            if( P_Read_Savegame_Header( &sginfo ) )
+            if( P_Read_Savegame_Header( &sginfo, 0 ) )
             {
                 if( sginfo.map == NULL ) sginfo.map = " -  ";
                 if( sginfo.levtime == NULL ) sginfo.levtime = "";

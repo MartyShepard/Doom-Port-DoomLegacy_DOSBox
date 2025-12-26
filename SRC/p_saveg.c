@@ -1,10 +1,10 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: p_saveg.c 1376 2017-12-18 17:28:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
-// Copyright (C) 1998-2010 by DooM Legacy Team.
+// Copyright (C) 1998-2017 by DooM Legacy Team.
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -116,20 +116,13 @@
 #define MIN_READSAVE_VERSION  144
 #define MAX_READSAVE_VERSION  VERSION
 
-// For now write the light thinkers in VERSION 144 format.
-#define WRITE_LF_VER_144   1
-// Enable code for reading VERSION 144 format light thinkers,
-// when savegame version is less than LIGHT147_VERSION.
+// Enable code for reading VERSION 144 format light thinkers.
 #define READ_LF_VER_144    1
-// The lowest savegame version where the new light formats were written.
-#define LIGHT147_VERSION     999
 // Read old savegame flag positions
-#define READ_FLAGS144      146
-// For now write in VERSION 144 format.
-#define WRITE_PLAT144   1
+#define READ_FLAGS144      147
 // Enable code for reading VERSION 144 format plat thinkers.
 // The lowest savegame version where the new plat format was written.
-#define READ_PLAT144    999
+#define READ_PLAT144    147
 
 
 byte * save_p;
@@ -1756,7 +1749,7 @@ void  WRITE_plat( plat_t* platp, byte active )
 {
     WRITEBYTE(save_p, tc_plat);  // platform marker
 #ifdef WRITE_PLAT144
-    // Different Field layout.
+    // Different Field layout for version 144.
     plat_144_t  pt;
     pt.type = platp->type;
     pt.speed = platp->speed;
@@ -1770,6 +1763,7 @@ void  WRITE_plat( plat_t* platp, byte active )
     pt.oldstatus = platp->oldstatus;
     WRITE144_SECTOR_THINKER( platp, &pt, plat_144_t, type );
 #else
+    // Version 147
     WRITE_SECTOR_THINKER( platp, plat_t, type );
 #endif
     // platlist* does not need to be saved
@@ -2408,7 +2402,7 @@ void P_UnArchiveThinkers(void)
                 }
                 if (diff & MD_MBF_LASTENEMY)
                   mobj->lastenemy_id = READU32(save_p); // same here
-	   
+
 
                 // [WDJ] Fix old savegames for corpse health < 0.
                 if((mobj->flags & MF_CORPSE) && (mobj->health >= 0))
@@ -2471,9 +2465,9 @@ void P_UnArchiveThinkers(void)
               {
                 vldoor_t *door = Z_Malloc(sizeof(*door), PU_LEVEL, NULL);
 #ifdef READ_LF_VER_144
-                if( sg_version < LIGHT147_VERSION )
+                if( sg_version < 147 )
                 {
-		  // Field layout is identical, just missing lighttag.
+                  // Version 144, Field layout is identical, just missing lighttag.
                   vldoor_144_t  vld;
                   READ144_SECTOR_THINKER( door, &vld, vldoor_144_t, type );
                   memcpy( &door->type, &vld.type, sizeof(vld));
@@ -2482,7 +2476,8 @@ void P_UnArchiveThinkers(void)
                 else		 
 #endif
                 {
-                READ_SECTOR_THINKER( door, vldoor_t, type );
+                  // Version 147
+                  READ_SECTOR_THINKER( door, vldoor_t, type );
                 }
                 READ_LINE_PTR( door->line );  // can be NULL
                 door->sector->ceilingdata = door;
@@ -2520,7 +2515,7 @@ void P_UnArchiveThinkers(void)
                 }
                 else		 
 #endif
-		{
+                {
                 READ_SECTOR_THINKER( plat, plat_t, type );
                 }
                 plat->sector->floordata = plat;
@@ -2534,7 +2529,7 @@ void P_UnArchiveThinkers(void)
               {
                 lightflash_t *flash = Z_Malloc(sizeof(*flash), PU_LEVEL, NULL);
 #ifdef READ_LF_VER_144
-                if( sg_version < LIGHT147_VERSION )
+                if( sg_version < 147 )
                 {
                   lightflash_144_t  lf;
                   READ144_SECTOR_THINKER( flash, &lf, lightflash_144_t, count );
@@ -2557,7 +2552,7 @@ void P_UnArchiveThinkers(void)
               {
                 strobe_t *strobe = Z_Malloc(sizeof(*strobe), PU_LEVEL, NULL);
 #ifdef READ_LF_VER_144
-                if( sg_version < LIGHT147_VERSION )
+                if( sg_version < 147 )
                 {
                   strobe_144_t  st;
                   READ144_SECTOR_THINKER( strobe, &st, strobe_144_t, count );
@@ -2580,7 +2575,7 @@ void P_UnArchiveThinkers(void)
               {
                 glow_t *glow = Z_Malloc(sizeof(*glow), PU_LEVEL, NULL);
 #ifdef READ_LF_VER_144
-                if( sg_version < LIGHT147_VERSION )
+                if( sg_version < 147 )
                 {
                   glow_144_t  gl;
                   READ144_SECTOR_THINKER( glow, &gl, glow_144_t, minlight );
@@ -2601,7 +2596,7 @@ void P_UnArchiveThinkers(void)
               {
                 fireflicker_t *fireflicker = Z_Malloc(sizeof(*fireflicker), PU_LEVEL, NULL);
 #ifdef READ_LF_VER_144
-                if( sg_version < LIGHT147_VERSION )
+                if( sg_version < 147 )
                 {
                   fireflicker_144_t  ff;
                   READ144_SECTOR_THINKER( fireflicker, &ff, fireflicker_144_t, count );
@@ -2622,7 +2617,7 @@ void P_UnArchiveThinkers(void)
               {
                 lightfader_t *fade = Z_Malloc(sizeof(*fade), PU_LEVEL, NULL);
 #ifdef READ_LF_VER_144
-                if( sg_version < LIGHT147_VERSION )
+                if( sg_version < 147 )
                 {
                   lightfader_144_t  lf;
                   READ144_SECTOR_THINKER( fade, &lf, lightfader_144_t, destlevel );
@@ -3459,8 +3454,13 @@ void WRITE_command_line( void )
 // Langid format requires underlines.
 const char * sg_head_format =
 "!!Legacy_save_game.V%i\n:name:%s\n:game:%s\n:wad:%s\n:map:%s\n:time:%2i:%02i\n";
-#define sg_head_END "::END\n"
 const short idname_length = 18;  // !!<name> length
+
+const char * sg_netgame_head_format =
+"!!Legacy_netgame.V%i\n";
+const short netgame_idname_length = 16;  // !!<name> length
+
+#define sg_head_END "::END\n"
 
 // __BIG_ENDIAN__ is defined on MAC compilers, not on WIN, nor LINUX
 #ifdef __BIG_ENDIAN__
@@ -3470,28 +3470,38 @@ const byte sg_big_endian = 0;
 #endif
 
 // Called from menu via G_DoSaveGame via network Got_SaveGamecmd.
-// Only used for savegame file.
+// Used for savegame file and netgame.
+//   write_netgame : 1 for network passed netgame
 // Write savegame header to savegame buffer.
-void P_Write_Savegame_Header( const char * description )
+void P_Write_Savegame_Header( const char * description, byte write_netgame )
 {
     int len;
     int l_min, l_sec;
     
-    // time into level
-    l_sec = leveltime / TICRATE;  // seconds
-    l_min = l_sec / 60;
-    l_sec -= l_min * 60;
-   
     save_p = savebuffer;
-   
-    // [WDJ] A consistent header across all save game versions.
-    // Save Langid game header
-    // Do not use WRITESTRING as that will put term 0 into the header.
-    len = sprintf( (char *)save_p, sg_head_format,
-                   VERSION, description, gamedesc.gname,
-                   level_wad(), level_mapname, l_min, l_sec );
-    save_p += len;  // does not include string term 0
-    WRITE_command_line();
+
+    if( write_netgame )
+    {
+        len = sprintf( (char *)save_p, sg_netgame_head_format, VERSION );
+        save_p += len;  // does not include string term 0
+    }
+    else
+    {
+        // [WDJ] A consistent header across all save game versions.
+        // Save Langid game header
+        // Do not use WRITESTRING as that will put term 0 into the header.
+
+        // time into level
+        l_sec = leveltime / TICRATE;  // seconds
+        l_min = l_sec / 60;
+        l_sec -= l_min * 60;
+
+        len = sprintf( (char *)save_p, sg_head_format,
+                    VERSION, description, gamedesc.gname,
+                    level_wad(), level_mapname, l_min, l_sec );
+        save_p += len;  // does not include string term 0
+        WRITE_command_line();
+    }
     len = sprintf( (char *)save_p, sg_head_END );
     save_p += len;  // does not include string term 0
     WRITEBYTE( save_p, 0 );  // The only 0 in the header is after the END
@@ -3534,11 +3544,12 @@ void  term_header_line( char * infodest )
 
 
 // Called from G_DoLoadGame, M_ReadSaveStrings
-// Only used for savegame file.
+// Only for savegame file and netgame.
 // Read savegame header from savegame buffer.
+//   read_netgame : 1 for network passed netgame
 // Returns header info in infop.
 // Returns 1 when header is correct.
-boolean P_Read_Savegame_Header( savegame_info_t * infop)
+boolean P_Read_Savegame_Header( savegame_info_t * infop, byte read_netgame )
 {
     const char * reason;
 
@@ -3547,28 +3558,37 @@ boolean P_Read_Savegame_Header( savegame_info_t * infop)
     SG_Readbuf();
     save_p = savebuffer;
 
-    if( strncmp( (char *)save_p, sg_head_format, idname_length ) )  goto not_save;
-    if( ! strstr( (char *)save_p, "::END" ) )  goto not_save;
+    if( read_netgame )
+    {
+        if( strncmp( (char *)save_p, sg_netgame_head_format, netgame_idname_length ) )  goto not_save;
+        if( ! strstr( (char *)save_p, "::END" ) )  goto not_save;
+        save_p += strlen( (char *)save_p ) + 1; // find 0, to get past Langid header;
+    }
+    else
+    {
+        if( strncmp( (char *)save_p, sg_head_format, idname_length ) )  goto not_save;
+        if( ! strstr( (char *)save_p, "::END" ) )  goto not_save;
 
-    // find header strings
-    infop->name = read_header_line( ":name:" );
-    infop->game = read_header_line( ":game:" );
-    infop->wad = read_header_line( ":wad:" );
-    infop->map = read_header_line( ":map:" );
-    infop->levtime = read_header_line( ":time:" );
-    save_p += strlen( (char *)save_p ) + 1; // find 0, to get past Langid header;
+        // find header strings
+        infop->name = read_header_line( ":name:" );
+        infop->game = read_header_line( ":game:" );
+        infop->wad = read_header_line( ":wad:" );
+        infop->map = read_header_line( ":map:" );
+        infop->levtime = read_header_line( ":time:" );
+        save_p += strlen( (char *)save_p ) + 1; // find 0, to get past Langid header;
 
-    // terminate the strings, this modifies the header in the savebuffer
-    // and prevents finding any more header lines
-    term_header_line( infop->name );
-    term_header_line( infop->game );
-    term_header_line( infop->wad );
-    term_header_line( infop->map );
-    term_header_line( infop->levtime );
+        // terminate the strings, this modifies the header in the savebuffer
+        // and prevents finding any more header lines
+        term_header_line( infop->name );
+        term_header_line( infop->game );
+        term_header_line( infop->wad );
+        term_header_line( infop->map );
+        term_header_line( infop->levtime );
 
-    // validity tests
-    infop->have_game = ( strcmp( gamedesc.gname, infop->game ) == 0 );
-    infop->have_wad = check_have_wad( infop->wad );
+        // validity tests
+        infop->have_game = ( strcmp( gamedesc.gname, infop->game ) == 0 );
+        infop->have_wad = check_have_wad( infop->wad );
+    }
 
     // binary header data
     reason = "version";

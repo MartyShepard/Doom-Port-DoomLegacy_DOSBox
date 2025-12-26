@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1372 2017-12-18 17:18:30Z wesleyjohnson $
+// $Id: g_game.c 1376 2017-12-18 17:28:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2502,7 +2502,7 @@ void G_DoLoadGame (int slot)
     if( P_Savegame_Readfile( savename ) < 0 )  goto cannot_read_file;
     // file is open and savebuffer allocated
 
-    if( ! P_Read_Savegame_Header( &sginfo ) )  goto load_header_failed;
+    if( ! P_Read_Savegame_Header( &sginfo, 0 ) )  goto load_header_failed;
     if( ! sginfo.have_game )  goto wrong_game;
     if( ! sginfo.have_wad )  goto wrong_wad;
 
@@ -2608,7 +2608,7 @@ void G_DoSaveGame (int   savegameslot, const char* savedescription)
 
     if( P_Savegame_Writefile( savename ) < 0 )  return;
     
-    P_Write_Savegame_Header( savedescription );
+    P_Write_Savegame_Header( savedescription, 0 );
     P_SaveGame();  // Write game data to savegame buffer.
    
     if( P_Savegame_Closefile( 1 ) < 0 )  return;
@@ -3255,7 +3255,7 @@ void G_BeginRecording (void)
     *demo_p++ = cv_mbf_staylift.EV;
     *demo_p++ = cv_mbf_help_friend.EV;
     *demo_p++ = (cv_mbf_distfriend.value >> 8);  // MSB
-    *demo_p++ = cv_mbf_distfriend.value & 0x0F;  // LSB
+    *demo_p++ = cv_mbf_distfriend.value & 0xFF;  // LSB
     *demo_p++ = cv_mbf_monkeys.EV;
 #ifdef DOGS
     *demo_p++ = cv_mbf_dogs.EV;
