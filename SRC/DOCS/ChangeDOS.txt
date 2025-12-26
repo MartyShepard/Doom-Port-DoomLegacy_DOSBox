@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01378 ]: w107 74 send state
 [01377 ]: w107 73 sock port
           DOS: Compile fix. (DJGPPDOS\I_Net.c)
 					

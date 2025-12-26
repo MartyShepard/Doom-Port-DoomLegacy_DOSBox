@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1377 2017-12-18 17:29:50Z wesleyjohnson $
+// $Id: d_clisrv.c 1378 2017-12-18 17:31:35Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -679,6 +679,58 @@ static boolean SV_Send_ServerConfig(int to_node)
     return HSendPacket(to_node, true, 0, xc.curpos - ((byte *)&netbuffer->u));
 }
 
+
+// Broadcast to all connected nodes
+static void SV_SendPacket_All( boolean reliable, size_t size_packet, const char * msg )
+{
+    int nn;
+    for(nn=1; nn<MAXNETNODES; nn++)
+    {
+        if(nodeingame[nn])
+        {
+            HSendPacket(nn, reliable, 0, size_packet);
+            if( msg )	   
+                debug_Printf( "%s[ %d ]\n", msg, nn );
+        }
+    }
+}
+
+// [WDJ] Update state by sever.
+// By Server
+static void CL_Send_State( byte server_pause )
+{
+    netbuffer->packettype=PT_STATE;
+    netbuffer->u.state.gametic = LE_SWAP32_FAST(gametic);
+    netbuffer->u.state.p_rand_index = P_GetRandIndex(); // to sync P_Random
+    netbuffer->u.state.server_pause = server_pause;
+
+    SV_SendPacket_All( true, sizeof(state_pak_t), NULL );
+}
+
+// By Client
+static void state_handler( void )
+{
+    // Message is PT_STATE
+    tic_t new_gametic = LE_SWAP32_FAST(netbuffer->u.state.gametic);
+    if( new_gametic != gametic )
+    {
+        debug_Printf( "PT_STATE: update gametic\n" );
+        gametic = new_gametic;
+    }
+    if( P_GetRandIndex() != netbuffer->u.state.p_rand_index )
+    {
+        debug_Printf( "PT_STATE: update P_random index\n" );
+        P_SetRandIndex( netbuffer->u.state.p_rand_index ); // to sync P_Random
+    }
+    paused = netbuffer->u.state.server_pause;
+
+#if 0
+    debug_Printf( "STATE: gametic %i, P_Random [%i], paused %i\n",
+          gametic, netbuffer->u.state.p_rand_index, netbuffer->u.state.server_pause );
+#endif
+}
+
+
 #ifdef JOININGAME
 
 // By Server.
@@ -686,7 +738,10 @@ static boolean SV_Send_ServerConfig(int to_node)
 static void SV_Send_SaveGame(int to_node)
 {
     size_t  length;
+    byte    was_paused = paused;
 
+    CL_Send_State( 1 );  // pause game during download
+     
     P_Alloc_savebuffer( 1 );	// large buffer, but no header
     if(! savebuffer)   return;
 
@@ -701,6 +756,9 @@ static void SV_Send_SaveGame(int to_node)
     SV_SendData(to_node, savebuffer, length, TAH_MALLOC_FREE, 0);
     // SendData frees the savebuffer using free() after it is sent.
     // This is the only use of TAH_MALLOC_FREE.
+    
+    CL_Send_State( was_paused );  // unpause maybe
+    paused = was_paused;
 }
 
 static const char *tmpsave="$$$.sav";
@@ -725,7 +783,7 @@ static void CL_Load_Received_Savegame(void)
 
     G_Downgrade (VERSION);
 
-    paused        = false;
+    // Sever will control pause during download.
     demoplayback  = false;
     automapactive = false;
 
@@ -944,8 +1002,6 @@ static tic_t wait_tics  = 0;
 
 static void SV_Send_NetWait( void )
 {
-    int nn;
-
     netbuffer->packettype = PT_NETWAIT;
     netbuffer->u.netwait.num_netplayer = num_netplayer;
     netbuffer->u.netwait.wait_netplayer = wait_netplayer;
@@ -954,17 +1010,10 @@ static void SV_Send_NetWait( void )
 #ifdef WAITPLAYER_DEBUG
     debug_Printf( "WaitPlayer update: num_netnodes=%d num_netplayer=%d  wait_netplayer=%d  wait_tics=%d\n",
                num_netnodes, num_netplayer, wait_netplayer, wait_tics );
+    SV_SendPacket_All( false, sizeof(netwait_pak_t), "  sent to player" );
+#else
+    SV_SendPacket_All( false, sizeof(netwait_pak_t), NULL );
 #endif
-    for(nn=1; nn<MAXNETNODES; nn++)
-    {
-        if(nodeingame[nn])
-        {
-            HSendPacket(nn, false, 0, sizeof(netwait_pak_t));
-#ifdef WAITPLAYER_DEBUG
-            debug_Printf( "  sent to player[ %d ]\n", nn );
-#endif
-        }
-    }
 }
 
 void D_WaitPlayer_Drawer( void )
@@ -2787,6 +2836,10 @@ static void Net_Packet_Handler(void)
                 break;
             case PT_REPAIR:
                 repair_handler( nnode );  // server and client
+                break;
+            case PT_STATE:
+                if( !server )
+                    state_handler();  // to client
                 break;
             case PT_NODE_TIMEOUT:
             case PT_CLIENTQUIT:

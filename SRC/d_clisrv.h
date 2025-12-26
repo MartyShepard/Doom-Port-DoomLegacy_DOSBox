@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1374 2017-12-18 17:22:05Z wesleyjohnson $
+// $Id: d_clisrv.h 1378 2017-12-18 17:31:35Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -111,7 +111,7 @@ typedef enum   {
     PT_REQUESTFILE,   // client request a file transfer
     PT_REPAIR,        // repair position, consistency fix
     PT_ACKS,          // all acks
-    PT_DUMMY17,
+    PT_STATE,         // server pause state
     PT_DUMMY18,
     PT_DUMMY19,
 
@@ -190,6 +190,12 @@ typedef struct {
    tic_t       gametic;
    pos_repair_t  pos;
 } repair_pak_t;
+
+typedef struct {
+   tic_t       gametic;
+   byte        p_rand_index; // to sync P_Random
+   byte        server_pause; // silent pause
+} state_pak_t;
 
 // [WDJ] As of 9/2016 there are 37 CV_NETVAR.
 #define NETCVAR_BUFF_LEN  4096
@@ -314,6 +320,7 @@ typedef struct
       askinfo_pak_t      askinfo;
       netwait_pak_t      netwait;
       repair_pak_t       repair;
+      state_pak_t        state;
            } u;
 
 } netbuffer_t;

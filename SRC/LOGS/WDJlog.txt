@@ -6444,6 +6444,15 @@ The server will use whatever sock port the client uses to connect.
 This allows two clients, or a server and client, to use the
 same computer and internet stack.
 
-
-
+*** W107_state
+patchfile = w107_74_state.patch
+- commit revision 1378
+Add a PT_STATE message, which updates the tick, P_Random index,
+and the pause.  Add a broadcast function that the server may
+use to send a message to all connected players.
+The server will use this state broadcast to pause all players
+while a savegame download is performed,
+and will update the pause state for the new player.
+This allows a player to connect while the server game
+is paused, which before would trigger a consistency failure.
 

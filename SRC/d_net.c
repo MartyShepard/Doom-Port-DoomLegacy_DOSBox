@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1374 2017-12-18 17:22:05Z wesleyjohnson $
+// $Id: d_net.c 1378 2017-12-18 17:31:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1033,7 +1033,7 @@ static char *packettypename[NUMPACKETTYPE]={
     "REQUESTFILE",
     "REPAIR",
     "ACKS",
-    "DUMMY17",
+    "STATE",
     "DUMMY18",
     "DUMMY19",
 
@@ -1122,6 +1122,19 @@ static void DebugPrintpacket(char *header)
            fprintf(debugfile
                   ,"    reason %s\n"
                   ,netbuffer->u.serverrefuse.reason);
+           break;
+       case PT_REPAIR :
+           fprintf(debugfile,
+                   "    repairtype %d, P_Random index %d, tic %i,\n (id_num %d, angle %x, x %i.%i, y %i.%i, z %i.%i, momx %i.%i, momy %i.%i, momz %i,%i\n",
+                   u.repair.repair_type, u.repair.p_rand_index, u.repair.gametic,
+                   u.repair.pos.id_num, u.repair.pos.angle,
+                   u.repair.pos.x >> 16, u.repair.pos.x & 0xFFFF, u.repair.pos.y >> 16, u.repair.pos.y & 0xFFFF, u.repair.pos.z >> 16, u.repair.pos.z & 0xFFFF,
+                   u.repair.pos.momx >> 16, u.repair.pos.momx & 0xFFFF, u.repair.pos.momy >> 16, u.repair.pos.momy & 0xFFFF, u.repair.pos.momz >> 16, u.repair.pos.momz & 0xFFFF );
+           break;
+       case PT_STATE :
+           fprintf(debugfile,
+                   "    tic %i, P_Random index %d, sever_pause %d\n",
+                    u.state.gametic, u.state.p_rand_index, u.state.server_pause );
            break;
        case PT_FILEFRAGMENT :
            fprintf(debugfile
