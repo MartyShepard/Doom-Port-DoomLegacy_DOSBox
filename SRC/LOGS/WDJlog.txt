@@ -6456,3 +6456,28 @@ and will update the pause state for the new player.
 This allows a player to connect while the server game
 is paused, which before would trigger a consistency failure.
 
+*** W107_state
+patchfile = w107_75_state_fix.patch
+- commit revision 1379
+Do not update gametic from PT_STATE message.
+Better error handling in the PT_STATE message handler.
+Fix an #if NET_NODE_DEBUG, in i_tcp.c.
+
+*** W107_version147
+patchfile = w107_76_version147.patch
+- commit revision 1380
+Remove some old testing setups for VERSION147.
+
+*** W107_buffers
+patchfile = w107_77_buffers.patch
+- commit revision 1381
+From Adam Stylinski.  His compiler reports that some buffers
+may be exceeded.  These are temp buffers, just make them longer.
+
+*** W107_release_patches
+patchfile = w107_78_release_patches.patch
+- commit revision 1382
+Got segfault when unexpected exit, such as going to Launcher.
+New code for releasing patches, was releasing patches that were not loaded.
+This also may have been cause of problem found by Adam Stylinski.
+
