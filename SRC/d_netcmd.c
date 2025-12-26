@@ -568,6 +568,9 @@ void Got_NetXCmd_NameColor(xcmd_t * xc)
 
     // Players 0..(MAXPLAYERS-1) are init as Player 1 ..
     // name
+#if defined( __DJGPP__ )   
+    EV_legacy = demoversion; // Fix Spielstart nach Demoplay wie v1.09
+#endif    
     if( EV_legacy >= 128 )
     {
         if (strcasecmp(pname, lcp))
@@ -827,7 +830,10 @@ void Got_NetXCmd_Mapcmd(xcmd_t * xc)
     // Format: skill byte, (no_reset_players, no_monsters) byte,
     //         map_name str0.
     skill = READBYTE(xc->curpos);
-    if( EV_legacy >= 128 )
+#if defined( __DJGPP__ )   
+    EV_legacy = demoversion; // Fix Spielstart nach Demoplay wie v1.09
+#endif
+    if( EV_legacy >= 128)
     {
         // [WDJ] Do not use boolean nomonsters as an int.
         opt = READBYTE(xc->curpos);
