@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
+// $Id: hu_stuff.c 1383 2018-03-04 07:00:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -135,6 +135,8 @@ consvar_t*   chat_macros[10];
 //added:16-02-98: crosshair 0=off, 1=cross, 2=angle, 3=point, see m_menu.c
 patch_t*     crosshair[3];     //3 precached crosshair graphics
 
+static byte  hu_fonts_loaded = 0;
+
 
 // -------
 // protos.
@@ -202,12 +204,20 @@ void HU_Load_Graphics( void )
        sprintf(buffer, "CROSHAI%c", '1'+i);
        crosshair[i] = W_CachePatchName(buffer, PU_STATIC);
     }
+
+    hu_fonts_loaded = 1;
 }
 
 void HU_Release_Graphics( void )
 {
-    release_patch_array( hu_font, HU_FONTSIZE );
-    release_patch_array( crosshair, HU_CROSSHAIRS );
+    if( hu_fonts_loaded )
+    {
+        hu_fonts_loaded = 0;
+
+        // Has protection against individual NULL ptr in array.
+        release_patch_array( hu_font, HU_FONTSIZE );
+        release_patch_array( crosshair, HU_CROSSHAIRS );
+    }
 }
 
 

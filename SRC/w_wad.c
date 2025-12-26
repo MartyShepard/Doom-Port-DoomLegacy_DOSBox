@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: w_wad.c 1383 2018-03-04 07:00:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -869,7 +869,7 @@ void release_patch_list( load_patch_t * pl )
 void release_patch_array( patch_t ** pp, int count )
 {
     while( count-- ) {
-        Z_ChangeTag( *pp, PU_UNLOCK_CACHE);
+        if( *pp )  Z_ChangeTag( *pp, PU_UNLOCK_CACHE);
         pp++;
     }
 }
