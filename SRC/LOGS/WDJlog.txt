@@ -6536,4 +6536,18 @@ The hardware screenshot code has been changed to only get the screen
 and to use the common Targa writing code to save it
 to the Targa file format.
 
+*** W107_downgrade
+patchfile = w107_85_downgrade.patch
+- commit revision 1389
+Many of the EN enables were messed up by demos, and were not being
+restored.  Added calls to the StopDemo and kill_demo code, that
+restore the gamemode EN default values.
+Changed calls of G_Downgrade(VERSION), to D_setup_VERSION(),
+where the value of EV_legacy is also restored.
+This fixes 2 errors, where could not start a game after a demo, and
+an error where an unrecognized demo code was received after a demo.
+
+A demoversion test was blocking autoaim during demos.
+Removed the demoversion test, as it duplicated changes to autoaim
+in G_Downgrade().
 

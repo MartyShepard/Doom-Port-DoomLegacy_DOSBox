@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1386 2018-04-15 02:08:57Z wesleyjohnson $
+// $Id: d_main.c 1389 2018-04-23 02:49:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -315,7 +315,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1386"
+#define SVN_REV "1388"
 #endif
 
 // Version number: major.minor.revision
@@ -480,6 +480,7 @@ extern char mac_user_home[FILENAME_SIZE];   // for config and savegames
 void  owner_wad_search_order( void )
 {
     // Wad search order.
+    defdir_search = 0;
     if( defdir_stat )
     {
 #if !defined( __DJGPP__ )	
@@ -3012,7 +3013,7 @@ restart_command:
                  || M_CheckParm("+connect") || M_CheckParm("-connect"))
         {
             //added:27-02-98: reset the current version number
-            G_Downgrade(VERSION);
+            G_setup_VERSION();
             gameaction = ga_nothing;
             if (server && !M_CheckParm("+map"))
                 COM_BufAddText(va("map \"%s\"\n", G_BuildMapName(startepisode, startmap)));

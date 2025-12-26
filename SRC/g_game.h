@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: g_game.h 1389 2018-04-23 02:49:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -183,6 +183,7 @@ void G_DeferedPlayDemo (const char* demo);
 // [WDJ] Set the gamemode, and all EN_ that are dependent upon it.
 void G_set_gamemode( byte new_gamemode );
 boolean G_Downgrade(int version);
+void G_setup_VERSION( void );
 
 // --- Save Games
 

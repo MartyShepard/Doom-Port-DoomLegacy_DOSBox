@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1379 2018-03-04 04:22:49Z wesleyjohnson $
+// $Id: d_clisrv.c 1389 2018-04-23 02:49:28Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -785,7 +785,7 @@ static void CL_Load_Received_Savegame(void)
 
     GenPrintf(EMSG_hud, "Loading savegame\n");
 
-    G_Downgrade (VERSION);
+    G_setup_VERSION();
 
     // Sever will control pause during download.
     demoplayback  = false;

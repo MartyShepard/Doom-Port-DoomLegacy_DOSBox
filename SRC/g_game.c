@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1380 2018-03-04 04:23:49Z wesleyjohnson $
+// $Id: g_game.c 1389 2018-04-23 02:49:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2511,7 +2511,7 @@ void G_DoLoadGame (int slot)
     D_DisableDemo();  // turn off demos and keeps them off
 
     //added:27-02-98: reset the game version
-    G_Downgrade(VERSION);
+    G_setup_VERSION();
 
     paused        = false;
     automapactive = false;
@@ -2643,7 +2643,7 @@ void G_DeferedInitNew (skill_e skill, const char* mapname, boolean StartSplitScr
         COM_BufAddText ("stopdemo\n");  // invokes G_CheckDemoStatus
     D_DisableDemo();  // turn off demos and keeps them off
 
-    G_Downgrade(VERSION); // [WDJ] should be after demo is stopped
+    G_setup_VERSION(); // [WDJ] should be after demo is stopped
 
     // this leave the actual game if needed
     SV_StartSinglePlayerServer();
@@ -2896,6 +2896,10 @@ boolean G_Downgrade(int version)
     if (version<109)
         return false;
 
+    // always true now, might be false in the future, if couldn't
+    // go backward and disable all the features...
+    demoversion = version;
+
     if( version<130 )
     {
         mobjinfo[MT_BLOOD].radius = 20*FRACUNIT;
@@ -2945,6 +2949,7 @@ boolean G_Downgrade(int version)
     {
         //added:16-02-98: make sure autoaim is used for older
         //                demos not using mouse aiming
+        cv_allowautoaim.EV = 9;  // force autoaim
         for(i=0;i<MAXPLAYERS;i++)
             players[i].autoaim_toggle = true;
     }
@@ -2952,7 +2957,7 @@ boolean G_Downgrade(int version)
     // PrBoom has this enabled by comp level.
     // It is only off for old Doom demos.
     EN_skull_bounce_floor = EN_skull_bounce_fix
-       || ( demoversion > 109 && demoversion < 212 );
+       || ( version > 109 && version < 212 );
 
     //SoM: 3/17/2000: Demo compatability
     // EN_boom has been loaded from Boom demo compatiblity.
@@ -2995,13 +3000,9 @@ boolean G_Downgrade(int version)
 #if 0
     // EN_boom_invul_skymap, was not enabled for DoomLegacy before 1.47,
     // but does not affect demo sync.  Is a matter of preference.
-    if( demoversion < 147 )
+    if( version < 147 )
         cv_invul_skymap.EV = 0;
 #endif
-
-    // always true now, might be false in the future, if couldn't
-    // go backward and disable all the features...
-    demoversion = version;
 
 #if 0
     // [WDJ]
@@ -3022,6 +3023,22 @@ boolean G_Downgrade(int version)
     DemoAdapt_p_floor(); // local enables of p_floor, TNT MAP30 fix
     return true;
 }
+
+// Make it easy to setup the VERSION play, without mistakes.
+void G_setup_VERSION( void )
+{
+#ifdef PARANOIA
+    if( !EN_mbf )
+    {
+        GenPrintf( EMSG_warn, "Setup_VERSION: EN_mbf=0, possibly after demo\n" );
+        G_set_gamemode( gamemode );  // restore EN set by gamemode
+    }
+#endif
+    // Reset demoversion to normal
+    EV_legacy = VERSION;
+    G_Downgrade( VERSION );
+}
+
 
 
 //
@@ -3798,8 +3815,10 @@ broken_header:
 #endif
    
 kill_demo:
-    demoversion = VERSION;
     Z_Free (demobuffer);
+    playdemo_restore_settings();
+    G_set_gamemode( gamemode );  // restore EN set by gamemode
+    G_setup_VERSION();
 no_demo:
     gameaction = ga_nothing;
     return;
@@ -3853,7 +3872,8 @@ void G_StopDemo(void)
     singletics = false;
 
     playdemo_restore_settings();  // [WDJ] restore user settings
-    G_Downgrade(VERSION);
+    G_set_gamemode( gamemode );  // restore EN set by gamemode
+    G_setup_VERSION();
 
     gamestate=wipegamestate=GS_NULL;
     SV_StopServer();

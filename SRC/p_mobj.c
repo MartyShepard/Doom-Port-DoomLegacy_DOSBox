@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1385 2018-03-28 16:34:18Z wesleyjohnson $
+// $Id: p_mobj.c 1389 2018-04-23 02:49:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -3358,6 +3358,7 @@ mobj_t *P_SPMAngle(mobj_t * source, mobjtype_t type, angle_t angle)
     if( !(source->player->autoaim_toggle && cv_allowautoaim.EV )
         || (!lar_linetarget && (EV_legacy > 111)) )
     {
+        // Manual aiming
         if( EV_legacy >= 128 )
             slope = AIMINGTOSLOPE(source->player->aiming);
         else

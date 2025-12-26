@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 1341 2017-06-21 16:12:46Z wesleyjohnson $
+// $Id: p_pspr.c 1389 2018-04-23 02:49:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -747,7 +747,8 @@ void P_BulletSlope (mobj_t* mo)
     angle_t     an;
 
     //added:18-02-98: if AUTOAIM, try to aim at something
-    if(!mo->player->autoaim_toggle || !cv_allowautoaim.EV || demoversion<=111)
+//    if(!mo->player->autoaim_toggle || !cv_allowautoaim.EV || demoversion<=111)  // [WDJ] breaks demos
+    if( !mo->player->autoaim_toggle || !cv_allowautoaim.EV )
         goto no_target_found;
 
     // Try first with friend_protect, then without friend_protect.
@@ -772,7 +773,8 @@ void P_BulletSlope (mobj_t* mo)
     return;
 
 no_target_found:
-    if(demoversion>=128)
+    // Manual aiming
+    if( EV_legacy >= 128 )
         bulletslope = AIMINGTOSLOPE(mo->player->aiming);
     else
         bulletslope = (mo->player->aiming<<FRACBITS)/160;
