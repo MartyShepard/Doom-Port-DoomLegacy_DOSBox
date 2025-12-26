@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: g_input.h 1387 2018-04-15 02:09:32Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -99,6 +99,7 @@ typedef enum
     gc_invprev,
     gc_invuse,
     gc_flydown,     // flyup is jump !
+    gc_screenshot,
     num_gamecontrols
 } gamecontrols_e;
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: g_input.c 1387 2018-04-15 02:09:32Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -248,6 +248,7 @@ static keyname_t keynames[] =
   {KEY_NUMLOCK,    "num lock"},
   {KEY_CAPSLOCK,   "caps lock"},
   {KEY_SCROLLLOCK, "scroll lock"},
+  {KEY_SYSREQ,     "sysreq"},
   {KEY_RSHIFT,     "right shift"},
   {KEY_LSHIFT,     "left shift"},
   {KEY_RCTRL,      "right ctrl"},
@@ -441,7 +442,8 @@ char *gamecontrolname[num_gamecontrols] =
     "inventorynext",
     "inventoryprev",
     "inventoryuse",
-    "down"
+    "down",
+    "screenshot"
 };
 
 #define NUMKEYNAMES (sizeof(keynames)/sizeof(keyname_t))
@@ -565,6 +567,7 @@ void G_Controldefault(void)
     gamecontrol[gc_console    ][0]=KEY_CONSOLE;
     //gamecontrol[gc_nextweapon ][1]=KEY_JOY0BUT4;
     //gamecontrol[gc_prevweapon ][1]=KEY_JOY0BUT5;
+    gamecontrol[gc_screenshot ][0]=KEY_SYSREQ;
 
     if( gamemode == heretic )
     {

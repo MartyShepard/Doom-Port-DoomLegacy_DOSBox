@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01387 ]: w107 83 command menu
+          Added Screenshot Command to Setup Control Menu
+					
 [01386 ]: w107 82 search default dir
           DOS: Aber nicht für dos...
 					

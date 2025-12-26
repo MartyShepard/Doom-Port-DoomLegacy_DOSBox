@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1376 2017-12-18 17:28:23Z wesleyjohnson $
+// $Id: m_menu.c 1387 2018-04-15 02:09:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -539,7 +539,7 @@ menu_t MainDef, SoundDef, EpiDef, NewDef,
   VidModeDef, VideoOptionsDef, MouseOptionsDef,
   SingleMultiDef, TwoPlayerDef, MultiPlayerDef, SetupMultiPlayerDef,
   ReadDef2, ReadDef1, SaveDef, LoadDef, 
-  ControlDef, ControlDef2, MControlDef,
+  ControlDef, ControlDef2, ControlDef3, MControlDef,
   OptionsDef, EffectsOptionsDef, GameOptionDef, AdvOption1Def, AdvOption2Def,
   NetOptionDef, ConnectOptionDef, ServerOptionsDef,
   MPOptionDef;
@@ -2353,9 +2353,6 @@ menu_t  ControlDef =
     0
 };
 
-//
-//  Controls page 1
-//
 // IT_CONTROL: alphaKey is the control to be changed
 menuitem_t ControlMenu2[]=
 {
@@ -2370,15 +2367,12 @@ menuitem_t ControlMenu2[]=
   {IT_CONTROL, 0,"Previous Weapon",M_ChangeControl,gc_prevweapon},
   {IT_CONTROL, 0,"Next Weapon"    ,M_ChangeControl,gc_nextweapon},
   {IT_CONTROL, 0,"Best Weapon"    ,M_ChangeControl,gc_bestweapon},
-  {IT_CONTROL, 0,"Talk key"       ,M_ChangeControl,gc_talkkey},
-  {IT_CONTROL, 0,"Rankings/Scores",M_ChangeControl,gc_scores },
-  {IT_CONTROL, 0,"Console"        ,M_ChangeControl,gc_console},
   {IT_CONTROL, 0,"Inventory Left" ,M_ChangeControl,gc_invprev},  
   {IT_CONTROL, 0,"Inventory Right",M_ChangeControl,gc_invnext},
   {IT_CONTROL, 0,"Inventory Use"  ,M_ChangeControl,gc_invuse },
   {IT_CONTROL, 0,"Fly down"       ,M_ChangeControl,gc_flydown},
                        
-  {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"next"    ,&ControlDef,148}
+  {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"next"    ,&ControlDef3,148}
 };
 
 menu_t  ControlDef2 =
@@ -2389,6 +2383,29 @@ menu_t  ControlDef2 =
     M_DrawControl,
     NULL,
     sizeof(ControlMenu2)/sizeof(menuitem_t),
+    50,40,
+    0
+};
+
+// IT_CONTROL: alphaKey is the control to be changed
+menuitem_t ControlMenu3[]=
+{
+  {IT_CONTROL, 0,"Talk key"       ,M_ChangeControl,gc_talkkey},
+  {IT_CONTROL, 0,"Rankings/Scores",M_ChangeControl,gc_scores },
+  {IT_CONTROL, 0,"Console"        ,M_ChangeControl,gc_console},
+  {IT_CONTROL, 0,"Screenshot"     ,M_ChangeControl,gc_screenshot},  
+                       
+  {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"next"    ,&ControlDef,128}
+};
+
+menu_t  ControlDef3 =
+{
+    "M_CONTRO", // in legacy.wad
+    "Setup Controls",
+    ControlMenu3,
+    M_DrawControl,
+    NULL,
+    sizeof(ControlMenu3)/sizeof(menuitem_t),
     50,40,
     0
 };
@@ -2699,7 +2716,7 @@ void M_DrawVideoMode(void)
         sprintf(temp, "D to make %s the default", VID_GetModeName(vid.modenum));
         M_CentreText(VidModeDef.y+80+24,temp);
 
-        sprintf(temp, "Current default is %dx%d (%d bits)", cv_scr_width.value, cv_scr_height.value, cv_scr_depth.value);
+        sprintf(temp, "Current default is %dx%d (%d bits)", (int)cv_scr_width.value, (int)cv_scr_height.value, (int)cv_scr_depth.value);
         M_CentreText(VidModeDef.y+90+24,temp);
 
         M_CentreText(VidModeDef.y+100+24,"Press ESC to exit");
@@ -4458,7 +4475,8 @@ boolean M_Responder (event_t* ev)
         goto ret_true;
     }
 
-    if (devparm && key == KEY_F1)
+    if( (devparm && key == KEY_F1)
+       || (key == gamecontrol[gc_screenshot][0] ))
     {
         COM_BufAddText("screenshot\n");
         goto ret_true;
