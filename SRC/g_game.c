@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1376 2017-12-18 17:28:23Z wesleyjohnson $
+// $Id: g_game.c 1380 2018-03-04 04:23:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -3414,7 +3414,7 @@ void G_DoPlayDemo (const char *defdemoname)
         EV_legacy = demoversion;  // is a DoomLegacy version
         // [WDJ] enable of "Marine's Best Friend" feature emulation
         EN_boom = 1;
-        EN_mbf = (demoversion >= VERSION147);
+        EN_mbf = (demoversion >= 147);
     }
     else if( demoversion >= 111 && demoversion <= 143 )
     {

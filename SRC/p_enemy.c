@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
+// $Id: p_enemy.c 1380 2018-03-04 04:23:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -573,7 +573,7 @@ static boolean P_CheckMissileRange (mobj_t* actor)
         // so fight back!
         actor->flags &= ~MF_JUSTHIT;
 
-        if( EN_heretic || (demoversion < VERSION147) )
+        if( EN_heretic || (demoversion < 147) )
             return true;  // Old Legacy, Old Doom
 
         // [WDJ] MBF, from MBF, PrBoom

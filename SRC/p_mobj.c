@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
+// $Id: p_mobj.c 1380 2018-03-04 04:23:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1899,7 +1899,7 @@ mobj_t * P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
         mobj->flags &= ~(MF_BOUNCES | MF_FRIEND | MF_TOUCHY);
     }
     // EternityEngine: new EE demo has different method.
-    else if((demoversion >= VERSION147) && (cv_deathmatch.EV == 0))
+    else if((demoversion >= 147) && (cv_deathmatch.EV == 0))
     {
         // DoomLegacy >= 147, or MBF or Boom demo, and not deathmatch
         // Boom demo: 201, 202
