@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: t_func.c 1385 2018-03-28 16:34:18Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -2718,6 +2718,20 @@ void SF_MoveCamera(void)
 
         if (xydist && !anglespeed)
         {
+#if 1
+	    // [WDJ] Without using ANGLE_1, which has a significant round-off error.
+            fangledist = ((double) angledist * 45.0f / ANG45);
+            fmovestep = ((double) FixedDiv(xydist, movespeed) / FRACUNIT);
+            if (fmovestep)
+                fanglestep = (fangledist / fmovestep);
+            else
+                fanglestep = 360.0f;
+
+            //debug_Printf("fstep: %f, fdist: %f, fmspeed: %f, ms: %i\n", fanglestep, fangledist, fmovestep, FixedDiv(xydist, movespeed) >> FRACBITS);
+
+            anglestep = (fanglestep * ANG45 / 45.0f);
+#else
+	    // [WDJ] ANGLE_1 (from Heretic) has a significant round-off error.
             fangledist = ((double) angledist / ANGLE_1);
             fmovestep = ((double) FixedDiv(xydist, movespeed) / FRACUNIT);
             if (fmovestep)
@@ -2728,6 +2742,7 @@ void SF_MoveCamera(void)
             //debug_Printf("fstep: %f, fdist: %f, fmspeed: %f, ms: %i\n", fanglestep, fangledist, fmovestep, FixedDiv(xydist, movespeed) >> FRACBITS);
 
             anglestep = (fanglestep * ANGLE_1);
+#endif
         }
         else
             anglestep = anglespeed;

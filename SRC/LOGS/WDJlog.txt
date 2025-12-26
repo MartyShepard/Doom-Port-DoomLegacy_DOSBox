@@ -6490,7 +6490,17 @@ This also may have been cause of problem found by Adam Stylinski.
 
 *** W107_reset_freelook
 patchfile = w107_80_reset_freelook.patch
-- commit revision 138?
+- commit revision 1384
 Reset the freelook when exiting the level, or spawning.
 This fixes bug 0643.
+
+*** W107_ANGLE_1_error
+patchfile = w107_81_ANGLE_1.patch
+- commit revision 1385
+The const, ANGLE_1, from Heretic, has a significant round-off error.
+Where Heretic used it, like ANGLE_1*10, to get 10 degree spread of
+its missiles, it is what they did.
+Other uses of it have caused demo sync problems.
+This restores the vanilla calculation to P_SpawnMapThing,
+and fixes a fragglescript usage of it.
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1384 2018-03-24 08:56:28Z wesleyjohnson $
+// $Id: p_mobj.c 1385 2018-03-28 16:34:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2660,7 +2660,13 @@ void P_SpawnMapthing (mapthing_t* mthing)
     // Check for boss spots
     if (EN_heretic_hexen && (mthing->type == 56) )    // Monster_BossSpot
     {
+#if 1
+        // [WDJ] Gives same result as Heretic source.
+        P_AddBossSpot(mthing->x << FRACBITS, mthing->y << FRACBITS, wad_to_angle(mthing->angle));
+#else
+        // [WDJ] ANGLE_1 has a round-off error.  I do not know what this was trying to accomplish.
         P_AddBossSpot(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->angle * ANGLE_1);   // SSNTails 06-10-2003
+#endif
         return;
     }
 
@@ -2753,7 +2759,20 @@ spawnit:
     if (mobj->flags & MF_COUNTITEM)
         totalitems++;
 
-    mobj->angle = mthing->angle * ANGLE_1;      // SSNTails 06-10-2003
+    if( demoplayback && EV_legacy && (EV_legacy < 147) )
+    {
+        // [WDJ] ANGLE_1 (from Heretic) has a significant round off error.
+	// 0x10e * ANGLE_1 -> 0xbfffff40,  it should be 0xc0000000
+        // When used for positioning, it leads to demo sync problems.
+        mobj->angle = mthing->angle * ANGLE_1;      // SSNTails 06-10-2003
+    }
+    else
+    {
+        // Like every other Doom.
+        // Heretic also spawns using this calc.
+        mobj->angle = wad_to_angle(mthing->angle);
+    }
+   
     if (mthing->options & MTF_AMBUSH)
         mobj->flags |= MF_AMBUSH;
 
