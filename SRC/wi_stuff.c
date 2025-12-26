@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: wi_stuff.c 1381 2018-03-04 06:46:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -186,14 +186,18 @@ typedef struct
     // next value of bcnt (used in conjunction with period)
     uint32_t    nexttic;
 
+    // next frame number to animate, init to -1, -1 is off
+    int8_t      frame_num;   // 0 .. num_anim-1  (0..3)
+
+#if 0
+    // [WDJ] Unused
+
     // last drawn animation frame
     int         lastdrawn;
 
-    // next frame number to animate
-    int         ctr;
-
     // used by RANDOM and LEVEL when animating
     int         state;
+#endif
 
 } anim_inter_t;
 
@@ -348,10 +352,10 @@ static anim_inter_t * anim_inter_info[NUM_EPISODES] =
 
 typedef enum
 {
-    NoState = -1,
+    // [WDJ] There is no good reason for using -1.
+    NoState,
     StatCount,
     ShowNextLoc
-
 } state_e;
 
 // States for single-player
@@ -378,8 +382,8 @@ static byte             first_refresh;
 // wbs->pnum
 static int              me;
 
- // specifies current state
-static state_e          state;
+// specifies current state
+static byte            state;  // state_e
 
 // contains information passed into intermission
 static wb_start_t     * wbs;
@@ -390,7 +394,7 @@ static wb_player_t    * wb_plyr;  // wbs->plyr[]
 static int              cnt;
 
 // used for timing of background animation
-static int              bcnt;
+static uint32_t         bcnt;
 
 static int              cnt_kills[MAXPLAYERS];
 static int              cnt_items[MAXPLAYERS];
@@ -658,7 +662,7 @@ static void WI_Init_AnimatedBack(void)
         ai = &anim_inter_info[wbs->epsd][i];
 
         // init variables
-        ai->ctr = -1;
+        ai->frame_num = -1;
 
         // specify the next time to draw it
         if (ai->type == ANIM_ALWAYS)
@@ -690,20 +694,20 @@ static void WI_update_AnimatedBack(void)
     {
         ai = &anim_inter_info[wbs->epsd][i];
 
-        if( ai->nexttic < bcnt )  continue;
+        if( ai->nexttic > bcnt )  continue;
 
         switch (ai->type)
         {
           case ANIM_ALWAYS:
-            if (++ai->ctr >= ai->num_anims) ai->ctr = 0;
+            if (++ai->frame_num >= ai->num_anims)   ai->frame_num = 0;
             ai->nexttic = bcnt + ai->period;
             break;
 
           case ANIM_RANDOM:
-            ai->ctr++;
-            if (ai->ctr == ai->num_anims)
+            ai->frame_num++;
+            if (ai->frame_num == ai->num_anims)
             {
-                ai->ctr = -1;
+                ai->frame_num = -1;
                 // data1 = period deviation, data2 = period base
                 ai->nexttic = bcnt + ai->data2 + (M_Random()%ai->data1);
             }
@@ -715,12 +719,12 @@ static void WI_update_AnimatedBack(void)
 
           case ANIM_LEVEL:
             // gawd-awful hack for level anims
+            if( state == StatCount && i == 7 )  break;
             // data1 = level
-            if (!(state == StatCount && i == 7)
-                && wbs->lev_next == ai->data1)
+            if( wbs->lev_next == ai->data1 )
             {
-                ai->ctr++;
-                if (ai->ctr == ai->num_anims) ai->ctr--;
+                ai->frame_num++;
+                if (ai->frame_num == ai->num_anims)   ai->frame_num--;
                 ai->nexttic = bcnt + ai->period;
             }
             break;
@@ -745,8 +749,8 @@ static void WI_Draw_AnimatedBack(void)
     {
         ai = &anim_inter_info[wbs->epsd][i];
 
-        if (ai->ctr >= 0)
-            V_DrawScaledPatch(ai->loc.x, ai->loc.y, ai->p[ai->ctr]);
+        if(ai->frame_num >= 0)
+            V_DrawScaledPatch(ai->loc.x, ai->loc.y, ai->p[ai->frame_num]);
     }
 
 }

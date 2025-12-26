@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1377 2017-12-18 17:29:50Z wesleyjohnson $
+// $Id: i_tcp.c 1381 2018-03-04 06:46:19Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -997,7 +997,7 @@ retry_bind:
                       sizeof(trueval));  // length of value
 #endif
 
-#if NET_NODE_DEBUG
+#ifdef NET_NODE_DEBUG
     // Set SO_DEBUG
 #ifdef LINUX
     stat = setsockopt(s, SOL_SOCKET, SO_DEBUG,
