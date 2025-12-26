@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01384 ]: w107 80 reset freelook
 [01383 ]: w107 79 release patches
 [01382 ]: w107 78 buffers
 [01381 ]: w107 77 correction

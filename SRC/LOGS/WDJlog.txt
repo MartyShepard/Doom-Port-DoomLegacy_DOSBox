@@ -6476,15 +6476,21 @@ Repeat: Fix an #if NET_NODE_DEBUG, in i_tcp.c, from w107_75_state_fix.patch
 Repeat: Changes in wi_stuff.c from w107_66_hu.patch.
 
 *** W107_buffers
-patchfile = w107_77_buffers.patch
+patchfile = w107_78_buffers.patch
 - commit revision 1382
 From Adam Stylinski.  His compiler reports that some buffers
 may be exceeded.  These are temp buffers, just make them longer.
 
 *** W107_release_patches
-patchfile = w107_78_release_patches.patch
+patchfile = w107_79_release_patches.patch
 - commit revision 1383
 Got segfault when unexpected exit, such as going to Launcher.
 New code for releasing patches, was releasing patches that were not loaded.
 This also may have been cause of problem found by Adam Stylinski.
+
+*** W107_reset_freelook
+patchfile = w107_80_reset_freelook.patch
+- commit revision 138?
+Reset the freelook when exiting the level, or spawning.
+This fixes bug 0643.
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1380 2018-03-04 04:23:49Z wesleyjohnson $
+// $Id: p_mobj.c 1384 2018-03-24 08:56:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2451,11 +2451,19 @@ void P_SpawnPlayer( mapthing_t * mthing, int playernum )
 
     mobj->angle = wad_to_angle(mthing->angle);
     if (playernum == consoleplayer)
+    {
         localangle = mobj->angle;
+        localaiming = 0;
+    }
     else if (playernum == displayplayer2)  // player 2
+    {
         localangle2 = mobj->angle;
+        localaiming2 = 0;
+    }
     else if (p->bot)    //added by AC for acbot
+    {
         B_SpawnBot(p->bot);
+    }
 
     mobj->player = p;
     mobj->health = p->health;
@@ -2474,6 +2482,7 @@ void P_SpawnPlayer( mapthing_t * mthing, int playernum )
     p->viewheight = cv_viewheight.value << FRACBITS;
     // added 2-12-98
     p->viewz = p->mo->z + p->viewheight;
+    p->aiming = 0;  // reset freelook 
 
     p->flamecount = 0;
     p->flyheight = 0;

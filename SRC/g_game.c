@@ -1764,6 +1764,7 @@ void G_PlayerFinishLevel (int player)
     p->weapon_pickup = 0;
     p->ammo_pickup = 0;
     p->key_pickup = 0;
+    p->aiming = 0;  // reset freelook 
 
     if(p->chickenTics)
     {
@@ -1901,6 +1902,7 @@ boolean  G_Player_SpawnSpot( int playernum, mapthing_t* spot )
 
     // [WDJ] kill bob momentum or player will keep bobbing at spawn spot
     player->bob_momx = player->bob_momy = 0;
+    player->aiming = 0;  // reset freelook 
 
     // The spawn spot location
     x = spot->x << FRACBITS;
