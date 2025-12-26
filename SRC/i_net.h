@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_net.h 1263 2016-09-20 17:22:00Z wesleyjohnson $
+// $Id: i_net.h 1377 2017-12-18 17:29:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -67,7 +67,9 @@ typedef struct
     // (DOSNET) Communication between DOOM and the driver.
     // Is CMD_SEND or CMD_GET.
     uint16_t            command;
-    // Is dest for send, set by get (-1 = no packet).
+    // Index to net_nodes:
+    // Send: to node
+    // Get:  from node (set to -1 = no packet).
     int16_t             remotenode;
 
     // Number of bytes in doomdata to be sent
@@ -155,10 +157,10 @@ extern void    (*I_NetCloseSocket) (void);
 // Set address and port of special nodes.
 //  saddr: IP address in network byte order
 //  port: port number in host byte order
-void UDP_Bind_Node( int nnode, unsigned int saddr, unsigned int port );
+void UDP_Bind_Node( int nnode, unsigned int saddr, uint16_t port );
 
 // Bind an inet or ipx address string to a net node.
-boolean  Bind_Node_str( int nnode, char * addrstr );
+boolean  Bind_Node_str( int nnode, char * addrstr, uint16_t port );
 
 
 boolean I_InitNetwork (void);

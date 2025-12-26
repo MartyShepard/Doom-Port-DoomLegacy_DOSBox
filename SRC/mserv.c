@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: mserv.c 1264 2016-09-20 17:23:11Z wesleyjohnson $
+// $Id: mserv.c 1377 2017-12-18 17:29:50Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -214,7 +214,7 @@ struct Copy_CVarMS_t
 // it seems windows doesn't define that... maybe some other OS? OS/2
 static inline
 int inet_aton(const char *hostname,
-	      /* OUT */ struct in_addr *addr)
+              /* OUT */ struct in_addr *addr)
 {
     // [WDJ] This cannot handle 255.255.255.255, which == INADDR_NONE.
     return ( (addr->s_addr=inet_addr(hostname)) != INADDR_NONE );
@@ -239,9 +239,8 @@ typedef enum{
 static con_state_e  con_state = MSCS_NONE;
 
 // Using SOCK UDP for pinging the MasterServer.
-// UDP_PING_SPECIAL: use this special node so do not tie up a player net node.
+// MS_PINGNODE: use this special node so to not tie up a player net node.
 // This allows having all 32 players.
-#define UDP_PING_SPECIAL  MS_PINGNODE
 
 static int msnode = -1;  // net node for pinging the MasterServer.
 
@@ -390,16 +389,16 @@ static int RegisterInfo_on_MasterServer(void)
     FD_ZERO(&write_set);
     FD_SET(ms_socket_fd, &write_set);  
     res = select(ms_socket_fd+1,
-		 NULL,  // read fd
-		 /*IN,OUT*/ &write_set,  // write fd to watch
-		 NULL,  // exceptions
-		 /*IN,OUT*/ &select_timeout);  // modified
+                 NULL,  // read fd
+                 /*IN,OUT*/ &write_set,  // write fd to watch
+                 NULL,  // exceptions
+                 /*IN,OUT*/ &select_timeout);  // modified
     if (res == 0)
     {
         if (retry++ > 30) // an about 30 second timeout
         {
             retry = 0;
-	    GenPrintf(EMSG_error, "Timeout on masterserver\n");
+            GenPrintf(EMSG_error, "Timeout on masterserver\n");
             return MS_failed_connect();
         }
         return MS_CONNECT_ERROR;
@@ -407,7 +406,7 @@ static int RegisterInfo_on_MasterServer(void)
     retry = 0;
     if (res < 0)
     {
-	GenPrintf(EMSG_error, "Masterserver register: %s\n", strerror(errno));
+        GenPrintf(EMSG_error, "Masterserver register: %s\n", strerror(errno));
         return MS_failed_connect();
     }
     
@@ -422,12 +421,12 @@ static int RegisterInfo_on_MasterServer(void)
     if (optval != 0) // it was bad
     {
         GenPrintf(EMSG_error, "Masterserver register getsockopt: %s\n", strerror(errno));
-	return MS_failed_connect();
+        return MS_failed_connect();
     }
     
     strcpy(info->header, "");
     strcpy(info->ip,     "");
-    strcpy(info->port,   int2str(sock_port));
+    strcpy(info->port,   int2str(server_sock_port));
     strcpy(info->name,   cv_servername.string);
     sprintf(info->version, "%d.%d.%d", VERSION/100, VERSION%100, REVISION);
     strcpy(registered_server.name, cv_servername.string);
@@ -452,7 +451,7 @@ static int RemoveInfo_from_MasterServer(void)
 
     strcpy(info->header, "");
     strcpy(info->ip,     "");
-    strcpy(info->port,   int2str(sock_port));
+    strcpy(info->port,   int2str(server_sock_port));
     strcpy(info->name,   registered_server.name);
     sprintf(info->version, "%d.%d.%d", VERSION/100, VERSION%100, REVISION);
 
@@ -500,33 +499,28 @@ char * MS_Get_MasterServerIP(void)
 
 
 
-static void open_UDP_Socket()
+static void MS_open_UDP_Socket()
 {
     // Setup ping UDP addr from MasterServer IP, MasterServer port + 1.
     uint32_t  ping_port = atoi(MS_Get_MasterServerPort()) + 1;
 
-#ifdef UDP_PING_SPECIAL
-    // Using a special node.
     if( I_NetMakeNode )  // UDP functions connected
     {
+#ifdef MS_PINGNODE
+        // Using a special node.
         msnode = MS_PINGNODE;
         UDP_Bind_Node(MS_PINGNODE, ms_addr.sin_addr.s_addr, ping_port );
-    }
-    else
-        msnode = -1;
 #else
-    // Using a player node.  This ties up a player node.
-    if( I_NetMakeNode )
-    {
+        // Using a player node.  This ties up a player node.
         char hostname[24];
 
         sprintf(hostname, "%s:%d", inet_ntoa(ms_addr.sin_addr), ping_port );
         msnode = I_NetMakeNode(hostname);
           // errors are neg numbers
+#endif
     }
     else
         msnode = -1;
-#endif
 }
 
 // By Server.
@@ -543,7 +537,7 @@ void MS_RegisterServer(void)
         GenPrintf(EMSG_hud, "Cannot connect to the master server\n");
         return;
     }
-    open_UDP_Socket();
+    MS_open_UDP_Socket();
 
     // Keep the TCP connection open until RegisterInfo_on_MasterServer() is completed;
 }
@@ -567,7 +561,7 @@ void MS_SendPing_MasterServer( tic_t cur_time )
         // Keep-alive tick to the MasterServer on MasterServer port+1.
         // cur_time is just a dummy data to send
         if( msnode < 0 )
-	    return;  // no UDP connection
+            return;  // no UDP connection
 
         *((tic_t *)netbuffer) = cur_time;
         doomcom->datalength = sizeof(cur_time);
@@ -647,7 +641,7 @@ static int MS_Connect(char *ip_addr, char *str_port, int async_flag)
         // Set ms_socket as non-blocking.
 #ifdef WIN32
         // winsock.h:  int ioctlsocket(SOCKET,long,u_long *);
-	u_long test = 1; // [smite] I have no idea what this type is supposed to be
+        u_long test = 1; // [smite] I have no idea what this type is supposed to be
         ioctlsocket(ms_socket_fd, FIONBIO, &test);
 #else
         res = 1;  // non-blocking true
@@ -657,7 +651,7 @@ static int MS_Connect(char *ip_addr, char *str_port, int async_flag)
         if (res < 0)
         {
 #ifdef WIN32
-	    // humm, on win32 it doesn't work with EINPROGRESS (stupid windows)
+            // humm, on win32 it doesn't work with EINPROGRESS (stupid windows)
             if (WSAGetLastError() != WSAEWOULDBLOCK)
 #else
             if (errno != EINPROGRESS)

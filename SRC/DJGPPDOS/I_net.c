@@ -164,7 +164,7 @@ boolean  External_Driver_Send(void)
 {
     __dpmi_regs r;
 
-    if((!doomatic) && (doomcom->remotenode==BROADCASTADDR))
+    if((!doomatic) && (doomcom->remotenode==BROADCAST_NODE))
     {
         int i;
         for(i=1;i<doomcom->num_player_netnodes;i++)
@@ -174,7 +174,7 @@ boolean  External_Driver_Send(void)
             __dpmi_int(doomcom->intnum,&r);
         }
 
-        doomcom->remotenode=BROADCASTADDR;
+        doomcom->remotenode=BROADCAST_NODE;
     }
     else
     {

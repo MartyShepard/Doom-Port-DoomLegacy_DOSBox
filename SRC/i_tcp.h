@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.h 1157 2015-04-03 14:03:02Z wesleyjohnson $
+// $Id: i_tcp.h 1377 2017-12-18 17:29:50Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -36,7 +36,7 @@
 #ifndef I_TCP_H
 #define I_TCP_H
 
-extern int sock_port;
+extern uint16_t server_sock_port;
 
 void I_Init_TCP_Network(void);
 

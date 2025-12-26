@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1308 2017-04-10 17:23:40Z wesleyjohnson $
+// $Id: i_tcp.c 1377 2017-12-18 17:29:50Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -152,7 +152,11 @@
 #include <time.h>
 
 
-#define STD_STRING_LEN 256 // Just some standard length for a char string
+// Enable debug_Printf stmts
+//#define NET_NODE_DEBUG  1
+
+// Just some standard length for a char string
+#define STD_STRING_LEN    256
 
 // [WDJ] FIXME: Add some test of IPX headers being present.
 // When someone puts an IPX package on their system, this will prevent
@@ -250,7 +254,6 @@ typedef struct sockaddr_ipx {
 
 #ifdef __WIN32__
     // some undefined under win32
-#  define IPPORT_USERRESERVED 5000
 # ifdef errno
 #  undef errno
 # endif
@@ -260,12 +263,6 @@ typedef struct sockaddr_ipx {
    // linux, djgpp, os2, non-windows
 #  define  SOCKET int
 #  define  INVALID_SOCKET -1
-# ifdef FREEBSD
-// From edwin: somewhere on the track between 4.5 and -current this one has disappered.
-#  ifndef IPPORT_USERRESERVED
-#    define IPPORT_USERRESERVED 5000
-#  endif
-# endif
 #endif
 
 #if defined( WIN32) || defined( __DJGPP__ ) 
@@ -275,6 +272,47 @@ typedef struct sockaddr_ipx {
 #  define close closesocket
 #endif
 
+#ifdef USE_IPX
+static boolean  ipx_select;
+#endif
+
+// Set default sock_port to 5029, which is necessary to find a server on the network.
+// If this actually ever moved, we would have to ensure uniformity over all systems.
+#ifdef IPPORT_USERRESERVED
+# if IPPORT_USERRESERVED != 5000
+#   warn IPPORT_USERRESERVED non-standard, DoomLegacy uses sock port 5029.
+# endif
+#else
+# define IPPORT_USERRESERVED 5000
+#endif
+// [WDJ] If there are variations, set it to 5029 to keep all servers uniform.
+//#define IPPORT_SERVER       5029
+#define IPPORT_SERVER       (IPPORT_USERRESERVED +0x1d )
+
+// Enable use of alternate client port range.
+#define CLIENT_SOCK_PORT_SEARCH     1
+// Alternate port addresses for clients.
+#define IPPORT_CLIENT       7000
+#define IPPORT_CLIENT_MAX   7099
+
+
+// IP port numbers are 16 bit.
+uint16_t server_sock_port = IPPORT_SERVER;
+static uint16_t client_sock_port = IPPORT_SERVER;  // default
+static uint16_t my_sock_port = 0;  // From UDP_Socket or IPX_Socket
+
+static SOCKET   mysocket = -1;
+
+
+#define NODE_ADDR_HASHING
+#ifdef NODE_ADDR_HASHING
+// To receive must set to hash of clientaddress.
+// To send, any value > 0 will enable.
+#else
+// Use node_hash as node connected flag.
+#endif
+// Contains address hash, is 0 when unused.  Hash is not allowed to be 0.
+static byte     node_hash[MAX_CON_NETNODE];
 
 // A network address, kept in network byte order.
 typedef union {
@@ -287,23 +325,9 @@ typedef union {
 // Player and additional net nodes.
 static mysockaddr_t clientaddress[MAX_CON_NETNODE];
 
-#define NODE_ADDR_HASHING
-#ifdef NODE_ADDR_HASHING
-// To receive must set to hash of clientaddress.
-// To send, any value > 0 will enable.
-#else
-// Use node_hash as node connected flag.
-#endif
-// Contains address hash, is 0 when unused.  Hash is not allowed to be 0.
-static byte     node_hash[MAX_CON_NETNODE];
-        
-static SOCKET   mysocket = -1;
 
 
-#ifdef USE_IPX
-static boolean  ipx_select;
-#endif
-int sock_port = (IPPORT_USERRESERVED +0x1d );  // 5029
+
 
 // Network is big-endian, 386,486,586 PC are little-endian.
 // htons: host to net byte order
@@ -455,7 +479,8 @@ byte    (*SOCK_hashaddr) (mysockaddr_t *a);
 // Set address and port of utility net nodes.
 //  saddr: IP address in network byte order
 //  port: port number in host byte order
-void UDP_Bind_Node( int nnode, unsigned int saddr, unsigned int port )
+// Called by: Bind_Node_str, mserv:MS_open_UDP_Socket
+void UDP_Bind_Node( int nnode, unsigned int saddr, uint16_t port )
 {
     clientaddress[nnode].ip.sin_family      = AF_INET;
     clientaddress[nnode].ip.sin_port        = htons(port);
@@ -468,13 +493,18 @@ void UDP_Bind_Node( int nnode, unsigned int saddr, unsigned int port )
 }
 
 
-// Setup broadcast address to BROADCASTADDR entry.
+// Setup broadcast address to BROADCAST_NODE entry.
 // To send broadcasts, PT_ASKINFO.
 // [WDJ] Broadcast address for network "192.168.1.x" is "192.168.1.255".
 // INADDR_BROADCAST is "255.255.255.255" which gives network unreachable.
 
+// By Client.
+// IPX or inet.
 // Bind an inet or ipx address string to a net node.
-boolean  Bind_Node_str( int nnode, char * addrstr )
+//  addrstr: net address in special format
+//  port: port number in host byte order
+// Called by: CL_Broadcast_AskInfo
+boolean  Bind_Node_str( int nnode, char * addrstr, uint16_t port )
 {
     mysockaddr_t address;
 
@@ -498,7 +528,7 @@ boolean  Bind_Node_str( int nnode, char * addrstr )
         if( cnt != 10 )  goto addr_fail;  // need exactly 10 digits
 
         clientaddress[nnode].ipx.sipx_family = AF_IPX;
-        clientaddress[nnode].ipx.sipx_port = htons(sock_port);
+        clientaddress[nnode].ipx.sipx_port = htons(port);
 #  ifdef FREEBSD
         // FreeBSD
         // network: ipx.sipx_addr.xnet.s_net[0..1]   16 bit, big endian
@@ -547,9 +577,9 @@ boolean  Bind_Node_str( int nnode, char * addrstr )
         if( ! inet_aton( addrstr, &address.ip.sin_addr ) )
            goto addr_fail;
 
-        UDP_Bind_Node( nnode, address.ip.sin_addr.s_addr, sock_port );
+        UDP_Bind_Node( nnode, address.ip.sin_addr.s_addr, port );
     }
-#if 0
+#ifdef NET_NODE_DEBUG
     // DEBUG
     debug_Printf( "Bind Node %d to %s\n", nnode,
                SOCK_AddrToStr( &clientaddress[nnode] ) );
@@ -583,6 +613,8 @@ static byte get_freenode( void )
 }
 
 // Function for I_NetFreeNode().
+// IPX or inet.
+static
 void SOCK_FreeNode(int nnode)
 {
     // can't disconnect to self :)
@@ -597,7 +629,7 @@ void SOCK_FreeNode(int nnode)
     }
 #endif
 
-    // Disconnect and invalid address.
+    // Disconnect and invalidate address.
     node_hash[nnode] = 0;
     memset(&clientaddress[nnode], 0, sizeof(clientaddress[nnode]));
 }
@@ -605,12 +637,15 @@ void SOCK_FreeNode(int nnode)
 
 //Hurdler: something is wrong with Robert's patch and win2k
 // Function for I_NetGet().
+// IPX or inet.  Server and client.
 // Return packet into doomcom struct.
 // Return true when got packet.  Error in net_error.
+// Called by: HGetPacket
+static
 boolean  SOCK_Get(void)
 {
     uint32_t errno2;
-    byte  nnode;
+    byte  nnode;  // index to net_nodes[]
 #ifdef NODE_ADDR_HASHING
     byte  hashaddr;
 #endif
@@ -665,12 +700,15 @@ boolean  SOCK_Get(void)
     nnode = get_freenode();  // Find a free node.
     if(nnode >= MAXNETNODES)  goto no_nodes;
 
+    // clientaddress is IP addr and sock port.
+    // SOCK_Send will use nnode to send back to this clientaddress.
+    memcpy(&clientaddress[nnode], &fromaddress, fromlen);
+
 #ifdef NODE_ADDR_HASHING
     // Set node_hash[nnode] to enable receive.
     node_hash[nnode] = hashaddr;
 #endif
-    // Save the addr of the net node.
-    memcpy(&clientaddress[nnode], &fromaddress, fromlen);
+
 #ifdef DEBUGFILE
     if( debugfile )
     {
@@ -736,13 +774,9 @@ recv_err:
         goto no_packet;
     }
     // Many other errors.
-#if 1
     // Because of new errors, give it a chance to recover or reset.
     net_error = NE_unknown_net_error;
     goto no_packet;
-#else
-    I_Error("SOCK_Get\n");
-#endif
 
 no_nodes:
 #ifdef DEBUGFILE
@@ -763,6 +797,7 @@ static fd_set  write_set;  // Linux: modified by select
 
 // Function for I_NetCanSend().
 // Check if we can send (to save a buffer transfer).
+static
 boolean SOCK_CanSend(void)
 {
     // [WDJ] Linux: select modifies timeval, so it must be init with each call.
@@ -791,6 +826,7 @@ boolean SOCK_CanSend(void)
 
 
 // Function for I_NetSend().
+// IPX or inet.
 // Send packet from within doomcom struct.
 // Return true when packet has been sent.  Error in net_error.
 boolean  SOCK_Send(void)
@@ -886,9 +922,13 @@ err_return:
 }
 
 
+
 //
 // UDPsocket
+// Server or Client.
 //
+// TCP, UDP: Called by SOCK_OpenSocket
+//   Called by: CL_Update_ServerList, Command_connect
 static SOCKET  UDP_Socket (void)
 {
     SOCKET s;
@@ -914,24 +954,31 @@ static SOCKET  UDP_Socket (void)
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     
-    //Hurdler: I'd like to put a server and a client on the same computer
-    //BP: in fact for client we can use any free port we want i have read 
-    //    in some doc that connect in udp can do it for us...
-    if( M_CheckParm ("-clientport") )
-    {
-        if( !M_IsNextParm() )
-            I_Error("syntax : -clientport <portnum>");
-        address.sin_port = htons(atoi(M_GetNextParm()));
-    }
-    else
-        address.sin_port = htons(sock_port);
+#ifdef CLIENT_SOCK_PORT_SEARCH
+retry_bind:
+#endif
 
+    my_sock_port = (server)? server_sock_port : client_sock_port;
+#ifdef NET_NODE_DEBUG
+    debug_Printf( "UDP_Socket  my_sock_port = %d\n", my_sock_port );
+#endif
+    address.sin_port = htons(my_sock_port);
     stat = bind (s, (struct sockaddr *)&address, sizeof(address) );
     if (stat == -1)
     {
+#ifdef CLIENT_SOCK_PORT_SEARCH
+        if( (errno == EADDRINUSE) && ! server
+            && (client_sock_port < IPPORT_CLIENT_MAX) )
+        {
+            // Try alternative client sock ports.
+            client_sock_port = (client_sock_port < IPPORT_CLIENT)? IPPORT_CLIENT : client_sock_port+1;
+            goto retry_bind;
+        }
+#endif
         I_SoftError("UDP_Socket: Bind failed: %s\n", strerror(errno));
-        goto no_socket;
+        goto close_socket;
     }
+    CONS_Printf("Network port: %d\n", my_sock_port);
 
     // make it non blocking
     ioctl (s, FIONBIO, &trueval);
@@ -942,6 +989,7 @@ static SOCKET  UDP_Socket (void)
                       &trueval,  // option value
                       sizeof(trueval));  // length of value
 #else
+    // [WDJ] They must treat optval as a char buffer.
     // winsock.h:  getsockopt(SOCKET, int, int, char*, int*)
     stat = setsockopt(s, SOL_SOCKET, SO_BROADCAST,
                       // Some other port requires (char*), undocumented.
@@ -949,7 +997,7 @@ static SOCKET  UDP_Socket (void)
                       sizeof(trueval));  // length of value
 #endif
 
-#if 1
+#if NET_NODE_DEBUG
     // Set SO_DEBUG
 #ifdef LINUX
     stat = setsockopt(s, SOL_SOCKET, SO_DEBUG,
@@ -974,6 +1022,7 @@ static SOCKET  UDP_Socket (void)
                       /* IN,OUT */ &optlen);  // available length
 #else
     // FIXME: so an int value is written to a (char *); portability!!!!!!!
+    // [WDJ] They must treat optval as a char buffer.
     // winsock.h:  getsockopt(SOCKET, int, int, char*, int*)
     stat = getsockopt(s, SOL_SOCKET, SO_RCVBUF,
                       // Some other port requires (char*), undocumented.
@@ -1007,13 +1056,14 @@ static SOCKET  UDP_Socket (void)
 
     // should not receive from self, but will set it up anyway.
     clientaddress[0].ip.sin_family      = AF_INET;
-    clientaddress[0].ip.sin_port        = htons(sock_port);
+    clientaddress[0].ip.sin_port        = htons(my_sock_port);
 #ifdef MACOS_DI
     clientaddress[0].ip.sin_addr.s_addr = inet_addr("127.0.0.1");
 #else
     clientaddress[0].ip.sin_addr.s_addr = INADDR_LOOPBACK;
                                   // inet_addr("127.0.0.1");
 #endif
+
 #ifdef NODE_ADDR_HASHING
     node_hash[0] = UDP_hashaddr( &clientaddress[0] );
 #endif
@@ -1027,6 +1077,13 @@ static SOCKET  UDP_Socket (void)
     SOCK_hashaddr=UDP_hashaddr;
 #endif
     return s;
+
+close_socket:
+#ifdef __DJGPP__
+    // bug in libsocket 0.7.4 beta 4 onder winsock 1.1 (win95)
+#else
+    close(s);
+#endif
    
 no_socket:
     return -1;
@@ -1034,6 +1091,7 @@ no_socket:
 
 
 #ifdef USE_IPX
+// Server or Client.
 static SOCKET  IPX_Socket (void)
 {
     SOCKET s;
@@ -1055,20 +1113,38 @@ static SOCKET  IPX_Socket (void)
         goto no_ipx;
     }
 
+#ifdef CLIENT_SOCK_PORT_SEARCH
+retry_bind:
+#endif
+
     memset (&address, 0, sizeof(address));
+    my_sock_port = (server)? server_sock_port : client_sock_port;
+#ifdef NET_NODE_DEBUG
+    debug_Printf( "IPX_Socket  my_sock_port = %d\n", my_sock_port );
+#endif
 #ifdef LINUX
     address.sipx_family = AF_IPX;
-    address.sipx_port = htons(sock_port);
+    address.sipx_port = htons(my_sock_port);
 #else
     address.sa_family = AF_IPX;
-    address.sa_socket = htons(sock_port);
+    address.sa_socket = htons(my_sock_port);
 #endif // linux
+
     stat = bind (s, (struct sockaddr *)&address, sizeof(address));
     if( stat == -1)
     {
+#ifdef CLIENT_SOCK_PORT_SEARCH
+        if( (errno == EADDRINUSE) && ! server
+            && (client_sock_port < IPPORT_CLIENT_MAX) )
+        {
+            client_sock_port = (client_sock_port < IPPORT_CLIENT)? IPPORT_CLIENT : client_sock_port+1;
+            goto retry_bind;
+        }
+#endif
         I_SoftError("IPX_Socket: Bind failed: %s\n", strerror(errno));
-        goto no_ipx;
+        goto close_socket;
     }
+    CONS_Printf("Network port: %d\n", my_sock_port);
 
     // make it non blocking
     ioctl (s, FIONBIO, &trueval);
@@ -1127,6 +1203,13 @@ static SOCKET  IPX_Socket (void)
 #endif
     return s;
 
+close_socket:
+#ifdef __DJGPP__
+    // bug in libsocket 0.7.4 beta 4 onder winsock 1.1 (win95)
+#else
+    close(s);
+#endif
+   
 no_ipx:
     return -1;
 }
@@ -1155,6 +1238,8 @@ void I_Init_TCP_Driver(void)
 
 
 // Function for I_NetCloseSocket().
+// IPX or inet.
+static
 void SOCK_CloseSocket( void )
 {
     if( mysocket>=0 )
@@ -1191,64 +1276,56 @@ void I_Shutdown_TCP_Driver(void)
 
 
 // Function for I_NetMakeNode().
-// Called by CL_Update_ServerList, Command_connect, mserv:open_UDP_Socket
+//   Make a node for server address.
+// IPX or inet.
+// Called by CL_Update_ServerList
+//   port is in the hostname
+// Called by Command_connect
+//   connect to server at hostname (which may have port)
+// Called by mserv: MS_open_UDP_Socket if using player socket to contact MasterServer.
+//   port is ping_port which is in the hostname.
+// Param:
+//   hostname : string with network address of remote server
+//      example "192.168.127.34:5034"
+//      example "doomservers.net"
 // Return the net node number, or network_error_e.
+static
 int SOCK_NetMakeNode (char *hostname)
 {
     int newnode;
     mysockaddr_t  newaddr;
-    char *localhostname;  // owns string
+    char * namestr;  // owned copy of hostname string
     char *portchar;
-    int portnum = htons(sock_port);
+    int portnum = server_sock_port;  // target server port
 
     // [WDJ] From command line can get "192.168.127.34:5234:"
     // From console only get ""192.168.127.34", the port portion is stripped.
-    localhostname = strdup(hostname);
-    //debug_Printf( "Parm localhostname=%s\n", localhostname );
-#define PARSE_LOCALHOSTNAME
-#ifdef PARSE_LOCALHOSTNAME
+    namestr = strdup(hostname);
+    //debug_Printf( "Parm hostname=%s\n", namestr );
     // Split into ip address and port.
-    char * st = localhostname;
+    char * st = namestr;
     strtok(st,":");  // overwrite the colon with a 0.
     portchar = strtok(NULL,":");
     if( portchar )
-        portnum = htons(atoi(portchar));
-#else
-    // OLD code duplicates effort.
-    // retrieve portnum from address !
-    strtok(localhostname,":");
-    portchar = strtok(NULL,":");
-    if( portchar )
-        portnum = htons(atoi(portchar));
-    free(localhostname);
-#endif
-    //debug_Printf( "  hostname=%s  portchar=%s\n", localhostname, portchar );
+    {
+        portnum = atoi(portchar);
+    }
+//    debug_Printf( "  hostname=%s  port=%i\n", namestr, portnum );
+    CONS_Printf( "  hostname=%s  port=%i\n", namestr, portnum );
 
     // server address only in ip
 #ifdef USE_IPX
     if(ipx_select)
     {
         // ipx only
-#ifdef PARSE_LOCALHOSTNAME
-        free(localhostname);
-#endif
-        return BROADCASTADDR;
+        free(namestr);
+        return BROADCAST_NODE;
     }
 #endif
 
     // TCP/IP
-#ifdef PARSE_LOCALHOSTNAME
-    // Previous operation on localhostname already parsed out the ip addr.
-#else
-        char            *t;
-
-         // remove the port in the hostname as we've it already
-        t = localhostname = strdup(hostname);
-        while ((*t != ':') && (*t != '\0'))
-            t++;
-        *t = '\0';
-#endif
-    //debug_Printf( "  ip hostname=%s\n", localhostname );
+    // Previous operation on namestr already parsed out the ip addr.
+    //debug_Printf( "  ip hostname=%s\n", namestr );
 
     // Too early, but avoids resolving names we cannot use.
     newnode = get_freenode();
@@ -1257,15 +1334,15 @@ int SOCK_NetMakeNode (char *hostname)
 
     // Find the IP of the server.
     // [WDJ] This cannot handle addr 255.255.255.255 which == INADDR_NONE.
-    newaddr.ip.sin_addr.s_addr = inet_addr(localhostname);
+    newaddr.ip.sin_addr.s_addr = inet_addr(namestr);
     if(newaddr.ip.sin_addr.s_addr==INADDR_NONE) // not a ip, ask the dns
     {
         struct hostent * hostentry;      // host information entry
-        CONS_Printf("Resolving %s\n",localhostname);
-        hostentry = gethostbyname (localhostname);
+        CONS_Printf("Resolving %s\n",namestr);
+        hostentry = gethostbyname (namestr);
         if (!hostentry)
         {
-            CONS_Printf ("%s unknown\n", localhostname);
+            CONS_Printf ("%s unknown\n", namestr);
             I_NetFreeNode(newnode);  // release the newnode
             goto abort_makenode;
         }
@@ -1276,14 +1353,14 @@ int SOCK_NetMakeNode (char *hostname)
 
     // Commit to the new node.
     clientaddress[newnode].ip.sin_family      = AF_INET;
-    clientaddress[newnode].ip.sin_port        = portnum;
+    clientaddress[newnode].ip.sin_port        = htons(portnum);
     clientaddress[newnode].ip.sin_addr.s_addr = newaddr.ip.sin_addr.s_addr;
 #ifdef NODE_ADDR_HASHING
     node_hash[newnode] = SOCK_hashaddr( &newaddr );  // hash != 0
 #endif
 
 clean_ret:
-    free(localhostname);
+    free(namestr);
     return newnode;
 
     // Rare errors.
@@ -1298,22 +1375,27 @@ no_nodes:
 
 
 // Function for I_NetOpenSocket().
+// Server or Client.
+// IPX or inet.
+// Called by: CL_Update_ServerList, Command_connect, SV_SpawnServer
+static
 boolean SOCK_OpenSocket( void )
 {
-    int i;
-
     memset(clientaddress,0,sizeof(clientaddress));
-
-    node_hash[0] = 1; // always connected to self
+#if 0   
+    memset(node_hash, 0, sizeof(node_hash));
+#else
+    int i;
     for(i=1; i<MAX_CON_NETNODE; i++)
         node_hash[i] = 0;
+#endif
+    node_hash[0] = 1; // always connected to self
    
     I_NetSend        = SOCK_Send;
     I_NetGet         = SOCK_Get;
     I_NetCloseSocket = SOCK_CloseSocket;
     I_NetFreeNode    = SOCK_FreeNode;
     I_NetMakeNode    = SOCK_NetMakeNode;
-
 
 #ifdef __WIN32__
     // seem like not work with libsocket nor linux :(
@@ -1345,6 +1427,8 @@ boolean SOCK_OpenSocket( void )
 
 
 // Called by D_Startup_NetGame
+// IPX or inet.
+// Called by: D_Startup_NetGame, MS_Connect
 void I_Init_TCP_Network( void )
 {
     char     serverhostname[255];
@@ -1362,8 +1446,27 @@ void I_Init_TCP_Network( void )
 #endif
 
     if ( M_CheckParm ("-udpport") )
-        sock_port = atoi(M_GetNextParm());
-
+    {
+        if( !M_IsNextParm() )
+            I_Error("syntax : -udpport <portnum>");
+        server_sock_port = atoi(M_GetNextParm());
+#ifdef NET_NODE_DEBUG
+        debug_Printf( "Init_TCP  server_sock_port = %d\n", server_sock_port );       
+#endif
+    }
+   
+    //[WDJ]: Moved here so can be used for IPX too.
+    //Hurdler: I'd like to put a server and a client on the same computer
+    //BP: in fact for client we can use any free port we want, i have read 
+    //    in some doc that connect in udp can do it for us...
+    if( M_CheckParm ("-clientport") )
+    {
+        if( !M_IsNextParm() )
+            I_Error("syntax : -clientport <portnum>");
+        client_sock_port = atoi(M_GetNextParm());
+        // If this this client port is in use, it may be changed.
+    }
+   
     // parse network game options,
     if ( server )
     {

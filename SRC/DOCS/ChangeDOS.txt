@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01377 ]: w107 73 sock port
+          DOS: Compile fix. (DJGPPDOS\I_Net.c)
+					
 [01376 ]: w107 72 save147
 [01375 ]: w107 71 version 147
 [01374 ]: w107 70 textcmd, net ver 24

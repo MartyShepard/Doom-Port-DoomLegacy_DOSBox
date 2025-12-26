@@ -6434,5 +6434,16 @@ Fix problem of netgames reading savegame in wrong format.
 This was triggering a consistency failure in network games.
 There is savegame read setup done in the savegame header read.
 
+*** W107_sock_port
+patchfile = w107_73_sock_port.patch
+- commit revision 1377
+Make the alternate client sock port work.
+Give the client some alternate sock port addresses and let
+the client search for one that is not in use.
+The server will use whatever sock port the client uses to connect.
+This allows two clients, or a server and client, to use the
+same computer and internet stack.
+
+
 
 

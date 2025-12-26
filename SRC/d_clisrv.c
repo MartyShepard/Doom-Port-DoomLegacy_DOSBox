@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1376 2017-12-18 17:28:23Z wesleyjohnson $
+// $Id: d_clisrv.c 1377 2017-12-18 17:29:50Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -132,6 +132,7 @@
 #include "d_clisrv.h"
 #include "command.h"
 #include "i_net.h"
+#include "i_tcp.h"
 #include "i_system.h"
 #include "i_video.h"
 #include "v_video.h"
@@ -327,6 +328,7 @@ void Send_NetXCmd(byte cmd_id, void *param, int param_len)
 #endif
        return;
    }
+
    // Append to player1 text commands.
    // First byte is the cmd, followed by its parameters (binary or string).
    localtextcmd.text[textlen++] = cmd_id; // XD_
@@ -354,6 +356,7 @@ void Send_NetXCmd2(byte cmd_id, void *param, int param_len)
 #endif
        return;
    }
+
    // Append
    localtextcmd2.text[textlen++] = cmd_id;  // XD_
    if(param && param_len)
@@ -400,6 +403,7 @@ void ExtraDataTicker(void)
     unsigned int textlen;
     xcmd_t  xcmd;
 
+    // There is a textcmd buffer [MAXTEXTCMD+1] for each active player.
     for(pn=0; pn<MAXPLAYERS; pn++)
     {
         // Execute commands of any player in the game, and always for pn=0.
@@ -1103,7 +1107,7 @@ boolean  D_WaitPlayer_Response( int key )
 
 // By Client.
 // Ask the server for some info.
-//   to_node : when BROADCASTADDR then all servers will respond
+//   to_node : when BROADCAST_NODE then all servers will respond
 // Called by: CL_Broadcast_AskInfo, CL_Update_ServerList, CL_ConnectToServer
 static void CL_Send_AskInfo( int to_node )
 {
@@ -1122,9 +1126,11 @@ static void CL_Broadcast_AskInfo( char * addrstr )
 {
     // Modifies the broadcast address.
     if( addrstr
-        && Bind_Node_str( BROADCASTADDR, addrstr ) )
+        && Bind_Node_str( BROADCAST_NODE, addrstr, server_sock_port ) )
     {
-        CL_Send_AskInfo( BROADCASTADDR );
+//        debugPrintf( "CL_Broadcast_AskInfo  server_sock_port = %d\n", server_sock_port );       
+       
+        CL_Send_AskInfo( BROADCAST_NODE );
     }
 }
 
@@ -1219,7 +1225,8 @@ void CL_Update_ServerList( boolean internetsearch )
 
     if( !netgame )
     {
-        I_NetOpenSocket();
+        server = false;  // To get correct port
+        if( ! I_NetOpenSocket() )  return;  // failed to get socket
         netgame = true;
         multiplayer = true;
         network_state = NS_searching_server;
@@ -1272,7 +1279,7 @@ static void CL_ConnectToServer( void )
 
     if( servernode >= MAXNETNODES )
     {
-        // init value and BROADCASTADDR
+        // init value and BROADCAST_NODE
         GenPrintf(EMSG_hud, "Searching for a DoomLegacy server ...\n");
     }
     else
@@ -1514,7 +1521,7 @@ void Command_connect(void)
             if( strcasecmp(COM_Argv(1),"any")==0 )
             {
                 // Connect to first lan server found.
-                servernode = BROADCASTADDR;
+                servernode = BROADCAST_NODE;
             }
             else
             if( I_NetMakeNode )
