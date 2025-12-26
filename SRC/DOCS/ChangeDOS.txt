@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01372 ]: w107 demo cv
 [01371 ]: w107 cv
           DOS: Compile Fix because Undefined cv_doordelay.
 					
@@ -11,6 +12,7 @@
 [01365 ]: w107 61 TRAN
 [01364 ]: w107 60 svn diff fix
           Schon seltsam das ihm das nicht aufgefallen ist?
+					Zuviele Argumente für "Startsound(xxx)" seit mehreren commits
 					
 [01363 ]: w107 patch width func
 [01362 ]: w107 texname error

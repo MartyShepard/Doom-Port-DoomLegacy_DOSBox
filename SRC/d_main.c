@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
+// $Id: d_main.c 1372 2017-12-18 17:18:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -314,7 +314,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1371"
+#define SVN_REV "1372"
 #endif
 
 // Version number: major.minor.revision
@@ -2932,8 +2932,8 @@ restart_command:
 
     // demo doesn't need anymore to be added with D_AddFile()
     p = M_CheckParm("-playdemo");
-    if (!p)
-        p = M_CheckParm("-timedemo");
+    if( !p && M_CheckParm("-timedemo") )
+      p = 2500;  // indicate timedemo
     if (p)
     {
       if( ! M_IsNextParm() )
@@ -2964,16 +2964,16 @@ restart_command:
         FIL_DefaultExtension(demo_name, ".lmp");
 
 
-        if ((p = M_CheckParm("-playdemo")))
-        {					
-            CONS_Printf("Playing demo %s.\n", demo_name);
-            singledemo = true;  // quit after one demo
-            G_DeferedPlayDemo(demo_name);
-        }
-        else
-        {
+        if( p == 2500 )
+        {  // timedemo
             CONS_Printf("Timing Benchmark Demo %s.\n", demo_name);					
             G_TimeDemo(demo_name);
+        }
+        else
+        {  // playdemo
+        CONS_Printf("Playing demo %s.\n", demo_name);				
+            singledemo = true;  // quit after one demo
+            G_DeferedPlayDemo(demo_name);
         }
         gamestate = wipegamestate = GS_NULL;
 

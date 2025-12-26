@@ -6361,3 +6361,10 @@ temporary value instead.  Starting a game via Display Title function
 resets all these values to the user config value.
 
 This stops savegames and netgames from changing the saved user config.
+
+*** W107_demo_cv
+patchfile = w107_68_demo_cv.patch
+- commit revision 1372
+Add respawnmonstertime and itemrespawntime to be saved in the demo.
+Fixed the demo playback to not duplicate the .lmp extension.
+Cleanup some other demo specific code.
