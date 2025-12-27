@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1387 2018-04-15 02:09:32Z wesleyjohnson $
+// $Id: m_menu.c 1390 2018-05-31 04:49:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1056,7 +1056,7 @@ void M_StartServer( int choice )
              && (strcasecmp(cv_skin2.string, skins[displayplayer2_ptr->skin]->name) == 0 )
              ) )
     {
-        COM_BufAddText ( va("%s \"%s\"", cv_skin2.name, cv_skin2.string));
+        COM_BufAddText ( va("%s \"%s\"\n", cv_skin2.name, cv_skin2.string));
     }
 }
 

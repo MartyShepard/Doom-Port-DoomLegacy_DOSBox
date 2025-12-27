@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1381 2018-03-04 06:46:19Z wesleyjohnson $
+// $Id: i_tcp.c 1390 2018-05-31 04:49:52Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -1495,7 +1495,7 @@ void I_Init_TCP_Network( void )
 #endif
            )
         {
-            COM_BufAddText(va("connect \"%s\"", serverhostname ));
+            COM_BufAddText(va("connect \"%s\"\n", serverhostname ));
 
             // probably modem
             hardware_MAXPACKETLENGTH = INETPACKETLENGTH;

@@ -6551,3 +6551,40 @@ A demoversion test was blocking autoaim during demos.
 Removed the demoversion test, as it duplicated changes to autoaim
 in G_Downgrade().
 
+*** W107_add_text
+patchfile = w107_86_add_text.patch
+- commit revision 1390
+Fix uses of COM_BufAddText to have a "\n" termination.
+This must be done as one call, otherwise a partial line could
+be executed.
+
+*** W107_win32
+patchfile = w107_87_win32.patch
+- commit revision 1391
+Fix some Win32 compile problems.
+Uses WSAEADDRINUSE, instead of the unix EADDRINUSE.
+MINGW32 does not have the strndup, so had to imitate one.
+
+*** W107_demo1
+patchfile = w107_88_demo1.patch
+- commit revision 1392
+Fix reading boom demo headers and assigning default values to comp flags
+read from boom headers.
+Created the EN_demotic_109 flag, that enables old demo tic format
+reading.
+Created the EN_boom_longtic flag, that enables reading boom demos
+with a long tic value.
+Created the EN_vile_revive_bug comp flag, and allowed it run some old code
+that was commented out.
+Changed the method of running demos back to the original method, using
+the ga_playdemo state flag.  I do not know what the reason for trying to
+do it using a console command, but it took more gametics to start the
+demo.  It would run the vanilla demos with a wrong gametic value,
+and the gametic is used to determine some monster behavior.
+
+*** W107_demo2
+patchfile = w107_89_demo2.patch
+- commit revision 1393
+Some fixes to demo execution due to SyncDebug testing.
+Update tm_flags after SetMobjState.
+Fix things test for old demos to exit before Legacy fixes.

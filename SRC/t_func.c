@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1385 2018-03-28 16:34:18Z wesleyjohnson $
+// $Id: t_func.c 1390 2018-05-31 04:49:52Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -202,6 +202,8 @@ void SF_ArrayLength(void);       // impls: int length(array)
 
 
 // return a Z_Malloc string of the args( i1.. ) concatenated
+// The Z_Malloc string has 3 extra chars allocated, to allow an append.
+// The return string must be freed.
 char *  Z_cat_args( int i1 )
 {
     int strsize = 0;
@@ -215,7 +217,6 @@ char *  Z_cat_args( int i1 )
 
     for (i = i1; i < t_argc; i++)
     {
-//        sprintf(tempstr, "%s%s", tempstr, stringvalue(t_argv[i]));
         strcat(tempstr, stringvalue(t_argv[i])); // append
     }
 
@@ -3587,7 +3588,10 @@ err_notlump:
 void SF_RunCommand(void)
 {
     char * tempstr = Z_cat_args(0);  // concat arg0, arg1, ...
-    COM_BufAddText(tempstr);
+    // [WDJ] May be too long to terminate with va( "%s\n", tempstr ).
+    // Z_cat_args allocates 3 extra chars for termination.
+    strcat(tempstr, "\n" );
+    COM_BufAddText( tempstr );
     Z_Free(tempstr);
 }
 
