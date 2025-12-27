@@ -6610,3 +6610,61 @@ Had fixed the sleeping sarg bug before.
 But Boom has a demo flag for it, and old demos depend upon it
 so give it a enable flag that demos can control.
 
+*** w107_xymove
+patchfile = w107_93_xymove.patch
+- commit revision 1397
+Fix P_XYMovement function looping.
+Account for odd momentum is movement stepping.
+Add Version compatibility test, and add old movement stepping logic
+in the loop, for old demos.
+
+Version compatibility test on fix in LookForPlayers.
+Old code would look twice, while fix does the stop test properly.
+
+Add EN_doom_movestep_bug to enable old code for Boom demo compatibility.
+
+Version compatibility test on bob slow down.
+
+Add Heretic/Hexen test on WINDTHRUST decoding logic
+
+Fix sight logic when in same sector.  Assumption that could see was
+skipping other tests in the function.  Removing the return fixes
+demo sync problems too, but have to add compatibility test for
+old DoomLegacy demos.
+
+Fix test of model sector in rendering.
+
+Add comments to document Boom and MBF use of functions.
+
+*** w107_intercept
+patchfile = w107_94_intercept.patch
+- commit revision 1398
+Deal with the different P_InterceptVector.
+The other cases are separated into their own functions
+and disabled.
+P_InterceptVector_float
+P_InterceptVector_float_debug
+P_InterceptVector_64  (64 bit version from PrBoom)
+DoomLegacy just uses P_InterceptVector2 due to not
+knowing what would be fixed by using any other.
+
+*** w107_democomptic
+patchfile = w107_95_democomptic.patch
+- commit revision 1399
+PrBoom has a demo adapatation called basetic.
+This fixes a revenant missile bug in some demos,
+by using (gametic - basetic) in the missile effects randomizer.
+In DoomLegacy, have implemented demo_comp_tic, which
+does the same thing by keeping a valid corrected tic, which
+does not run during menus and pauses.
+Effectively demo_comp_tic = gametic - basetic.
+
+*** w107_demoname
+patchfile = w107_96_demoname.patch
+- commit revision 1400
+Pass the demo name using a buffer.  Needed for command line demo names.
+Fixes a bug introduced with W107_demo1.
+
+
+
+

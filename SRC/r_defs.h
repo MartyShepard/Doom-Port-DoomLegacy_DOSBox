@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: r_defs.h 1397 2018-07-02 03:39:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -387,6 +387,7 @@ typedef struct sector_s
     // [WDJ] 4/20/2010  modelsec is model sector for special linedefs.
     // It will be valid when model != SM_normal.
     // Testing modelsec for water is invalid, it is also used for colormap.
+    // Uses model and modelsec, instead of the PrBoom heightsec.
     int modelsec;    // other sector number, or -1 if no other sector
     sector_model_e  model;  // Boom or Legacy special sector  [WDJ] 11/14/2009
     

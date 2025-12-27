@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1396 2018-06-17 04:52:57Z wesleyjohnson $
+// $Id: p_inter.c 1397 2018-07-02 03:39:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1836,7 +1836,7 @@ void P_KillMobj ( mobj_t*  target,
         { // Player flame death
             P_SetMobjState(target, S_PLAY_FDTH1);
             //S_StartObjSound(target, sfx_hedat1); // Burn sound
-            return;
+            goto done;
         }
 */
     }
@@ -1867,7 +1867,7 @@ void P_KillMobj ( mobj_t*  target,
     {
         drop_ammo_count = P_AmmoInWeapon(target->player);
         //if (!drop_ammo_count)
-        //    return;
+        //    goto done;
         
         if (EN_heretic)
         {
@@ -1895,7 +1895,7 @@ void P_KillMobj ( mobj_t*  target,
 
                 default:
                     //debug_Printf("Unknown weapon %d\n", target->player->readyweapon);
-                    return;
+                    goto done;
             }
         }
         else
@@ -1928,7 +1928,7 @@ void P_KillMobj ( mobj_t*  target,
 
                 default:
                     //debug_Printf("Unknown weapon %d\n", target->player->readyweapon);
-                    return;
+                    goto done;
             }
         }
     }
@@ -1936,7 +1936,7 @@ void P_KillMobj ( mobj_t*  target,
     {
         //DarkWolf95: Support for Chex Quest
         if(gamemode == chexquest1)  //don't drop monster ammo in chex quest
-           return;
+           goto done;
 
         switch (target->type)
         {
@@ -1954,7 +1954,7 @@ void P_KillMobj ( mobj_t*  target,
                 break;
 
             default:
-                return;
+                goto done;
         }
     }
 
@@ -1968,6 +1968,9 @@ void P_KillMobj ( mobj_t*  target,
         drop_ammo_count = 0;    // Doom default ammo count
 
     mo->dropped_ammo_count = drop_ammo_count;
+
+done:
+    return;
 }
 
 
@@ -2327,7 +2330,8 @@ boolean P_DamageMobj ( mobj_t*   target,
             }
             goto ret_false; // Always return
         case MT_WHIRLWIND:
-            return P_TouchWhirlwind(target);
+            takedamage = P_TouchWhirlwind(target);
+            goto ret_damage;
         case MT_MINOTAUR:
             if(inflictor->flags&MF_SKULLFLY)
             { // Slam only when in charge mode
@@ -2734,6 +2738,7 @@ boolean P_DamageMobj ( mobj_t*   target,
       )
         target->flags |= MF_JUSTHIT;    // fight back!
 
+ret_damage:   
     return takedamage;
 
 ret_false:

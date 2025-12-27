@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 1364 2017-10-17 01:35:41Z wesleyjohnson $
+// $Id: r_segs.c 1397 2018-07-02 03:39:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -182,6 +182,17 @@ lighttable_t**  walllights;  // array[] of colormap selected by lightlevel
 
 short*          maskedtexturecol;
 
+#if defined( __DJGPP__ )
+void* portable_realloc(void* mem, size_t siz)
+{
+    if (!mem) {
+        return malloc(siz);
+    } else if (!siz) {
+        return mem;
+    }
+    return realloc(mem, siz);
+}
+#endif
 
 // ==========================================================================
 // R_Splats Wall Splats Drawer
@@ -482,17 +493,7 @@ void  expand_openings( size_t  need )
     openings = newopenings;
     lastopening = & openings[ lastindex ];
 }
-#if defined( __DJGPP__ )
-void* portable_realloc(void* mem, size_t siz)
-{
-    if (!mem) {
-        return malloc(siz);
-    } else if (!siz) {
-        return mem;
-    }
-    return realloc(mem, siz);
-}
-#endif
+
 void expand_drawsegs( void )
 {
     // drawsegs is NULL on first execution
@@ -2184,7 +2185,7 @@ void R_StoreWallRange( int   start, int   stop)
             || backsector->floor_xoffs != frontsector->floor_xoffs
             || backsector->floor_yoffs != frontsector->floor_yoffs
             //SoM: 3/22/2000: Prevents bleeding.
-            || frontsector->modelsec != -1
+            || (frontsector->model > SM_fluid)
             || backsector->modelsec != frontsector->modelsec
             || backsector->floorlightsec != frontsector->floorlightsec
             //SoM: 4/3/2000: Check for colormaps

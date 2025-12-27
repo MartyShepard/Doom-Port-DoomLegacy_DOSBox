@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_sight.c 1396 2018-06-17 04:52:57Z wesleyjohnson $
+// $Id: p_sight.c 1397 2018-07-02 03:39:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -259,7 +259,11 @@ static boolean P_CrossSubsector (int num)
             if (see_topslope <= see_bottomslope)
                return false;               // stop
         }
-        return true;
+
+        // [WDJ] Fix demo sync problems
+        // The return skips some significant sight tests.
+        if( EV_legacy >= 145 && EV_legacy < 147 )
+            return true;
     }
 
     // check lines
@@ -549,6 +553,7 @@ ret_false:
 }
 
 //	added by AC for missle prediction
+// Only called by bots, and when cv_predicting_monsters is on.
 // P_CheckSight2
 // Returns true
 //  if a straight line between t1 and t2's predicted location is unobstructed.

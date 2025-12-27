@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1395 2018-06-17 04:52:14Z wesleyjohnson $
+// $Id: p_map.c 1397 2018-07-02 03:39:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -551,7 +551,6 @@ static boolean PIT_CheckThing (mobj_t* thing)
     tmtopz = tm_thing->z + tm_thing->height;
     thing_topz = thing->z + thing->height;
 
-#if 1   
     if( EV_legacy >= 145 )
     {
         // [WDJ] Fix problem with monsters on 3dfloors being stuck to monsters
@@ -561,7 +560,6 @@ static boolean PIT_CheckThing (mobj_t* thing)
         if( thing_topz < tmr_floorz )
            goto ret_pass;  // other thing is below floor (on lower floor)
     }
-#endif
 
     // heretic stuffs
     if(tm_thing->flags2 & MF2_PASSMOBJ)
@@ -854,6 +852,7 @@ ret_blocked:
 // intersection of the trajectory and the line, but that takes
 // longer and probably really isn't worth the effort.
 //
+// Called by: P_CheckCrossLine
 static boolean PIT_CrossLine (line_t* ld)
 {
   if (!(ld->flags & ML_TWOSIDED) ||
@@ -863,8 +862,10 @@ static boolean PIT_CrossLine (line_t* ld)
           tm_bbox[BOXRIGHT]  < ld->bbox[BOXLEFT]   ||
           tm_bbox[BOXTOP]    < ld->bbox[BOXBOTTOM] ||
           tm_bbox[BOXBOTTOM] > ld->bbox[BOXTOP]))
+    {
       if (P_PointOnLineSide(from_x,from_y,ld) != P_PointOnLineSide(targ_x,targ_y,ld))
           goto ret_blocked;
+    }
   }
   return true; // line doesn't block trajectory
 
@@ -1511,6 +1512,13 @@ got_dropoff:
         {
             // see if the line was crossed
             ld = &lines[spechit[numspechit]];
+#ifdef PARANOIA
+            if( ! ld->special)
+            {
+                GenPrintf( EMSG_warn, "Special line list has line which is not special.\n" );
+                continue;
+            }
+#endif
             side = P_PointOnLineSide (thing->x, thing->y, ld);
             oldside = P_PointOnLineSide (oldx, oldy, ld);
             if (side != oldside)
@@ -2006,7 +2014,8 @@ void P_SlideMove (mobj_t* mo)
     hitcount = 0;
 
   retry:
-    if (++hitcount == 3)
+    // hitcount = 0, 1, 2
+    if (++hitcount == 3)  // intercept on 3rd retry
         goto stairstep;         // don't loop forever
 
 

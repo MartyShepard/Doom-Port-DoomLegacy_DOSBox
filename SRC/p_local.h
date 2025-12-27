@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1396 2018-06-17 04:52:57Z wesleyjohnson $
+// $Id: p_local.h 1397 2018-07-02 03:39:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -422,6 +422,7 @@ extern byte  EN_skull_limit;
 extern byte  EN_old_pain_spawn;
 extern byte  EN_invul_god;
 extern byte  EN_boom_floor;
+extern byte  EN_doom_movestep_bug;
 
 // MBF
 extern fixed_t EV_mbf_distfriend;

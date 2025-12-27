@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1364 2017-10-17 01:35:41Z wesleyjohnson $
+// $Id: r_bsp.c 1397 2018-07-02 03:39:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -892,8 +892,8 @@ void R_Subsector (int num)
     sub->sector->extra_colormap = frontsector->extra_colormap;
 
     if ((frontsector->floorheight < viewz)
-        || (frontsector->model > SM_fluid &&
-            sectors[frontsector->modelsec].ceilingpic == skyflatnum))
+        || (frontsector->model > SM_fluid
+            && sectors[frontsector->modelsec].ceilingpic == skyflatnum))
     {
         // visplane global parameter
         vsp_floorplane = R_FindPlane (frontsector->floorheight,
@@ -909,8 +909,8 @@ void R_Subsector (int num)
 
     if ((frontsector->ceilingheight > viewz)
         || (frontsector->ceilingpic == skyflatnum)
-        || (frontsector->model > SM_fluid &&
-            sectors[frontsector->modelsec].floorpic == skyflatnum))
+        || (frontsector->model > SM_fluid
+            && sectors[frontsector->modelsec].floorpic == skyflatnum))
     {
         // visplane global parameter
         vsp_ceilingplane = R_FindPlane (frontsector->ceilingheight,

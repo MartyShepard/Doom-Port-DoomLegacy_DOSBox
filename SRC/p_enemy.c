@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1396 2018-06-17 04:52:57Z wesleyjohnson $
+// $Id: p_enemy.c 1397 2018-07-02 03:39:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1549,13 +1549,22 @@ static boolean P_LookForPlayers ( mobj_t*       actor,
     {
         actor->lastlook = lastlook;
 
+        // [WDJ] The test for stop is ignored in PrBoom, MBF,
+        // if that player is not present (broken test).
+        // This test just gets to done_looking sooner,
+        // which is not affected by playeringame.
+        // But it affects SyncDebug.
         // done looking
-        if( lastlook == stop )  goto done_looking;
+        if( (EV_legacy >= 147 )
+            && (lastlook == stop) )  goto done_looking;
 
         if( !playeringame[lastlook] )
             continue;
 
         if( --stopc < 0 )  goto done_looking;
+
+        // Where PrBoom has this test, ignored when stop player is not present.
+        if( lastlook == stop )  goto done_looking;  // broken test as in PrBoom
 
         player = &players[lastlook];
         if (player->health <= 0)
@@ -1634,7 +1643,7 @@ none_found:
 // if they cannot find any targets.
 // A marine's best friend :)  killough 7/18/98, 9/98
 
-static boolean P_MBF_LookForMonsters(mobj_t *actor, boolean allaround)
+static boolean P_LookForMonsters(mobj_t *actor, boolean allaround)
 {
     int x, y, d;
     thinker_t *cap, *th;
@@ -1642,12 +1651,15 @@ static boolean P_MBF_LookForMonsters(mobj_t *actor, boolean allaround)
     if( ! EN_boom )
         return false;
 
-    if( cv_monster_remember.EV
+    // Boom: This test is at the end of P_LookForPlayers.
+    if( cv_monster_remember.EV   // Boom smartypants = monsters_remember && EN_boom
         && actor->lastenemy
         && actor->lastenemy->health > 0
         && ! BOTH_FRIEND(actor->lastenemy, actor) // not friends
       )
     {
+        // Boom
+        // Use last known enemy if no players sighted.
         P_SetReference(actor->target, actor->lastenemy);
         actor->target = actor->lastenemy;
         P_SetReference(actor->lastenemy, NULL);
@@ -1726,12 +1738,13 @@ static boolean P_LookForTargets(mobj_t *actor, int allaround)
 {
     if( actor->flags & MF_FRIEND )
     {
-        return P_MBF_LookForMonsters(actor, allaround)
+        // MBF only
+        return P_LookForMonsters(actor, allaround)  // Boom, MBF
                || P_LookForPlayers (actor, allaround);
     }
 
     return P_LookForPlayers (actor, allaround)
-           || P_MBF_LookForMonsters(actor, allaround);
+           || P_LookForMonsters(actor, allaround);  // Boom, MBF
 }
 
 
@@ -2147,43 +2160,44 @@ void A_Chase (mobj_t*   actor)
     // Patrolling nodes
     if (actor->target && actor->target->type == MT_NODE)
     {
+        // Check if a player is near
+        if (P_LookForPlayers(actor, false))
+        {
+            // We found one, let him know we saw him!
+            S_StartScreamSound(actor, actor->info->seesound);
+            return;
+        }
 
-                // Check if a player is near
-                if (P_LookForPlayers(actor, false))
-                {
-                        // We found one, let him know we saw him!
-                        S_StartScreamSound(actor, actor->info->seesound);
-                        return;
-                }
+        // Did we touch a node as target?
+        if (R_PointToDist2(actor->x, actor->y, actor->target->x, actor->target->y)
+            <= actor->target->info->radius )
+        {
 
-                // Did we touch a node as target?
-                if (R_PointToDist2(actor->x, actor->y, actor->target->x, actor->target->y) <= actor->target->info->radius)
-                {
+            // Execute possible FS script
+            if (actor->target->nodescript)
+            {
+                T_RunScript((actor->target->nodescript - 1), actor);
+            }
 
-                        // Execute possible FS script
-                        if (actor->target->nodescript)
-                        {
-                                T_RunScript((actor->target->nodescript - 1), actor);
-                        }
+            // Do we wait here?
+            if (actor->target->nodewait)
+                actor->reactiontime = actor->target->nodewait;
 
-                        // Do we wait here?
-                        if (actor->target->nodewait)
-                                actor->reactiontime = actor->target->nodewait;
+            // Set next node, if any
+            if (actor->target->nextnode)
+            {
+                // Also remember it, if we will encounter an enemy			   
+                actor->target = actor->target->nextnode;
+                actor->targetnode = actor->target->nextnode;
+            }
+            else
+            {
+                actor->target = NULL;
+                actor->targetnode = NULL;
+            }
 
-                        // Set next node, if any
-                        if (actor->target->nextnode)
-                        {
-                                actor->target = actor->target->nextnode;
-                                actor->targetnode = actor->target->nextnode;	// Also remember it, if we will
-                        }													// encounter an enemy
-                        else
-                        {
-                                actor->target = NULL;
-                                actor->targetnode = NULL;
-                        }
-
-                        return;
-                }
+            return;
+        }
     }
 
 
@@ -2220,10 +2234,8 @@ void A_FaceTarget (mobj_t* actor)
 
     actor->flags &= ~MF_AMBUSH;
 
-    actor->angle = R_PointToAngle2 (actor->x,
-                                    actor->y,
-                                    actor->target->x,
-                                    actor->target->y);
+    actor->angle = R_PointToAngle2 (actor->x, actor->y,
+                                    actor->target->x, actor->target->y );
 
     if (actor->target->flags & MF_SHADOW)
         actor->angle += PP_SignedRandom(pr_facetarget)<<21;

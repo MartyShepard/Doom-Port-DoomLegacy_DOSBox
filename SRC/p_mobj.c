@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1395 2018-06-17 04:52:14Z wesleyjohnson $
+// $Id: p_mobj.c 1397 2018-07-02 03:39:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -278,7 +278,7 @@ boolean P_SetMobjState(mobj_t * mobj, statenum_t state)
 {
     static statenum_t seenstate_tab[NUMSTATES]; // fast transition table
     static int recursion = 0;  // detects recursion
-   
+
     boolean ret = true;         // return value
     state_t *st;
 
@@ -478,9 +478,15 @@ void P_XYFriction(mobj_t * mo, fixed_t oldx, fixed_t oldy)
         {
             // [WDJ] The walking and bob have always taken too long to stop
             // slow down bob before player stops
+#if 1
+            fixed_t friction_bob = (EV_legacy < 145)? FRICTION_NORM : (FRICTION_NORM*15/16);
+            player->bob_momx = FixedMul( player->bob_momx, friction_bob);
+            player->bob_momy = FixedMul( player->bob_momy, friction_bob);
+#else
 # define FRICTION_BOB   (FRICTION_NORM*15/16)
             player->bob_momx = FixedMul( player->bob_momx, FRICTION_BOB);
             player->bob_momy = FixedMul( player->bob_momy, FRICTION_BOB);
+#endif	   
         }
     }
 
@@ -611,7 +617,7 @@ void P_XYMovement(mobj_t * mo)
     int numsteps = 1;
     fixed_t ptryx, ptryy;
     player_t *player;
-    fixed_t xmove, ymove;
+    fixed_t xmove, ymove, xmove_rep, ymove_rep;
     fixed_t oldx, oldy;         //reducing bobbing/momentum on ice
 
     //added:18-02-98: if it's stopped
@@ -632,7 +638,7 @@ void P_XYMovement(mobj_t * mo)
     }
 
     // heretic/hexen wind
-    if (mo->flags2 & MF2_WINDTHRUST)
+    if( EN_heretic_hexen && (mo->flags2 & MF2_WINDTHRUST) )
     {
         int special = mo->subsector->sector->special;
         switch (special)
@@ -660,6 +666,12 @@ void P_XYMovement(mobj_t * mo)
         }
     }
 
+    oldx = mo->x;  // for later comparison in Boom bobbing reduction
+    oldy = mo->y;
+
+    ptryx = mo->x;
+    ptryy = mo->y;
+   
     player = mo->player;        //valid only if player avatar
     if( player && (player->mo != mo))
         player = NULL;  // player cheats not for voodoo dolls 
@@ -674,62 +686,95 @@ void P_XYMovement(mobj_t * mo)
     else if (mo->momy < -MAXMOVE)
         mo->momy = -MAXMOVE;
 
-    xmove = mo->momx;
-    ymove = mo->momy;
+    xmove_rep = xmove = mo->momx;
+    ymove_rep = ymove = mo->momy;
 
-#ifdef DEMO_COMP_MOVESTEP
     // To make this demo compatible requires some additional demo tests.
     // Demo compatiblity is not high priority for DoomLegacy, and this
-    // would only partially affect fireballs during some movements.
-    // It only affects how many steps are used to check for collisions.
-    // EN_doom_movestep = some demo test && ( !EN_boom || EN_heretic ).
-    // EN_doom_movestep  // comp[comp_moveblock]
-    if( EN_doom_movestep ) // Boom comp[comp_moveblock]
+    // would partially affect fireballs and some fast player movements.
+    // The original Doom and Heretic used both xmove/2 and xmove>>1 expressions,
+    // which give different results.  Those expressions must be duplicated
+    // exactly, to avoid having position drift in the old demos.
+
+    if( EV_legacy >= 145 )
     {
-        // Doom, Heretic, original incomplete test.
-        if (xmove > MAXMOVE/2 || ymove > MAXMOVE/2 )
+        // [WDJ] 3/2011 Moved out of loop and converted to stepping.
+        // Fixes mancubus fireballs which were too fast for collision tests,
+        // makes steps equal in size, and makes loop test faster and predictable.
+        // Boom bug had only the positive tests.
+        if (xmove > MAXMOVE/2 || xmove < -MAXMOVE/2
+           || ymove > MAXMOVE/2 || ymove < -MAXMOVE/2 )
         {
-            xmove >>= 1;
-            ymove >>= 1;
-            numsteps = 2;
+           xmove >>= 1;
+           ymove >>= 1;
+           numsteps = 2;
+        }
+        if (mo->info->speed > (mo->radius*2)) // faster than radius*2
+        {
+           // Mancubus missiles and the like.
+           xmove >>= 1;
+           ymove >>= 1;
+           numsteps *= 2;
+        }
+
+        xmove_rep = xmove;
+        ymove_rep = ymove;
+
+        if( EV_legacy >= 147 && (numsteps > 1))
+        {
+            // [WDJ] Account for odd amount of momentum.
+            xmove = mo->momx - (xmove_rep * (numsteps-1));
+            ymove = mo->momy - (ymove_rep * (numsteps-1));
         }
     }
-    else
-    {
-#endif
-
-    // [WDJ] 3/2011 Moved out of loop and converted to stepping.
-    // Fixes mancubus fireballs which were too fast for collision tests,
-    // makes steps equal in size, and makes loop test faster and predictable.
-    // Boom bug had only the positive tests.
-    if (xmove > MAXMOVE/2 || xmove < -MAXMOVE/2
-        || ymove > MAXMOVE/2 || ymove < -MAXMOVE/2 )
-    {
-        xmove >>= 1;
-        ymove >>= 1;
-        numsteps = 2;
-    }
-    if (mo->info->speed > (mo->radius*2)) // faster than radius*2
-    {
-        // Mancubus missiles and the like.
-        xmove >>= 1;
-        ymove >>= 1;
-        numsteps *= 2;
-    }
-#ifdef DEMO_COMP_MOVESTEP
-    }
-#endif
-
-    oldx = mo->x;  // for later comparison in Boom bobbing reduction
-    oldy = mo->y;
-
-    ptryx = mo->x;
-    ptryy = mo->y;
 
     do
     {
-        ptryx += xmove;
-        ptryy += ymove;
+        if( EV_legacy >= 145 )
+        {
+#if 1
+            // [WDJ] Logically safer.
+            ptryx = mo->x + xmove;
+            ptryy = mo->y + ymove;
+            xmove = xmove_rep;
+            ymove = ymove_rep;
+#else
+            // [WDJ] Same result for now,
+            // but depends on TryMove only taking whole step and not partial steps.
+            ptryx += xmove;
+            ptryy += ymove;
+#endif
+        }
+        else
+        {
+            // [WDJ] If this is not done exactly this way,
+            // then errors in the LSB accumulate.
+            // [WDJ] Note:  (xmove/2  !=  xmove>>1), and it gets used both ways.
+
+            // killough 8/9/98: fix bug in original Doom source:
+            // Large negative displacements were never considered.
+            // This explains the tendency for Mancubus fireballs
+            // to pass through walls.
+            // CPhipps - compatibility optioned
+      
+            if (xmove > MAXMOVE/2 || ymove > MAXMOVE/2
+                || ( ! EN_doom_movestep_bug
+                     && (xmove < -MAXMOVE/2 || ymove < -MAXMOVE/2))
+               )
+            {
+                ptryx = mo->x + xmove/2;
+                ptryy = mo->y + ymove/2;
+                xmove >>= 1;
+                ymove >>= 1;
+                numsteps += numsteps;
+            }
+            else
+            {
+                ptryx = mo->x + xmove;
+                ptryy = mo->y + ymove;
+                numsteps = 1;
+            }
+        }
 
         if (P_TryMove(mo, ptryx, ptryy, true)) //SoM: 4/10/2000
         {   // success
@@ -2762,7 +2807,7 @@ spawnit:
     if( demoplayback && EV_legacy && (EV_legacy < 147) )
     {
         // [WDJ] ANGLE_1 (from Heretic) has a significant round off error.
-	// 0x10e * ANGLE_1 -> 0xbfffff40,  it should be 0xc0000000
+        // 0x10e * ANGLE_1 -> 0xbfffff40,  it should be 0xc0000000
         // When used for positioning, it leads to demo sync problems.
         mobj->angle = mthing->angle * ANGLE_1;      // SSNTails 06-10-2003
     }

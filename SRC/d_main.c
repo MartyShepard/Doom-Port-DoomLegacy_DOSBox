@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1389 2018-04-23 02:49:28Z wesleyjohnson $
+// $Id: d_main.c 1397 2018-07-02 03:39:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -315,7 +315,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1396"
+#define SVN_REV "1397"
 #endif
 
 // Version number: major.minor.revision
