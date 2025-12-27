@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1390 2018-05-31 04:49:52Z wesleyjohnson $
+// $Id: t_func.c 1405 2018-07-15 19:31:09Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -212,7 +212,7 @@ char *  Z_cat_args( int i1 )
     for (i = i1; i < t_argc; i++)
         strsize += strlen(stringvalue(t_argv[i]));
 
-    char * tempstr = Z_Malloc(strsize + 1, PU_IN_USE, 0);
+    char * tempstr = Z_Malloc(strsize + 4, PU_IN_USE, 0);
     tempstr[0] = '\0';
 
     for (i = i1; i < t_argc; i++)
@@ -2849,7 +2849,7 @@ void SF_StartSound(void)
     mo = MobjForSvalue(t_argv[0]);
     if (!mo)  goto done;
 
-    S_StartXYZSoundName((xyz_t*)mo->x, mo, t_argv[1].value.s);
+    S_StartXYZSoundName((xyz_t*)&(mo->x), mo, t_argv[1].value.s);
 done:
     return;
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1397 2018-07-02 03:39:47Z wesleyjohnson $
+// $Id: p_inter.c 1405 2018-07-15 19:31:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1738,9 +1738,8 @@ void P_KillMobj ( mobj_t*  target,
     //                shot the barrel which killed another guy, gets the frag!
     //                (source is passed from barrel to barrel also!)
     //                (only for multiplayer fun, does not remember monsters)
-    if ((target->type == MT_BARREL || target->type == MT_POD) &&
-        source &&
-        source->player)
+    if ((target->type == MT_BARREL || target->type == MT_POD)
+	&& source && source->player)
     {
         P_SetReference(target->target, source);
         target->target = source;
