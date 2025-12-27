@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 1285 2016-12-19 03:08:20Z wesleyjohnson $
+// $Id: z_zone.c 1401 2018-07-04 11:12:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1093,10 +1093,21 @@ void Z_CheckHeap (int i)
 //
 // Z_ChangeTag
 //
-void Z_ChangeTag2 ( void* ptr, memtag_e chtag )
+#ifdef PARANOIA
+void  Z_ChangeTag_debug (void *ptr, memtag_e chtag, char * fn, int ln)
+#else
+void  Z_ChangeTag ( void* ptr, memtag_e chtag )
+#endif
 {
+
+#ifdef PARANOIA
+    if( ! verify_Z_Malloc( ptr ) )
+        I_Error("Z_CT at %s:%i", fn, ln );
+#endif
+
 #ifdef PLAIN_MALLOC
     return;
+
 #else
 // TAGGED_MALLOC, ZONE_ZALLOC
     memblock_t* block;
@@ -1109,7 +1120,7 @@ void Z_ChangeTag2 ( void* ptr, memtag_e chtag )
         I_Error ("Z_ChangeTag: an owner is required for purgable blocks");
 
     if (chtag == PU_FREE ) {
-       GenPrintf(EMSG_warn,"Z_ChangeTag2 changing to 0 tag, conflict with FREE BLOCK\n" );
+       GenPrintf(EMSG_warn,"Z_ChangeTag: changing to 0 tag, conflict with FREE BLOCK\n" );
        chtag = PU_LEVEL;  // safe
 	// chtag = PU_DAVE;  // if need to debug
     }
@@ -1148,6 +1159,17 @@ done:
 #endif
 }
 
+
+#ifdef PARANOIA
+// Return true when the memory block is valid
+byte  verify_Z_Malloc( void * mp )
+{
+    memblock_t * mmp = (memblock_t*) ((byte *)(mp) - sizeof(memblock_t));
+    if( mmp->id != ZONEID )  return 0;
+    if( mmp->memtag < PU_STATIC || mmp->memtag > PU_CACHE_DEFAULT )  return 0;
+    return 1;
+}
+#endif
 
 
 //

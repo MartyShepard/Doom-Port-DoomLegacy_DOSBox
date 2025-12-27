@@ -6614,7 +6614,7 @@ so give it a enable flag that demos can control.
 patchfile = w107_93_xymove.patch
 - commit revision 1397
 Fix P_XYMovement function looping.
-Account for odd momentum is movement stepping.
+Account for odd momentum in movement stepping.
 Add Version compatibility test, and add old movement stepping logic
 in the loop, for old demos.
 
@@ -6665,6 +6665,20 @@ patchfile = w107_96_demoname.patch
 Pass the demo name using a buffer.  Needed for command line demo names.
 Fixes a bug introduced with W107_demo1.
 
+*** w107_zone_debug
+patchfile = w107_97_zone_debug.patch
+- commit revision 1401
+Add the verify_Z_Malloc function to aid with zone allocation debugging.
+Update the ChangeTag debugging, it was kludgy.
+
+*** w107_release_patch
+patchfile = w107_98_release_patch.patch
+- commit revision 1402
+Fix the release patch utility functions to work with OpenGL.
+The hardware renderer returns a patch_t that is fake, and cannot be
+passed to ChangeTag nor Z_Free.
+Created a workable release function for hardware cache patches.
+Created W_release_patch that can handle releasing either.
 
 
 

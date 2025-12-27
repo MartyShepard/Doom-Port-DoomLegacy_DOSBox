@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.h 1122 2014-06-23 18:13:40Z wesleyjohnson $
+// $Id: z_zone.h 1401 2018-07-04 11:12:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -107,7 +107,15 @@ void    Z_FreeTags(memtag_e lowtag, memtag_e hightag);
 void    Z_DumpHeap(memtag_e lowtag, memtag_e hightag);
 void    Z_FileDumpHeap (FILE *f);
 void    Z_CheckHeap (int i);
-void    Z_ChangeTag2 (void *ptr, memtag_e chtag);
+
+#ifdef PARANOIA
+#define Z_ChangeTag(p,t)   Z_ChangeTag_debug((p), (t), __FILE__, __LINE__)
+void  Z_ChangeTag_debug (void *ptr, memtag_e chtag, char * fn, int ln);
+#else
+void    Z_ChangeTag (void *ptr, memtag_e chtag);
+#endif
+
+#endif
 
 // Change all allocations of old_tag to new_tag.
 void	Z_ChangeTags_To( memtag_e old_tag, memtag_e new_tag );
@@ -151,19 +159,9 @@ typedef struct memblock_s
 #endif
 } memblock_t;
 
-//
-// This is used to get the local FILE:LINE info from CPP
-// prior to really call the function in question.
-//
-#ifdef PARANOIA
-#define Z_ChangeTag(p,t) \
-{ \
-      if (( (memblock_t *)( (byte *)(p) - sizeof(memblock_t)))->id!=0x1d4a11) \
-          I_Error("Z_CT at "__FILE__":%i",__LINE__); \
-      Z_ChangeTag2(p,t); \
-};
-#else
-#define Z_ChangeTag(p,t)  Z_ChangeTag2(p,t)
-#endif
 
+#ifdef PARANOIA
+// This would be inline, except that a usage in a define would not resolve.
+// Return true when the memory block is valid
+byte  verify_Z_Malloc( void * mp );
 #endif
