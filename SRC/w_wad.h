@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: w_wad.h 1402 2018-07-04 11:13:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -222,9 +222,12 @@ void*   W_CacheMappedPatchNum ( int lump, uint32_t drawflags );
 #endif
 
 
+// Release patches made with W_CachePatchNum, W_CachePatchName.
+void W_release_patch( patch_t * patch );
+
 // These are used for loading, and releasing patches.
 typedef struct {
-   patch_t ** patch;
+   patch_t ** patch_owner;  // ptr to patch owner
    char     * name;
 } load_patch_t;
 

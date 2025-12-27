@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1383 2018-03-04 07:00:01Z wesleyjohnson $
+// $Id: w_wad.c 1402 2018-07-04 11:13:16Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -849,8 +849,10 @@ void* W_CacheLumpName ( const char* name, int ztag )
 //  pl : a patch list, maybe offset into a patch list
 void load_patch_list( load_patch_t * pl )
 {
-    while( pl->patch ) {
-        *(pl->patch) = W_CachePatchName(pl->name, PU_LOCK_SB);
+    while( pl->patch_owner ) {
+        // software_render will store a patch allocation.
+        // hardware render stores a cache ptr.
+        *(pl->patch_owner) = W_CachePatchName(pl->name, PU_LOCK_SB);
         pl++;
     }
 }
@@ -858,8 +860,8 @@ void load_patch_list( load_patch_t * pl )
 //  pl : a patch list, maybe offset into a patch list
 void release_patch_list( load_patch_t * pl )
 {
-    while( pl->patch ) {
-        Z_ChangeTag(*(pl->patch), PU_UNLOCK_CACHE);
+    while( pl->patch_owner ) {
+        W_release_patch( *(pl->patch_owner) );
         pl++;
     }
 }
@@ -869,7 +871,9 @@ void release_patch_list( load_patch_t * pl )
 void release_patch_array( patch_t ** pp, int count )
 {
     while( count-- ) {
-        if( *pp )  Z_ChangeTag( *pp, PU_UNLOCK_CACHE);
+        // Hardware render and software render releases are different.
+        if( *pp )
+            W_release_patch( *pp );
         pp++;
     }
 }
@@ -939,7 +943,7 @@ void* W_CachePatchNum ( int lump, int ztag )
     if( ! grPatch->mipmap.grInfo.data ) 
     {   // first time init grPatch fields
         // we need patch w,h,offset,...
-        patch_t *tmp_patch = W_CachePatchNum_Endian(grPatch->patchlump, PU_LUMP); // temp use
+        patch_t* tmp_patch = W_CachePatchNum_Endian(grPatch->patchlump, PU_LUMP); // temp use
         // default no TF_Opaquetrans
         HWR_MakePatch ( tmp_patch, grPatch, &grPatch->mipmap, 0);
         Z_Free (tmp_patch);
@@ -978,11 +982,39 @@ void* W_CacheMappedPatchNum ( int lump, uint32_t drawflags )
     return (void*)grPatch;
 }
 
-#else // HWRENDER version
-// Software renderer
+// Release patches made with W_CachePatchNum, W_CachePatchName.
+void W_release_patch( patch_t * patch )
+{
+    if( rendermode == render_soft )
+    {
+        // Software render: the patches were allocated with Z_Malloc       
+#ifdef PARANOIA
+        if( ! verify_Z_Malloc(patch))
+        {
+            GenPrintf( EMSG_error, "Error W_release_patch: Not a memory block %x\n", *patch);
+	    return;
+        }
+#endif
+        Z_ChangeTag( patch, PU_UNLOCK_CACHE );
+    }else{
+        // Hardware render: the patches are fake, and are allocated in a large array
+        MipPatch_t*  grPatch = (MipPatch_t*) patch; // sneaky HWR casting
+        HWR_release_Patch( grPatch, &grPatch->mipmap );
+    }
+}
+
+// HWRENDER
+#else
+// Software renderer only, simplified
 void* W_CachePatchNum ( int lump, int ztag )
 {
     return W_CachePatchNum_Endian( lump, ztag );
+}
+
+// Release patches made with W_CachePatchNum, W_CachePatchName.
+void W_release_patch( patch_t * patch )
+{
+    Z_ChangeTag( patch, PU_UNLOCK_CACHE );
 }
 #endif // HWRENDER version
 
