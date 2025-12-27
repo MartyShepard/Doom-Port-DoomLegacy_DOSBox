@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1389 2018-04-23 02:49:28Z wesleyjohnson $
+// $Id: p_mobj.c 1395 2018-06-17 04:52:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1043,7 +1043,7 @@ void P_ZMovement(mobj_t * mo)
     {
         player->viewheight -= mo->floorz - mo->z;
 
-        player->deltaviewheight = ((cv_viewheight.value << FRACBITS) - player->viewheight) >> 3;
+        player->deltaviewheight = ((((unsigned int)cv_viewheight.EV) << FRACBITS) - player->viewheight) >> 3;
     }
 
     // adjust height
@@ -2479,7 +2479,7 @@ void P_SpawnPlayer( mapthing_t * mthing, int playernum )
     p->rain2 = NULL;
     p->extralight = 0;
     p->fixedcolormap = 0;
-    p->viewheight = cv_viewheight.value << FRACBITS;
+    p->viewheight = ((unsigned int)cv_viewheight.EV) << FRACBITS;
     // added 2-12-98
     p->viewz = p->mo->z + p->viewheight;
     p->aiming = 0;  // reset freelook 

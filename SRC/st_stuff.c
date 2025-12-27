@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1382 2018-03-04 06:48:19Z wesleyjohnson $
+// $Id: st_stuff.c 1395 2018-06-17 04:52:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -897,7 +897,7 @@ void ST_doPaletteStuff( player_t * plyr )
 
     //added:28-02-98:quick hack underwater palette
     /*if (plyr->mo &&
-        (plyr->mo->z + (cv_viewheight.value<<FRACBITS) < plyr->mo->waterz) )
+        (plyr->mo->z + (((unsigned int)cv_viewheight.EV)<<FRACBITS) < plyr->mo->waterz) )
         palette = RADIATIONPAL;*/
 
     if (palette != st_palette)

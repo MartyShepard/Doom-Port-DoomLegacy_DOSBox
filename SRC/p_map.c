@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1394 2018-05-31 04:54:34Z wesleyjohnson $
+// $Id: p_map.c 1395 2018-06-17 04:52:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -254,28 +254,42 @@ fixed_t  P_GetFriction( const mobj_t * mo )
     // and updates whenever sec->special is changed.  That is several fewer
     // tests in this heavily used code.
     got_movefactor = ORIG_FRICTION_FACTOR;
+
     if( EN_variable_friction
         && (EN_mbf || (EN_boom && mo->player))
         && !(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)) )
     {
+        // Boom and MBF only
         fixed_t mo_top = mo->z + mo->height;
         const msecnode_t * msnp = mo->touching_sectorlist;
         const sector_t * secp;
         const ffloor_t * fff;
+
         got_friction = FIXED_MAX;  // init search
         // traverse the list of sectors touching this thing
         while( msnp )
         {
             secp = msnp->m_sector;
-            if(mo->z <= secp->floorheight)
+            // DoomLegacy does not use FRICTION_MASK, see note above.
+            // Uses model and modelsec, instead of the PrBoom heightsec.
+            // Sector friction is set at special sector setup.
+            // Init search at FIXED_MAX instead of ORIG_FRICTION,
+            // so do not need test for "got_friction == ORIG_FRICTION".
+            // However, Boom deep water setup cannot fix test for floorheight.
+            if( (mo->z <= secp->floorheight)
+                || ( EN_mbf
+                     && (secp->model > SM_fluid)  // check for water
+                     && mo->z <= sectors[secp->modelsec].floorheight
+                   ) )
             {
                 // on sector floor
-                if(secp->friction < got_friction)
+                if( secp->friction < got_friction )
                 {
                     got_friction = secp->friction;
                     got_movefactor = secp->movefactor;
                 }
             }
+
             // also check if any 3d floor has friction
             for(fff = secp->ffloors; fff; fff = fff->next)
             {
@@ -292,6 +306,8 @@ fixed_t  P_GetFriction( const mobj_t * mo )
             }
             msnp = msnp->m_tnext;
         }
+
+        // DoomLegacy also supports floating.
         if( got_friction == FIXED_MAX )
         {
             got_friction = 0xFFF0;  // must not be touching floor, air friction
@@ -1844,7 +1860,7 @@ void P_HitSlideLine (line_t* ld)
             tsm_xmove /= 2;
             tsm_ymove = - tsm_ymove / 2;
             S_StartObjSound( tsm_mo, sfx_oof );	   
-	    return;
+            return;
         }
 
         tsm_ymove = 0;
@@ -1859,7 +1875,7 @@ void P_HitSlideLine (line_t* ld)
             tsm_xmove = - tsm_xmove/2; // absorb half the momentum
             tsm_ymove /= 2;
             S_StartObjSound( tsm_mo, sfx_oof );	   
-	    return;
+            return;
         }
 
         tsm_xmove = 0;

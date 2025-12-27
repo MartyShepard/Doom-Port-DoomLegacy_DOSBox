@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1357 2017-08-20 21:03:11Z wesleyjohnson $
+// $Id: p_user.c 1395 2018-06-17 04:52:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -164,7 +164,7 @@ void P_CalcHeight (player_t* player)
 {
     int         angle;
     fixed_t     bob;
-    fixed_t     viewheight, on_floor_viewheight;
+    fixed_t     calc_viewheight, on_floor_viewheight;
     mobj_t      * pmo = player->mo;
     mobj_t      * smo = pmo;  // spirit (same as pmo unless using CLIENTPREDICTION2)
 
@@ -195,7 +195,7 @@ void P_CalcHeight (player_t* player)
     if (player->cheats & CF_NOMOMENTUM)  // as in heretic because of fly bob
     {
         //added:15-02-98: it seems to be useless code!
-        //player->viewz = pmo->z + (cv_viewheight.value<<FRACBITS);
+        //player->viewz = pmo->z + (((unsigned int)cv_viewheight.EV)<<FRACBITS);
 
         //if (player->viewz > pmo->ceilingz-4*FRACUNIT)
         //    player->viewz = pmo->ceilingz-4*FRACUNIT;
@@ -203,37 +203,40 @@ void P_CalcHeight (player_t* player)
         return;
     }
 
-    angle = (FINEANGLES/20*localgametic/NEWTICRATERATIO)&FINEMASK;
+    if( EV_legacy )
+      angle = (FINEANGLES/20*localgametic/NEWTICRATERATIO)&FINEMASK;
+    else
+      angle = (FINEANGLES/20*leveltime)&FINEMASK;
     bob = FixedMul ( player->bob/2, finesine[angle]);
 
     // move viewheight
-    viewheight = cv_viewheight.value << FRACBITS; // default eye view height
+    calc_viewheight = ((unsigned int)cv_viewheight.EV) << FRACBITS; // default eye view height
 
     // The original was designed for a constant viewheight.
     // Some users want to vary it during play using fragglescript.
     if (player->playerstate == PST_LIVE)
     {
-        on_floor_viewheight = viewheight;
+        on_floor_viewheight = calc_viewheight;
 
-        if (viewheight != prev_viewheight)
+        if (calc_viewheight != prev_viewheight)
         {
             // cv_viewheight has changed
             if ( prev_viewheight < 0 )
             {
-                player->viewheight = viewheight;  // init quickly
+                player->viewheight = calc_viewheight;  // init quickly
             }
             else
             {
                 // provide a gradual viewheight change
-                fixed_t dv = (viewheight - prev_viewheight) >> 3;
+                fixed_t dv = (calc_viewheight - prev_viewheight) >> 3;
                 // when dv == 0, let through unaltered viewheight,
                 // otherwise altered viewheight keeps retriggering this code
                 if (dv)
-                   viewheight = prev_viewheight + dv;  // slow rise and fall
+                   calc_viewheight = prev_viewheight + dv;  // slow rise and fall
                 on_floor_viewheight = prev_viewheight;  // lessen falling effect
-                player->deltaviewheight = (viewheight - player->viewheight) >> 3;
+                player->deltaviewheight = (calc_viewheight - player->viewheight) >> 3;
             }
-            prev_viewheight = viewheight;
+            prev_viewheight = calc_viewheight;
         }
 
         player->viewheight += player->deltaviewheight;
@@ -241,14 +244,14 @@ void P_CalcHeight (player_t* player)
         if (player->viewheight > on_floor_viewheight)
         {
             // player feet not on floor, so fall to viewheight
-            player->viewheight = viewheight;
+            player->viewheight = calc_viewheight;
             player->deltaviewheight = 0;
         }
 
-        if (player->viewheight < viewheight/2)
+        if (player->viewheight < calc_viewheight/2)
         {
             // rise from floor
-            player->viewheight = viewheight/2;
+            player->viewheight = calc_viewheight/2;
             if (player->deltaviewheight <= 0)
                 player->deltaviewheight = 1;
         }
@@ -278,7 +281,6 @@ void P_CalcHeight (player_t* player)
         player->viewz = smo->ceilingz-4*FRACUNIT;
     if (player->viewz < smo->floorz+4*FRACUNIT)
         player->viewz = smo->floorz+4*FRACUNIT;
-
 }
 
 
@@ -715,7 +717,7 @@ void P_ResetCamera (player_t *player)
     camera.chase = player;
     x = player->mo->x;
     y = player->mo->y;
-    z = player->mo->z + (cv_viewheight.value<<FRACBITS);
+    z = player->mo->z + (((unsigned int)cv_viewheight.EV)<<FRACBITS);
 
     // hey we should make sure that the sounds are heard from the camera
     // instead of the marine's head : TO DO
@@ -807,7 +809,7 @@ void P_MoveChaseCamera (player_t *player)
     dist  = cv_cam_dist.value;
     x = pmo->x - FixedMul( finecosine[angf], dist);
     y = pmo->y - FixedMul( finesine[angf], dist);
-    z = pmo->z + (cv_viewheight.value<<FRACBITS) + cv_cam_height.value;
+    z = pmo->z + (((unsigned int)cv_viewheight.EV)<<FRACBITS) + cv_cam_height.value;
 
 /*    P_PathTraverse ( pmo->x, pmo->y, x, y, PT_ADDLINES, PTR_UseTraverse );*/
 

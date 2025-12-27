@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_sight.c 1342 2017-06-21 16:14:12Z wesleyjohnson $
+// $Id: p_sight.c 1395 2018-06-17 04:52:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -412,6 +412,7 @@ static boolean P_CrossBSPNode (int bspnum)
 }
 
 
+#define FIX_SIGHT_HEIGHT  1
 //
 // P_CheckSight
 // Returns true
@@ -420,19 +421,17 @@ static boolean P_CrossBSPNode (int bspnum)
 //
 boolean P_CheckSight( mobj_t* t1, mobj_t* t2 )
 {
-    int         s1, s2;
-    int         pnum;
-    int         bytenum;
-    int         bitnum;
+    const sector_t * s1p = t1->subsector->sector;
+    const sector_t * s2p = t2->subsector->sector;
 
     // First check for trivial rejection.
 
     // Determine subsector entries in REJECT table.
-    s1 = (t1->subsector->sector - sectors);
-    s2 = (t2->subsector->sector - sectors);
-    pnum = s1*numsectors + s2;
-    bytenum = pnum>>3;
-    bitnum = 1 << (pnum&7);
+    int s1 = (s1p - sectors);
+    int s2 = (s2p - sectors);
+    unsigned int pnum = s1*numsectors + s2;
+    unsigned int bytenum = pnum>>3;
+    unsigned int bitnum = 1 << (pnum&7);
 
     // Check in REJECT table.
     if (rejectmatrix[bytenum]&bitnum)
@@ -440,37 +439,59 @@ boolean P_CheckSight( mobj_t* t1, mobj_t* t2 )
         cs_sightcounts[0]++;
 
         // can't possibly be connected
-        return false;
+        goto ret_false;
     }
 
-#if 0
     // [WDJ] From PrBoom
-    // But our sector_t does not have heightsec field.
+    // Uses model and modelsec, instead of the PrBoom heightsec.
     // killough 4/19/98: make fake floors and ceilings block monster view
-    const sector_t * s1p = t1->subsector->sector;
-    const sector_t * s2p = t2->subsector->sector;
-
-    if( s1p->heightsec != -1 )
+    if( s1p->model > SM_fluid )
     {
-        s1 = &sectors[s1p->heightsec];
-        if( (t1->z + t1->height <= s1p->floorheight
-             && t2->z >= s1p->floorheight )
-           || (t1->z >= s1p->ceilingheight
-               && t2->z + t1->height <= s1p->ceilingheight) )
-            return false;
+        s1p = &sectors[s1p->modelsec];
+
+        // Test: cannot see when t1 above floor, and t2 below floor.
+        if( t1->z + t1->height <= s1p->floorheight
+            && t2->z >= s1p->floorheight )
+            goto ret_false;
+
+        // Test: cannot see when t1 above ceiling, and t2 below ceiling.
+        if( t1->z >= s1p->ceilingheight
+            && (
+#ifdef FIX_SIGHT_HEIGHT
+             // [WDJ] entire t1 is below ceiling
+             // t2->z + t2->height
+             t2->z + ((EV_legacy >= 147)? t2->height : t1->height)
+#else
+             // PrBoom orig, adds t2 to t1 height.
+             t2->z + t1->height 
+#endif
+                  <= s1p->ceilingheight ) )
+            goto ret_false;
     }
   
-    if( s2p->heightsec != -1 )
+    if( s2p->model > SM_fluid )
     { 
-        s2p = &sectors[s2p->heightsec];
+        s2p = &sectors[s2p->modelsec];
 
-        if( (t2->z + t2->height <= s2p->floorheight
-             && t1->z >= s2p->floorheight )
-           || (t2->z >= s2p->ceilingheight
-               && t1->z + t2->height <= s2p->ceilingheight) )
-            return false;
-   }
+        // Test: cannot see when t2 below floor, and t1 above floor.
+        if( t2->z + t2->height <= s2p->floorheight
+            && t1->z >= s2p->floorheight )
+            goto ret_false;
+
+        // Test: cannot see when t2 above ceiling, and t1 below ceiling.
+        if( t2->z >= s2p->ceilingheight
+            && (
+#ifdef FIX_SIGHT_HEIGHT
+               // [WDJ] entire t1 is below ceiling
+               // t1->z + t1->height
+               t1->z + ((EV_legacy >= 147)? t1->height : t2->height)
+#else
+               // PrBoom orig, adds t1 to t2 height.
+               t1->z + t2->height 
 #endif
+                  <= s2p->ceilingheight ) )
+            goto ret_false;
+    }
 
 #if 0
 //  BP: it seem that it don't work :( TODO: fix it
@@ -492,7 +513,7 @@ boolean P_CheckSight( mobj_t* t1, mobj_t* t2 )
     // same subsector? obviously visible
     // cph - compatibility optioned for demo sync, cf HR06-UV.LMP
     if( EN_mbf && (t1->subsector == t2->subsector) )
-        return true;
+        goto ret_true;
 
     // An unobstructed LOS is possible.
     // Now look from eyes of t1 to any part of t2.
@@ -519,6 +540,12 @@ boolean P_CheckSight( mobj_t* t1, mobj_t* t2 )
 
     // the head node is the last node output
     return P_CrossBSPNode (numnodes-1);
+
+ret_true:
+    return true;
+   
+ret_false:
+    return false;
 }
 
 //	added by AC for missle prediction
@@ -529,19 +556,17 @@ boolean P_CheckSight( mobj_t* t1, mobj_t* t2 )
 //
 boolean P_CheckSight2( mobj_t* t1, mobj_t* t2, fixed_t px, fixed_t py, fixed_t pz )
 {
-    int         s1, s2;
-    int         pnum;
-    int         bytenum;
-    int         bitnum;
+    const sector_t * s1p = t1->subsector->sector;
+    const sector_t * s2p = t2->subsector->sector;
 
     // First check for trivial rejection.
 
     // Determine subsector entries in REJECT table.
-    s1 = (t1->subsector->sector - sectors);
-    s2 = (R_PointInSubsector(px, py)->sector - sectors);
-    pnum = s1*numsectors + s2;
-    bytenum = pnum>>3;
-    bitnum = 1 << (pnum&7);
+    int s1 = (s1p - sectors);
+    int s2 = (s2p - sectors);
+    unsigned int pnum = s1*numsectors + s2;
+    unsigned int bytenum = pnum>>3;
+    unsigned int bitnum = 1 << (pnum&7);
 
     // Check in REJECT table.
     if (rejectmatrix[bytenum]&bitnum)
@@ -549,8 +574,59 @@ boolean P_CheckSight2( mobj_t* t1, mobj_t* t2, fixed_t px, fixed_t py, fixed_t p
         cs_sightcounts[0]++;
 
         // can't possibly be connected
-        return false;
+        goto ret_false;	
     }
+
+    // [WDJ] From PrBoom
+    // Uses model and modelsec, instead of the PrBoom heightsec.
+    // killough 4/19/98: make fake floors and ceilings block monster view
+    if( s1p->model > SM_fluid )
+    {
+        s1p = &sectors[s1p->modelsec];
+
+        // Test: cannot see when t1 above floor, and t2 below floor.
+        if( t1->z + t1->height <= s1p->floorheight
+            && pz >= s1p->floorheight )
+            goto ret_false;
+
+        // Test: cannot see when t1 above ceiling, and t2 below ceiling.
+        if( t1->z >= s1p->ceilingheight
+            && (
+#ifdef FIX_SIGHT_HEIGHT
+             // [WDJ] entire t1 is below ceiling
+             // t2->z + t2->height
+             pz + ((EV_legacy >= 147)? t2->height : t1->height)
+#else
+             // PrBoom orig, adds t2 to t1 height.
+             pz + t1->height 
+#endif
+                  <= s1p->ceilingheight ) )
+            goto ret_false;
+    }
+  
+    if( s2p->model > SM_fluid )
+    { 
+        s2p = &sectors[s2p->modelsec];
+
+        // Test: cannot see when t2 below floor, and t1 above floor.
+        if( pz + t2->height <= s2p->floorheight
+            && t1->z >= s2p->floorheight )
+            goto ret_false;
+
+        // Test: cannot see when t2 above ceiling, and t1 below ceiling.
+        if( pz >= s2p->ceilingheight
+            && (
+#ifdef FIX_SIGHT_HEIGHT
+               // [WDJ] entire t1 is below ceiling
+               // t1->z + t1->height
+               t1->z + ((EV_legacy >= 147)? t1->height : t2->height)
+#else
+               // PrBoom orig, adds t1 to t2 height.
+               t1->z + t2->height 
+#endif
+                  <= s2p->ceilingheight ) )
+            goto ret_false;
+   }
 
 #if 0
 //  BP: it seem that it don't work :( TODO: fix it
@@ -572,7 +648,7 @@ boolean P_CheckSight2( mobj_t* t1, mobj_t* t2, fixed_t px, fixed_t py, fixed_t p
     // same subsector? obviously visible
     // cph - compatibility optioned for demo sync, cf HR06-UV.LMP
     if( EN_mbf && (t1->subsector == t2->subsector) )
-        return true;
+        goto ret_true;     
 
     // An unobstructed LOS is possible.
     // Now look from eyes of t1 to any part of t2.
@@ -596,4 +672,10 @@ boolean P_CheckSight2( mobj_t* t1, mobj_t* t2, fixed_t px, fixed_t py, fixed_t p
     
     // the head node is the last node output
     return P_CrossBSPNode (numnodes-1);
+
+ret_true:
+    return true;
+   
+ret_false:
+    return false;
 }

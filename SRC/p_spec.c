@@ -2,7 +2,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: p_spec.c 1395 2018-06-17 04:52:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -3487,15 +3487,17 @@ void T_Scroll(scroll_t *s)
       height = sec->floorheight;
       // [WDJ] fix precedence  11/25/2009
       // FIXED_MIN unless has special sector, and sector floor height > height
-      waterheight = ((sec->model > SM_fluid) &&
-        (sectors[sec->modelsec].floorheight > height)) ?
+      // Uses model and modelsec, instead of the PrBoom heightsec.
+      waterheight = ((sec->model > SM_fluid)
+        && (sectors[sec->modelsec].floorheight > height)) ?
             sectors[sec->modelsec].floorheight : FIXED_MIN ;
 
       for (node = sec->touching_thinglist; node; node = node->m_snext)
       {
-        if (!((thing = node->m_thing)->flags & MF_NOCLIP) &&
-            (!(thing->flags & MF_NOGRAVITY || thing->z > height) ||
-             thing->z < waterheight))
+        thing = node->m_thing;
+        if( !(thing->flags & MF_NOCLIP)
+            && (!(thing->flags & MF_NOGRAVITY || thing->z > height)
+                || thing->z < waterheight) )
         {
             // Move objects only if on floor or underwater,
             // non-floating, and clipped.
@@ -4127,6 +4129,7 @@ void T_Pusher(pusher_t *p)
     if( EV_legacy <= 140 )
     {
         // Old Legacy, Boom, MBF
+        // Uses model and modelsec, instead of the PrBoom heightsec.
         if (sec->model > SM_fluid) // special water sector
         {
            sm_ht = sectors[sec->modelsec].floorheight;

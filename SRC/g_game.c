@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1392 2018-05-31 04:52:32Z wesleyjohnson $
+// $Id: g_game.c 1395 2018-06-17 04:52:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2659,6 +2659,7 @@ void G_DeferedInitNew (skill_e skill, const char* mapname, boolean StartSplitScr
     
     if( demoplayback )
         COM_BufAddText ("stopdemo\n");  // invokes G_CheckDemoStatus
+
     D_DisableDemo();  // turn off demos and keeps them off
 
     G_setup_VERSION(); // [WDJ] should be after demo is stopped
@@ -2836,6 +2837,7 @@ void G_demo_defaults( void )
     friction_model = FR_orig;
     monster_infight = INFT_infight;  // Default is to infight, DEH can turn it off.
     voodoo_mode = VM_vanilla;
+    cv_viewheight.EV = 41; // vanilla viewheight
     cv_solidcorpse.EV = 0;
     cv_instadeath.EV = 0;  // Die
     cv_monstergravity.EV = 0;
@@ -3472,7 +3474,7 @@ void G_DoPlayDemo (const char *defdemoname)
     // 203 = LxDoom or MBF  (supported badly, no sync)
     // 210..214 = prboom (supported badly, no sync)
     // Do not have version: Hexen, Heretic, Doom 1.2 and before
-   if( demoversion < 109 )
+    if( demoversion < 109 )
         goto bad_demo_version;
 
     if( demoversion < 111 )
@@ -3809,7 +3811,7 @@ void G_DoPlayDemo (const char *defdemoname)
             }
 
             // header[18..50]: byte: player[1..32] present boolean
-	    num_players = 32;
+            num_players = 32;
         }
     }
 

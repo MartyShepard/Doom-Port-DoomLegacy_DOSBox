@@ -6588,3 +6588,25 @@ patchfile = w107_89_demo2.patch
 Some fixes to demo execution due to SyncDebug testing.
 Update tm_flags after SetMobjState.
 Fix things test for old demos to exit before Legacy fixes.
+
+*** w107_icyslide
+patchfile = w107_90_icyslide.patch
+- commit revision 1394
+Add MBF icy slide logic to HitSlideLine function.
+
+*** w107_heightsec
+patchfile = w107_91_heightsec.patch
+- commit revision 1395
+DoomLegacy uses model sectors instead of heightsec.
+Add correct MBF logic for checking model sectors
+for hidden players and monsters.
+Ensure calculations using player height setting
+are done using unsigned int.
+
+*** w107_sarg
+patchfile = w107_92_sarg.patch
+- commit revision 1396
+Had fixed the sleeping sarg bug before.
+But Boom has a demo flag for it, and old demos depend upon it
+so give it a enable flag that demos can control.
+
