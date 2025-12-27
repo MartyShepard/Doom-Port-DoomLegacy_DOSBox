@@ -10,8 +10,8 @@
 <!-- $Id$ -->
 <body>
 <div class="column">
-<h1>Doom Legacy 1.46 FAQ</h1>
-<h1 class="tagline">Last updated 2016-09-20</h1>
+<h1>Doom Legacy 1.47 FAQ</h1>
+<h1 class="tagline">Last updated 2018-07-11</h1>
 
 <p>
 If you have any trouble with Doom Legacy, you might find a solution here.
@@ -38,26 +38,35 @@ please tell us so that we can update the FAQ and help other people!
 
 <dl>
   <dt>
-What switches should I use to start DoomLegacy?
+What command line switches should I use to start DoomLegacy?
   </dt>
   <dd>
 See the docs/legacy.html for an explanation of the switches.
 <p>
 If you have a console, start DoomLegacy with the -h switch to see the
 help output.
-<p>Start with at least one switch to keep the Launcher from starting.
+<p>If you do not want the Launcher to start, then have at least one
+switch on the command line.
 It does not have to be a real switch, -nolaunch, or even -xx will do it.
-<p>If you do not have a console, you may want to start DoomLegacy without any
-switches, to get the built-in Launcher upon start.
+<p>If you do not have a command line console, or do not want to use it,
+you can start DoomLegacy without any switches, which will bring up the
+Doom Legacy built-in Launcher.
 From the Launcher you can specify almost all switches.
-The switches -mb, -h are handled before the built-in Launcher runs, so
-would be ineffective.
+The switches -mb (Zalloc memory size), -h (help) are handled before the built-in Launcher runs,
+and thus the Launcher will ignore them.
 <p>
-I recommend using native video, and you must select your game.
+For command line switches, I recommend using native video, and you must select your game.
 <br>
 > doomlegacy -native -game doom2
   </dd>
 </dl>
+
+From the Launcher this would be:
+<pre>
+  Switch:  -native
+  Game:    doom2
+  Continue
+</pre>
 
 <dl>
   <dt>
@@ -72,8 +81,7 @@ and unix-like operating systems setup HOME during user login.
   </li>
   <li>
 The "UserProfile" environment variable is specified.  The is done
-by WinXP, and probably later versions of Windows (but they change
-and break things too).
+by WinXP, and probably later versions of Windows (but they change and break things too).
 This will make the parent of "My Documents" your home directory by default.
   </li>
   <li>
@@ -116,11 +124,14 @@ Where does DoomLegacy put the savegames.
   </dt>
   <dd>
 DoomLegacy puts savegames and the saved config file in a doomlegacy
-directory within the home directory.  The doomlegacy directory name is
-determined by DEFAULTDIR1 and DEFAULTDIR2 of the doomdef.h file.
-If neither is found, DoomLegacy will make the directory using the name from
-DEFAULTDIR1.  DEFAULTDIR2 is the previous name, used to find existing
-directories from older versions of DoomLegacy.
+directory within the home directory.
+<br>The doomlegacy directory name is operating-system dependent.
+It is compiled with two choices, defined as DEFAULTDIR1 and DEFAULTDIR2
+in the doomdef.h file.
+If neither of those directories is found, DoomLegacy will make a directory
+using the name from DEFAULTDIR1.
+The name defined by DEFAULTDIR2 is an older directory name,
+used to find existing directories from older versions of DoomLegacy.
 <ul>
 <li>Linux:  ".doomlegacy", or previously ".legacy".
 <br>This is a hidden directory. Use "ls -a" to see hidden directories,
@@ -140,14 +151,14 @@ above "My Documents".
 DoomLegacy keeps losing my config settings.
   </dt>
   <dd>
-<p>The config settings are saved by DoomLegacy during program
-shutdown.  If it is being killed some other way, the settings will
-not be saved.
+<p>The config settings are saved by DoomLegacy during program shutdown.
+If it is being killed some other way, the settings will not be saved.
 <p>If you are inconsisent about specifying your home directory, then
 DoomLegacy will create a new config file in each new location.
-If you find you have to setup your keyboard again, then you probably
+If you find you have to setup your keyboard again, then you may have
 mistyped your -home directory name.  Setup a profile or a batch
-file to start DoomLegacy instead.
+file to start DoomLegacy from saved settings to ensure getting a consistent
+home directory.
 <p>OpenGL hardware rendering has its own separate config file.
 You will have to set all your settings again, sorry.
   </dd>
@@ -162,7 +173,7 @@ Is there any way to save my settings?
 Give your friend (George) their own config file.
 <br>Start DoomLegacy with "-config george.cfg".
 <p>George will now have his own config settings.  As long as you do not
-delete the file,  George's settings will still be there next time he comes
+delete the file, George's settings will still be there next time he comes
 to visit.
 <p>Give your friend their own home directory, with its own config file
 and savegames.
@@ -185,7 +196,7 @@ I don't see any error messages from DoomLegacy, and I think there
 should be some.  Where are the error messages going?
   </dt>
   <dd>
-DoomLegacy 1.46 has an improved message control in the Options menu.
+DoomLegacy now has an improved message control in the Options menu.
 It allows you to block some messages from the HUD and console during gameplay.
 If a problem occurs during gameplay, then turn the message control up to
 debug to see the messages.
@@ -234,7 +245,7 @@ When I play Heretic, there are all these error messages about missing textures.
 The switch texture names for Doom and Heretic are hard coded into the program.
 The heretic switches were simply incuded with all the Doom switches, and the warning messages previously output were about
 the Doom switches that are not in the Heretic wad. 
-<br>DoomLegacy 1.46 has separate lists, and does not put out these warning messages.
+<br>Since DoomLegacy 1.46, it has separate lists, and no longer puts out these warning messages.
   </dd>
 </dl>
 
@@ -247,12 +258,14 @@ The player acts weird in the Doom wad demos.
 Is there a setting to make the demos work right?
   </dt>
   <dd>
+No, Demo compatibility is automated.
+<p>
 DoomLegacy does not maintain sync with the Doom demos.  It was decided some
 years back, that demo compatibility would be sacrificed in favor of
 new features and improvements.
 <p>The demos only record the player actions and movements.
 Every monster and object reaction is the result of applying random numbers
-as input.
+and player input.
 <p>To playback a demo, the engine must generate the exact same sequence of
 random numbers, and apply them to get the exact same situation that developed
 during the recording.  The monsters must react and walk the exact same
@@ -264,12 +277,10 @@ effects in the playback.
 With the slightest position error, it rapidly gets to the point where the
 playback of player movements is completely irrelevant to the current situation.
 <p>Some attempts have been made fix this with compatibility enables in
-the code, to revert the engine to generate compatible output.
-The current demo compatibility code covers Doom demo and Boom demo formats.
-But still, the player will not stay in sync for more than a few seconds,
-and the aim is off when shooting.
-Some portion of the DoomLegacy code is generating slightly
-different player positions during playback.
+the code, to revert the engine to generate compatible output
+This puts the bugs back in the code.
+The current demo compatibility code mostly covers Doom demo and Boom
+demo formats, but not others.  It has improved old demo playback, somewhat.
 <p>DoomLegacy has its own variation on the demo format.  Like Boom,
 it needs to record a whole bunch of optional settings, all which
 affect demo playback.
@@ -277,6 +288,9 @@ affect demo playback.
 remain in sync.
 I will not make any guarantees on this for long demos, or every situation,
 as it has not been tested much.
+<p>Doomlegacy 1.47, has included some old code that is run for some
+old demos. This makes some of the old Doom demos stay in sync for
+much longer now.
   </dd>
 </dl>
 
@@ -303,22 +317,25 @@ I want to add switches to Heretic and Blasphemer wads.
 The SWITCHES lump works for Doom, but it does not work with Heretic.
   </dt>
   <dd>
+<p>This was fixed in DoomLegacy 1.46, which has separate Doom and Heretic
+internal switch tables.
+<p>
 Historical Info:
 Doom and Heretic would only load the switches for that version and lower,
-as identified by an episode number in the switch tables, with
-Shareware Doom episode = 1, Ultimate Doom episode = 2, Doom II episode = 3.
+as identified by an episode number in the switch tables.
+The code as Shareware Doom episode = 1, Ultimate Doom episode = 2, Doom II episode = 3.
 Heretic has a similar scheme with Shareware episode = 1,
-and Heretic episode = 2, but only has the two switches both with episode = 1.
+and Heretic episode = 2, but it only contained two switches both with episode = 1.
 <p>The Boom SWITCHES lump is loaded for both Doom and Heretic game modes.
 The usage problem with Heretic was that in previous DoomLegacy the Heretic
-switch names were distinguished by having an episode number = 4,
-which required the SWITCHES lump to also have episode numbers = 4.
+switch names were distinguished by having an episode = 4 in the entry,
+which required the SWITCHES lump to also have episode = 4.
 Such a SWITCHES lump would not have worked with other ports.
-<p>This has been fixed in DoomLegacy 1.46, which has separate Doom and Heretic
-internal switch tables and does not use that scheme.
+<p>
+Since DoomLegacy 1.46, we no longer use that scheme.
 For compatibility, a Heretic SWITCHES lump should have episode = 1,
 or even episode = 2,
-but DoomLegacy 1.46 will still accept episode numbers = 4.
+but DoomLegacy will still accept switches lump entries with episode = 4 for Heretic.
   </dd>
 </dl>
 
@@ -355,12 +372,13 @@ The current video mode has to be made the 'default' so that it is
 saved to the config file.  Press the key 'd' on the Video Options menu
 to set the current video mode as the default.
 <p>Otherwise, the video mode you select is only temporary for this run
-of DoomLegacy.  If you select some video mode that will not display
+of DoomLegacy.  This supports testing modes before committing to using them.
+If you select some video mode that will not display
 properly and you have to abort, or even reboot, it does not become
 stuck to DoomLegacy.  The next time DoomLegacy is started it will
 revert to the known good video mode saved in the config file.
 <p>Do not set a video mode to default until you know it is good.
-If you cannot see the video controls in the DoomLegacy menu,
+If you have a bad video mode and cannot see the video controls in the DoomLegacy menu,
 you will have to edit the config file by hand,
 or delete your config file to clear the bad video mode.
 The config file is re-written when DoomLegacy exits, so do not leave
@@ -394,9 +412,9 @@ somewhat complicated.
 The menus and intermission screens are scaled at integer ratios to
 fit the screen.  This will often leave bars at the edges.  Because
 these are drawn using color palette graphics from the wad, attempts
-at finer interpolation required looking up blended colors in a palette
-which lead to a muddy look.  Because of this the menus will be
-larger or smaller for some video display modes.
+at finer interpolation required looking up blended colors in a palette,
+which leads to a muddy look.  To avoid this problem, the menus will be
+scaled larger or smaller for some video display modes.
   </p>
   <p>
 The game rendering is fully scaled to display the same view at
@@ -418,10 +436,10 @@ There is a FOV control, but it zooms and does not change the aspect ratio.
   </p>
   <p>
 When you have a 16:9 display, Doom Legacy displays expecting a 4:3
-aspect, and the monitor will stretch it to the 16:9 shape.  This will alter
-the appearance of rooms and sprites.  Some monitors can be set to
-display a 4:3 aspect with black borders.
-The best alternative is to turn off fullscreen, and choose a window size
+aspect, and the monitor may stretch it to fill the 16:9 shape.
+This will alter the appearance of rooms and sprites.
+Most monitors can be set to display a 4:3 aspect with black borders.
+One alternative is to turn off fullscreen, and choose a window size
 that fills most of the screen.
   </p>
   </dd>
@@ -455,9 +473,8 @@ modes will be allowed.
 It is more fair in deathmatch for all players to have the
 same field of view.  There will have to be network controls to allow using
 wide field of view.
-<p>This will also have to be changed soon, as wide screen monitors are
-becoming more commonplace.
-However, I do not have one. All my monitors are still standard proportion.
+<p>This will also have to be changed soon (been saying that for years),
+as wide screen monitors are now commonplace.
   </dd>
 </dl>
 
@@ -471,8 +488,8 @@ volume control.
   </dt>
   <dd>
 More recent Windows products changed the sound interface to implement
-only one volume control for a program.  All the Doom ports are
-having problems with this.  Doom Legacy has not implemented any of
+only one volume control for a program.  All the Doom ports have had
+problems with this.  Doom Legacy has not implemented any of
 the suggested solutions yet.  One requires starting an independent task to
 play the music, just to get the independent volume control.
   </dd>
@@ -489,7 +506,7 @@ play the music, just to get the independent volume control.
 running an older DoomLegacy.
 <p>The Game server locations respond to requests.
 The interested parties should submit a request to the Game Server to host a
-DoomLegacy 1.46 Server.
+DoomLegacy 1.47 Server.
   </dd>
 </dl>
 
@@ -518,14 +535,43 @@ DoomLegacy port address (port 5029).
   <dd>
 The IP addresses in the range 192.168.1.1 to 192.168.254.254 are
 reserved for local network usage.
-<p>Pick an IP address for your server, such as 192.168.3.1.  All your
-player computers then need to have IP addresses on the subnet 192.168.3.xx,
+<p>Your local network will be limited to an address range, a subnet.
+If your netmask is the usual 255.255.255.0, then your subnet is limited to
+only vary the last number, and all the computers on that subnet must
+have the same first three numbers.
+<p>Pick an IP address for your server, such as 192.168.3.2.  All your
+player computers then need to have unique IP addresses on the subnet 192.168.3.xx,
 where xx is 2..254.
-<p>Modern internet communications should allow you to add this IP address to
-your recognized addresses for a particular hardware device.
-It should not have to replace any existing internet address.
-<p>Your firewall has to let through the DoomLegacy port address
+<p>
+For this example, lets consider the network 192.168.3.0,
+which has a computer 192.168.3.2,
+and two visitors at 192.1.3.72, and 192.1.3.246.
+<p>
+If you have a router with DHCP, such as your wifi-router,
+then it will automatically assign an IP address in your subnet when the
+visitor computer connects to the wifi.
+Without DHCP, you have static IP addresses, and the visitors will have to modify
+their IP address to work on your network.
+<p>If your DoomLegacy server is connected using DHCP, then the server IP address
+may be different then last time you played.  You will then have to config every
+client computer to use the new server IP address, which is bothersome.
+Most modern routers will connect a recognized computer to the same IP address it
+used last time it was connected.
+You can set up your router to do this, or even assign a static IP address to the server.
+Otherwise, make sure the server connects to the network first, so some
+client does not steal the preferred IP address it uses.
+<p>It does not matter what IP address the clients get, as long as it
+is an address on your subnet.
+The server gets the client IP address from their first connect message.
+<p>Without DHCP, modern internet communications should allow you to
+add the server IP address
+to your recognized addresses (static or manual routing) for a particular hardware device
+(like your wifi-router, or Ethernet router, assuming you have the firewall enabled).
+Just add the needed addresses, you should not have to replace any existing internet address.
+<p>Your firewall has to let through the DoomLegacy server port address
 (port 5029).
+<p>If any of your clients are using an unusual port address, then your
+firewall will also need to let through messages to that port.
   </dd>
 </dl>
 
@@ -534,28 +580,32 @@ It should not have to replace any existing internet address.
   <dt>My ISP does not like Port 5029, can we change it?</dt>
   <dt>There is another Doom at 5029, can we use a different port?</dt>
   <dd>
-The port can be specified using a command line switch "-udpport 5029".
+The server port can be specified using a command line switch "-udpport 5029".
 You must avoid any existing port your ISP may be using for services.
 <p>The user reserved ports start at 5000.  I recommend only going up from
 5029, such as 5100 .. 5199, to avoid other programs.
-<p>All your players must specify the same port number on their command
+<p>All your players (clients) must specify the same port number on their command
 line, and fix their firewalls to allow through packets that use that port.
   </dd>
 </dl>
 
 
 <dl>
-  <dt>DoomLegacy 1.46 will not play with older DoomLegacy servers?
+  <dt>DoomLegacy will not play with older DoomLegacy servers?
   </dt>
   <dd>
-The Network version has been bumped to Version 22 in DoomLegacy 1.46.
-The network code in DoomLegacy 1.46 has been hardened against
+The Network version has been bumped to Version 24 in DoomLegacy 1.47.
+Some of the network messages have been changed.
+Since DoomLegacy 1.46, the network code has been hardened against
 malicious packets overrunning buffers and from using file download to
 explore your file system.
-<p>The previous versions of DoomLegacy should be eliminated from network
+<p>Older versions of DoomLegacy should be eliminated from network
 usage for security reasons.
 With so many important bug fixes, there is no
 reason to be using older DoomLegacy for network play.
+<p>Each client should ideally run the same version of DoomLegacy as the server.
+Otherwise, some slight play difference may get them kicked due to
+consistency failure.
   </dd>
 </dl>
 
@@ -567,14 +617,15 @@ network game?
   <dd>
 Bots do not work with network games.  I do not know exactly why they
 trigger consistency errors in the players.
-<p>Bots appear to be a new feature that was being worked on by other
+<p>Bots were a new feature that was being worked on by other
 team members.
 Being that they can only be activated by a obscure
 console command, they may not be totally finished.
 The bots might not be integrated with all DoomLegacy features either,
 such as network play, splitplayer, and saving games.
-<p>Making the bots compatible with network play will have to wait until
-a time when the whole bot system will get re-worked, integrated, and finished.
+<p>Making the bots compatible with network play is waiting until after
+some other major enhancements are done.
+Then the whole bot system will get re-worked, integrated, and finished.
   </dd>
 </dl>
 

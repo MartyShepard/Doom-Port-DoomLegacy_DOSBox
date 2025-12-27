@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: r_things.c 1408 2018-07-15 19:33:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -391,11 +391,11 @@ void R_InstallSpriteLump ( uint32_t      lumppat,     // graphics patch
     {
         rotation = rotation_char - '1';  // 0..8
     }
-    else if((rotation_char >= 'A') && (rotation_char <= 'F'))
+    else if((rotation_char >= 'A') && (rotation_char <= 'G'))
     {
         rotation = rotation_char - 'A' + 10 - 1;  // 9..15
     }
-    else if((rotation_char >= 'a') && (rotation_char <= 'f'))
+    else if((rotation_char >= 'a') && (rotation_char <= 'g'))
     {
         rotation = rotation_char - 'a' + 10 - 1;  // 9..15
     }

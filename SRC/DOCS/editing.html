@@ -9,7 +9,8 @@
 </head>
 
 <body>
-<h1><a name="top" id="top">Doom Legacy 1.46 Editing Guide</a></h1>
+<h1><a name="top" id="top">Doom Legacy 1.47 Editing Guide</a></h1>
+<p>2018-07-12
 
 <div class="floatbox">
 <ul>
@@ -44,7 +45,7 @@ fontbxxx bigfont menu graphics
 <div class="column">
 <p>
 This is a documentation of the new editing features in Legacy. These
-features should be in Doom Legacy version 1.43 and up.
+features should be in Doom Legacy version 1.43 and later.
 </p>
 <p>
 Doom Legacy supports most Boom editing features discussed in the
@@ -118,18 +119,20 @@ See
 <tr><td class="note" colspan="2">
 Translucency maps
 </td></tr>
-<tr><td>284 &ndash; 288</td>
+<tr><td></td>
 <td>
-<b>Software translucency</b><br/>
-These linedefs each apply a different translucency map to the middle
-texture. The corresponding <a href="#transmap">translucency maps</a> are
+<b>Translucency</b><br/>
+Apply a translucency map to the middle texture, making a stained glass
+effect.
+<br>The corresponding <a href="#transmap">translucency maps</a> are
 stored in <a href="#legacy_transmaps">legacy.wad</a>.<br/>
 <br/>
-284 &mdash; TRANSMED: Brightens everything behind the line. Turns things kinda green though.<br/>
-285 &mdash; TRANSMOR: Less brightness with a lot less green.<br/>
-286 &mdash; TRANSHI: Darkens a little with no green tint.<br/>
-287 &mdash; TRANSFIR: Brightens but with no green tint.<br/>
-288 &mdash; TRANSFX1: Selective translucency. Only certain colors are translucent.<br/>
+<tr><td>284</td><td>TRANSMED: Brightens everything behind the line.
+Turns things kinda green though.</td></tr>
+<tr><td>285</td><td>TRANSMOR: Less brightness with a lot less green.</td></tr>
+<tr><td>286</td><td>TRANSHI: Darkens a little with no green tint.</td></tr>
+<tr><td>287</td><td>TRANSFIR: Brightens but with no green tint.</td></tr>
+<tr><td>288</td><td>TRANSFX1: Selective translucency. Only certain colors are translucent.</td></tr>
 </td></tr>
 
 
@@ -170,7 +173,8 @@ Colormaps and water
 <td><a name="linedef_282">282</a></td>
 <td>
 <b>Generate colormap</b>
-<p>This type sets the colormap of all tagged sectors like described below, without changing the floor/ceiling or light values. This is nice for putting colored lighting in many different sectors of different floor/ceiling heights:</p>
+<p>This type sets the colormap of all tagged sectors like described below, without changing the floor/ceiling or light values.
+This is nice for putting colored lighting in many different sectors of different floor/ceiling heights:</p>
 <table>
 <tr>
 <th>Texture</th>
@@ -372,7 +376,7 @@ This is the fog default.
 <td>G</td>
 <td>
 "Fog Sheet": A fog with distance effects.  The current implementation
-use fog sheets that are automatically added where fog sectors are joined.
+uses fog sheets that are automatically added where fog sectors are joined.
 </td>
 </tr>
 <tr>
@@ -455,7 +459,9 @@ Instant raise ceiling
 <p>1024 = 0x400</p>
 </td>
 <td>
-  <p><b>Alltrigger</b>: This flag, when set, will allow all things to activate a W* line, with the exception of flying blood. :) This includes all generalized types that are W*.</p>
+  <p><b>Alltrigger</b>: This flag, when set, will allow all things to activate a W* (walkover) line,
+  with the exception of flying blood. :)
+  This includes all generalized types that are W*.</p>
 </td>
 </tr>
 </table>
@@ -464,14 +470,20 @@ Instant raise ceiling
 <h2 id="things">Thing Types</h2>
 
 <p>
- Legacy supports up to 64 deathmatch starts.
- For compatibility with the existing maps, Legacy
- will use the player starts if all the deathmatch starts
- in a map are occupied. If all the player starts are
- occupied (including extended ones), then a dm start
- chosen randomly will be used.. and players might get
- stuck together, but this will happen normally only
- at the beginning of games with maps with few dm starts.
+ Doom Legacy supports up to 64 deathmatch starts.
+ For compatibility with the existing maps, Legacy will try alternate
+ spawn spots.  At each spot it will first check that the spot is
+ unoccupied, to prevent players from being stuck together.
+ <ol>
+ <li>Will try 64 randomly selected deathmatch starts.</li>
+ <li>Will try randomly selected positions around the last randomly
+     selected deathmatch start.</li>
+ <li>Will try all the coop spawn spots.</li>
+ <li>Will try randomly selected positions around a coop spawn spot.</li>
+ <li>When a unoccupied spot cannot be found, it will spawn at the last coop spawn spot, even if occupied.
+ The players will be stuck together.
+ This should not happen very often.</li>
+ </ol>
 </p>
 <p>
 The Doom map format refers to different types of THINGs
@@ -494,8 +506,12 @@ those introduced by Boom and SMMU.
 <td>Playerstarts for players 5-32.</td><td>JDS group</td>
 </tr>
 
-<tr><td>5001, 5002</td>
-<td>Point push and pull effects</td><td>Boom</td>
+<tr><td>5001</td>
+<td>Point push effect</td><td>Boom</td>
+</tr>
+
+<tr><td>5002</td>
+<td>Point pull effects</td><td>Boom</td>
 </tr>
 
 <tr><td>5003</td>
@@ -505,43 +521,63 @@ those introduced by Boom and SMMU.
 <tr><td>5004</td>
 <td>Path node</td><td>SMMU</td>
 </tr>
-</table>
 
+<tr><td>1200</td>
+<td>Scream Ambient Sound</td><td>Heretic</td>
+<tr><td>1201</td>
+<td>Squish Ambient Sound</td><td>Heretic</td>
+<tr><td>1202</td>
+<td>Drops Ambient Sound</td><td>Heretic</td>
+<tr><td>1203</td>
+<td>Slow footsteps Ambient Sound</td><td>Heretic</td>
+<tr><td>1204</td>
+<td>Heart beat Ambient Sound</td><td>Heretic</td>
+<tr><td>1205</td>
+<td>Bells Ambient Sound</td><td>Heretic</td>
+<tr><td>1206</td>
+<td>Growl Ambient Sound</td><td>Heretic</td>
+<tr><td>1207</td>
+<td>Magic Ambient Sound</td><td>Heretic</td>
+<tr><td>1208</td>
+<td>Laughter Ambient Sound</td><td>Heretic</td>
+<tr><td>1209</td>
+<td>Fast footsteps Ambient Sound</td><td>Heretic</td>
+</table>
 
 
 <h2 id="textures">Palettes, Colormaps and Textures</h2>
 
 <p>
-Doom Legacy consists of several new graphic and patch resources as well as
-supporting different variations of modifying them, view the following:
+Doom Legacy has several new graphic and patch resources, as well as
+supporting different variations of modifying them.
 </p>
 
 <h3>Doom Color Palette</h3>
 
 <p>
-Like many other older games, Doom used originally 256 color
-paletted graphics. The graphics stored in a WAD do not have real
-color information but palette indices. The engine maps these indices
-to real RGB colors using the palettes defined by the
+Like many other older games, Doom used the 256 color paletted graphics.
+The graphics stored in a WAD use palette indices for color, instead of
+the RGB colors we might use today.
+The drawing engine maps these indices to real RGB colors using the palettes defined in the
 <a href="http://doom.wikia.com/wiki/PLAYPAL">PLAYPAL</a>
 lump in the IWAD.
 </p>
 <p>
 So say you want to make a few new textures in your paint program.
 You can either create paletted images using the
-<a href="res/doom.pal">Doom palette</a>, or use
-24/32 bit truecolor images and quantize them to the Doom palette when
+<a href="res/doom.pal">Doom palette</a>,
+or use 24 or 32 bit RGB images and quantize them to the Doom palette when
 they are done.
-<a href="res/heretic.pal">Heretic palette</a> is different from
-Doom's, but used exactly in the same way.
+The <a href="res/heretic.pal">Heretic palette</a> is different from
+the Doom palette, but used in exactly the same way.
 Modern lump editors such
 as <a href="http://www.doomworld.com/xwe/">XWE</a> will convert your
-image to the proper color palette automatically, but
-the results will generally be better if you use the correct palette to
+image to the proper color palette automatically,
+but the results will generally be better if you use the correct palette to
 begin with.
 </p>
 <p>
-Legacy 1.44 does not support hi-res or hicolor textures or sprites.
+Legacy 1.47 does not support hi-res or hicolor textures or sprites.
 However, Legacy 2.0 does!
 Please check the <a href="http://doomlegacy.sourceforge.net/">Doom Legacy website</a> for more info on Legacy 2.0.
 </p>
@@ -558,30 +594,36 @@ a palette:
 <p>
 They are used to create colored area effects,
 such as sectors with colored lighting, or a colored fog for the whole level.
+The hardware renderer tries to emulate these same effects as best it can.
 </p>
 <p>
 Colormaps can be created with a utility called Inkworks.
 Inkworks is a DOS based program which allows you to manipulate the
 color palette and save it in a WAD which contains both PLAYPAL and
 COLORMAP lumps to merge or insert into your WAD.
-This old way of creating colormaps is somewhat deprecated due to the
-fact that they only would show up in software mode. Yet, still an
-option.
+<p>
+A wild or complex effect multicolored colormap works for software rendering,
+but the hardware renderer cannot use colormaps directly.
+The hardware renderer will analyze the colormap and try to reduce it to a simple color blend
+that it can emulate.  The result somewhat has the same tints, but not detailed color effects.
+This hardware renderer method cannot handle colormaps that only highlight certain colors and
+leave others unmodified.  It will generate a color blend that tints everything.
+Because of this limitation it is not recommended to generate unusual custom colormaps.
 </p>
 <p>
 For both hardware and software modes, the easiest way to simulate
-colormaps is just by using Legacy's 
+colormaps is by using the Legacy
 <a href="#linedef_282">Generate colormap</a> linetype and setting
 a hexadecimal RGB color value in its texture field.
-When this is done, an actual colormap lump is not needed.
+This will generate a colormap for the software renderer, and a color blend
+for the hardware renderer.
 </p>
 
 
 <h3 id="lightmap"><span class="keyword">[ADVANCED TOPIC]</span> Lightmaps</h3>
 <p>
-The Doom software renderer uses a set of 34 different colormaps (one
-for each light level plus 2 extra), called a
-<b>lightmap</b>, to simulate different visibility levels.
+The Doom software renderer uses a set of 34 colormaps (one for each light level plus 2 extra),
+called a <b>lightmap</b>, to simulate different visibility levels.
 The default lightmap is stored in the confusingly named
 <a href="http://doom.wikia.com/wiki/COLORMAP">COLORMAP</a> lump.
 One can also simulate colored lighting and fog using lightmaps.
@@ -728,7 +770,7 @@ Flats in a PWAD are supported by the 'addfile' console command
 purposes.
 </p>
 
-<h4>F_ and FF_ markers</h4>
+<h4>F_START and F_END markers</h4>
 <p>
 Flats in a PWAD already worked with the original Doom, you had
 to put a 'F_END' after the last flat. However, it wasted
@@ -738,8 +780,8 @@ flats.
 </p>
 <p>
 Legacy honors the section markers F_START and F_END.
-FF_START and FF_END are also honored. Flats are expected to
-be within these markers and these flat areas will be searched first.
+The alternatives FF_START and FF_END are also honored.
+Flats are expected to be within these markers and these flat areas will be searched first.
 Separate flat sections within PWAD files are supported, and they
 add flats to those found in the IWAD.
 If a flat name is not found within the flat markers then Legacy
@@ -752,9 +794,10 @@ up the name search in Legacy.
 </p>
 
 <p>
-Unlike patch textures, Flats don't need a pname or texture lump.
+Unlike patch textures, Flats don't need a pname or texture description lump.
+The engine determines their parameters from the lump size.
 Just slap them in your PWAD between the section markers F_START and
-F_END and your done.
+F_END and you are done.
 </p>
 
 <p>
@@ -772,6 +815,16 @@ new names), and it only animates (loads) those animated flats that are
 used in a level.
 </p>
 
+Flat sizes supported:
+<ul>
+<li>32x32</li>
+<li>64x64, the standard default size</li>
+<li>128x128</li>
+<li>256x256</li>
+<li>1024x1024</li>
+<li>2048x2048</li>
+</ul>
+
 
 <h3 id="animated">Animated textures</h3>
 <p>
@@ -781,8 +834,8 @@ Now you're probably wondering, what the heck is Swantbl?
 <p>
 <a href="res/swantbls.zip">Swantbl</a> is a utility that creates
 SWITCHES and ANIMATED lumps to put in your WAD, used by Boom and of
-course Doom Legacy. First you will need 2-4 image framesets for your
-animation - depending wheater its a flat, a wall, or a switch.
+course Doom Legacy. First you will need 2 to 4 image framesets for your
+animation - depending on if it is a flat, a wall, or a switch.
 They will need to be (named) and in your WAD. And then, by editing the
 DEFSWANI.dat you add new image frame (names) from Last to
 First. Then compile it with Swantbl, which then outputs the 2
@@ -799,66 +852,97 @@ For now, certain Legacy resources need to be in a format called pic_t.
 You can also use LUMPY or 
 <a href="http://www.sbsoftware.com/">Deepsea</a> to convert other
 image formats to pic_t.
-This is a <span class="warning">DEPRECATED</span> feature, and is
-replaced in Legacy 2.0 by PNG.
+In Legacy 2.0, this will be <span class="warning">DEPRECATED</span>, and
+replaced by PNG.
 </p>
-
+Pictures in pic_t format.
+<table class="def">
+<tr><th>Name</th><th>Description</th></tr>
+<tr><td>CONSBACK</td><td>Console background</td></tr>
+<tr><td>CBLEFT</td><td>Console left border</td></tr>
+<tr><td>CBRIGHT</td><td>Console right border</td></tr>
+</table>
 
 <h2 id="sprites">Sprites and Skins</h2>
 
 
 <h3 >Using SPRITES in a PWAD</h3>
+<p>The standard sprite naming system is used. It has 4 letters for the
+sprite name, followed by frame and rotation characters (5,6).
+The same sprite can be displayed flipped (reversed) for another frame
+and rotation using characters (7,8).  For most objects and standing monsters,
+the left view is the reverse of the right view.  For walking monsters,
+the reversed rotation must use a different frame with the correct leg position.
 
+<p>Defining a sprite with rotation 0, makes it cover all rotations.
+These are often used for round objects, and dead monsters.  Having
+dead monsters with only the 0 rotation is traditional, and it saves on
+the wad size.  Because monsters that are dead are less interesting,
+it also saves effort.  However, it is quite possible to have dead
+monsters with all the rotation views, such as a dead boss.
 
-<p>S_START and S_END markers</p>
-<p>SPRITES in a PWAD _ARE_ supported by the 'addfile' console command
+<p>
+The normal 8 position sprites are still supported:
+<br>(1,2,3,4,5,6,7,8).
+<br>An example is PLAYA2C8, which is for frame A rotation 2, reversed
+for frame C rotation 8.
+<br>The usual standing 8 rotation sprites, using sprite xxxx frame K, are:
+<br>xxxxK1, xxxxK2K8, xxxxK3K7, xxxxK4K6, xxxxK5.
+<br>Using the 16 rotations adds 8 more positions between the existing 8 rotation positions.
+<p>
+With Doom Legacy 1.47 and later, sprites can have 16 rotation positions.
+This uses a sprite naming system used by EDGE2 (3DGE).
+<br>The 16 position sprite order is:
+<br> (1,9,2,A,3,B,4,C,5,D,6,E,7,F,8,G).
+<br>An example is PLAYAACF, which is for frame A rotation A, reversed
+for frame C for rotation F.
+<br>The usual standing 16 rotation sprites, using sprite xxxx frame K, are:
+<br>xxxxK1, xxxxK9KG, xxxxK2K8, xxxxKAKF, xxxxK3K7, xxxxKBKE,
+xxxxK4K6, xxxxKCKD, xxxxK5.
+</p>
+
+<p>SPRITES in a PWAD are supported by the 'addfile' console command
 (loading a PWAD file in the game world). This is useful for testing
 purposes.</p>
 
+<h4>S_START and S_END markers</h4>
+
 <p>
-It is not needed anymore to append the missing sprites in a PWAD
-(using your faithful lump editor).
-You need only S_END (or SS_END) added after the last sprite in your PWAD.
+Doom Legacy locates the S_START and S_STOP lump markers to speed
+loading, and to protect against using the wrong lump that might have the same name.
+In your PWAD, put S_START before the first sprite, and S_END after the last.
+Another START marker will also end the sprite section.
+During loading, the sprite lump in the sprite section will have preference
+over any lump of the same name found elsewhere in the PWAD.
 S_START (or SS_START) is not obligatory, but is recommended to clearly
 separate sprites from skin sprites, and other sections that might
 redefine the same sprite, but for other uses.
-It's good practice to place both S_START and S_END in a PWAD when
+It is good practice to place both S_START and S_END in a PWAD when
 adding new sprite graphics.
 </p>
 
 <p>
 All sprite resources found in a PWAD will replace those loaded
 before, just like with any other resources. Thus, sprites in a PWAD
-replace the original sprites of Doom, Doom2 etc. since the original
-game IWAD is always the first one loaded.
+replace the original sprites of Doom, Doom2 etc. due to the original
+game IWAD always being the first one loaded.
 </p>
 
 <p>
-If you put S_END, but not S_START, sprites will be searched from the
-beginning of the PWAD, up to the S_END.
-We could get rid of S_END, but the loading of sprites would be less efficient.
+Using section markers (S_START, S_END) prevents getting the wrong lump.
+Sprite resources are recognized by their first 4 letters.
+For example player sprites start with PLAY.
+Suppose you replace the PLAYPAL resource in a PWAD, along with some sprites.
+If you don't put in the S_START, and PLAYPAL is BEFORE the sprites,
+it will be taken as a sprite, because it starts with PLAY.
 </p>
 
 <p>
-Another reason for section markers (S_START, S_END): sprite resources
-are recognized by their first 4 letters. For example player sprites
-start with PLAY. Suppose you replace the PLAYPAL resource in a
-PWAD, and use sprites in it, if you don't put the S_START, and
-PLAYPAL is BEFORE the sprites, it will be taken as a sprite since it
-starts with PLAY.<br />
-Solution: always use S_START/S_END, or put the PLAYPAL resource after
-S_END.
-</p>
-
-
-<p>
-You can replace only some frames of a sprite in a PWAD,
-for example replacing PUNGA0, but not PUNGB0. this DOES NOT work
-using sprite renaming with DeHackEd. So I really encourage you to use
-sprites in a PWAD directly instead of DeHackEd sprite renaming. This
-is useful for the rocket for example, when you want to replace only
+You can replace selected frames of a sprite using a PWAD,
+for example replacing PUNGA0, but not PUNGB0.
+This DOES NOT work with DeHacked sprite renaming.
+This is useful for the rocket for example, when you want to replace only
 the missile or only the explosion.</p>
-
 
 
 <h2>Creating Skins</h2>
@@ -895,9 +979,10 @@ uses the skin, it may be replaced in order to be consistent
 with the player character appearance. As soon as we ran some
 tests with a Leprechaun skin, and saw the marine's head in
 the status bar... we added support for replacing the status bar
-face. Like the sprites, _ALL_ the face graphics need to be
+face. Like the sprites, all the face graphics need to be
 replaced, if some are not defined, the game will quit.
 </p>
+
 
 <h4>Skin sounds</h4>
 <p>
@@ -1002,7 +1087,7 @@ editor requests that all resources have a _unique_ name.
 using the "sprite = XXXX" statement, you will probably need
 this only if you really can't get the sprites ordered just
 after the S_SKIN resource.</p>
-<p>Note: _ALL_ the frames of the player sprites must be replaced.</p>
+<p>Note: ALL the frames of the player sprites must be replaced.</p>
 
 <div class="code">face = TER</div>
 
@@ -1022,7 +1107,7 @@ of the player, as like it does for sprites.
 <p>
 Contrary to the sprites renaming, you MUST use this
 line in order to change the status bar face graphics.
-You must replace _ALL_ of the status bar face
+You must replace all of the status bar face
 graphics, that is, provide a replacement for all
 the resources that start with STF.</p>
 
@@ -1062,50 +1147,84 @@ sounds.</p>
 
 <h4>Skins and sprites in the same PWAD</h4>
 <p>
-If you have a WAD with skins _AND_ other sprite replacements,
-make sure you use S_START, S_END sprite section markers so
-that the skin sprites are not replacing the default player
-sprites, in case you use 'PLAY' for the skin sprites. If the
-PLAYxxxx skin sprites are _outside_ of the sprite section
-markers, they will not be mistaken as the default player
-sprites.</p>
+If you have a WAD with skins and also have other sprite replacements,
+make sure you use the S_START and S_END sprite section markers around the
+sprites.  This prevents the skin sprites from replacing the default player
+sprites, in case you used 'PLAY' for any of the skin sprites.
+The PLAYxxxx skin sprites that are outside of the sprite section
+markers, will not be mistaken as the default player sprites.
+</p>
 
 <h4>Same resource name on different PWADs</h4>
 <p>
-To make it clear: Legacy will add skins _WAD PER WAD_. Which
-means it doesn't matter at all if there are resources with the
-same name in different PWADs. In fact, Legacy doesn't even bother if you put several markers
-with the same name in a PWAD (multiple S_SKINs for example).
+To make it clear: Legacy will add skins using lumps in the same WAD.
+This means it does not matter if there are resources with the
+same name in different PWADs.
+Legacy is not bothered if you put several markers
+with the same name in a PWAD (multiple S_SKIN for example).
 We added support for S_SKINxx where xx can be any character,
 just because some WAD utilities don't like multiple resources
 of the same name.
 </p>
 
 <p>You could for example use the same sprite name for several
-skins in a single PWAD, since they are delimited by skin
+skins in a single PWAD, because they are delimited by skin
 markers (S_SKIN).</p>
 
 
 
 <h2 id="voodoo">Voodoo dolls</h2>
 
-<p>Now in version 1.44 and up.</p>
+<p>Version 1.44 and later.</p>
 
-<p>Create Voodoo Dolls for extra player1 start positions.
+<p>Vanilla Doom created Voodoo Dolls from extra player start positions.
+This has traditionally been player1, but any player start position
+will do it (for instance in PLUTONIA MAP06).
+Voodoo dolls can be used to trip linedefs.
 This is necessary for many WADs, which use the voodoo dolls for timers
 and action activators.</p>
-<p>Simply place an (extra player 1 start) in your map.</p>
-<p>The trick is using it in an area where the player or item can be pushed, pulled or teleported into effected areas.</p>
-<p>For example, the appearance of the player will alert monsters, which is useful for teleporting monsters in front of your real player, without the old way (creating a small tunnel) or without any scripts. So, if you put the voodoo doll in a small room with a monster on the other side of a door, when the door opens, the monster walks forward, which then could be teleported in front of your (real) player start location.</p>
-<p>This is only 1 example of the many different things that could be done with Voodoo dolls. Another example would be receiving health by means of conveyor or scrolling floor.</p>
-<p>Even though similar effects can be done using Fraggle Script and <a href="fsfuncs.html#map_inter">spawning items</a>. The difference is, Voodoo dolls don't require a script and can be implemented via map creation. This makes it easier when you already plan on doing loads of work to your map.</p>
+
+<p>Due to the way vanilla Doom created voodoo dolls, the last player
+start position placed on the map is the actual player start position.
+A player object would have already been spawned for the previous start position,
+but the spawning of a new player object would disconnect it,
+which made it a voodoo doll.  It would not respond to player commands,
+but you could see it, and if you hurt it the player would get hurt.
+</p>
+
+<p>Simply place an extra player1 start position in your map.
+The lower numbered player start positions will become voodoo dolls.
+The last player1 start position will become the actual player1 start.</p>
+<p>There are several tricks to using a voodoo doll, and it should be
+easy to find help documents about using them.
+<ul>
+<li>A voodoo doll can be moved on a conveyor, which is a scrolling floor.</li>
+<li>It will trigger any player triggered linedef that it passes over.</li>
+<li>Any item that it passes over, it will pickup and pass to its player.</li>
+<li>It will pass to the player any damage it receives.</li>
+<li>When crushed by a crusher, or killed by telefrag, it passes the effect to its player.</li>
+<li>It will attract monsters like it was an actual player.</li>
+</ul>
+<p>For example, the appearance of the voodoo doll will alert and attract monsters.
+This can be more effective than creating tunnels, and does not require scripts.
+You can put a voodoo doll on one side of a door with a monster on the
+other side, and when the door opens, the monster walks forward triggering a teleport.
+The monster will then appear in the teleport target sector, which can be anywhere.</p>
+<p>
+Another example, put a health bonus (any item that can be picked up) on a conveyor or
+scrolling floor, and have it move the items to the voodoo doll.
+The player will get the health and items without seeing them or any mechanism.</p>
+<p>Even though similar effects can be done using Fraggle Script and
+<a href="fsfuncs.html#map_inter">spawning items</a>, the voodoo doll
+can be simpler to implement, and it works with other Doom ports.
+</p>
 
 
 <h2 id="wadcontents">legacy.wad contents</h2>
 
 <p>
-legacy.wad is the main data file in the Doom Legacy distribution. It
-contains several resources used by the engine, any of which can be
+legacy.wad is the main data file in the Doom Legacy distribution.
+It contains several resources used by the engine, any of which can be
 replaced using PWADs.
 </p>
 <p>

@@ -1,5 +1,12 @@
 * Not need to Compile.
 
+[01412 ]: w107 107 debug off
+[01411 ]: w107 106 linux_x11 warnings
+[01410*]: w107 105 Version 1.47.2
+[01409*]: w107 104 docs 1.47
+[01408 ]: w107 101 sprite16 fix G
+[01407 ]: w107 101 dm spawn
+[01406 ]: w107 101 launcher escape
 [01405 ]: w107 100 fs sound
 [01404 ]: w107 99 surround sound
 [01403 ]: w107 99 surround sound

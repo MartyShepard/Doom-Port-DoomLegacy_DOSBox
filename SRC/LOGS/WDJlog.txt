@@ -6715,3 +6715,26 @@ patchfile = w107_103_sprite16_fix.patch
 - commit revision 1408
 Fix the missing 'G' rotation in the sprite name detection.
 
+*** w107_sprite16_fix
+patchfile = w107_104_1.47_docs.patch
+- commit revision 1409
+Docs updated for 1.47, features and bug fixes.
+
+*** w107_Version1472
+patchfile = w107_106_Version1472.patch
+- commit revision 1410
+Release version 1.47.2.
+
+*** w107_linux_x11
+patchfile = w107_105_linux_x11.patch
+- commit revision 1411
+Fix some compile warnings in the linux_x port.
+
+*** w107_linux_x11
+patchfile = w107_105_linux_x11.patch
+- commit revision 1412
+Turn off the DEBUG in linux_x11 sound server.
+
+
+
+

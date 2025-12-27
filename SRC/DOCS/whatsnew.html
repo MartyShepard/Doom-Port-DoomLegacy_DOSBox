@@ -13,7 +13,415 @@
 
 <div class="column">
 
-<h2>1.46.3 SVN1301 (2017-2-19)</h2>
+
+<h2>1.47.2 SVN1400 (2018-07-12)</h2>
+
+<h3>FEATURES 1.47.2</h3>
+<ul>
+<li>
+Added Marine's Best Friend (MBF) wad capability to DoomLegacy.  This
+includes Friends and Dogs.  Objects can have TOUCHY (explodes when
+touched) and BOUNCES attributes.
+There are several new menu controls for new MBF monster behaviors.
+MBF capabilities are enabled by default for DoomLegacy playing modes,
+and disabled for older demos.
+</li>
+<li>
+Added the MBF door gradual light effect.  This operates better
+than the previous off/on effect.
+</li>
+<li>
+Added the MBF telefrag which expands the determination of who
+can telefrag to include Bosses on any map.
+</li>
+<li>
+Added the MBF icy slide logic to player movement.
+</li>
+<li>
+Added the MBF dogs, functions, and sounds.
+MBF and PrBoom only have dogs for a single player.
+In DoomLegacy they also can be used in coop games, and will respawn.
+The respawn delay for dogs is fixed at 5 seconds.
+</li>
+<li>
+A monstergravity menu control has been added, to control if gravity affects monsters.
+Combined the DoomLegacy monster gravity control with the Boom and MBF effect
+controls.
+Some older code would have monsters instantly fall to the floor, while
+newer code has them fall under the influence of gravity.
+</li>
+<li>
+Added the Boom skymap control, as cv_invul_skymap.
+The Boom fix makes the sky appearance change with invulnerability.
+</li>
+<li>
+Added the Boom zerotags control, as cv_zerotags.
+This prevents many linedef from using a sector TAG that is 0.
+</li>
+<li>
+Monster fighting now has a monster no-infight setting, and the Normal setting
+enables infighting (as in Vanilla Doom).
+</li>
+<li>
+Added Heretic and Normal settings to monster friction so they can be
+more easily set up for a particular usage.
+<br>Monster Friction:
+<ul>
+<li>None</li>
+<li>MBF</li>
+<li>Momentum</li>
+<li>Heretic</li>
+<li>Normal</li>
+</ul>
+</li>
+<li>
+Added the Boom weapon recoil, as console variable cv_weapon_recoil.
+</li>
+<li>
+Added a third page to the command key settings menu, and moved
+some of the keys to the third menu.
+Added a settable command key for screenshot.
+</li>
+<li>
+Added a screenshot type console control to select compact, full, or PCX.
+<ul>
+<li>Compact</li>
+<li>Full</li>
+<li>PCX</li>
+</ul>
+This does not appear in the options menus.
+<br>PCX file type is only available with PC_DOS.
+<br>The Targa file type is used otherwise for screenshots.
+<br>The "compact" setting will save the screen in the closest format
+of the drawing (8 bit with colormap, 16 bit, or 24 bit).
+<br>The "full" setting will convert to RGB 24 bit Targa format.
+<br>Hardware drawing mode will save the screen in the Targa file format.
+</li>
+<li>
+Revised some of the monster sight functions to get better compatibility with
+Boom and MBF, and to take advantage of improvements.
+</li>
+<li>
+Added the MBF unstuck code, which gets monsters unstuck.
+</li>
+<li>
+Added the MBF dropoff code, which controls when monsters can go off dropoffs.
+</li>
+<li>
+Added MBF support functions, BEX code pointers, and dehacked flags support.
+</li>
+<li>
+Added the MBF A_KeepChasing code pointer, as defined by EnternityEngine.
+</li>
+<li>
+Added parm1 and parm2 support in DEH, as used by MBF.
+<br>Param syntax is
+<pre>
+  Unknown 1 = value
+  Unknown 2 = value
+</pre>
+Added the [HELPER] section in BEX, as used in PrBoom, to define an alternative
+to the DOGS to be the player friend.
+<br>Syntax is
+<pre>
+  [HELPER]
+  TYPE = 43
+</pre>
+</li>
+<li>
+Included some function (BEX code pointers) for heretic DEH, from EternityEngine.
+This does not include the functions that are unique to EternityEngine.
+</li>
+<li>
+Sprites can now have 16 rotation positions.
+This uses a naming system in use by EDGE2 (3DGE).
+The normal 8 positions still apply (1,2,3,4,5,6,7,8).
+It adds 8 more positions between the existing 8 rotation positions.
+The 16 positions are (1,9,2,A,3,B,4,C,5,D,6,E,7,F,8,G).
+</li>
+<li>
+Updated the savegame code to also save the new MBF fields.
+The old savegames are still readable too.
+</li>
+<li>
+Detect Hexen wads, to issue an appropriate hud message that DoomLegacy
+cannot support them, yet.
+</li>
+<li>
+Multiple clients, or a server and client, can use the
+same computer and internet stack now.
+Can now give the client some alternate sock port addresses and let
+the client search for one that is not in use.
+The server will use whatever sock port the client uses to connect.
+</li>
+<li>
+Improvements to the skin selection menu, for player1 and player2.
+Change the menu to use the skin name and not the skin indexes
+as the skin selection choice.
+The skins storage is now dynamic, with a maximum of 128 skins.
+</li>
+<li>
+Revised the menu system due to more menus and complicated menu paths.
+Changed from a static menu ordering, to a system with dynamic order.
+This fixes the problems with escaping a menu back to the wrong menu.
+Added more Boom and MBF menu controls, creating a new options page.
+</li>
+<li>
+Provide the ability to compile for a particular architecture.
+The ARCH option is added to the make_option files.
+It appears that the default is to compile for  -march=generic32,
+which appears to be close to i486.
+Compiling for i686 can reduce the code size by 30K.
+</li>
+</ul>
+
+<h3>BUG FIXES 1.47.2</h3>
+<ul>
+<li>
+The gravity functions affect all players and monsters, but some old enemy
+logic immediately moved monsters to the floor.
+Added an enable and menu controls to block the enemy monster code from overriding the gravity.
+Fixes bug 0632.
+</li>
+<li>
+Fixed the screenshot for OpenGL and hi-res modes.
+Fixes bug 0637.
+</li>
+<li>
+Fixed where Heretic E1M8 was displaying a default gray flat for the lava floor.
+The LAVA flats in Heretic E1M8 are not a standard size (6150), they
+likely have an extra row (64x65).
+The previous flat logic could not classify their size.
+Changed the flat size classification to display odd flat sizes
+as the next smaller recognized size.  This will almost always be 64x64.
+Note: The Heretic F_SKY1 flat has a size of 4, but it is never displayed.
+Fixes bug 0638.
+</li>
+<li>
+Return the correct IPX address value on FreeBSD.
+Supplied by Alexy Dokuchaev.
+Fixes bug 0639.
+</li>
+<li>
+A Heretic inventory item could be used up by a menu keypress.
+If the inventory item had been selected, then the menu entered,
+the same inventory keypress when used in the menu would leak into
+the inventory response and use up the item.
+Fixed the inventory response code to ignore keypresses during menu and
+console.
+Fixes bug 0641.
+</li>
+<li>
+Heretic E4M1 has a platform, using linedef 22 (raiseToNearestAndChange),
+that would retrigger.
+Boom code for the same linedef was releasing the thinker, allowing the
+platform to operate again.
+For gamemode heretic, made DoomLegacy use the heretic test, which does not
+remove the thinker for this linedef action.
+Fixes bug 0642.
+</li>
+<li>
+Reset the freelook when exiting the level, or spawning.
+Fixes bug 0643.
+</li>
+<li>
+Fixed problems when surround sound is enabled.  It was only handled by
+Win32 port.
+The SDL port now supports surround sound.
+All the ports will now intercept the special separation value used to signal
+surround sound.
+</li>
+<li>
+Fixed fs sound segfault caused by bad origin.
+</li>
+<li>
+Fix some type conversion problems that affect big-endian machines.
+Mostly byte comparisions to -1, and automatic type conversion
+from unsigned to int.
+</li>
+<li>
+Rewrote much of the qmus2midi conversion to bring it up to date.
+Fixed comparisons that affect compilation on big-endian machines.
+Removed tests for -1 that were from testing for EOF, as the buffers
+do not have a terminator for EOF.
+Removed extraneous parameters from the qmus2midi conversion.
+</li>
+<li>
+Fixed the menu so that it no long segfaults on overly large skins
+(such as "war" from Skins.wad, which has 125 skins).
+Changed the way that the skin choices are updated to the network.
+Improved the skin setting functions to support this.
+Made the skins storage dynamic, with a maximum of 128 skins.
+</li>
+<li>
+Floating point optimizations regarding declarations and proper
+constant typing.  Reduces code size, avoiding extra operations.
+</li>
+<li>
+Added the code for the PrBoom skull bounce fix.
+</li>
+<li>
+From PrBoom, no oof when dead.
+</li>
+<li>
+DoomLegacy uses model sectors, due to having more complicated special
+sectors, and 3d-floors.
+Fixed MBF logic for checking model sectors for hidden players and monsters.
+</li>
+<li>
+Fixed a damage function to allow player gibs again.
+Reported by Eckert.
+
+Moved the voodoo intercept of damage to be earlier so that the tests
+on armor and attributes are done on the voodoo redirected target.
+</li>
+<li>
+Fixed a bug from a prevous patch.
+In OpenGL, the corpse color was black due to a missed change in color translation.
+</li>
+<li>
+Added a test to exclude texture names that start with '#' (which
+are used for parameters) from error messages about textures not found.
+</li>
+<li>
+Stop savegames and netgames from changing the saved user config.
+</li>
+<li>
+Check search directories for cases where the default dir is
+the home directory, or if it contains "Desktop", "Pictures", or "Music"
+directories.  If one of these is detected, the default dir
+will not be searched.  This is to avoid long searches due
+to the depth of wad search, and to avoid searching the users
+home directory, or exposing it to wad loading searches.
+</li>
+<li>
+Updated the DoomLegacy network version to 24.  Some changes make the new network
+code incompatible with previous versions.
+Added the PT_ACKS message type, which moves the codes of some of the existing message types.
+Reworked the textcmd record formats and code to fix suspected faults.
+Protections against malicious packets have been added.
+</li>
+<li>
+Made the alternate client sock port work.
+</li>
+<li>
+Fix the network XCMD so that when the network is not connected
+it will flush the XCMD buffer instead of generating an error message.
+The name, skin, and color of the player will be updated when they do connect.
+</li>
+<li>
+Added a network PT_STATE message, which updates the tick, P_Random index,
+and the pause.  Added a broadcast function that the server may
+use to send a message to all connected players.
+The server will use this state broadcast to pause all players
+while a savegame download is performed,
+and will update the pause state for the new player.
+This allows a player to connect while the server game
+is paused, which before would trigger a consistency failure.
+</li>
+<li>
+Fixed the DEH state pointers so that the standard state values
+are translated to the DoomLegacy internal state indexes.
+This will allow Heretic DEH patches to work, and is
+necessary for the MBF DOG states to be found by DEH.
+</li>
+<li>
+Added respawnmonstertime and itemrespawntime to be saved in a DoomLegacy demo.
+</li>
+<li>
+Show temporary values of variables on the console.
+Depends upon CV_STRING, CV_VALUE, and EV values.
+This makes it possible to see both user settings and param settings.
+Bug 0136 has been fixed, at some point.
+</li>
+<li>
+Fixes uses of the Heretic const, ANGLE_1, which has a significant round-off error.
+Heretic used it to get a 10 degree spread of missiles, like ANGLE_1*10.
+Other uses of it have caused demo sync problems.
+This fix restores the vanilla calculations, and fixes a fragglescript usage of it.
+</li>
+<li>
+Changes that affect Vanilla demo playback.  These changes provide some
+calculations that match the Vanilla code.  This fixes some bugs when
+playing the older demos (even though they still de-sync eventually).
+</li>
+<li>
+Added enable support for some missing Boom effect controls, mostly important for
+playing Boom demos.  These are internal enables controled by the demo, not user controls.
+The DoomLegacy default is to set these to enable the latest bug fixes.
+<br>EN_boom_physics : Boom comp to enable boom physics selectively.
+<br>EN_boom_floor: enables some fixes to limit movement of lift ceilings
+  and floors.
+<br>EN_blazing_double_sound : Boom comp to disable a fix that prevents blazing
+doors from generating two sounds.
+<br>EN_doorlight : A Boom comp that also affects an MBF light effect.
+<br>EN_catch_respawn_0: enables the fix for the (0,0) respawn bug.
+<br>EN_invul_god: enables the fix to make god mode impervious to damage.
+<br>EN_skull_bounce_floor : Boom skull bounce comp.
+<br>EN_skull_limit: enables removing the skull limit
+<br>EN_old_pain_spawn: disables a fix that prevented spawning skulls inside walls.
+<br>EN_demotic_109: enables old demo tic format reading.
+<br>EN_boom_longtic flag: enables reading boom demos with long tic values.
+<br>EN_sleeping_sarg_bug: disables the fix of the sleeping sarg bug.
+<br>EN_doom_movestep_bug: enables bug in vanilla move step that skips negative limit tests.
+<br>EN_vile_revive_bug: enables buggy vanilla code for reviving monsters.
+</li>
+<li>
+Fixed reading boom demo headers and assigning default values to comp flags
+read from boom headers.
+</li>
+<li>
+Changed the method of running demos back to the original method, using a state flag.
+Trying to do it using a console command took more gametics to start the demo.
+It would run the vanilla demos with a wrong gametic value,
+and the gametic is used to determine some monster behavior.
+</li>
+<li>
+Many of the EN enables were messed up by demos, and were not being restored.
+Added calls to the Stop and Kill Demo code, that restores the gamemode EN default values.
+This fixes 2 errors, one where the user could not start a game after stopping a demo,
+and where an unrecognized demo code was received after stopping a demo.
+</li>
+<li>
+Fixed a demoversion test that was blocking autoaim during demo playback.
+</li>
+<li>
+Fixed P_XYMovement function to account for odd momentum in movement stepping.
+Added a demo compatibility test, and add old movement stepping logic
+in the loop, for old demos.
+</li>
+<li>
+Fixed the LookForPlayers function to loop through the players only once.
+The vanilla code would look twice due to a failed test.
+</li>
+<li>
+Fixed some sight logic when the two are in the same sector.
+The previous assumption was skipping some other tests in the function.
+Doing more full sight testing fixes some demo sync problems too.
+Added a compatibility test for old DoomLegacy demos.
+</li>
+<li>
+Adopted a demo tic accounting adaptation similar the PrBoom basetic.
+This fixes a revenant missile bug in some demos,
+by using (gametic - basetic) in the missile effects randomizer.
+In DoomLegacy, have implemented demo_comp_tic, which
+does the same thing by keeping a valid corrected tic, which
+does not run during menus and pauses.
+The demo_comp_tic is saved in demos, but is not saved in savegames.
+</li>
+<li>
+Fixed compilation errors, discovered by Adam Stylinski.
+This includes compiling with gcc and the clang compiler.
+</li>
+<li>
+Fixed some Win32 compile problems.
+Win32 uses WSAEADDRINUSE, instead of the Unix EADDRINUSE.
+MINGW32 does not have the strndup function, so had to imitate one.
+</li>
+</ul>
+
+
+<h2>1.46.3 SVN1301 (2017-02-19)</h2>
 
 <h3>FEATURES 1.46.3</h3>
 <ul>
@@ -24,6 +432,11 @@ The translucent draw control has been expanded.
 
 <h3>BUG FIXES 1.46.3</h3>
 <ul>
+<li>
+Fix the setup of the message box position for non-menu message boxes.
+Fix message box text positioning so that it is in the message box for
+video modes other than 800x600.
+</li>
 <li>Video modes switches could cause segfault if a video print triggered
 console output.  This was occuring in the linux_x xshm port when
 verbose was enabled.
@@ -59,10 +472,9 @@ it exists before trying to exec it.
 </ul>
 
 
-<h2>1.46.2 SVN1287 (2016-12-10)</h2>
+<h2>1.46.2 SVN1287 (2016-12-18)</h2>
 
 <h3>FEATURES 1.46.2</h3>
-
 <ul>
 <li>To improve the situation with players being kicked due to
 consistency errors, network repair messages have been added.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1390 2018-05-31 04:49:52Z wesleyjohnson $
+// $Id: m_menu.c 1406 2018-07-15 19:31:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -4780,6 +4780,9 @@ boolean M_Responder (event_t* ev)
 
       case KEY_ESCAPE:
         currentMenu->lastOn = itemOn;
+        if( init_sequence == 1 )
+	    goto ret_true;  // No escape from Launcher
+
         if( menucnt )
         {
             Pop_Menu();

@@ -10,8 +10,8 @@
 <!-- $Id$ -->
 
 <body>
-<h1>Doom Legacy 1.46 Console Reference</h1>
-<h1 class="tagline">Last updated 2017-02-18</h1>
+<h1>Doom Legacy 1.47 Console Reference</h1>
+<h1 class="tagline">Last updated 2018-07-10</h1>
 
 <div class="floatbox">
 <h2>Contents</h2>
@@ -37,6 +37,7 @@
 <li><a href="#net_options">Net options</a></li>
 <li><a href="#video_options">Video options</a></li>
 <li><a href="#sound_options">Sound options</a></li>
+<li><a href="#misc_options">Misc options</a></li>
 </ol>
 </li>
 </ol>
@@ -55,12 +56,12 @@ in a hurry!
 
 <h3 id="usage">Console usage</h3>
 
-<p>With Doom Legacy's console, you will be able to change most of the game
+<p>With the DoomLegacy console, you will be able to change most of the game
 parameters from within the game, and customise it to your preferences.
 The console is simply a command prompt, where you can enter commands
 and change the values of game variables.
-Since the first game console we know of was from id Software's game Quake,
-we have been inspired by it and have tried to implement the same
+The first game console we know of was from id Software's game Quake.
+We have been inspired by it and have tried to implement the same
 functionality for the benefit of Quake/Doom fans.
 </p>
 
@@ -75,22 +76,22 @@ To exit the console, either press the console key again, or press
 <p>The console displays all messages from the game. You can go back in
 the messages with key <b>PAGE UP</b>, and go down with the key <b>PAGE
 DOWN</b>. Press the key <b>HOME</b> to jump to the oldest message in the
-console text
-buffer, and key <b>END</b> to jump to the last output message (the most
-recent).
+console text buffer,
+and key <b>END</b> to jump to the last output message (the most recent).
 </p>
 
-<p>The last lines of the console text buffer are displayed at the top
-of the screen, when the console is off. That is, you can see 5 lines
-of messages instead of only 1 in the original Doom. You can change
-the duration of display of the messages with the console variable
-<a href="#con_hudtime">con_hudtime</a>, see the commands section for more.
+<p>When the console is off, the last lines of the console text buffer are
+displayed at the top of the screen.
+There you can see 5 lines of messages (the original Doom only showed 1 line).
+You can change the message display duration with the console variable
+<a href="#con_hudtime">con_hudtime</a>.
+See the commands section for more information.
 </p>
 
 
 <h3 id="input">Console input</h3>
 
-<p>While the console is on, it accepts typed-in commands.
+<p>While the console is on, you can type in commands.
 <b>BACKSPACE</b> erases the last input character, and <b>ENTER</b> executes the command.
 For convenience, you have a history of the last 32 commands entered.
 Press <b>UP ARROW</b> to go back in the commands history, <b>DOWN ARROW</b> to
@@ -98,42 +99,44 @@ go forward.
 </p>
 
 <p>
-Another very useful key is <b>TAB</b>: it completes a partially
+Another useful key is <b>TAB</b>: it completes a partially
 entered command or variable name.
-This is a very good way to see the existing commands: just
-enter any letter, then press <b>TAB</b> several times to see what commands
-are available.
+This is also a good way to sequence through the existing commands,
+without having to remember their exact spelling.
+Enter the first letter, then press <b>TAB</b> to complete the command.
+Each press of <b>TAB</b> displays another alternative command.
+</p>
+
+<p>Use <b>SHIFT-TAB</b> to step through the alternatives in reverse order.
+It also completes the command line, when used after typing.
 </p>
 
 <div class="example">
 The variables to customize the console itself usually start
-with "con_", thus typing "con" and pressing the <b>TAB</b> key several times
-will display the following console variables: con_height, con_speed,
-con_hudtime, con_backpic...
+with "con_". To see them all type "con" and press the <b>TAB</b> key.
+The first con_ variable will be displayed, con_height.  Each press of
+the <b>TAB</b> key will display the next variable, 
+con_speed, con_hudtime, con_backpic...
 </div>
 
-<p>You can also press <b>SHIFT-TAB</b>, which will complete the command line,
-but in reverse order.
-</p>
 
 
 <h3 id="cmd_var">Commands and variables</h3>
 
-<p>Basically, a <b>command</b> does not have a value, and is not saved to the
-configuration file. It may take zero or more parameters.
-A <b>variable</b> always has an associated value, for
-example the variable <span class="keyword">name</span> holds your name as a player.
+<p>The console accepts commands, and the setting and display of variables.
+A <b>command</b> executes an operation.  It may have parameters.
+A <b>variable</b> always has an associated value.
+For example the variable <span class="keyword">name</span> holds your name as a player.
 </p>
 
-<p>Entering a command without any parameters will usually tell you
-the command syntax.
+<p>Entering a command without any parameters will usually display the command syntax.
 </p>
 
 <div class="code">> map
 Usage: map &lt;number|name&gt; [&lt;entrypoint&gt;]: warp players to a map.
 </div>
 
-<p>Entering a variable name alone will tell you the current
+<p>Entering a variable name without a value will display the current
 value of the variable.
 </p>
 
@@ -142,7 +145,7 @@ value of the variable.
 </div>
 
 <p>
-To set the value of a variable, give the new value after the variable name.
+To set the value of a variable, enter the variable name followed by the new value.
 For example, to change your name to "dj fab", type
 </p>
 
@@ -151,13 +154,15 @@ flynn renamed to dj fab
 </div>
 
 <p>
-  There are four types of variables/command parameters: <b>strings</b>,
-  <b>integers</b>, <b>floats</b> (actually 16.16 fixed point numbers) and <b>booleans</b>.
+  There are four types of variable and command parameters: <b>strings</b>,
+  <b>integers</b>, <b>floats</b> (actually 16.16 fixed point numbers)
+  and <b>booleans (true/false)</b>.
 </p>
 <p>
-String values containing spaces or certain other special characters
-must be <b>quoted</b> using double quotes, as we saw in the previous example. Inside a quoted string you can
-use the following C-style <b>backslash escape sequences</b>:
+String values can be simple, such as Fred, or quoted, such as "Mr. Fred",
+String values that contain spaces, or certain other special characters,
+must be <b>quoted</b> using double quotes, as we saw in the previous example.
+Inside a quoted string you can use the following C-style <b>backslash escape sequences</b>:
 </p>
 <table class="def">
   <tr><th>Escape sequence</th><th>Resulting character</th></tr>
@@ -175,6 +180,14 @@ this string contains "escaped" special chars such as \,
 <p>
 Boolean variables (true/false, yes/no) use 0 to denote false.
 Any nonzero value means true.
+</p>
+
+<p>
+Integer variables are simple integer values, such as 2, and 13.
+</p>
+
+<p>
+The float values are decimal values with a decimal point, such as 13.2, and 0.5.
 </p>
 
 
@@ -260,7 +273,7 @@ using the <a href="#exec">exec</a> command.
 <hr/>
 <h2 id="reference">Console commands and variables</h2>
 
-<p>This chapter describes all console commands and variables in Doom
+<p>This chapter describes all the console commands and variables in Doom
 Legacy.
 Many console variables can also be modified through the menu.
 You will need to use the console only if you want to customise the
@@ -304,7 +317,8 @@ for commands.
 <p>
 Execute a script file. A script file is just a text file
 containing a sequence of commands or variables. Script files
-usually have a .cfg extension. Example:
+usually have the .cfg extension.
+Example:
 </p>
 <div class="example">
 &gt; exec autoexec.cfg
@@ -747,7 +761,7 @@ Lists, releases or creates joystick axis bindings.
 <h3 id="game_options">Game options</h3>
 
 <p>Using these variables you can change may aspects of the game
-itself. For obvious reasons, in a netgame only the server can change them.
+itself. For obvious reasons, in a network game only the server can change them.
 </p>
 
 <table class="def">
@@ -812,16 +826,6 @@ Sets the acceleration of gravity in the game.
 The default gravity is 1.
 </td></tr>
 
-<tr><td>nomonsters</td><td>bool</td>
-<td>
-Set to 1 if you want no monsters to spoil your gaming experience.
-Often used in deathmatch.
-</td></tr>
-
-<tr><td>fastmonsters</td><td>bool</td>
-<td>
-Choose if monster are "fast" like with the original -fastparm
-</td></tr>
 
 <tr><td>solidcorpse</td><td>bool</td>
 <td>
@@ -897,21 +901,36 @@ Choose the time of respawn for the monsters, in seconds.
 </p>
 </td></tr>
 
+
+<tr><td>nomonsters</td><td>bool</td>
+<td>
+Set to 1 if you want no monsters to spoil your gaming experience.
+Often used in deathmatch.
+</td></tr>
+
+<tr><td>fastmonsters</td><td>bool</td>
+<td>
+Choose if monster are "fast" like with the original -fastparm
+</td></tr>
+
+
 <tr><td>monsterbehavior</td><td>string</td>
 <td>
 Select the mode of monster infighting.
 <ul>
-  <li>Normal: Monsters take damage from missiles, but do not retaliate.</li>
-  <li>Coop: Monsters cooperate by default.  DEH settings in the wad
-  can override this.
+  <li>Normal: Monsters retaliate by default, as in vanilla Doom.
+   DEH settings in the wad can override this.</li>
+  <li>Coop: Monsters cooperate by default.
+  DEH settings in the wad can override this.
   This is the same setting as the -coopmonsters command line switch.</li>
-  <li>Infight: Monsters retaliate by default.  DEH settings in the wad
-  can override this.
+  <li>Infight: Monsters retaliate by default.
+  DEH settings in the wad can override this.
   This is the same setting as the -infight command line switch.</li>
   <li>Force Coop: Monsters cooperate.
   This overrides DEH infight settings.</li>
   <li>Force Infight: Monsters retailiate and damage each other.
   This overrides DEH infight settings.</li>
+  <li>No Infight: Monsters take damage from missiles, but do not retaliate.</li>
 </ul>
 Default is Normal.
 </td></tr>
@@ -923,18 +942,124 @@ Select the mode of monster friction.
   <li>None: Monsters ignore friction, as in vanilla Doom and Heretic.</li>
   <li>MBF: Monster friction from MBF, where ice gave momentum to monsters.
   Has momentum effects on transition between ice and other sectors.</li>
-  <li>Momentum: Monsters have momentum all the time. Friction is tuned
+  <li>Momentum: Monsters have momentum all the time. Their friction is tuned
   to match the player friction.</li>
+  <li>Heretic: The monster friction only has some special ice effects.</li>
+  <li>Normal: Enable monster friction based on the friction model.
 </ul>
 Default is Momentum.
 </td></tr>
 
-
-<tr><td>playdemospeed</td><td>int</td>
+<tr><td>monstergravity</td><td>bool</td>
 <td>
-Number of frames to skip for each frame rendered when playing back
-demos. Default is 0.
+Select how monsters fall according to gravity.
+<ul>
+  <li>Off: Monsters ignore gravity and instantly fall to the floor, as in vanilla Doom and Heretic.</li>
+  <li>MBF: Monsters fall according to gravity, as in MBF.
+      When a fall is greater than 24 units then the fall ignores gravity.</li>
+  <li>On: Monsters fall according to gravity.
+</ul>
+Default is On.
 </td></tr>
+
+<tr><td>dropoff</td><td>bool</td>
+<td>
+Enable the MBF dropoff behavior, which blocks or allows a monster at
+a dropoff based on situation and height. It also handles dogs and monkeys.
+An MBF behavior.
+Default is On.
+</td></tr>
+
+<tr><td>falloff</td><td>bool</td>
+<td>
+Enable the MBF falloff behavior for objects hanging on a dropoff.
+This torques them until they fall off, or until it gives up on lets
+them stay.
+An MBF behavior.
+Default is On.
+</td></tr>
+
+<tr><td>monkeys</td><td>bool</td>
+<td>
+Enable the monsters to climb steps more easily.
+An MBF behavior.
+Default is Off.
+</td></tr>
+
+<tr><td>mon_avoidhazard</td><td>bool</td>
+<td>
+Enable the monsters to avoid crushing ceilings.
+An MBF behavior.
+Default is On.
+</td></tr>
+
+<tr><td>mon_backing</td><td>bool</td>
+<td>
+Enable monsters to back away from an enemy when it is favorable,
+such as having missiles and the enemy does not, or when the enemy has
+the chainsaw.
+An MBF behavior.
+Default is Off.
+</td></tr>
+
+<tr><td>mon_remember</td><td>bool</td>
+<td>
+Enable monsters to remember their last target, when they cannot find a
+new target.
+A Boom behavior.
+Default is Off.
+</td></tr>
+
+<tr><td>pursuit</td><td>bool</td>
+<td>
+Enable monster pursuit of a targeted enemy they can still see.
+An MBF behavior.
+Default is Off.
+</td></tr>
+
+<tr><td>staylift</td><td>bool</td>
+<td>
+Enable monsters to stay on a lift if their targeted enemy is on it.
+An MBF behavior.
+Default is On.
+</td></tr>
+
+<tr><td>helpfriend</td><td>bool</td>
+<td>
+Enable monsters to help friends that are in danger of dying.
+This applies to dogs and other friends of the player. 
+An MBF behavior.
+Default is On.
+</td></tr>
+
+<tr><td>distfriend</td><td>int</td>
+<td>
+The distance that a friendly monster should be from the player.
+This is what makes a friendly monster follow the player, and what makes them
+back away when too close or in the way.
+This applies to dogs and other friends of the player. 
+An MBF behavior.
+Valid range is 0 to 999.
+Default is 128.
+</td></tr>
+
+<tr><td>dogs_cnt</td><td>int</td>
+<td>
+Enable friendy dogs.
+This applies during single player and coop play.
+An MBF behavior.
+Valid range is 0 to 9.
+Default is 0.
+</td></tr>
+
+<tr><td>dogjump</td><td>int</td>
+<td>
+Enable friendy dogs, and BEX designated helper friends, to jump down a
+dropoff, up to 128 units, to follow their player.
+An MBF behavior.
+Default is On.
+</td></tr>
+
 
 <tr><td>voodoo_mode</td><td>string</td>
 <td>
@@ -977,6 +1102,49 @@ In most wads the victim is always player1.
 </ul>
 Default is Die.
 </td></tr>
+
+
+<tr><td>invul_skymap</td><td>int</td>
+<td>
+How the sky appears when the player is invulnerable.  This was a bug
+in the vanilla Doom.
+<ul>
+  <li>Vanilla: The sky does not change when the player is invulnerable.</li>
+  <li>Boom: The sky changes just like everything else.</li>
+</ul>
+Default is Boom.
+</td></tr>
+
+<tr><td>zerotag</td><td>int</td>
+<td>
+Control if sectors with a tag value of 0 will react to a linedef with a tag
+of 0.
+By default, new sectors have a tag value of 0.
+In vanilla Doom, a tag of 0 on some linedefs would affect every sector
+with the default value, causing havoc.
+<ul>
+  <li>Allow: Allow tag values of 0, just like vanilla Doom.</li>
+  <li>Boom: Ignore most linedefs that have a tag value of 0.
+      It is valid special case for only a few linedefs.</li>
+</ul>
+Default is Boom.
+</td></tr>
+
+
+<tr><td>weaponrecoil</td><td>bool</td>
+<td>
+Boom weapon recoil effect.  Each weapon has a recoil, with the missile
+launcher and BFG having the most recoil.  This will push the player
+back when they fire, which may be significant if they are on ice.
+Default is Off.
+</td></tr>
+
+<tr><td>playdemospeed</td><td>int</td>
+<td>
+Number of frames to skip for each frame rendered when playing back
+demos. Default is 0.
+</td></tr>
+
 </table>
 
 
@@ -1063,6 +1231,7 @@ Do a 'savegame currentconfigfilename', then a 'loadconfig filename'.
 <tr><td>screenshot</td>
 <td>
 Take a screenshot (like the key F1 in devparm mode).
+This is also a command key, which can be assigned a key.
 </td></tr>
 
 
@@ -1870,7 +2039,7 @@ Play audio CDs.  The track numbers start at 1.<br/>
   Loading the CDROM is slow.  You need to wait until the CDROM is done
   loading the CDROM before you can even get info on it.  If you have
   multiple CDROM, DoomLegacy will try to use the first.  Under Linux
-  this /dev/cdrom.
+  this is /dev/cdrom.
 <p>
   SDL cannot control the CDROM music volume.  Under SDL the CDROM music
   volume control has been reduced to an on/off switch, which does PAUSE.
@@ -1882,7 +2051,7 @@ Play audio CDs.  The track numbers start at 1.<br/>
   systems too, this CDROM hardware check blocks execution for about 1/4 second.
   With previous DoomLegacy versions, this check occurred every 2 seconds.
   DoomLegacy 1.46.3 checks every 4 seconds, near the expected end of
-  the music, and only when it set to loop the music.
+  the music, and only when it is set to loop the music.
 <p>
   This CDROM check can be avoided entirely by not using using cd play loop.
   Using CDROM music play loop in a netgame may get you kicked due to
@@ -1904,6 +2073,35 @@ Play audio CDs.  The track numbers start at 1.<br/>
   be also be repeated.
 </p>
 <br>
+
+
+<h3 id="misc_options">Misc options</h3>
+
+<p>
+Variables controlling screenshot.
+</p>
+
+<table class="def">
+<tr><th>variable</th><th>type</th><th>definition</th></tr>
+
+<tr><td>screenshottype</td><td>int</td>
+<td>
+<ul>
+<li>Compact: Targa file, nearest format.</li>
+<li>Full: Targa 24 bit format.</li>
+<li>PCX: PCX file (DOS only)</li>
+</ul>
+When drawing in 8 bit drawmode, the file will be saved
+in Targa colormap format.
+</td></tr>
+
+<tr><td>screenshotdir</td><td>string</td>
+<td>
+The directory to save screenshots.  The default is the
+current directory.
+</td></tr>
+
+</table>
 
 </div>
 </body>

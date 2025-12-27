@@ -10,7 +10,7 @@ f<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/
 
 <body>
 <div class="column">
-<h1>Doom Legacy 1.46 User Reference Manual</h1>
+<h1>Doom Legacy 1.47 User Reference Manual</h1>
 
 
 <div class="floatbox">
@@ -31,9 +31,12 @@ f<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/
   Doom Legacy!
 </p>
 <p>
-  Since Doom was out we have been fans of deathmatching. Don't ask us
-  why, but we liked Doom more than Duke Nukem, Quake or other clones.
+  Since Doom was out we have been fans of deathmatching. Some of us
+  are fans of coop play. And, single play is popular too.
+  Don't ask us why, but we liked Doom more than Duke Nukem, Quake or other clones.
   We simply enjoy the atmosphere, look and feel of Doom.
+</p>
+<p>
   We always dreamed of Doom sources being released. How many days we
   spent talking about the features we'd put in it!
   In the middle of 1997 we heard a rumour that the Doom sources
@@ -43,15 +46,17 @@ f<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/
   since, and Doom Legacy is competing to be the best of the choices!
 </p>
 <p>
-  Doom Legacy can play Doom, Boom, and Heretic maps.
+  Doom Legacy can play Doom, Boom, Marine's Best Friend (MBF), and Heretic maps.
   In addition to the original games by id Software and Raven Software,
   there are hundreds of free, fan-made maps available on the Internet.
   These maps are typically distributed as <b>PWAD</b> files, which are not
   fully self-contained.
   For each game you will also need the corresponding <b>IWAD</b> data file,
-  which contains all the graphics,
-  sounds and music in the game. For example, if you want to play Doom II
-  maps, you'll need the file doom2.wad.
+  which contains all the graphics, wall and floor textures,
+  sounds, and music for that game. For example, if you want to play Doom II
+  maps, you'll need the IWAD file doom2.wad, or one of the free replacements.
+ </p>
+ <p>
   Doom Legacy itself is free software, meaning that you can copy and
   distribute it without charge.
   The original Doom and Heretic IWAD files
@@ -63,6 +68,7 @@ f<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/
 <p>
   There are also some free replacement IWADs which can be used instead.
   <a href="http://www.nongnu.org/freedoom/">FreeDoom</a> (doom2.wad or freedoom.wad) is a free substitute for Doom2.
+  I recommend freedoom-0.8 rather than the later versions, which are a different style.
   <a href="https://code.google.com/p/blasphemer/">Blasphemer</a>
   (heretic.wad) is a free substitute for Heretic, but it does
   not have monsters yet (it needs volunteers to work on it!).
@@ -70,27 +76,43 @@ f<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/
   Chexquest2, and Chexquest-Newmaps (newmaps.wad), but not Chexquest3.
 </p>
 <p>
-  In addition to the now
-  fundamental and de-facto-standard <a href="http://doom.wikia.com/wiki/Boom">Boom</a>
-  extensions, Legacy also has implemented among other things
+  Legacy has implemented the fundamental and de-facto-standard <a href="http://doom.wikia.com/wiki/Boom">Boom</a>
+  extensions, and the Marine's Best Friend (MBF) extensions.
+  Legacy also has implemented among other things
   3D floors, swimmable water and other special effects using extended
   linedef codes, and supports the FraggleScript scripting language.
 </p>
 <p>
-  To get started with Legacy, we recommend the following PWADs:
+  To get started with Legacy, we recommend trying some of the following PWADs.
+  These are a few selected examples that demonstrate some of the features that Doom Legacy provides.
+  There are many more in the repositories, such as at
+  <a href="http://www.doomworld.com">Doomworld</a>.
 </p>
 <ul>
   <li>
-    The new editing features are demonstrated in
+    Demonstrations of new editing features:
     Legacy_3ddemo.wad and rainbowstar.wad
   </li>
   <li>
     Wads that use Legacy 3D floors:
-    3DHorror.wad, phobia.wad, hth2.wad
+    3DHorror.wad, phobia.wad, hth2.wad, Compound.wad, GRAIL2.WAD,
+    nocturnus.wad, spone2.wad
+  </li>
+  <li>
+    Wads that use the Legacy features to implement different capabilities:
+    Twilight.wad (with Twilight.DEH), bspeek.wad (Blake Stone),
+    nimrod.wad, NEWBOXE.WAD (boxing match)
+  </li>
+  <li>
+    Wads (and DEH files) that alter the players, sounds, and attributes, to be something very different:
+    Delirium.deh (patch file) or Delirim.wad,
+    skinbots/Skins.wad (skins),
+    99PLAYER.WAD (skins)
   </li>
   <li>
     Deathmatch wads:
-    andydm1.wad, shbullet.wad
+    andydm1.wad, toxdm1.wad, MRPD3D.wad, MRQ3DM17.wad,
+    sleeper.wad, shbullet.wad
   </li>
   <li>
     Chexquest sequel:
@@ -154,6 +176,12 @@ Install for the use of the immediate user, owned by the immediate user.
 The install directory must be within the user directory space.
 The User may specify a directory.
 
+<p>
+Install Doom Legacy in its own directory.
+Do not install Doom Legacy to your home directory.  Doom Legacy
+will not search the home directory.
+</p>
+
 
 <h3>Linux</h3>
 <p>
@@ -163,6 +191,7 @@ The User may specify a directory.
   The user can also keep private wad directories.
   All will be searched, see the search directory list in the
   <a href=INSTALL.html>INSTALL</a> manual.
+</p>
 <p>
   The IWAD files should go in a separate directory that can be shared
   between all Doom source ports (such as <b>/usr/local/share/games/doomwads</b>).
@@ -387,25 +416,6 @@ DM2MOD.BAT
   as its config file.
 </p>
 
-  
-<h3>Setting up the controls</h3>
-<p>
-  Setting up the controls, mouse and joystick, video mode etc. is done
-  while in the game, using the main game menus: Setup Controls,
-  Video Options, Game Options. You can change all game settings
-  at any time during the game.
-</p>
-<p>
-  The mouse will be activated by default, to disable it, change
-  the 'use_mouse' variable in the console.
-  The joystick will not be used as default, set the 'use_joystick'
-  variable at the console.
-</p>
-<p>
-  The mouse and joystick sensitivities can be set
-  using the console variables, and there is some menu support.
-</p>
-  
 
 <h3>Setting up the sound</h3>
 The binary downloads of Doom Legacy use SDL sound.
@@ -418,7 +428,7 @@ with your own selection of compile options.
   is installed correctly then Legacy will have sound effects.
 </p>
 <p>
-  The latest SDL version is 1.2.14, and it fixes some earlier Win32 issues.
+  The latest SDL version is 1.2.15, and it fixes some earlier Win32 issues.
 </p>
 <p>
   Music requires SDL_mixer version 1.2.7 or later. Earlier SDL_mixer
@@ -428,7 +438,7 @@ with your own selection of compile options.
 </p>
 <p>
   SDL_mixer is a separate download and installation, and the latest is
-  version 1.2.11.
+  version 1.2.12.
 </p>
 </li>
 
@@ -455,13 +465,17 @@ with your own selection of compile options.
 
 <li>DOS
 <p>
+DOS support is still present, but it has been years since it has been
+tested.  A more modern operating system provides better support.
+</p>
+<p>
   The sound and music card is auto-detected at the game startup.
 </p>
 <p>
   If you don't get any sound in Legacy, check that the BLASTER
   variable is set. Type 'set' at the dos prompt (or dosbox under
   Windows) : do you see a line like 'BLASTER=A220 I5 D1 ...' ?
-  If not, run the installation of your soundcard for Dos mode,
+  If not, run the installation of your soundcard for DOS mode,
   it will usually modify your autoexec.bat so that the BLASTER
   variable will be set. See the FAQ.TXT for more.
 </p>
@@ -473,6 +487,26 @@ with your own selection of compile options.
 </p>
 </li>
 </ul>  
+
+  
+<h3>Setting up the controls</h3>
+<p>
+  Setting up the controls, mouse and joystick, video mode etc. is done
+  while in the game, using the main game menus: Setup Controls,
+  Video Options, Game Options. You can change all game settings
+  at any time during the game.
+</p>
+<p>
+  The mouse will be activated by default, to disable it, change
+  the 'use_mouse' variable in the console.
+  The joystick will not be used as default, set the 'use_joystick'
+  variable at the console.
+</p>
+<p>
+  The mouse and joystick sensitivities can be set
+  using the console variables, and there is some menu support.
+</p>
+
 
 <h3>Setup Controls menu</h3>
 <p>
@@ -615,16 +649,29 @@ gamma index : GAMMA value
   
 <h3>Autoaim toggle</h3>
 <p>
-  We wanted to keep the compatibility with the traditional Doom gameplay,
-  but we needed also to go forward and bring more depth to the
-  deathmatches. One of these steps is enabling manual aiming.
+The original Doom games had autoaim, which allowed them to use the
+mouse for player movement (forwards and back).  Side to side motion
+turned the player.  This left the user without any way to move the view
+up and down, so autoaim would aim the shots at monsters that were
+above or below the aiming point.
 </p>
 <p>
-  You may feel like it's unbalanced if some people use the autoaim,
+DoomLegacy has mouselook, which uses the mouse to look left, right, up,
+and down.  Shots go where the player is looking.  If you have the
+crosshairs enabled, then it shows where shots are going.  With
+mouselook, autoaim is not needed, so autoaim can be disabled.
+</p>
+<p>
+  Since Legacy v1.2, there are controls for what is allowed in a network game.
+  We wanted to keep the compatibility with the traditional Doom gameplay,
+  but we also needed to go forward with improvements with controls,
+  which brings more depth to the deathmatches.
+</p>
+<p>
+  In network play, you may feel like it's unbalanced if some people use the autoaim,
   as they don't have to make the effort of aiming properly, and others
-  don't use it and do their best to aim up and down...
-  NEW since Legacy v1.2: with allowautoaim you can
-  disable autoaiming, that is, impose manual aim to all players
+  manually aim, and thus may miss above or below the opposing player.
+  Turning allowautoaim to OFF will impose manual aim to all players
   in a network game.  Use with caution as you may offend!!
 </p>
 
@@ -692,7 +739,7 @@ gamma index : GAMMA value
 </p>
 <p>
   Some wads rely upon violating wad rules to get trick effects.
-  These rely upon tricking the software renderer into not drawing something.
+  Most rely upon tricking the software renderer into not drawing something.
   Using those wads with the OpenGL renderer you will see holes in the floor
   and ceiling, and warning messges about polygons.
 </p>
@@ -702,14 +749,15 @@ gamma index : GAMMA value
   Without OpenGL hardware acceleration, SDL will emulate the OpenGL operations
   using software run on your CPU, which is very very slow.
   How well a video card works with OpenGL is dependent upon the drivers.
-  It is SDL that interfaces with the video card drivers.
+  The SDL library interfaces with the video card drivers.  Updating
+  your SDL library may improve the drawing, and fix broken features.
 </p>
 <p>
   Video cards have different levels of hardware acceleration,
   and rendering speed.
   Activate only as many fancy rendering options as your video card can
   draw fast.
-  Turning off Trilinear and Bilinear filtering can gain speed.
+  Turning off Trilinear and Bilinear filtering usually will gain speed.
 </p>
 
 
@@ -746,7 +794,9 @@ See <a href="console.html">here</a> for more about the console.
     The speed now depends on the server. If the server loses
     frames, all the other players will experience the slow down.
     Thus, make sure that the server has a good internet connection and
-    runs smooth for example by using a lower resolution graphics mode.
+    runs smooth.
+    You may want to run the server with a lower resolution graphics
+    mode, to reduce its load.
   </li>
   <li>
     The server can kick any player out of the game. The player will
@@ -774,21 +824,35 @@ See <a href="console.html">here</a> for more about the console.
   allows you to connect to a server or create one yourself.
 </p>
 <p>
-  Legacy uses the UDP port 5029 only and can accept messages from any
+  The Legacy server uses only one port (usually the UDP port 5029) and can accept messages from any
   port so it works perfectly with NAT (Network Address Translation).
 <p>
-  Because the IP of any computer behind the firewall is not routable 
-  the server cannot get a usable IP address during player join-game.
-  If you are familiar with IpAutoforward funtionality of Linux,
+  A firewall often interferes with connecting.
+  Most of the IP ports of a computer behind a firewall are not
+  visible to the network.
+  You may have to use the firewall controls to make
+  the DoomLegacy server and client ports visible on the networks.
+  If you are playing network games with machines external to your
+  network, then you will need to make your IP address, and Doom Legacy
+  ports, visible to the external network.
+  There may be multiple
+  firewalls involved, such as one on your desktop, one on the wifi-router, and
+  one in the broadband router.
+  In some cases, the server might get an un-usable IP address during player join-game.
+  If you are familiar with the IpAutoforward funtionality of Linux,
   you can make a usable IP appear.
 </p>
 <p>
-  The port used can be specified using a command line switch "-udpport 5102".
+  The server port can be specified using a command line switch "-udpport 5102".
   You must avoid any existing port your ISP may be using for services.
   Multiple Doom Legacy servers can coexist on the same network, playing
-  separate games, as long as they use different port numbers.
-<p>The user reserved UDP ports start at 5000.
-  For Doom Legacy, I recommend using port numbers greater than 5029,
+  separate games, as long as they use different server port numbers.
+  If the server uses a different server port, then all clients that
+  want to connect to that server, must also specify the same server port address (using -udpport).
+  All the connect commands assume that the server and client have
+  specified the same server port.
+<p>The UDP ports, user reserved, start at 5000.
+  For Doom Legacy, I recommend using a server port number greater than 5029,
   such as 5100 .. 5199,
   to avoid conflicts with other programs.
 </p>
@@ -804,28 +868,43 @@ See <a href="console.html">here</a> for more about the console.
   one of the following commands.  Other switches can also be
   included to select the game and wad.
 </p>
-<div class="code">$ doomlegacy -server &lt;num-of-computers&gt;
+<div class="code">$ doomlegacy -server &lt;num-of-players&gt;
 </div>
 <p>
-  The server will wait until the specified number of computers have
+  The server will wait until the specified number of players have
   connected and then will start the game. This is like the old way to
   start a game. It is more fair because all players start at the same
-  time and with the same weapons. Of course other computers can also
+  time and with the same weapons. Of course other clients can also
   join later.
 </p>
 <div class="code">$ doomlegacy -server
 </div>
 <p>
-  This starts the server and does not wait for any computers.
-  It starts the game immediately. Other players can join later.
+  This starts the server immediately.  It does not wait for any other clients.
+  It also starts the game immediately.  Other players can join later.
 </p>
 <h4>Clients</h4>
 <p>
   Clients are the other players who join the game by connecting to the server.
-  Each additional player connects to the server with one of the following
-  connect commands.
+  Each additional player connects to the server with one of the connect commands.
+  If there is more than one server, the client must choose which server before connecting.
 </p>
-
+<p>
+  The client can specify a client port address, such as "-clientport 7303".
+  Clients can use any port number that is unused on their IP address.
+  If that port is in use then Doom Legacy will try ports in the
+  7000 to 7099 range, until it finds an unused one.
+  This allows multiple clients on the same computer, assuming it has
+  enough speed, controls, and displays.
+  Players on separate computers can use the same client port addresses,
+  as they will have different IP addresses.
+  In most cases the default client port works fine.
+</p>
+<p>
+  The server does not use the client port number setup.
+  The server will get the IP address and client port number
+  for each player from the client connect message.
+</p>
 <p>
   To detect servers on the local network, the local network search
   address must be specified in one of the server config vars, server1,
@@ -857,7 +936,9 @@ See <a href="console.html">here</a> for more about the console.
 </div>
 <p>
   Without the ip address, it will auto-detect the server on the LAN.
-  This only works when computers are directly connected. If you play through
+  This only works when computers are directly connected on a LAN where
+  the client can broadcast an ASKINFO message to the server port.
+  If you play through
   internet, only the servers on a local internet can be auto-detected.
 </p>
 <div class="code">$ doomlegacy -connect
@@ -892,8 +973,7 @@ Example C, a 3 player game, with _TWO_ computers, one is split-screen:
   
 <p>
   The server will send the clients all relevant game parameters, they
-  do not need to be specified on the commandline (and in fact would be
-  overridden).
+  do not need to be specified on the commandline (and in fact would be overridden).
   Also the <b>-file</b> parameter is not needed on the clients
   anymore. The clients will automatically download any necessary PWAD files
   from the server if they cannot be found locally.
@@ -922,7 +1002,7 @@ Example C, a 3 player game, with _TWO_ computers, one is split-screen:
 positions.  If it detects a consistency failure, it will kick out the
 player.
 </p>
-<p>Doom Legacy 1.46.2 introduces consistency repair.
+<p>Doom Legacy 1.46.2 introduced consistency repair.
 The server now keeps a consistency error count for each node.
 Upon detecting a consistency error with a node, the server will try a
 series of escalating repair attempts before it kicks the node out of the game.
@@ -943,8 +1023,8 @@ player may find they have been mobbed and even killed.
 </li>
 </ul>
 <p>
-Due to the network repair messages, and other messages that changed codes,
-Doom Legacy 1.46.2 is network incompatible with previous versions of DoomLegacy.
+Due to new network messages, and messages that changed codes,
+Doom Legacy 1.47.2 is network incompatible with previous versions of DoomLegacy.
 </p>
 
 
@@ -1091,7 +1171,7 @@ savegames are kept.</td>
   although it may make loading smoother.
 </p>
 <p>
-  This switch on the SWITCH line of the Doom Legacy Launcher is
+  Using this switch on the SWITCH line of the Doom Legacy Launcher is
   ineffective because the memory system has already started by then.
   However, Doom Legacy is compiled by default with the GROW_ZONE memory system,
   that automatically increases the memory allocation as needed, so it
@@ -1103,7 +1183,8 @@ savegames are kept.</td>
 
 <tr>
 <td>-noversioncheck</td>
-<td>Do not check that legacy.wad version matches the executable version.</td>
+<td>Do not check that legacy.wad version matches the executable version.
+This is mostly used for program development.</td>
 </tr>
 
 <tr>
@@ -1311,27 +1392,28 @@ Video options
 
 <tr>
 <td>-highcolor</td>
-<td>Request a 15 bpp or 16 bpp video mode.  If that fails, it will try 8
-bpp modes.</td>
+<td>Request a 15 bpp or 16 bpp video mode.
+If that fails, it will try 8 bpp modes.</td>
 </tr>
 
 <tr>
 <td>-truecolor</td>
-<td>Request a 24 bpp or 32 bpp video mode.  If that fails, it will try 8
-bpp modes.</td>
+<td>Request a 24 bpp or 32 bpp video mode.
+If that fails, it will try 8 bpp modes.</td>
 </tr>
 
 <tr>
 <td>-native</td>
 <td>Request use of a native bpp video mode, based on what video
-mode is being used when the program starts.  If that fails, it will try
-8 bpp modes.  On most modern systems, native is 32 bpp.</td>
+mode is being used when the program starts.
+If that fails, it will try 8 bpp modes.
+On most modern systems, native is 24 or 32 bpp.</td>
 </tr>
 
 <tr>
 <td>-bpp &lt;number&gt;</td>
-<td>Select video mode bpp (8,15,16,24,32) explicitly.  If that fails,
-the program will exit.</td>
+<td>Select video mode bpp (8,15,16,24,32) explicitly.
+If that fails, the program will exit.</td>
 </tr>
 
 <tr>
@@ -1417,7 +1499,7 @@ Limited to range 270 to 0 to 90 degrees.
 <td>-polypoolsize &lt;num&gt;</td>
 <td>Specify the size of the polygon pool for hardware rendering, in KiB.
 The default is 1000 KiB.
-Requires compilation without ZPLANALLOC compile option.
+Requires compilation without the ZPLANALLOC compile option.
 The ZPLANALLOC option allocates such poly without using a pool, and is
 the default in the compilation.
 </td>
@@ -1571,15 +1653,21 @@ USE_IPX compile option enabled.</td>
 
 <tr>
 <td>-udpport</td>
-<td>Specify the port to use on IPX or IP network.
+<td>Specify the server port to use on the IP network, or IPX network.
+This allows multiple servers to be on the same machine.  Clients need
+to specify the same server port.
 The default should be 5029.</td>
 </tr>
 
 <tr>
 <td>-clientport</td>
-<td>Specify the port that the client uses on IPX or IP network.
-The default is to use the udpport.  This allows running the server and
-client using different ports.</td>
+<td>Specify the port that the client uses on the IP network, or IPX
+network.
+The default is to use the udpport.
+Specifying a clientport allows running the server and client
+using different ports, and to have more than one client on a machine.
+The server does not need this, as the client address and
+client port is gotten from the connect message for each player.</td>
 </tr>
 
 <tr>
@@ -1677,7 +1765,7 @@ The skins must be provided in one or more PWAD.
 
 <tr>
 <td>-avg</td>
-<td>Austin 20 min. rounds.  (Austin Virtual Gaming)</td>
+<td>Austin Virtual Gaming, 20 min. rounds.</td>
 </tr>
 
 <tr>
@@ -1836,16 +1924,17 @@ modes available and how the mode selection is handled.</td>
   in each wad file and treat the contents as a dehacked patch.
 </p>
 <p>  
-  We don't check for the dehacked patch version, we added support for the
-  patches version 6, it should run ok with (not too) old patches.
+  We don't check for the dehacked patch version.  We added support for
+  patches version 6.  It should run ok with (not too) old patches.
   If you have a problem with the version of the patch, try to convert it.
   Just load the .deh file into a recent version of Dehacked (3.0),
   and then save it again. It will then be saved as a text-file, that
   Legacy will be able to use.
 </p>
 <p>
-  All text changes are supported, you can edit the .deh manually and
-  replace strings by larger strings than the original Doom, it works.
+  You can edit a .deh file manually and replace strings by larger strings than
+  the original Doom strings, and it works.  The original Dehacked
+  could not increase the length of a string, but Legacy can.
   Sprite renaming works too, well, pretty much anything works :)
 </p>
 
