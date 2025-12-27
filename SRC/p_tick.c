@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_tick.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: p_tick.c 1399 2018-07-02 03:41:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -338,22 +338,19 @@ void P_Ticker (void)
 {
     int  i;
 
-#ifdef BASETIC_DEMOSYNC   
- // [WDJ] From PrBoom.
- // Pause if in menu and at least one tic has been run.
- // killough 9/29/98: note that this ties in with basetic,
- // since G_Ticker does the pausing during recording or playback,
- // and compenates by incrementing basetic.
- // All of this complicated mess is used to preserve demo sync.
- // PrBoom and EternityEngine test (players[consoleplayer].viewz != 1)
-    // run the tic
-    if (paused || (!netgame && menuactive && !demoplayback && ticked ))
+    // [WDJ] From PrBoom, adapted to game_comp_tic.
+    // Pause if in menu and at least one tic has been run.
+    // killough 9/29/98: note that this ties in with basetic,
+    // since G_Ticker does the pausing during recording or playback,
+    // and compensates by incrementing basetic (not incrementing game_comp_tic).
+    // All of this complicated mess is used to preserve demo sync.
+    // PrBoom and EternityEngine test (players[consoleplayer].viewz != 1)
+    // as test that one tic has run.
+    // Heretic only has paused.
+    if (paused
+        || (menuactive && !netgame && !demoplayback
+            && (players[consoleplayer].viewz != 1) ))
         return;
-#else
-    // run the tic
-    if (paused || (!netgame && menuactive && !demoplayback))
-        return;
-#endif
 
 #ifdef THINKER_INTERPOLATIONS
     R_UpdateInterpolations();
