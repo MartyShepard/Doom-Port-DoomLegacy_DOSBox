@@ -201,7 +201,8 @@ int I_StartSound ( sfxid_t       sfxid,
   /* Pitch umrechnen: 0-255 → 128 ±127 → wie in alten Ports */
   pitch=(pitch-128)/2+128;
 #ifdef SURROUND_SOUND
-  if( sep == SURROUND_SEP )   sep = 0;
+  if( sep > 128 )   sep = 0;   // No SURROUND
+//if( sep == SURROUND_SEP )   sep = 0;
 #endif
   // Allegro center is 128.
   /* sfxid_t ist meist ein enum oder typedef int → einfach casten */
@@ -296,7 +297,8 @@ void I_UpdateSoundParams( int   handle,
   {
     voice_set_volume(voice, vol);
 #ifdef SURROUND_SOUND
-    if( sep == SURROUND_SEP )   sep = 0;
+    if( sep > 128 )   sep = 0;  // No SURROUND
+//  if( sep == SURROUND_SEP )   sep = 0;
 #endif
     // Allegro center is 128.
     voice_set_pan(voice, sep+128);

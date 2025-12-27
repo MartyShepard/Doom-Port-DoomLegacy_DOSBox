@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1403 2018-07-06 09:49:21Z wesleyjohnson $
+// $Id: s_sound.c 1404 2018-07-06 10:01:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -723,7 +723,7 @@ void S_StartSoundAtVolume(const xyz_t *origin, const mobj_t * mo,
     }
 #endif
    
-#if 1
+#if 0
     // Debug.
     debug_Printf( "S_StartSoundAtVolume: playing sound %d (%s), volume = %i\n",
                 sfx_id, S_sfx[sfx_id].name, volume );
@@ -927,7 +927,7 @@ void S_StartSoundAtVolume(const xyz_t *origin, const mobj_t * mo,
         sp1.sep = -sp1.sep;
 #endif
 
-debug_Printf("stereo sep %d reverse %d\n", sp1.sep, cv_stereoreverse.value);
+//    debug_Printf("stereo sep %d reverse %d\n", sp1.sep, cv_stereoreverse.value);
 
     // Returns a handle to a mixer/output channel.
     channels[cnum].handle =
