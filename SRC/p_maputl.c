@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_maputl.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: p_maputl.c 1398 2018-07-02 03:40:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -244,7 +244,6 @@ void P_MakeDivline (line_t* li, divline_t* dl )
 //
 fixed_t  P_InterceptVector ( divline_t* v2, divline_t* v1 )
 {
-#if 1
     fixed_t     frac;
     fixed_t     num;
     fixed_t     den;
@@ -261,7 +260,13 @@ fixed_t  P_InterceptVector ( divline_t* v2, divline_t* v1 )
     frac = FixedDiv (num , den);
 
     return frac;
-#else   // UNUSED, float debug.
+}
+
+#if 0
+// UNUSED
+// Debug float version
+fixed_t  P_InterceptVector_float_debug ( divline_t* v2, divline_t* v1 )
+{
     float       frac,num,den;
     float       v1x,v1y,v1dx,v1dy;
     float       v2x,v2y,v2dx,v2dy;
@@ -284,8 +289,50 @@ fixed_t  P_InterceptVector ( divline_t* v2, divline_t* v1 )
     frac = num / den;
 
     return frac*FRACUNIT;
-#endif
 }
+#endif
+
+#if 0
+// UNUSED
+// Float version.
+fixed_t  P_InterceptVector_float ( const divline_t * v2, const divline_t * v1 )
+{
+    float frac,num,den;
+    float v1dxf = (float) v1->dx;
+    float v1dyf = (float) v1->dy;
+
+    // Both num and den are scaled *(FRACUNIT*FRACUNIT),
+    // but this will cancel out in the frac.
+    den = (v1dyf * v2->dx) - (v1dxf * v2->dy);
+
+    if (den == 0)
+        return 0;       // parallel
+
+    num = ((v1->x - v2->x) * v1dyf) + ((v2->y - v1->y) * v1dxf);
+    frac = num / den;
+
+    return (fixed_t)(frac * FRACUNIT);
+}
+#endif
+
+#if 0
+// PrBoom 64 bit version, adapted.
+fixed_t  P_InterceptVector_64( const divline_t * v2, const divline_t * v1 )
+{
+#if 0
+  if (compatibility_level < prboom_4_compatibility)
+    return P_InterceptVector2(v2, v1);
+#endif
+
+    /* cph - This was introduced at prboom_4_compatibility - no precision/overflow problems */
+    int64_t den = (int64_t)v1->dy * v2->dx - (int64_t)v1->dx * v2->dy;
+    den >>= 16;
+    if (!den)
+      return 0;
+
+    return (fixed_t)(((int64_t)(v1->x - v2->x) * v1->dy - (int64_t)(v1->y - v2->y) * v1->dx) / den);
+}
+#endif
 
 
 //

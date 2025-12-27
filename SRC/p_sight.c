@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_sight.c 1397 2018-07-02 03:39:47Z wesleyjohnson $
+// $Id: p_sight.c 1398 2018-07-02 03:40:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -333,10 +333,27 @@ static boolean P_CrossSubsector (int num)
         // PrBoom: test against minz, maxz, here.
 
         // PrBoom: InterceptVector2 only for PrBoom5 or PrBoom6 compatibility.
+        // The PrBoom P_InterceptVector is 64 bit, except when < PrBoom4.
+        //  PrBoom 3 and before: P_InterceptVector2 (32bit)
+        //  PrBoom 4: P_InterceptVector (64bit)
+        //  PrBoom 5, 6: P_InterceptVector2 (32bit)
         // EternityEngine: only use InterceptVector2
+        // DoomLegacy : P_InterceptVector and P_InterceptVector2 are identical.
         // Test the sight lines across this linedef segment.
         // Fraction of the sight trace covered.
+#if 0
+        frac = ((EV_legacy > 0)?
+                P_InterceptVector2(&cs_trace, &divl)
+                : ( (demoversion < 212)?  // < prboom 4
+                    P_InterceptVector2(&cs_trace, &divl)
+                    : (demoversion >= 213 && demoversion <= 214)?  // prboom 5, prboom 6
+                    P_InterceptVector2(&cs_trace, &divl)
+                    : P_InterceptVector_64(&cs_trace, &divl)
+                  )
+
+#else
         frac = P_InterceptVector2 (&cs_trace, &divl);
+#endif
 
         if (front->floorheight != back->floorheight)
         {
