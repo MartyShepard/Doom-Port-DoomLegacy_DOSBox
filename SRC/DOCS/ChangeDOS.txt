@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01392 ]: w107 88 demo1
+[01391 ]: w107 87 win32
 [01390 ]: w107 86 add text
 [01389 ]: w107 85 downgrade and autoaim
 [01388 ]: w107 84 screenshot

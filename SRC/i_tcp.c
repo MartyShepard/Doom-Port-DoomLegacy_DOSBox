@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1390 2018-05-31 04:49:52Z wesleyjohnson $
+// $Id: i_tcp.c 1391 2018-05-31 04:51:23Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -967,7 +967,12 @@ retry_bind:
     if (stat == -1)
     {
 #ifdef CLIENT_SOCK_PORT_SEARCH
-        if( (errno == EADDRINUSE) && ! server
+#ifdef WIN32
+        if( (errno == WSAEADDRINUSE)
+#else
+        if( (errno == EADDRINUSE)
+#endif
+            && ! server
             && (client_sock_port < IPPORT_CLIENT_MAX) )
         {
             // Try alternative client sock ports.
@@ -1134,7 +1139,12 @@ retry_bind:
     if( stat == -1)
     {
 #ifdef CLIENT_SOCK_PORT_SEARCH
-        if( (errno == EADDRINUSE) && ! server
+#ifdef WIN32
+        if( (errno == WSAEADDRINUSE)
+#else
+        if( (errno == EADDRINUSE)
+#endif
+            && ! server
             && (client_sock_port < IPPORT_CLIENT_MAX) )
         {
             client_sock_port = (client_sock_port < IPPORT_CLIENT)? IPPORT_CLIENT : client_sock_port+1;

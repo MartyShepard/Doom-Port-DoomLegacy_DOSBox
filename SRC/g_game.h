@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 1389 2018-04-23 02:49:28Z wesleyjohnson $
+// $Id: g_game.h 1392 2018-05-31 04:52:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -101,6 +101,7 @@ typedef enum
     ga_nothing,
     ga_completed,
     ga_worlddone,
+    ga_playdemo,
     //HeXen
 /*
     ga_initnew,

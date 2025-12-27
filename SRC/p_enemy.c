@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1380 2018-03-04 04:23:49Z wesleyjohnson $
+// $Id: p_enemy.c 1392 2018-05-31 04:52:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2479,7 +2479,7 @@ void A_Tracer (mobj_t* actor)
     }else if( (gametic - basetic) & 3 )  // PrBoom, MBF
         return;
 #else
-    // [WDJ] As NEWTICRATERATION = 1, this is same as gametic & 3, 
+    // [WDJ] As NEWTICRATERATIO = 1, this is same as gametic & 3, 
     if( gametic % (4 * NEWTICRATERATIO) )
         return;
 #endif
@@ -2608,28 +2608,33 @@ boolean PIT_VileCheck (mobj_t*  thing)
 
     vile_r_corpse = thing;
     vile_r_corpse->momx = vile_r_corpse->momy = 0;
-#if 0
-    // [WDJ] The original code.  Corpse heights are not this simple.
-    // Would touch another monster and get stuck.
-    // In PrBoom this is enabled by comp[comp_vile].
-    vile_r_corpse->height <<= 2;
-    check = P_CheckPosition (vile_r_corpse, vile_r_corpse->x, vile_r_corpse->y);
-    vile_r_corpse->height >>= 2;
-#endif
-    // [WDJ] Test with revived sizes from info, to fix monsters stuck together bug.
-    // Must test as it would be revived, and then restore after the check
-    // (because a collision could be found).
-    // From considering the same fix in zdoom and prboom.
-    fixed_t corpse_height = vile_r_corpse->height;
-    vile_r_corpse->height = vile_r_corpse->info->height; // revived height
-    fixed_t corpse_radius = vile_r_corpse->radius;
-    vile_r_corpse->radius = vile_r_corpse->info->radius; // revived radius
-    int corpse_flags = vile_r_corpse->flags;
-    vile_r_corpse->flags |= MF_SOLID; // revived would be SOLID
-    check = P_CheckPosition (vile_r_corpse, vile_r_corpse->x, vile_r_corpse->y);
-    vile_r_corpse->height = corpse_height;
-    vile_r_corpse->radius = corpse_radius;
-    vile_r_corpse->flags = corpse_flags;
+
+    if( EN_vile_revive_bug )
+    {
+        // [WDJ] The original code.  Corpse heights are not this simple.
+        // Would touch another monster and get stuck.
+        // In PrBoom this is enabled by comp[comp_vile].
+        vile_r_corpse->height <<= 2;
+        check = P_CheckPosition (vile_r_corpse, vile_r_corpse->x, vile_r_corpse->y);
+        vile_r_corpse->height >>= 2;
+    }
+    else
+    {
+        // [WDJ] Test with revived sizes from info, to fix monsters stuck together bug.
+        // Must test as it would be revived, and then restore after the check
+        // (because a collision could be found).
+        // From considering the same fix in zdoom and prboom.
+        fixed_t corpse_height = vile_r_corpse->height;
+        vile_r_corpse->height = vile_r_corpse->info->height; // revived height
+        fixed_t corpse_radius = vile_r_corpse->radius;
+        vile_r_corpse->radius = vile_r_corpse->info->radius; // revived radius
+        int corpse_flags = vile_r_corpse->flags;
+        vile_r_corpse->flags |= MF_SOLID; // revived would be SOLID
+        check = P_CheckPosition (vile_r_corpse, vile_r_corpse->x, vile_r_corpse->y);
+        vile_r_corpse->height = corpse_height;
+        vile_r_corpse->radius = corpse_radius;
+        vile_r_corpse->flags = corpse_flags;
+    }
 
     return !check;	// stop searching when no collisions found
 }

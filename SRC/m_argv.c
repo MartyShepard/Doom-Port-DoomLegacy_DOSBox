@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_argv.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: m_argv.c 1391 2018-05-31 04:51:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -271,7 +271,13 @@ int    addparm_count = 0;
 //  atindex : parameter num
 static void  M_Arg_string( const char * s1, int count, int atindex )
 {
+#ifdef __MINGW32__
+    char * sp = malloc( count+1 );  // malloc
+    strncpy( sp, s1, count );
+    sp[count] = 0;
+#else
     char * sp = strndup( s1, count );  // malloc
+#endif
     if( addparm_low )
     {
         // bounds on memory alloc

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1389 2018-04-23 02:49:28Z wesleyjohnson $
+// $Id: g_game.c 1392 2018-05-31 04:52:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -219,7 +219,7 @@ void    G_DoWorldDone (void);
 // the game version, if it's older, the changes are not done, and the older
 // code is used for compatibility.
 //
-byte            demoversion;
+byte            demoversion;  // engine behavior version
 
 // Determined by menu selection, or demo.
 skill_e         gameskill;
@@ -265,6 +265,7 @@ byte  EN_skull_bounce_fix;  // !comp[comp_soul]
 byte  EN_skull_bounce_floor; // PrBoom has this enabled by comp level.
 byte  EN_boom_physics; // !comp[comp_model]
 byte  EN_blazing_double_sound; // comp[comp_blazing]
+byte  EN_vile_revive_bug; // comp[comp_vile]
 byte  EN_doorlight; // !comp[comp_doorlight]
 byte  EN_invul_god; // !comp[comp_god]
 byte  EN_boom_floor; // !comp[comp_floors]
@@ -280,6 +281,12 @@ byte  extra_dog_count = 0;
 static   uint16_t  extra_dog_respawn = 0;  // save on extra tests
 #define  EXTRA_DOG_RESPAWN_TIME   (5 * TICRATE)
 #endif
+
+// Demo playback enables
+static const char * playdemo_name = NULL;
+static byte  EN_demotic_109;  // old demo tic format
+static byte  EN_boom_longtics;  // 16 bit boom angle in demo tic
+
 
 
 // [WDJ] PrBoom compatibility enum, to read Boom demo.
@@ -317,33 +324,41 @@ enum {
 // -------------------------------------------
 // Boom and MBF compatibility flags
 //   cv or EN : DoomLegacy handling of the demo flags.
-// compatibility - turn off Boom features
-//   ! EN_boom
+// demo_compatibility  === (compatibility_level < boom_compatibility_compatibility)
+//   EN_boom =  (compatibility_level >= boom_compatibility_compatibility)
+// compatibility === (compatibility_level <= boom_compatibility_compatibility)
+// mbf_features === (compatibility_level >= mbf_compatibility)
+//   EN_mbf = (compatibility_level >= mbf_compatibility)
+// compatibility flag in demo - turn off Boom features
+//   EN_boom = ! compatibility // but is demoversion specific
 // comp_telefrag - monsters used to telefrag only on MAP30,
 //   now they do it for spawners only.
-//   EN_telefrag = ! comp_telefrag // demo support only
+//   EN_telefrag = ! comp[comp_telefrag] // demo support only
 // comp_dropoff - MBF encourages things to drop off of overhangs
-//   cv_mbf_dropoff = ! comp_dropoff
+//   cv_mbf_dropoff = ! comp[comp_dropoff]
 // comp_vile - original Doom archville bugs like ghosts
+//   EN_vile_revive_bug = comp[comp_vile]
 // comp_pain - original Doom limits Pain Elementals from spawning too many skulls
+//   EN_skull_limit = comp[comp_pain]
 // comp_skull - original Doom let skulls be spit through walls by Pain Elementals
+//   EN_old_pain_spawn = comp[comp_skull]
 // comp_blazing - original Doom duplicated blazing door sound
-//   EN_blazing_double_sound = comp_blazing
+//   EN_blazing_double_sound = comp[comp_blazing]
 // comp_doorlight - MBF made door lighting changes more gradual
 //   EN_doorlight = ! comp[comp_doorlight]
 // comp_model - improvements to the game physics
-//   EN_boom_physics = ! comp_model
+//   EN_boom_physics = ! comp[comp_model]
 // comp_god - fixes to God mode
 // comp_falloff - MBF encourages things to drop off of overhangs
-//   cv_mbf_falloff = ! comp_falloff
+//   cv_mbf_falloff = ! comp[comp_falloff]
 // comp_floors - fixes for moving floors bugs
 // comp_skymap - original Doom invul skymap colormap
 // comp_pursuit - MBF AI change, limited pursuit?
-//   cv_mbf_pursuit = ! comp_pursuit
+//   cv_mbf_pursuit = ! comp[comp_pursuit]
 // comp_doorstuck - monsters stuck in doors fix
-//   cv_mbf_doorstuck = ! comp_doorstuck
+//   cv_mbf_doorstuck = ! comp[comp_doorstuck]
 // comp_staylift - MBF AI change, monsters try to stay on lifts
-//   cv_mbf_staylift = ! comp_staylift
+//   cv_mbf_staylift = ! comp[comp_staylift]
 // comp_zombie - prevent dead players triggering stuff
 // comp_stairs - see p_floor.c
 // comp_infcheat - FIXME
@@ -354,7 +369,7 @@ enum {
 // comp_sound - see s_sound.c
 // comp_666 - enables tag 666 in non-ExM8 levels
 // comp_soul - enables lost souls bouncing (see P_ZMovement)
-//   EN_skull_bounce_fix = ! comp_soul // normally on
+//   EN_skull_bounce_fix = ! comp[comp_soul] // normally on
 // comp_maskedanim - 2s mid textures don't animate
 
 #if 0
@@ -374,11 +389,11 @@ enum {
     // comp_god - fixes to God mode
     // comp_skymap
     // comp_zerotags - allow zero tags in wads */
-    { boom_compatibility, mbf_compatibility },
+    { boom_compatibility (==boom_201_compatibility), mbf_compatibility },
 
     // comp_floors - fixes for moving floors bugs
     // comp_stairs - see p_floor.c
-    { boom_compatibility_compatibility, mbf_compatibility },
+    { boom_compatibility_compatibility (==boom_200_compatibility), mbf_compatibility },
      
     // comp_telefrag - monsters used to telefrag only on MAP30, now they do it for spawners only
     // comp_dropoff - MBF encourages things to drop off of overhangs
@@ -395,7 +410,7 @@ enum {
     // comp_respawn - objects which aren't on the map at game start respawn at (0,0)
     { prboom_2_compatibility, prboom_2_compatibility },
     // comp_sound - see s_sound.c
-    { boom_compatibility_compatibility, prboom_3_compatibility },
+    { boom_compatibility_compatibility (==boom_200_compatibility), prboom_3_compatibility },
     // comp_666 - enables tag 666 in non-ExM8 levels
     { ultdoom_compatibility, prboom_4_compatibility },
     // comp_soul - enables lost souls bouncing (see P_ZMovement)
@@ -1436,6 +1451,9 @@ void G_Ticker (void)
                 break;
             case ga_worlddone:
                 G_DoWorldDone ();
+                break;
+            case ga_playdemo:
+                G_DoPlayDemo( playdemo_name );
                 break;
             case ga_nothing:
                 break;
@@ -2754,6 +2772,7 @@ void G_gamemode_EN_defaults( void )
     EN_boom_physics = EN_boom;
     EN_boom_floor = EN_boom | EN_heretic;
     EN_blazing_double_sound = 0;
+    EN_vile_revive_bug = 0;
     EN_skull_limit = 0;
     EN_old_pain_spawn = 0;
     // MBF
@@ -2812,13 +2831,14 @@ finish:
 static
 void G_demo_defaults( void )
 {
+    // For DoomLegacy demos, generally, after version 1.44 when DoomLegacy got a capability,
+    // it got a flag in the demo header.  Default them to off.
     friction_model = FR_orig;
     monster_infight = INFT_infight;  // Default is to infight, DEH can turn it off.
     voodoo_mode = VM_vanilla;
     cv_solidcorpse.EV = 0;
     cv_instadeath.EV = 0;  // Die
     cv_monstergravity.EV = 0;
-    cv_doorstuck.EV = 0;  // none
     cv_monbehavior.EV = 0;  // Vanilla
     cv_monsterfriction.EV = 0; // Vanilla
     EN_skull_bounce_fix = 0;  // Vanilla and DoomLegacy < 1.47
@@ -2826,17 +2846,22 @@ void G_demo_defaults( void )
 
     // Boom
     cv_rndsoundpitch.EV = EN_boom;  // normal in Boom, calls M_Random
-   
-    EN_variable_friction = EN_boom;
     EN_pushers = EN_boom;
-    EN_doorlight = EN_boom;
-    EN_invul_god = EN_boom;
-    cv_invul_skymap.EV = EN_boom;  // 0=Vanilla, 1=Boom
-    cv_zerotags.EV = EN_boom;  // 0=Vanilla, 1=Boom
-    EN_boom_floor = EN_boom;
-    EN_blazing_double_sound = EN_doom_etc && ! EN_boom;
-    EN_skull_limit = EN_doom_etc && ! EN_boom;
-    EN_old_pain_spawn = EN_doom_etc && ! EN_boom;
+    // introduced Boom 2.00 without demo flag
+    EN_variable_friction =
+    EN_boom_floor = EN_boom && (demoversion >= 200);
+    // introduced Boom 2.01 without demo flag
+    EN_boom_physics =
+    EN_doorlight =
+    EN_invul_god =
+    cv_invul_skymap.EV =
+    cv_zerotags.EV = EN_boom && (demoversion >= 201);  // 0=Vanilla, 1=Boom
+    EN_blazing_double_sound =
+    EN_skull_limit =
+    EN_old_pain_spawn =
+    EN_vile_revive_bug = EN_doom_etc && !( EN_boom && (demoversion >= 201));  // fixed Boom 2.01
+    // introduced Boom 2.02 without demo flag
+    cv_doorstuck.EV = EN_boom && (demoversion >= 202);  // Boom 2.02
 
     // MBF
     cv_mbf_dropoff.EV = EN_mbf;
@@ -3056,20 +3081,29 @@ void G_setup_VERSION( void )
 
 ticcmd_t oldcmd[MAXPLAYERS];
 
+// Only called when demoplayback.
 void G_ReadDemoTiccmd (ticcmd_t* cmd,int playernum)
 {
-    if (*demo_p == DEMOMARKER)
+    if( (*demo_p == DEMOMARKER) || (demo_p > demoend) )
     {
         // end of demo data stream
         G_CheckDemoStatus ();
         return;
     }
-    if((demoversion<112) || (demoversion >= 200))
+
+    if( EN_demotic_109 )  // vanilla demo tic format
     {
         // Doom, Boom, MBF, prboom demo
         cmd->forwardmove = READCHAR(demo_p);
         cmd->sidemove = READCHAR(demo_p);
-        cmd->angleturn = READBYTE(demo_p)<<8;
+        if( EN_boom_longtics )
+        {
+            cmd->angleturn = READ16(demo_p);
+        }
+        else
+        {
+            cmd->angleturn = READBYTE(demo_p)<<8;
+        }
         cmd->buttons = READBYTE(demo_p);
         // demo does not have
         cmd->aiming = 0;
@@ -3077,12 +3111,14 @@ void G_ReadDemoTiccmd (ticcmd_t* cmd,int playernum)
     else
     {
         // DoomLegacy advanced demos
-        char ziptic=*demo_p++;
+        char ziptic=*demo_p++;  // bit flags for ZT_
 
         if(ziptic & ZT_FWD)
             oldcmd[playernum].forwardmove = READCHAR(demo_p);
+
         if(ziptic & ZT_SIDE)
             oldcmd[playernum].sidemove = READCHAR(demo_p);
+
         if(ziptic & ZT_ANGLE)
         {
             if(demoversion<125)
@@ -3090,8 +3126,10 @@ void G_ReadDemoTiccmd (ticcmd_t* cmd,int playernum)
             else
                 oldcmd[playernum].angleturn = READ16(demo_p);
         }
+
         if(ziptic & ZT_BUTTONS)
             oldcmd[playernum].buttons = READBYTE(demo_p);
+
         if(ziptic & ZT_AIMING)
         {
             if(demoversion<128)
@@ -3099,8 +3137,10 @@ void G_ReadDemoTiccmd (ticcmd_t* cmd,int playernum)
             else
                 oldcmd[playernum].aiming = READ16(demo_p);
         }
+
         if(ziptic & ZT_CHAT)
             demo_p++;
+
         if(ziptic & ZT_EXTRADATA)
             ReadLmpExtraData(&demo_p,playernum);
         else
@@ -3340,7 +3380,11 @@ void playdemo_restore_settings( void )
 void G_DeferedPlayDemo (const char* name)
 {
     // [WDJ] All as one string, or else it executes partial string
-    COM_BufAddText(va("playdemo \"%s\"\n", name));
+//    COM_BufAddText(va("playdemo \"%s\"\n", name));
+
+    // Using console command adds extra tics that cause sync problems.
+    playdemo_name = name;     // parameter
+    gameaction = ga_playdemo;  // play demo after finishing this
 }
 
 
@@ -3353,9 +3397,12 @@ void G_DoPlayDemo (const char *defdemoname)
 {
     skill_e skill;
     int   i, lmp, episode, map;
+    int   demo_size;
+    int   num_players = 4;
     boolean boomdemo = 0;
     byte  demo144_format = 0;
     byte  boom_compatibility_mode = 0;  // Boom 2.00 compatibility flag
+    byte  boom_compatibility_level = 0;
 
     playdemo_save_settings();  // [WDJ] Save user settings.
    
@@ -3364,6 +3411,9 @@ void G_DoPlayDemo (const char *defdemoname)
     EN_boom = 0;
     EN_mbf = 0;
     EV_legacy = 0;
+    // Default demo tic read
+    EN_demotic_109 = 0;
+    EN_boom_longtics = 0;
 
 #ifdef BASETIC_DEMOSYNC
     // [WDJ] From PrBoom, keep some old demos in sync.
@@ -3383,18 +3433,21 @@ void G_DoPlayDemo (const char *defdemoname)
     {
         // lump
         demobuffer = demo_p = W_CacheLumpNum (lmp, PU_STATIC);
+        demo_size = W_LumpLength( lmp );
     }
     else
     {
         // external file
         FIL_DefaultExtension(demoname,".lmp");
-        if (!FIL_ReadFile (demoname, &demobuffer) )
+        demo_size = FIL_ReadFile (demoname, &demobuffer);
+        if ( demo_size <= 0 )
         {
             GenPrintf(EMSG_warn, "\2ERROR: couldn't open file '%s'.\n", demoname);
             goto no_demo;
         }
         demo_p = demobuffer;
     }
+    demoend = demo_p + demo_size - 1;
 
 //
 // read demo header
@@ -3419,29 +3472,112 @@ void G_DoPlayDemo (const char *defdemoname)
     // 203 = LxDoom or MBF  (supported badly, no sync)
     // 210..214 = prboom (supported badly, no sync)
     // Do not have version: Hexen, Heretic, Doom 1.2 and before
-    if( demoversion == 144 )  // DoomLegacy demo DL format number
+   if( demoversion < 109 )
+        goto bad_demo_version;
+
+    if( demoversion < 111 )
     {
-        if( READBYTE(demo_p) != 'D' )  goto broken_header;
-        if( READBYTE(demo_p) != 'L' )  goto broken_header;
-        demo144_format = *demo_p++;  // DL format num, (1)
-        demo_p++;  // recording legacy version number
-        demoversion = READBYTE(demo_p);  // DoomLegacy DL demoversion number
-        demo_p++;  // subversion, not used yet
-        // maybe DL header on old demo
-        if( demoversion < 111 )  goto broken_header;
-        if( demoversion < 143 )  demo144_format = 0;
+        EN_demotic_109 = 1;  // vanilla demo tic format       
+    }
+    else if( demoversion >= 111 && demoversion <= 144 )
+    {
+        // DoomLegacy Demos
+        if( demoversion == 144 )  // DoomLegacy demo DL format number
+        {
+            if( READBYTE(demo_p) != 'D' )  goto broken_header;
+            if( READBYTE(demo_p) != 'L' )  goto broken_header;
+            demo144_format = *demo_p++;  // DL format num, (1)
+            demo_p++;  // recording legacy version number
+            demoversion = READBYTE(demo_p);  // DoomLegacy DL demoversion number
+            demo_p++;  // subversion, not used yet
+            // maybe DL header on old demo
+            if( demoversion < 111 )  goto broken_header;
+            if( demoversion < 143 )  demo144_format = 0;
+        }
         EV_legacy = demoversion;  // is a DoomLegacy version
+        // Older demos (which could have had a demo144_format header put on them)
+        EN_demotic_109 = (demoversion < 112);  // vanilla demo tic format       
+        EN_boom = (demoversion >= 129);
         // [WDJ] enable of "Marine's Best Friend" feature emulation
-        EN_boom = 1;
         EN_mbf = (demoversion >= 147);
     }
-    else if( demoversion >= 111 && demoversion <= 143 )
+    else if (demoversion >= 200 && demoversion <= 214)
     {
-        // Older DoomLegacy Demos
-        EV_legacy = demoversion;
-        EN_boom = (demoversion >= 129);
-        EN_mbf = 0; // legacy demos before mbf
+        // Boom, MBF, and prboom headers
+        // Used by FreeDoom
+
+        // Read the "Boom" or "MBF" header line
+        // Signature starts with 0x1d, end with 0xe6, padded to 6 bytes.
+        // Signature Boom:  0x1d 'B' 'o' 'o' 'm'  0xe6
+        // Signature MBF:   0x1d 'M' 'B' 'F' 0xe6 0x00
+        if( *demo_p == 0x1d )
+        {
+            // Read signature into header buf and terminate as string.
+            byte header[10];
+            for ( i=0; i<5; i++ )
+            {
+                header[i] = demo_p[i+1];
+                if( header[i] == 0xe6 )  break;
+            }
+            header[i] = 0;
+            demo_p += 6;  // signature is always 6 bytes
+
+            boom_compatibility_level = demoversion;  // default
+            if( (demoversion == 203) && (header[0] == 'B') )
+            {
+                // LxDoom
+                boom_compatibility_mode = 0;
+                boom_compatibility_level = 200;  // LxDoom not supported
+                EN_boom = 1;
+#ifdef DEBUG_DEMO
+                debug_Printf( " LxDoom demo\n" );
+#endif
+            }
+            else
+            {
+                // MBF and prboom header have compatibility flag,
+                // which in newer demos will be ignored.
+                boom_compatibility_mode = *demo_p++;
+                EN_boom = ! boom_compatibility_mode;
+#ifdef DEBUG_DEMO
+                debug_Printf( " Boom demo\n" );
+#endif
+            }
+
+            // Complicated decoding for various boom versions.
+            if( boom_compatibility_mode )
+            { 
+                if(demoversion <= 202)
+                {
+                    boom_compatibility_level = 200;
+                }
+            }
+
+            EN_demotic_109 = 1;	    
+            if( demoversion == 214 )
+            {
+                EN_boom_longtics = 1;
+            }
+
+            EN_mbf = EN_boom && (header[0] == 'M') && (boom_compatibility_level >= 203);
+#ifdef DEBUG_DEMO
+            debug_Printf( " demo header: %s.\n", header );
+            debug_Printf( " compatibility 0x%x.\n", boom_compatibility_mode );
+            debug_Printf( " compatibility_level 0x%x.\n", boom_compatibility_level );
+            debug_Printf( " EN_boom %i  EN_mbf %i.\n", EN_boom, EN_mbf );
+#endif
+            boomdemo = 1;
+        }
+        else
+        {
+            goto broken_header;
+        }
     }
+    else
+    {
+        goto bad_demo_version;
+    }
+
 
 #ifdef SHOW_DEMOVERSION
     CONS_Printf( "Demo Version %i.\n", (int)demoversion );
@@ -3450,45 +3586,10 @@ void G_DoPlayDemo (const char *defdemoname)
     debug_Printf( "Demo version %i.\n", (int)demoversion );
 #endif
 
-    if (demoversion < 109 || demoversion >= 215)
-    {
-        GenPrintf(EMSG_warn, "\2ERROR: Incompatible demo (version %d). Legacy supports demo versions 109-%d.\n", demoversion, VERSION);
-        goto kill_demo;
-    }
-   
-    // Boom, MBF, and prboom headers
-    // Used by FreeDoom
-    if (demoversion >= 200 && demoversion <= 214)
-    {
-        // Read the "Boom" or "MBF" header line
-        if( *demo_p == 0x1d )
-        {
-            byte header[10];
-            demo_p ++;
-            for ( i=0; i<9; i++ )
-            {
-                header[i] = *demo_p++;
-                if( header[i] == 0xe6 )  break;
-            }
-            header[i] = 0;
-            // MBF and prboom header have compatibility level
-            boom_compatibility_mode = *demo_p++;
-#ifdef DEBUG_DEMO
-            debug_Printf( " Boom demo header: %s.\n", header );
-            debug_Printf( " compatibility 0x%x.\n", boom_compatibility_mode );
-#endif
-            boomdemo = 1;
-            EN_boom = ! boom_compatibility_mode;
-            EN_mbf = EN_boom && (demoversion >= 203);
-        }
-        else
-        {
-            goto broken_header;
-        }
-    }
-
     if (demoversion < VERSION)
         CONS_Printf ("\2Demo is from an older game version\n");
+
+    if( demo_p > demoend )  goto broken_header;
 
     G_demo_defaults();  // Per EN_boom, EN_mbf
 
@@ -3561,18 +3662,11 @@ void G_DoPlayDemo (const char *defdemoname)
     debug_Printf( " viewing player %i.\n",  (int)displayplayer );
 #endif
 
-     //added:11-01-98:
     //  support old v1.9 demos with ONLY 4 PLAYERS ! Man! what a shame!!!
-    if (demoversion==109)
+    if( demoversion==109 )
     {
-       // header[9..12]: byte: player[1..4] present boolean
-        for (i=0 ; i<4 ; i++) {
-#ifdef DEBUG_DEMO
-            if( *demo_p )
-                 debug_Printf( " player %i present %i.\n", i+1, (int)*demo_p );
-#endif
-            playeringame[i] = *demo_p++;
-        }
+        // header[9..12]: byte: player[1..4] present boolean
+        num_players = 4;
     }
     else if( boomdemo )
     {
@@ -3609,6 +3703,9 @@ void G_DoPlayDemo (const char *defdemoname)
         //   When demo insurance, Boom has random number generator per usage,
         //   all initialized from this seed.  DoomLegacy does not have this.
         // Seed is not needed for the standard random number generators.
+        if( demo_p[9] )
+          debug_Printf( " demo insurance RNG, not implemented.\n" );
+
         if( demoversion >= 203 ) // MBF and prboom
         {
             // [14] monster infighting
@@ -3644,6 +3741,7 @@ void G_DoPlayDemo (const char *defdemoname)
             byte * comp = demo_p + 26;
             EN_mbf_telefrag = ! comp[comp_telefrag];
             cv_mbf_dropoff.EV = ! comp[comp_dropoff];
+            EN_vile_revive_bug = comp[comp_vile];  // Vanilla
             EN_skull_limit = comp[comp_pain];
             EN_old_pain_spawn = comp[comp_skull];
             EN_blazing_double_sound = comp[comp_blazing];  // Vanilla
@@ -3667,16 +3765,11 @@ void G_DoPlayDemo (const char *defdemoname)
         }
 
         demo_p += (demoversion == 200)? 256 : 64;  // option area size
+       
 
         // byte: player[1..32] present boolean
         // Boom saved room for 32 players even though only supported 4
-        for (i=0 ; i<32 ; i++) {
-#ifdef DEBUG_DEMO
-            if( *demo_p )
-                 debug_Printf( " player %i present %i.\n", i+1, (int)*demo_p );
-#endif
-            playeringame[i] = *demo_p++;
-        }
+        num_players = (boom_compatibility_level < 200)? 4 : 32;
 
         if( boom_compatibility_mode )
         {
@@ -3702,14 +3795,8 @@ void G_DoPlayDemo (const char *defdemoname)
 
         if (demoversion<113)
         {
-           // header[9..16]: byte: player[1..8] present boolean
-            for (i=0 ; i<8 ; i++) {
-#ifdef DEBUG_DEMO
-                if( *demo_p )
-                    debug_Printf( " player %i present %i.\n", i+1, (int)*demo_p );
-#endif
-                playeringame[i] = *demo_p++;
-            }
+            // header[9..16]: byte: player[1..8] present boolean
+            num_players = 8;	    
         }
         else
         {
@@ -3722,23 +3809,33 @@ void G_DoPlayDemo (const char *defdemoname)
             }
 
             // header[18..50]: byte: player[1..32] present boolean
-            for (i=0 ; i<32 ; i++) {
-#ifdef DEBUG_DEMO
-                if( *demo_p )
-                    debug_Printf( " player %i present %i.\n", i+1, (int)*demo_p );
-#endif
-                playeringame[i] = *demo_p++;
-            }
+	    num_players = 32;
         }
+    }
+
+    if( demo_p > demoend )  goto broken_header;
+
 #if MAXPLAYERS>32
 #error Please add support for old lmps
 #endif
-    }
 
+    // Read players in game.
+    memset( playeringame, 0, sizeof(playeringame) );
+    for (i=0 ; i<num_players ; i++)
+    {
+        playeringame[i] = *demo_p++;
+#ifdef DEBUG_DEMO
+        if( playeringame[i] )
+             debug_Printf( "   player %i\n", i+1 );
+#endif
+    }
+   
     // FIXME: do a proper test here
     if( demoversion<131 )
         multiplayer = playeringame[1];
 
+    if( demo_p > demoend )  goto broken_header;
+   
     // [WDJ]
     if( demo144_format )
     {
@@ -3789,6 +3886,8 @@ void G_DoPlayDemo (const char *defdemoname)
         if( *demo_p++ != 0x55 )  goto broken_header;  // Sync mark, start of data
     }
 
+    if( demo_p > demoend )  goto kill_demo;
+   
     memset(oldcmd,0,sizeof(oldcmd));
 
     demoplayback = true;
@@ -3809,6 +3908,11 @@ void G_DoPlayDemo (const char *defdemoname)
     CON_ToggleOff (); // may be also done at the end of map command
     return;
 
+
+bad_demo_version:
+    GenPrintf(EMSG_warn, "\2ERROR: Incompatible demo (version %d). Legacy supports demo versions 109-%d.\n", demoversion, VERSION);
+    goto kill_demo;
+   
 broken_header:   
 #ifdef DEBUG_DEMO
     debug_Printf( " broken demo header\n" );

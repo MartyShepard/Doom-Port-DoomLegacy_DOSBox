@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_prepro.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: t_prepro.h 1391 2018-05-31 04:51:23Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -47,11 +47,12 @@
 #if __FreeBSD__ < 5
 #include <machine/types.h>
 #endif
+#if __FreeBSD__ > 4
+typedef struct label_s label_t;
+#endif
 #endif
 
 #if !defined(FREEBSD) && !defined(SOLARIS)
-typedef struct label_s label_t;
-#elif __FreeBSD__ > 4
 typedef struct label_s label_t;
 #endif
 
