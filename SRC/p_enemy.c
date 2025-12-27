@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1392 2018-05-31 04:52:32Z wesleyjohnson $
+// $Id: p_enemy.c 1396 2018-06-17 04:52:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -496,18 +496,19 @@ static boolean P_CheckMeleeRange (mobj_t* actor)
     fixed_t     dist;
 
     if(!pl)
-        return false;
+        goto ret_false;
 
     // [WDJ] prboom, killough, friend monsters do not attack other friend
     if( BOTH_FRIEND(actor, pl) )
-        return false;
+        goto ret_false;
 
     dist = P_AproxDistance (pl->x-actor->x, pl->y-actor->y);
 
     // [WDJ] FIXME pl->info may be NULL (seen in phobiata.wad)
-    if (pl->info == NULL ) return false;
+    if (pl->info == NULL )
+        goto ret_false;
     if (dist >= (MELEERANGE - 20*FRACUNIT + pl->info->radius) )
-        return false;
+        goto ret_false;
 
     //added:19-03-98: check height now, so that damn imps cant attack
     //                you if you stand on a higher ledge.
@@ -515,12 +516,15 @@ static boolean P_CheckMeleeRange (mobj_t* actor)
          && ((pl->z > actor->z + actor->height)
              || (actor->z > pl->z + pl->height) )
       )
-         return false;
+        goto ret_false;
 
     if (! P_CheckSight (actor, actor->target) )
-        return false;
+        goto ret_false;
 
     return true;
+
+ret_false:
+    return false;
 }
 
 
@@ -565,7 +569,7 @@ static boolean P_CheckMissileRange (mobj_t* actor)
     fixed_t  dist;
 
     if (! P_CheckSight (actor, actor->target) )
-        return false;
+        goto ret_false;
 
     if ( actor->flags & MF_JUSTHIT )
     {
@@ -574,7 +578,7 @@ static boolean P_CheckMissileRange (mobj_t* actor)
         actor->flags &= ~MF_JUSTHIT;
 
         if( EN_heretic || (demoversion < 147) )
-            return true;  // Old Legacy, Old Doom
+            goto ret_true;  // Old Legacy, Old Doom
 
         // [WDJ] MBF, from MBF, PrBoom
         // Boom has two calls of P_Random, which affect demos
@@ -595,10 +599,10 @@ static boolean P_CheckMissileRange (mobj_t* actor)
     // killough 7/18/98: friendly monsters don't attack other friendly
     // monsters or players (except when attacked, and then only once)
     if( BOTH_FRIEND(actor, target) )
-        return false;
+        goto ret_false;
 
     if (actor->reactiontime)
-        return false;   // do not attack yet
+        goto ret_false;  // do not attack yet
 
     // OPTIMIZE: get this from a global checksight
     dist = P_AproxDistance ( actor->x - actor->target->x,
@@ -612,13 +616,13 @@ static boolean P_CheckMissileRange (mobj_t* actor)
     if (actor->type == MT_VILE)
     {
         if (dist > 14*64)
-            return false;       // too far away
+            goto ret_false;  // too far away
     }
 
     if (actor->type == MT_UNDEAD)
     {
         if (dist < 196)
-            return false;       // close for fist attack
+            goto ret_false;  // close for fist attack
         dist >>= 1;
     }
 
@@ -638,15 +642,19 @@ static boolean P_CheckMissileRange (mobj_t* actor)
         dist = 160;
 
     if (PP_Random(pr_missrange) < dist)
-        return false;
+        goto ret_false;
 
     if( actor->flags & MF_FRIEND )  // call is only useful if MBF FRIEND
     {
         if( P_HitFriend(actor) )
-            return false;
+            goto ret_false;
     }
 
+ret_true:
     return true;
+
+ret_false:
+    return false;
 }
 
 
@@ -1460,6 +1468,7 @@ static boolean PIT_FindTarget(mobj_t *mo)
 //
 // P_LookForPlayers
 // If allaround is false, only look 180 degrees in front.
+// Modifies actor.
 // Returns true if a player is targeted.
 //
 static boolean P_LookForPlayers ( mobj_t*       actor,
@@ -1525,7 +1534,7 @@ static boolean P_LookForPlayers ( mobj_t*       actor,
 
 //        sector = actor->subsector->sector;
 
-    // This is not in PrBoom, EnternityEngine, and it uses P_Random !!!
+    // This is not in PrBoom, EternityEngine, and it uses P_Random !!!
     // BP: first time init, this allow minimum lastlook changes
     if( (lastlook < 0) && (EV_legacy >= 129) )
         lastlook = P_Random () % MAXPLAYERS;

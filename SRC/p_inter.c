@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
+// $Id: p_inter.c 1396 2018-06-17 04:52:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2265,7 +2265,7 @@ boolean P_DamageMobj ( mobj_t*   target,
                     // remove this voodoo doll to avoid segfaults
                     P_RemoveMobj( voodoo_thing );
                 }
-                return false;
+                goto ret_false;
             }
 
             if( voodoo_mode == VM_vanilla )
@@ -2295,17 +2295,17 @@ boolean P_DamageMobj ( mobj_t*   target,
  
     // killough 8/31/98: allow bouncers to take damage
     if ( !(target->flags & (MF_SHOOTABLE | MF_BOUNCES)) )
-        return false; // shouldn't happen...
+        goto ret_false; // shouldn't happen...
 
     // [WDJ] Solid Corpse health < 0.
     if( (target->health <= 0) && !(target->flags & MF_CORPSE) )
-        return false;
+        goto ret_false;
 
     if ( target->flags & MF_SKULLFLY )
     {
         // Minotaur is invulnerable during charge attack
         if(target->type == MT_MINOTAUR)
-            return false;
+            goto ret_false;
 
         target->momx = target->momy = target->momz = 0;
     }
@@ -2325,14 +2325,14 @@ boolean P_DamageMobj ( mobj_t*   target,
             {
                 P_ChickenMorph(target);
             }
-            return false; // Always return
+            goto ret_false; // Always return
         case MT_WHIRLWIND:
             return P_TouchWhirlwind(target);
         case MT_MINOTAUR:
             if(inflictor->flags&MF_SKULLFLY)
             { // Slam only when in charge mode
                 P_MinotaurSlam(inflictor, target);
-                return true;
+                goto ret_true;
             }
             break;
         case MT_MACEFX4: // Death ball
@@ -2348,7 +2348,7 @@ boolean P_DamageMobj ( mobj_t*   target,
                 }
                 if(P_AutoUseChaosDevice(player))
                 { // Player was saved using chaos device
-                    return false;
+                    goto ret_false;
                 }
             }
             damage = 10000; // Something's gonna die
@@ -2373,7 +2373,7 @@ boolean P_DamageMobj ( mobj_t*   target,
             if(target->type == MT_SORCERER2 && P_Random() < 96)
             { // D'Sparil teleports away
                 P_DSparilTeleport(target);
-                return false;
+                goto ret_false;
             }
             break;
         case MT_BLASTERFX1:
@@ -2382,7 +2382,7 @@ boolean P_DamageMobj ( mobj_t*   target,
             { // Less damage to Ironlich bosses
                 damage = P_Random()&1;
                 if(!damage)
-                    return false;
+                    goto ret_false;
             }
             break;
         default:
@@ -2509,7 +2509,7 @@ boolean P_DamageMobj ( mobj_t*   target,
         if( target->health < -target->info->spawnhealth )
             P_KillMobj ( target, inflictor, source );  // to gibs
         // Keep corpse from ticking the P_Random in the pain test.
-        return true;    
+        goto ret_true;    
     }
 
     // target player specific
@@ -2529,10 +2529,10 @@ boolean P_DamageMobj ( mobj_t*   target,
             // Boom, MBF: killough 3/26/98: make god mode 100%
             // !comp[comp_god]
             if( (player->cheats&CF_GODMODE) && EN_invul_god )
-                return false;
+                goto ret_false;
 
             if( damage < 1000 )
-                return false;
+                goto ret_false;
         }
 
         if (player->armortype)
@@ -2640,7 +2640,7 @@ boolean P_DamageMobj ( mobj_t*   target,
             }
 
             P_KillMobj ( target, inflictor, source );
-            return true;
+            goto ret_true;
         }
   
         // This must be after KillMobj, so target damage can be negative.
@@ -2735,4 +2735,10 @@ boolean P_DamageMobj ( mobj_t*   target,
         target->flags |= MF_JUSTHIT;    // fight back!
 
     return takedamage;
+
+ret_false:
+    return false;
+
+ret_true:
+    return true;  // damaged
 }

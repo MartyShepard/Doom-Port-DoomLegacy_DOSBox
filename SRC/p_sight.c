@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_sight.c 1395 2018-06-17 04:52:14Z wesleyjohnson $
+// $Id: p_sight.c 1396 2018-06-17 04:52:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -69,7 +69,7 @@ static int P_DivlineSide( fixed_t x, fixed_t y, divline_t* node )
 {
     if (!node->dx)
     {
-        if (x==node->x)
+        if (x == node->x)
             return 2;
 
         if (x <= node->x)
@@ -80,8 +80,8 @@ static int P_DivlineSide( fixed_t x, fixed_t y, divline_t* node )
 
     if (!node->dy)
     {
-//        if (x==node->y)
-        if (y==node->y)	// [WDJ] Fix "Sleeping Sargeant" bug from DoomWiki.
+        // [WDJ] Fix "Sleeping Sargeant" bug from DoomWiki.       
+        if( (EN_sleeping_sarg_bug ? x : y) == node->y )
             return 2;
 
         if (y <= node->y)
