@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1393 2018-05-31 04:53:50Z wesleyjohnson $
+// $Id: p_map.c 1394 2018-05-31 04:54:34Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1791,7 +1791,8 @@ fixed_t         tsm_xmove, tsm_ymove; // return from P_HitSlideLine, P_SlideMove
 // P_HitSlideLine
 // Adjusts the xmove / ymove
 // so that the next move will slide along the wall.
-//
+// [phares] MBF: If the floor is icy, then you can bounce off a wall.
+
 void P_HitSlideLine (line_t* ld)
 {
     int                 side;
@@ -1803,18 +1804,70 @@ void P_HitSlideLine (line_t* ld)
     fixed_t             movelen;
     fixed_t             newlen;
 
+    byte   icyfloor = 0;  // Boom, MBF, invoke icy floor bounce
+         
+    // [WDJ] MBF and Boom code for icy floor, from PrBoom and MBF.
+    // phares
+    // Under icy conditions, if the angle of approach to the wall
+    // is more than 45 degrees, then you'll bounce and lose half
+    // your momentum. If less than 45 degrees, you'll slide along
+    // the wall. 45 is arbitrary and is believable.
+
+    // Check for the special cases of horz or vert walls.
+
+    // killough 10/98: only bounce if hit hard (prevents wobbling)
+    // cph - DEMOSYNC - should only affect players in Boom demos?
+    // e6y
+    if( EN_variable_friction )
+    {
+        if( EN_mbf )
+        {
+            // killough 8/28/98: calc friction on demand       
+            icyfloor =
+              P_AproxDistance(tsm_xmove, tsm_ymove) > 4*FRACUNIT
+              && tsm_mo->z <= tsm_mo->floorz
+              && P_GetFriction( tsm_mo ) > ORIG_FRICTION;
+        }
+        else if( EN_boom )  // ! compatibility
+        {
+            icyfloor = onground  // player onground (p_user.c)
+              && tsm_mo->player
+              && tsm_mo->friction > ORIG_FRICTION;
+        }
+    }
 
     if (ld->slopetype == ST_HORIZONTAL)
     {
+        if( icyfloor && (abs(tsm_ymove) > abs(tsm_xmove)) )
+        {
+            // bounce, and absorb half the momentum	   
+            tsm_xmove /= 2;
+            tsm_ymove = - tsm_ymove / 2;
+            S_StartObjSound( tsm_mo, sfx_oof );	   
+	    return;
+        }
+
         tsm_ymove = 0;
         return;
     }
 
     if (ld->slopetype == ST_VERTICAL)
     {
+        if( icyfloor && (abs(tsm_xmove) > abs(tsm_ymove)) )
+        {
+            // bounce, and absorb half the momentum	   
+            tsm_xmove = - tsm_xmove/2; // absorb half the momentum
+            tsm_ymove /= 2;
+            S_StartObjSound( tsm_mo, sfx_oof );	   
+	    return;
+        }
+
         tsm_xmove = 0;
         return;
     }
+
+    // [phares] The wall is angled. Bounce if the angle
+    // of approach is less than 45 degrees.
 
     side = P_PointOnLineSide (tsm_mo->x, tsm_mo->y, ld);
 
@@ -1823,13 +1876,37 @@ void P_HitSlideLine (line_t* ld)
     if (side == 1)
         lineangle += ANG180;
 
-    moveangle = R_PointToAngle2 (0,0, tsm_xmove, tsm_ymove);
-    deltaangle = moveangle - lineangle;
-    if (deltaangle > ANG180)
-        deltaangle += ANG180;
-    //  I_Error ("SlideLine: ang>ANG180");
-
     movelen = P_AproxDistance (tsm_xmove, tsm_ymove);
+    moveangle = R_PointToAngle2 (0,0, tsm_xmove, tsm_ymove);
+       
+    // [WDJ] From PrBoom and MBF.
+    // killough 3/2/98:
+    // The moveangle+=10 breaks v1.9 demo compatibility in
+    // some demos, so it needs demo_compatibility switch.
+    if( EN_boom )  // ! demo_compatibility
+    {
+        // [phares] prevents sudden path reversal due to rounding error.
+        moveangle += 10;
+    }
+
+    deltaangle = moveangle - lineangle;
+    if( icyfloor && (deltaangle > ANG45) && (deltaangle < (ANG90+ANG45)) )
+    {
+        // Icy bounce
+        moveangle = lineangle - deltaangle;
+        movelen /= 2; // absorb
+        tsm_xmove = FixedMul (movelen, cosine_ANG(moveangle));
+        tsm_ymove = FixedMul (movelen, sine_ANG(moveangle));
+        S_StartObjSound( tsm_mo, sfx_oof );
+        return;
+    }
+
+    // Original slide      
+    if (deltaangle > ANG180)
+    {
+        deltaangle += ANG180;
+        //  I_Error ("SlideLine: ang>ANG180");
+    }
     newlen = FixedMul (movelen, cosine_ANG(deltaangle));
 
     tsm_xmove = FixedMul (newlen, cosine_ANG(lineangle));
