@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.h 1225 2016-04-07 17:29:52Z wesleyjohnson $
+// $Id: p_inter.h 1393 2018-05-31 04:53:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -53,6 +53,7 @@
 #endif
 
 extern consvar_t cv_fragsweaponfalling;
+extern boolean onground;  // player is onground
 
 // Boris hack : preferred weapons order
 void VerifFavoritWeapon (player_t *player);

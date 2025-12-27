@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: p_map.c 1393 2018-05-31 04:53:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -255,6 +255,7 @@ fixed_t  P_GetFriction( const mobj_t * mo )
     // tests in this heavily used code.
     got_movefactor = ORIG_FRICTION_FACTOR;
     if( EN_variable_friction
+        && (EN_mbf || (EN_boom && mo->player))
         && !(mo->flags & (MF_NOCLIP|MF_NOGRAVITY)) )
     {
         fixed_t mo_top = mo->z + mo->height;
@@ -601,10 +602,13 @@ static boolean PIT_CheckThing (mobj_t* thing)
         tm_thing->flags &= ~MF_SKULLFLY;
         tm_thing->momx = tm_thing->momy = tm_thing->momz = 0;
 
+        // This call can recurse through this function again.
         P_SetMobjState (tm_thing,
                         (EN_heretic)? tm_thing->info->seestate
                                     : tm_thing->info->spawnstate
                        );
+
+        tm_flags = tm_thing->flags;  // flags may have been modified
 
         goto ret_blocked;  // stop moving
     }
@@ -739,8 +743,11 @@ static boolean PIT_CheckThing (mobj_t* thing)
         return (thing->flags & MF_NOCLIP) || !(tm_thing->flags & MF_SOLID);
     }
 #endif   
-    if ( demoversion >= 145 )
+    if ( demoversion < 111 || demoversion >= 145 )
     {
+        if( ! EN_boom  )  // and SOLID
+            goto ret_blocked;
+
         // Also includes ( demoversion >= 200 ) from prboom, same code.
 
         // A non-solid moving thing is not blocked by a solid.
@@ -814,7 +821,6 @@ ret_blocked:
     return false;  // hit something
 }
 
-// [WDJ] found to be unused, 12/5/2009
 
 // SoM: 3/15/2000
 // PIT_CrossLine
@@ -867,11 +873,13 @@ static byte  tm_touches( line_t *ld )
   if(    (ubbox[BOXRIGHT] <= ld->bbox[BOXLEFT])
       || (ubbox[BOXLEFT] >= ld->bbox[BOXRIGHT]) )
       return 0;
+
   ubbox[BOXTOP] = tm_thing->y + radius;
   ubbox[BOXBOTTOM] = tm_thing->y - radius;
   if(    (ubbox[BOXTOP] <= ld->bbox[BOXBOTTOM])
       || (ubbox[BOXBOTTOM] >= ld->bbox[BOXTOP]) )
       return 0;
+
   return  P_BoxOnLineSide(ubbox, ld) == -1;
 }
 
