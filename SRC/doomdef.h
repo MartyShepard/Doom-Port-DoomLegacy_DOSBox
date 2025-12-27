@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1359 2017-10-16 16:23:17Z wesleyjohnson $
+// $Id: doomdef.h 1403 2018-07-06 09:49:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -149,6 +149,10 @@
 
 // [WDJ] 8/31/2017  16 rotation sprites option
 #define ROT16
+
+// If surround sound is desired
+#define SURROUND_SOUND
+
 
 // Player morph canceling invisibility and MF_SHADOW, is inconsistent.
 // The Heretic vanilla behavior cancels SHADOW when turned into a chicken.

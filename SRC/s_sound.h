@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: s_sound.h 1403 2018-07-06 09:49:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -69,6 +69,10 @@
   // sfxinfo_t
 #include "r_defs.h"
   // sector_t
+
+#ifdef SURROUND_SOUND
+#define SURROUND_SEP            1024
+#endif
 
 // killough 4/25/98: mask used to indicate sound origin is player item pickup
 #define PICKUP_SOUND (0x8000)

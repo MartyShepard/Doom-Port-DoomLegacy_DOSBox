@@ -6679,6 +6679,20 @@ The hardware renderer returns a patch_t that is fake, and cannot be
 passed to ChangeTag nor Z_Free.
 Created a workable release function for hardware cache patches.
 Created W_release_patch that can handle releasing either.
+This fixes some invalid memory ChangeTag (from release patch functions),
+when using OpenGL, found by Adam Stylinski
+
+*** w107_release_patch
+patchfile = w107_98_release_patch.patch
+- commit revision 1403
+Fixed problems when surround sound is enabled.  It modified the
+seperation in a way that made the volume settings hit the limits.
+Changed the separation from an unsigned, with 128 as the center (which
+is apparantly what was needed for Allegro), to a 0 center, +/- 127.
+This separation is easier to use in calculations.
+Intercepted the SURROUND_SEP special value in all the ports, so
+it cannot affect the volume calculations.
+
 
 
 

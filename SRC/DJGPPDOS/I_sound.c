@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_sound.c 1313 2017-04-20 21:29:35Z wesleyjohnson $
+// $Id: I_sound.c 1403 2018-07-06 09:49:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -184,27 +184,34 @@ void I_SetMusicVolume(int volume)
 // Pitching (that is, increased speed of playback)
 //  is set, but currently not used by mixing.
 /* Neue Deklaration */
-int I_StartSound(sfxid_t sfxid, int vol, int sep, int pitch, int priority)
+int I_StartSound ( sfxid_t       sfxid,
+                   int           vol,
+                   int           sep,
+                   int           pitch,
+                   int           priority )
 {
-    int voice;
+  int voice;
 
-    if (nosoundfx)
-        return 0;
+  if(nosoundfx)
+      return 0;
 
-    /* priority wird in alten Ports ignoriert – bleibt so */
-    (void)priority;  /* UNUSED – vermeidet Compiler-Warning */
+  /* priority wird in alten Ports ignoriert – bleibt so */
+  (void)priority;  /* UNUSED – vermeidet Compiler-Warning */
 
-    /* Pitch umrechnen: 0-255 → 128 ±127 → wie in alten Ports */
-    pitch = (pitch - 128) / 2 + 128;
+  /* Pitch umrechnen: 0-255 → 128 ±127 → wie in alten Ports */
+  pitch=(pitch-128)/2+128;
+#ifdef SURROUND_SOUND
+  if( sep == SURROUND_SEP )   sep = 0;
+#endif
+  // Allegro center is 128.
+  /* sfxid_t ist meist ein enum oder typedef int → einfach casten */
+  int id = (int)sfxid;
 
-    /* sfxid_t ist meist ein enum oder typedef int → einfach casten */
-    int id = (int)sfxid;
-
-    /* Alte Funktion aufrufen – play_sample erwartet den alten Index */
-    voice = play_sample(S_sfx[id].data, vol, sep, (pitch * 1000) / 128, 0);
+  /* Alte Funktion aufrufen – play_sample erwartet den alten Index */
+  voice=play_sample(S_sfx[id].data,vol,sep+128,(pitch*1000)/128,0);
 
     /* Rückgabewert bleibt identisch: (id << VOICESSHIFT) + voice */
-    return (id << VOICESSHIFT) + voice;
+  return (id<<VOICESSHIFT)+voice;
 }
 
 // You need the handle returned by StartSound.
@@ -273,6 +280,7 @@ static inline int absolute_freq(int freq, SAMPLE *spl)
 }
 
 // You need the handle returned by StartSound.
+//  sep : separation, +/- 127, SURROUND_SEP special operation
 void I_UpdateSoundParams( int   handle,
                           int   vol,
                           int   sep,
@@ -287,7 +295,11 @@ void I_UpdateSoundParams( int   handle,
   if(voice_check(voice)==S_sfx[numsfx].data)
   {
     voice_set_volume(voice, vol);
-    voice_set_pan(voice, sep);
+#ifdef SURROUND_SOUND
+    if( sep == SURROUND_SEP )   sep = 0;
+#endif
+    // Allegro center is 128.
+    voice_set_pan(voice, sep+128);
     voice_set_frequency(voice, absolute_freq(pitch*1000/128
                              , S_sfx[numsfx].data));
   }

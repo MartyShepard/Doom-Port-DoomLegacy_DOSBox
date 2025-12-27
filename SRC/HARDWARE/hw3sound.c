@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw3sound.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: hw3sound.c 1403 2018-07-06 09:49:21Z wesleyjohnson $
 //
 // Copyright (C) 2001-2016 by DooM Legacy Team.
 //
@@ -372,6 +372,9 @@ int HW3S_I_StartSound(const xyz_t * origin, const mobj_t * mo,
     sfx_data.id = sfx_id;
     sfx_data.pitch = pitch;// < 0 ? NORMAL_PITCH:pitch;
     sfx_data.volume = volume;
+#ifdef SURROUND_SOUND
+    if( sep == SURROUND_SEP )   sep = 0;
+#endif
     sfx_data.sep = sep;
 
     //sfx_data.length = W_LumpLength(sfx->lumpnum);
