@@ -1,5 +1,11 @@
 * Not need to Compile.
 
+[01412 ]: Fix critical TAGHASH bug (r1351 regression)
+          The newly inserted macro in svn 1351
+          causes a crash. See HTH2.wad, which
+          hasn't run since commit 1351.
+          Replaced faulty & hash with correct % hash (DOS Only)
+					
 [01412 ]: w107 107 debug off
 [01411 ]: w107 106 linux_x11 warnings
 [01410*]: w107 105 Version 1.47.2

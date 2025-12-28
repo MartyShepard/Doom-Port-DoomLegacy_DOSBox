@@ -19,6 +19,9 @@
 //
 //
 // $Log: p_spec.c,v $
+// Include: DOS DJGPP Fixes
+
+//
 // Revision 1.45  2003/07/23 17:26:36  darkwolf95
 // SetLineTexture function for Fraggle Script
 //
@@ -986,8 +989,20 @@ sector_t *P_FindModelCeilingSector(fixed_t ceildestheight,int secnum)
 }
 
 
-
+#if !defined (__DJGPP__)
 #define TAGHASH( tag, hashsize )   ((unsigned int) tag & (unsigned) hashsize)
+  /*
+  Bringt Legacy zum Absturz weil:
+  kein Hash, sondern ein Bitwise AND! Hashsize ist normalerweise "numsectors-1"
+  (also z. B. 1023, 2047, 4095 – immer 2^n - 1).
+  */
+#else
+static inline int TAGHASH(uint16_t tag, int hashsize)
+{
+    return (unsigned)tag % (unsigned)hashsize;
+}
+#endif
+
 //
 // RETURN NEXT SECTOR # THAT LINE TAG REFERS TO
 //
