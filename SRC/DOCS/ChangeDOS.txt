@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01419 ]: w108.7 lumpnum2
 [01418 ]: w108.6 hwrpatch
           Compile fix: Wad.c, He has forgot to rename the lump variable.. 
 					

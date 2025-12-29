@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: r_data.h 1419 2019-01-29 08:01:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -175,7 +175,7 @@ void R_PrecacheLevel (void);
 // Retrieval.
 // Floor/ceiling opaque texture tiles,
 // lookup by name. For animation?
-int R_FlatNumForName (const char *name);
+lumpnum_t  R_FlatNumForName (const char *name);
 
 
 // Called by P_Ticker for switches and animations,

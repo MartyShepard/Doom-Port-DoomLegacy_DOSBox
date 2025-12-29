@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_prepro.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: t_prepro.c 1419 2019-01-29 08:01:42Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -407,6 +407,7 @@ void parse_include(char *lumpname)
   char *temp;
   char *lump, *end;
   char *saved_src_cp;
+  int  len;
   
   lumpnum = W_GetNumForName(lumpname);
   if( ! VALID_LUMP(lumpnum) )
@@ -421,12 +422,13 @@ void parse_include(char *lumpname)
   // SoM: REALLOC does not seem to work! So we alloc here and copy....
   //lump = Z_Realloc(lump, W_LumpLength(lumpnum)+10, PU_STATIC, NULL);
   temp = lump;
-  lump = Z_Malloc(W_LumpLength(lumpnum) + 10, PU_STATIC, NULL);
-  memcpy(lump, temp, W_LumpLength(lumpnum));
+  len = W_LumpLength(lumpnum);
+  lump = Z_Malloc( len + 10, PU_STATIC, NULL);
+  memcpy(lump, temp, len);
   
   saved_src_cp = fs_src_cp;    // save fs_src_cp during include
   fs_src_cp = lump;
-  end = lump+W_LumpLength(lumpnum);
+  end = lump + len;
   *end = 0;
   
   // preprocess the include

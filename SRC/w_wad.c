@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1418 2019-01-29 08:01:04Z wesleyjohnson $
+// $Id: w_wad.c 1419 2019-01-29 08:01:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -971,7 +971,7 @@ void* W_CacheMappedPatchNum ( lumpnum_t lumpnum, uint32_t drawflags )
     // check the return value of a previous W_CheckNumForName()
     if ( ( ! VALID_LUMP(lumpnum) )
 	 || (LUMPNUM(lumpnum) >= wadfiles[WADFILENUM(lumpnum)]->numlumps) )
-        I_Error ("W_CachePatchNum: %i >= numlumps", LUMPNUM(lumpnum));
+        I_Error ("W_CacheMappedPatchNum: %i >= numlumps", LUMPNUM(lumpnum));
 #endif
 
     grPatch = &(wadfiles[WADFILENUM(lumpnum)]->hwrcache[LUMPNUM(lumpnum)]);

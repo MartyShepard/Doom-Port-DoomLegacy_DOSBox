@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: r_data.c 1419 2019-01-29 08:01:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1353,19 +1353,20 @@ void R_LoadTextures (void)
 }
 
 
-int R_CheckNumForNameList(const char *name, lumplist_t* list, int listsize)
+lumpnum_t  R_CheckNumForNameList(const char *name, lumplist_t* list, int listsize)
 {
   int   i;
   lumpnum_t  ln;
+  // from last entry to first entry
   for(i = listsize - 1; i > -1; i--)
   {
     ln = W_CheckNumForNamePwad(name, list[i].wadfile, list[i].firstlump);
     if( ! VALID_LUMP(ln) )
-      continue;
+      continue;  // not found
     if(LUMPNUM(ln) > (list[i].firstlump + list[i].numlumps) )
-      continue;
-    else
-      return ln;
+      continue;  // not within START END
+
+    return ln;
   }
   return NO_LUMP;
 }
@@ -1385,23 +1386,30 @@ void R_Init_ExtraColormaps()
     colormaplumps = NULL;
     cfile = 0;
 
-    for(;cfile < numwadfiles;cfile ++)
+    for(;cfile < numwadfiles; cfile ++)
     {
         start_ln = W_CheckNumForNamePwad("C_START", cfile, 0);
         if( ! VALID_LUMP(start_ln) )
             continue;
        
-        end_ln = W_CheckNumForNamePwad("C_END", cfile, 0);
+        ln1 = LUMPNUM( start_ln );
+        end_ln = W_CheckNumForNamePwad("C_END", cfile, ln1);
 
         if( ! VALID_LUMP(end_ln) )
-            I_Error("R_Init_Colormaps: C_START without C_END\n");
+        {
+            I_SoftError("R_Init_Colormaps: C_START without C_END\n");
+            continue;
+	}
 
         if(WADFILENUM(start_ln) != WADFILENUM(end_ln))
-            I_Error("R_Init_Colormaps: C_START and C_END in different wad files!\n");
+        {
+            I_SoftError("R_Init_Colormaps: C_START and C_END in different wad files!\n");
+            continue;
+	}
 
         colormaplumps = (lumplist_t *)realloc(colormaplumps, sizeof(lumplist_t) * (numcolormaplumps + 1));
         colormaplumps[numcolormaplumps].wadfile = WADFILENUM(start_ln);
-        ln1 = LUMPNUM( start_ln ) + 1;
+        ln1++;
         colormaplumps[numcolormaplumps].firstlump = ln1;
         colormaplumps[numcolormaplumps].numlumps = LUMPNUM(end_ln) - ln1;
         numcolormaplumps++;
@@ -1417,8 +1425,7 @@ int          numflatlists;
 void R_Init_Flats ()
 {
   lumpnum_t  start_ln, end_ln;
-  int       cfile;
-  int  ln1;
+  int       cfile, ln1, ln2;
 
   numflatlists = 0;
   flats = NULL;
@@ -1428,54 +1435,59 @@ void R_Init_Flats ()
   {
 #ifdef DEBUG_FLAT
     debug_Printf( "Flats in file %i\n", cfile );
-#endif	 
+#endif
     start_ln = W_CheckNumForNamePwad("F_START", cfile, 0);
     if( ! VALID_LUMP(start_ln) )
     {
 #ifdef DEBUG_FLAT
       debug_Printf( "F_START not found, file %i\n", cfile );
-#endif	 
+#endif
       start_ln = W_CheckNumForNamePwad("FF_START", cfile, 0);
 
-      if( ! VALID_LUMP(start_ln) ) //If STILL -1, search the whole file!
+      if( ! VALID_LUMP(start_ln) )  //If STILL NO_LUMP, search the whole file!
       {
 #ifdef DEBUG_FLAT
-	debug_Printf( "FF_START not found, file %i\n", cfile );
+        debug_Printf( "FF_START not found, file %i\n", cfile );
 #endif
-	goto search_all;
+        end_ln = NO_LUMP;
+        goto save_flat_list;
       }
     }
 
-    end_ln = W_CheckNumForNamePwad("F_END", cfile, 0);
-    if( ! VALID_LUMP(end_ln) ) {
+    // Search for END after START.
+    ln1 = LUMPNUM( start_ln );
+    end_ln = W_CheckNumForNamePwad("F_END", cfile, ln1);
+    if( ! VALID_LUMP(end_ln) )
+    {
 #ifdef DEBUG_FLAT
       debug_Printf( "F_END not found, file %i\n", cfile );
 #endif	 
-      end_ln = W_CheckNumForNamePwad("FF_END", cfile, 0);
+      end_ln = W_CheckNumForNamePwad("FF_END", cfile, ln1);
 #ifdef DEBUG_FLAT
       if( ! VALID_LUMP(end_ln) ) {
 	 debug_Printf( "FF_END not found, file %i\n", cfile );
       }
-#endif	 
+#endif
     }
 
-    ln1 = LUMPNUM(start_ln) + 1;
-    if( (! VALID_LUMP(end_ln)) || (ln1 > LUMPNUM(end_ln)))
-        goto search_all;
-
-    flats = (lumplist_t *)realloc(flats, sizeof(lumplist_t) * (numflatlists + 1));
-    flats[numflatlists].wadfile = WADFILENUM(start_ln);
-    flats[numflatlists].firstlump = ln1;
-    flats[numflatlists].numlumps = LUMPNUM(end_ln) - ln1;
-    numflatlists++;
-    continue;
-
-search_all:
+save_flat_list:
     flats = (lumplist_t *)realloc(flats, sizeof(lumplist_t) * (numflatlists + 1));
     flats[numflatlists].wadfile = cfile;
-    flats[numflatlists].firstlump = 0;
-    flats[numflatlists].numlumps = 0xffff; //Search the entire file!
-    numflatlists ++;
+    if(end_ln == NO_LUMP)
+    {
+      flats[numflatlists].firstlump = 0;
+      flats[numflatlists].numlumps = 0xffff; //Search the entire file!
+    }
+    else
+    {
+      // delimiting markers were found
+      ln2 = LUMPNUM( end_ln );
+      if( ln2 <= ln1 )  // should not be able to happen
+        ln2 = 0xffff;  // search entire wad
+      flats[numflatlists].firstlump = ln1 + 1;
+      flats[numflatlists].numlumps = ln2 - (ln1 + 1);
+    }
+    numflatlists++;
     continue;
   }
 
@@ -1486,7 +1498,7 @@ search_all:
 
 
 // [WDJ] was R_GetFlatNumForName, but it does not cache like GetFlat
-int R_FlatNumForName(const char *name)
+lumpnum_t  R_FlatNumForName(const char *name)
 {
   // [WDJ] No use in saving F_START if are not going to use them.
   // FreeDoom, where a flat and sprite both had same name,
@@ -1494,24 +1506,24 @@ int R_FlatNumForName(const char *name)
   // Use F_START and F_END first, to find flats without getting a non-flat,
   // and only if not found then try whole file.
   
-  int lump = R_CheckNumForNameList(name, flats, numflatlists);
+  lumpnum_t f_lumpnum = R_CheckNumForNameList(name, flats, numflatlists);
 
-  if(lump == -1) {
+  if( ! VALID_LUMP(f_lumpnum) ) {
      // BP:([WDJ] R_CheckNumForNameList) don't work with gothic2.wad
      // [WDJ] Some wads are reported to use a flat as a patch, but that would
      // have to be handled in the patch display code.
      // If this search finds a sprite, sound, etc., it will display
      // multi-colored confetti.
-     lump = W_CheckNumForName(name);
+     f_lumpnum = W_CheckNumForName(name);
   }
   
-  if( ! VALID_LUMP(lump) ) {
+  if( ! VALID_LUMP(f_lumpnum) ) {
      // [WDJ] When not found, dont quit, use first flat by default.
      I_SoftError("R_FlatNumForName: Could not find flat %.8s\n", name);
-     lump = flats[0].firstlump;	// default to first flat
+     f_lumpnum = WADLUMP( flats[0].wadfile, flats[0].firstlump );  // default to first flat
   }
 
-  return lump;
+  return f_lumpnum;
 }
 
 // [WDJ] Manage the spritelump_t allocations
@@ -1603,7 +1615,7 @@ void R_Init_Colormaps (void)
 }
 
 
-int    fnd_colormap_lump[MAXCOLORMAPS];  // lump number
+lumpnum_t  fnd_colormap_lump[MAXCOLORMAPS];  // lump number
 
 //SoM: Clears out extra colormaps between levels.
 // called by P_SetupLevel after ZFree(PU_LEVEL,..)
@@ -1819,11 +1831,12 @@ void  R_Colormap_Analyze( int mapnum )
 // Return the new colormap id number
 int R_ColormapNumForName(const char *name)
 {
-  int lump, i;
+  lumpnum_t lumpnum;
+  int i;
 
   // Check for existing colormap of same name
-  lump = R_CheckNumForNameList(name, colormaplumps, numcolormaplumps);
-  if(lump == -1)
+  lumpnum = R_CheckNumForNameList(name, colormaplumps, numcolormaplumps);
+  if( ! VALID_LUMP(lumpnum) )
   {
     I_SoftError("R_ColormapNumForName: Cannot find colormap lump %8s\n", name);
     return 0;
@@ -1831,7 +1844,7 @@ int R_ColormapNumForName(const char *name)
 
   for(i = 0; i < num_extra_colormaps; i++)
   {
-    if(lump == fnd_colormap_lump[i])
+    if(lumpnum == fnd_colormap_lump[i])
       return i;
   }
 
@@ -1842,12 +1855,12 @@ int R_ColormapNumForName(const char *name)
     return 0;
   }
 
-  fnd_colormap_lump[num_extra_colormaps] = lump;
+  fnd_colormap_lump[num_extra_colormaps] = lumpnum;
 
   // aligned on 8 bit for asm code
-  extra_colormaps[num_extra_colormaps].colormap = Z_MallocAlign (W_LumpLength (lump), PU_LEVEL, 0, 8);
+  extra_colormaps[num_extra_colormaps].colormap = Z_MallocAlign (W_LumpLength(lumpnum), PU_LEVEL, 0, 8);
   // read colormap tables [][] of byte, mapping to alternative palette colors
-  W_ReadLump (lump, extra_colormaps[num_extra_colormaps].colormap);
+  W_ReadLump( lumpnum, extra_colormaps[num_extra_colormaps].colormap );
 
 #ifdef VIEW_COLORMAP_GEN
   GenPrintf(EMSG_info, "\nBoom Colormap: num=%i name= %8.8s\n", num_extra_colormaps, name );

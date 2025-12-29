@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: r_draw.c 1419 2019-01-29 08:01:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -440,7 +440,7 @@ void R_Init_ViewBuffer ( int   width,
 //
 // Store the lumpnumber of the viewborder patches.
 //
-int viewborderlump[8];
+lumpnum_t  viewborderlump[8];
 
 void R_Init_ViewBorder (void)
 {
@@ -483,7 +483,7 @@ void R_FillBackScreen (void)
     int         step,boff; 
     
     //faB: quickfix, don't cache lumps in both modes
-    if (rendermode!=render_soft)
+    if( rendermode != render_soft )
         return;
 
      //added:08-01-98:draw pattern around the status bar too (when hires),
