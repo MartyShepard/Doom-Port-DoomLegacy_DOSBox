@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_vari.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: t_vari.c 1416 2019-01-29 07:59:05Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -250,8 +250,21 @@ fs_value_t getvariablevalue(fs_variable_t *v)
   else
   {
       returnvar.type = v->type;
-      // copy the value
+      // default copy of the union value
+#if 1
+      returnvar.value.mobj = v->value.mobj;
+      // Copy the mobj ptr field because it is the largest field,
+      // and will effectively copy any of the other union members.
+      // It does a 64 bit copy on a 64 bit machine, and does
+      // not sign extend.
+      // This is easier than creating a big case stmt with special
+      // copies for all the union members.
+#else
       returnvar.value.i = v->value.i;
+      // This will cause segfaults on 64 bit machines.
+      // It does not fully copy the 64 bit ptrs, instead
+      // copying the lower 32 bits and sign extending it.
+#endif
   }
   
   return returnvar;

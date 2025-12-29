@@ -3741,7 +3741,7 @@ Ultimate mode:
 *** W96_docs
 patchfile = w96_9_docs.patch
 - committed revision 1082   by wesley johnson
-Update docs for revsion 1.45.
+Update docs for revision 1.45.
 
 *** W96_cleardisplay
 patchfile = w96_10_cleardisplay.patch
@@ -6737,7 +6737,7 @@ Turn off the DEBUG in linux_x11 sound server.
 
 *** w108_sound
 patchfile = w108_1_sound.patch
-- commit revsion 1413
+- commit revision 1413
 Fix the sdl sound interface to use the samplerate from
 the sound effect header.
 Adjust the audio device number of samples for our new sample rate,
@@ -6749,17 +6749,142 @@ Whether an explicit control is needed is still an issue.
 
 *** w108_misc
 patchfile = w108_2_misc.patch
-- commit revsion 1414
+- commit revision 1414
 Some code indenting, commenting, and some code rearrangement that has
 no new code, nor code testing issues.
 
 *** w108_menu
 patchfile = w108_3_menu.patch
-- commit revsion 1415
+- commit revision 1415
 Rearrange some of the menu code for video modes, in preparation for
 using it to alter the drawmode.
 These changes should have no net effect, yet.
 Some of the video menus have been rearranged.
 
+*** w108_fraggle64
+patchfile = w108_4_fraggle64.patch
+- commit revision 1416
+Fix bug 0647, where it segfaults on a 64 bit machine when playing phobiata.wad.
+The fragglescript variable copy was by default using the i field
+to copy most variable types, including ptrs.
+The i field is int32_t, and when used to copy a 64 bit ptr, will
+corrupt it with sign extension.
+Changed the routine to copy using the mobj ptr field, which will
+do a full 64 bit copy on 64 bit machines, and does not sign extend.
+
+*** w108_lumpnum
+patchfile = w108_5_lumpnum.patch
+- commit revision 1417
+Regularize the use of lumpnum_t, LUMPNUM(), and WADFILENUM(), in
+the general code.  These hide the mechanism that packs the wad
+number and lump number into one.
+Use NO_LUMP as the value returned when a lump is not found (instead of -1).
+Use VALID_LUMP() as the test, replacing all lumpnum tests.
+This allows changing the representation, and determining how it meets the
+needs from one place.
+Changed lumpnum_t from unsigned to signed, so as to prevent triggering
+a bunch of errors on any old lumpnum usage that escaped this patch.
+This makes it easier to read what the code does, and makes all
+the individual lump handling code less hacky.
+Fixed some of the most hacky routines to use the lumpnum properly.
+This may have fixed some bugs, especially those where lumps could not
+be found if they were not in the first wad file.
+
+*** w108_hwrpatch
+patchfile = w108_6_hwrpatch.patch
+- commit revision 1418
+Create HWR_patchstore variable to record that the patches
+are stored using the hardware_render method.
+This is important when we try to release them.
+
+*** w108_lumpnum2
+patchfile = w108_7_lumpnum2.patch
+- commit revision 1419
+More lumpnum_t usages converted to using lumpnum_t and VALID_LUMP().
+Some functions rewritten as cleanup, with almost identical operation.
+
+*** w108_flatanim
+patchfile = w108_8_flatanim.patch
+- commit revision 1420
+Fix usage of lumpnum in the flat animations.  It uses a tricky addition
+to the lumpnum that is dependent upon the lumpnum representation.
+Convert back to having flat animation information in the animation
+structure, instead of in the individual flat items in levelflats.
+This gives better locality of reference during the drawing phases,
+and isolates the flat animation to specific structures.
+Added many additional sanity checks.
+Added a function to release structures, which may fix a memory leak.
+Left in a fixed up version of the levelflats animation, (disabled) just in case.
+
+*** w108_v1473
+patchfile = w108_9_v1473.patch
+- commit revision 1421
+Bump version to 147.3 due to significant operation changes in the
+next series of patches.
+
+*** w108_unload
+patchfile = w108_10_unload.patch
+- commit revision 1422
+General cleanup of releasing patches, flats, and textures, so that
+they can be unloaded when drawmode is changed.
+More uses and tests of lumpnum_t found.
+Fixed sloppy handling of colormap allocation.  It now uses
+PU_COLORMAP, and has a release function.
+Initialize the colormap structures properly.
+Moved some of the cv_ switch registration around to put them
+where they would be naturally found and already have visibility.
+Fixed the CV_Set to not fault when string is NULL.  This can happen
+when one cv_ switch changes another switch that is not registered yet.
+
+*** w108_vid_driver
+patchfile = w108_11_vid_driver.patch
+- commit revision 1423
+Change the video driver interfaces to faciliate changing the drawmode
+and rendermode from the menus.
+Create a cv_drawmode variable for the config file.
+
+New drawmode_recalc and rendermode_recalc variables have been added.
+This will allow code to update patches, and other rendermode dependent data.
+The video driver no longer handles command line parameters, such as
+highcolor and truecolor, which are now handled in d_main common code.
+A new drawmode enum that handles the new interfaces has been created.
+
+The I_StartupGraphics video driver function will now report the
+native bpp, which can be used for the native drawmode.
+The V_CanDraw functions reports if the drawmode software is present
+in DoomLegacy (where it is optional).
+The VID_Query_Modelist video driver function reports if a drawmode
+has any valid modes.
+The V_switch_drawmode function will use these to activate a drawmode,
+or reject it.  Only this function will change the rendermode,
+and will flat that the rendermode has changed.
+The I_Rendermode_setup video driver function will handle the
+changes for rendermode.
+The I_RequestFullGraphics video driver function will now return a
+status of success or a failure code, instead of trying to find some
+kind of default visual.
+
+*** w108_untab
+patchfile = w108_12_untab.patch
+- commit revision 1424
+Remove tabs from r_data, r_draw, etc..
+
+*** w108_colormap
+patchfile = w108_13_colormap.patch
+- commit revision 14??
+Make it possible to update extra_colormap upon change of rendermode.
+Initialize the colormap structures properly.
+Use the RGBA_t type in the colormap structure, replacing
+explicit shift and mask operations.
+
+*** w108_drawmode
+patchfile = w108_14_drawmode.patch
+- commit revision 1425
+Change the cv_drawmode variable from the menu system.
+Make the changes to update rendermode dependent data when the
+rendermode changes.
+Cleanup and update the video mode functions in the menu system.
+Change the submenus to use ">>" instead of "..", which is much easier
+to see.
 
 
