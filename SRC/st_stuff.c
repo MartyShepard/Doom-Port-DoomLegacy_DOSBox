@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
+// $Id: st_stuff.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1181,6 +1181,7 @@ static void ST_Load_Graphics(void)
 // made separate so that skins code can reload custom face graphics
 void ST_Load_FaceGraphics (const char *facestr)
 {
+    lumpnum_t ln;
     int   i,j;
     int   facenum;
     char  namelump[9];
@@ -1227,9 +1228,9 @@ void ST_Load_FaceGraphics (const char *facestr)
     //                you add new player colors, it is automatically
     //                used for the statusbar.
     strcpy (namebuf, "B0");
-    i = W_CheckNumForName(namelump);
-    if( i!=-1 )
-        faceback = W_CachePatchNum(i, PU_LOCK_SB);
+    ln = W_CheckNumForName(namelump);
+    if( VALID_LUMP( ln ) )
+        faceback = W_CachePatchNum( ln, PU_LOCK_SB );
     else
         faceback = W_CachePatchName("STFB0", PU_LOCK_SB);
 
@@ -1532,9 +1533,11 @@ void ST_Init (void)
             st_borderflat_num = W_GetNumForName ("GRNROCK");
             break;
         case heretic :
-            if(W_CheckNumForName("e2m1")==-1)
+            if( ! VALID_LUMP( W_CheckNumForName("e2m1") ) )
+            {
                 // GDESC_heretic_shareware
                 st_borderflat_num = W_GetNumForName ("FLOOR04");
+            }
             else
                 st_borderflat_num = W_GetNumForName ("FLAT513");
             break;

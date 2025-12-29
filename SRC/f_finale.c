@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: f_finale.c 1370 2017-11-01 01:20:14Z wesleyjohnson $
+// $Id: f_finale.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -643,7 +643,7 @@ void F_CastDrawer (void)
     // draw the current frame in the middle of the screen
     sprdef = &sprites[caststate->sprite];
     sprfrot = get_framerotation( sprdef, caststate->frame & FF_FRAMEMASK, 0 );
-    patch = W_CachePatchNum (sprfrot->lumppat, PU_CACHE);  // endian fix
+    patch = W_CachePatchNum (sprfrot->pat_lumpnum, PU_CACHE);  // endian fix
 
     // set draw effect flag for this draw only
     if( sprfrot->flip )
@@ -801,10 +801,8 @@ void F_DrawHeretic( void )
     {
       case 1:
         if( finalestage > 1 )  goto credit_page;
-        if(W_CheckNumForName("e2m1")==-1)
-            V_DrawRawScreen_Num(0, 0, W_CheckNumForName("ORDER"),320,200);
-        else
-            goto credit_page;
+        if( VALID_LUMP( W_CheckNumForName("e2m1") ) )  goto credit_page;
+        V_DrawRawScreen_Num(0, 0, W_CheckNumForName("ORDER"),320,200);
         break;
       case 2:
         // was F_DrawUnderwater()

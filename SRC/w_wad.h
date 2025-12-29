@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 1402 2018-07-04 11:13:16Z wesleyjohnson $
+// $Id: w_wad.h 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -134,7 +134,18 @@ typedef struct
 //                         DYNAMIC WAD LOADING
 // =========================================================================
 
-typedef uint32_t   lumpnum_t;
+// typedef int32_t   lumpnum_t;  // see doomdefs.h
+// Format:
+//  0x80000000 : NO_LUMP, tests as < 0
+//  0x7FFF0000 : wad number field
+//  0x0000FFFF : lump number field
+typedef enum {
+  NO_LUMP = (lumpnum_t) -1,
+} lump_spec_e;
+
+// [WDJ] Compatible with older signed tests for -1.
+#define VALID_LUMP(lump)       (lump>=0)
+//#define VALID_LUMP(lump)       (lump!=NO_LUMP)
 
 // wad file number in upper word
 #define WADFILENUM(lump)       ((lump)>>16)
@@ -167,7 +178,7 @@ extern  int          numwadfiles;
 extern  wadfile_t*   wadfiles[MAX_WADFILES];
 
 // Return the wadfile info for the lumpnum
-wadfile_t * lumpnum_to_wad( int lumpnum );
+wadfile_t * lumpnum_to_wad( lumpnum_t lumpnum );
 
 // [WDJ] Indicates cache miss, new lump read requires endian fixing.
 extern boolean lump_read;
@@ -187,38 +198,38 @@ int     W_Load_WadFile (const char *filename);
 int     W_Init_MultipleFiles (char** filenames);
 void    W_Reload (void);
 
-//  Return lump id, or -1 if name not found.
-int     W_Check_Namespace (const char* name, lump_namespace_e within_namespace);
-//  Return lump id, or -1 if name not found.
-int     W_CheckNumForName (const char* name);
+//  Return lump id, or NO_LUMP if name not found.
+lumpnum_t  W_Check_Namespace (const char* name, lump_namespace_e within_namespace);
+//  Return lump id, or NO_LUMP if name not found.
+lumpnum_t  W_CheckNumForName (const char* name);
 // this one checks only in one pwad
-int     W_CheckNumForNamePwad (const char* name, int wadid, int startlump);
-int     W_GetNumForName (const char* name);
+lumpnum_t  W_CheckNumForNamePwad (const char* name, int wadid, int startlump);
+lumpnum_t  W_GetNumForName (const char* name);
 
 // modified version that scan forwards
 // used to get original lump instead of patched using -file
-int     W_CheckNumForNameFirst (const char* name);
-int     W_GetNumForNameFirst (const char* name);  
+lumpnum_t  W_CheckNumForNameFirst (const char* name);
+lumpnum_t  W_GetNumForNameFirst (const char* name);  
 
-int     W_LumpLength (int lump);
+int     W_LumpLength (lumpnum_t lump);
 //added:06-02-98: read all or a part of a lump size==0 meen read all
-int     W_ReadLumpHeader (int lump, void* dest, int size);
+int     W_ReadLumpHeader (lumpnum_t lump, void* dest, int size);
 //added:06-02-98: now calls W_ReadLumpHeader() with full lump size
-void    W_ReadLump (int lump, void *dest);
+void    W_ReadLump (lumpnum_t lump, void *dest);
 
 //  ztag : the Zone memory allocation tag (see memtag_e)
 //  lump : lump number with embedded wad number
 
-void*   W_CacheLumpNum (int lump, int ztag);
+void*   W_CacheLumpNum ( lumpnum_t lumpnum, int ztag );
 void*   W_CacheLumpName (const char* name, int ztag);
 
 void*   W_CachePatchName (const char* name, int ztag);
 
-void*   W_CachePatchNum (int lump, int ztag);                        // return a patch_t
-void*   W_CachePatchNum_Endian ( int lump, int ztag );
+void*   W_CachePatchNum ( lumpnum_t lump, int ztag);  // return a patch_t
+void*   W_CachePatchNum_Endian ( lumpnum_t lump, int ztag );
 #ifdef HWRENDER
 // [WDJ] Called from hardware render for special mapped sprites
-void*   W_CacheMappedPatchNum ( int lump, uint32_t drawflags );
+void*   W_CacheMappedPatchNum ( lumpnum_t lumpnum, uint32_t drawflags );
 #endif
 
 
@@ -243,10 +254,11 @@ void release_patch_list( load_patch_t * pl );
 void release_patch_array( patch_t ** pp, int count );
 
 
-void*   W_CacheRawAsPic( int lump, int width, int height, int ztag); // return a pic_t
+// return a pic_t
+void*   W_CacheRawAsPic( lumpnum_t lumpnum, int width, int height, int ztag);
 
 // Cache and endian convert a pic_t
-void*   W_CachePicNum( int lumpnum, int ztag );
+void*   W_CachePicNum( lumpnum_t lumpnum, int ztag );
 void*   W_CachePicName( const char* name, int ztag );
 
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.h 1252 2016-08-29 21:03:35Z wesleyjohnson $
+// $Id: p_setup.h 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -60,16 +60,18 @@ extern  int             numdmstarts;
 //
 typedef struct
 {
-    char        name[8];        // resource name from wad
-    uint32_t    lumpnum;        // lump number of the flat (mod by animation)
-
-    uint16_t    size_index;     // flat size index
+    // most often used reference first, keeps it aligned
+    lumpnum_t   lumpnum;        // lump number of the flat (mod by animation)
 
     // for flat animation
-    uint32_t    baselumpnum;    // first flat in animation
+    lumpnum_t   baselumpnum;    // first flat in animation
     int16_t     animseq;        // start pos. in the anim sequence
     uint16_t    numpics;
     int16_t     speed;
+
+    // for better packing, odd bytes last
+    uint16_t    size_index;     // flat size index
+    char        name[8];        // resource name from wad
 } levelflat_t;
 
 extern unsigned int    numlevelflats;
@@ -78,13 +80,13 @@ extern levelflat_t*    levelflats;
 uint16_t P_flatsize_to_index( int flatsize, char * name );
 int P_AddLevelFlat (char* flatname);
 int P_PrecacheLevelFlats (void);
-char *P_FlatNameForNum(int num);
+char * P_FlatNameForNum(int num);
 
 extern int             nummapthings;
 extern mapthing_t*     mapthings;
 
 // From P_SetupLevel
-extern int    level_lumpnum;  // for info and comparative savegame
+extern lumpnum_t  level_lumpnum;  // for info and comparative savegame
 extern char*  level_mapname;  // to savegame and info
 
 // NOT called by W_Ticker. Fixme.

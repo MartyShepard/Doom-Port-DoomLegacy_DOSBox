@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01417 ]: w108.5 lumpnum
+          Compile fix: Wad.c, He has forgot to rename the lump variable
+					
 [01416 ]: w108.4 fraggle64
 [01415 ]: w108 3 menu
 [01414 ]: w108 2 misc

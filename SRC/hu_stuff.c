@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1383 2018-03-04 07:00:01Z wesleyjohnson $
+// $Id: hu_stuff.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -187,7 +187,7 @@ void HU_Load_Graphics( void )
             sprintf(buffer, "STCFN%.3d", j);
 
         j++;
-        if( W_CheckNumForName( buffer ) < 0 )
+        if( ! VALID_LUMP( W_CheckNumForName( buffer ) ) )
         {
             // font not found
             hu_font[i] = NULL;

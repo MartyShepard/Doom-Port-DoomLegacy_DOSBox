@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
+// $Id: d_netcmd.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -776,7 +776,7 @@ void Command_Map_f(void)
     else
     {
         // internal wad lump
-        if (W_CheckNumForName(MAPNAME) == -1)
+        if( ! VALID_LUMP( W_CheckNumForName(MAPNAME) ) )
         {
             CONS_Printf("\2Internal game map '%s' not found\n" "(use .wad extension for external maps)\n", MAPNAME);
             return;
@@ -827,7 +827,7 @@ void Got_NetXCmd_Mapcmd(xcmd_t * xc)
     // Format: skill byte, (no_reset_players, no_monsters) byte,
     //         map_name str0.
     skill = READBYTE(xc->curpos);
-    if( EV_legacy >= 128)
+    if( EV_legacy >= 128 )
     {
         // [WDJ] Do not use boolean nomonsters as an int.
         opt = READBYTE(xc->curpos);
@@ -1035,6 +1035,7 @@ void P_RespawnWeapons(void);
 // deathmatch (0..3)
 byte deathmatch_to_itemrespawn[4]    = { 0, 0, 1, 1 };
 byte deathmatch_to_weaponsrespawn[4] = { 0, 1, 0, 1 };
+
 void Deathmatch_OnChange(void)
 {
     // Within a CV_CALL routine, use CV_Set_by_OnChange.

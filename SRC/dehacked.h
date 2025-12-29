@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: dehacked.h 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -43,7 +43,7 @@
 void DEH_Init(void);
 // permission: 0=game, 1=adv, 2=language
 void DEH_LoadDehackedFile(char *filename, byte bex_permission);
-void DEH_LoadDehackedLump(int lump);
+void DEH_LoadDehackedLump( lumpnum_t lumpnum );
 #ifdef BEX_LANGUAGE
 void BEX_load_language( char * langname, byte bex_permission );
 #endif

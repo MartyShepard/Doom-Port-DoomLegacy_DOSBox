@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
+// $Id: w_wad.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -138,7 +138,7 @@ wadfile_t*   wadfiles[MAX_WADFILES];  // 0 to numwadfiles-1 are valid
 
 
 // Return the wadfile info for the lumpnum
-wadfile_t * lumpnum_to_wad( int lumpnum )
+wadfile_t * lumpnum_to_wad( lumpnum_t lumpnum )
 {
     // level_lumpnum contains index to the wad
     int wadnum = WADFILENUM( lumpnum );
@@ -217,8 +217,9 @@ void  numerical_name( const char * name, lump_name_t * numname )
 //  specially to allow map reloads.
 // But: the reload feature is a fragile hack...
 
-static int    reload_lumpnum;
-static char*  reload_filename;
+// [WDJ] FIXME: never set anymore
+static lumpnum_t  reload_lumpnum = NO_LUMP;
+static char*  reload_filename = NULL;
 
 
 //  Allocate a wadfile, setup the lumpinfo (directory) and
@@ -529,10 +530,10 @@ int W_Init_MultipleFiles (char** filenames)
 //  Patches within textures use namespace to protect against trying to use
 //  another lump of the same name (colormap) as a patch.
 
-//  Return lump id, or -1 if name not found.
-int W_Check_Namespace (const char* name, lump_namespace_e within_namespace)
+//  Return lump id, or NO_LUMP if name not found.
+lumpnum_t  W_Check_Namespace (const char* name, lump_namespace_e within_namespace)
 {
-    int  alternate = -1;
+    lumpnum_t  alternate = NO_LUMP;
     int  i,j;
     lump_name_t name8;
     lumpinfo_t* lump_p;
@@ -558,35 +559,34 @@ int W_Check_Namespace (const char* name, lump_namespace_e within_namespace)
                     return  WADLUMP(i,j);
                 }
                 // Wrong namespace.
-                if( alternate == -1 )  // remember first lump found
+                if( alternate == NO_LUMP )  // remember first lump found
                    alternate = WADLUMP(i,j);  // wad/lump identifier
             }
         }
     }
     // Not found.
     // Return first matching lump found in any namespace.
-    if( alternate != -1 )
+    if( alternate != NO_LUMP )
       return alternate;
-    return -1;
+    return NO_LUMP;
 }
 
-//  Return lump id, or -1 if name not found.
-int W_CheckNumForName (const char* name)
+//  Return lump id, or NO_LUMP if name not found.
+lumpnum_t  W_CheckNumForName (const char* name)
 {
     return W_Check_Namespace( name, LNS_any );
 }
-
 
 
 //
 //  Same as the original, but checks in one pwad only
 //  (Used for sprites loading)
 //    wadid :  the wad number
-//    startlump : the lump number to start the search
-//  Return lump number.
-int W_CheckNumForNamePwad (const char* name, int wadid, int startlump)
+//    startlump : the lump number (without wad id) to start the search
+//  Return lump number, or NO_LUMP.
+lumpnum_t  W_CheckNumForNamePwad (const char* name, int wadid, int startlump)
 {
-    int         i;
+    int  i;
     lump_name_t name8;
     lumpinfo_t* lump_p;
 
@@ -612,7 +612,7 @@ int W_CheckNumForNamePwad (const char* name, int wadid, int startlump)
     }
 
     // not found.
-    return -1;
+    return NO_LUMP;
 }
 
 
@@ -621,13 +621,13 @@ int W_CheckNumForNamePwad (const char* name, int wadid, int startlump)
 // W_GetNumForName
 //   Calls W_CheckNumForName, but bombs out if not found.
 //
-int W_GetNumForName (const char* name)
+lumpnum_t  W_GetNumForName (const char* name)
 {
-    int i;
+    lumpnum_t ln;
 
-    i = W_CheckNumForName (name);
+    ln = W_CheckNumForName (name);
 
-    if (i == -1)
+    if( ! VALID_LUMP(ln) )
     {
 #ifdef DEBUG_CHEXQUEST
         I_SoftError ("W_GetNumForName: %s not found!\n", name);	// [WDJ] 4/28/2009 Chexquest
@@ -636,11 +636,11 @@ int W_GetNumForName (const char* name)
 #endif
     }
 
-    return i;
+    return ln;
 }
 
 // Scan wads files forward, IWAD precedence.
-int W_CheckNumForNameFirst (const char* name)
+lumpnum_t  W_CheckNumForNameFirst (const char* name)
 {
     int i, j;
     lump_name_t name8;
@@ -662,22 +662,22 @@ int W_CheckNumForNameFirst (const char* name)
         }
     }
 
-    return -1;
+    return NO_LUMP;
 }
 
 //
 //  W_GetNumForNameFirst : like W_GetNumForName, but scans FORWARD
 //                         so it gets resources from the original wad first
 //  (this is used only to get S_START for now, in r_data.c)
-int W_GetNumForNameFirst (const char* name)
+lumpnum_t  W_GetNumForNameFirst (const char* name)
 {
-    int i;
+    lumpnum_t  ln;
 
-    i = W_CheckNumForNameFirst (name);
-    if (i == -1)
+    ln = W_CheckNumForNameFirst (name);
+    if( ! VALID_LUMP(ln) )
         I_Error ("W_GetNumForNameFirst: %s not found!", name);
 
-    return i;
+    return ln;
 }
 
 
@@ -685,10 +685,11 @@ int W_GetNumForNameFirst (const char* name)
 //  W_LumpLength
 //   Returns the buffer size needed to load the given lump.
 //
-int W_LumpLength (int lump)
+int W_LumpLength (lumpnum_t lump)
 {
 #ifdef PARANOIA
-    if (lump<0) I_Error("W_LumpLength: lump not exist\n");
+//    if (lump<0) I_Error("W_LumpLength: lump not exist\n");
+    if( ! VALID_LUMP(lump) )   I_Error("W_LumpLength: lump not exist\n");
 
     if (LUMPNUM(lump) >= wadfiles[WADFILENUM(lump)]->numlumps)
         I_Error ("W_LumpLength: %i >= numlumps",lump);
@@ -703,7 +704,7 @@ int W_LumpLength (int lump)
 //                    sometimes just the header is needed
 //
 //Fab:02-08-98: now returns the number of bytes read (should == size)
-int  W_ReadLumpHeader ( int           lump,
+int  W_ReadLumpHeader ( lumpnum_t     lump,
                         void*         dest,
                         int           size )
 {
@@ -711,7 +712,8 @@ int  W_ReadLumpHeader ( int           lump,
     lumpinfo_t* lif;
     int         handle;
 #ifdef PARANOIA
-    if (lump<0) I_Error("W_ReadLumpHeader: lump not exist\n");
+//    if (lump<0) I_Error("W_ReadLumpHeader: lump not exist\n");
+    if ( ! VALID_LUMP(lump) )  I_Error("W_LumpLength: lump not exist\n");
 
     if (LUMPNUM(lump) >= wadfiles[WADFILENUM(lump)]->numlumps)
         I_Error ("W_ReadLumpHeader: %i >= numlumps",lump);
@@ -757,7 +759,7 @@ int  W_ReadLumpHeader ( int           lump,
 //
 //added:06-02-98: now calls W_ReadLumpHeader() with full lump size.
 //                0 size means the size of the lump, see W_ReadLumpHeader
-void W_ReadLump ( int           lump,
+void W_ReadLump ( lumpnum_t     lump,
                   void*         dest )
 {
     W_ReadLumpHeader (lump, dest, 0);
@@ -770,34 +772,34 @@ void W_ReadLump ( int           lump,
 // [WDJ] Indicates cache miss, new lump read requires endian fixing.
 boolean lump_read;	// set by W_CacheLumpNum
 
-void* W_CacheLumpNum ( int lump, int ztag )
+void* W_CacheLumpNum ( lumpnum_t lumpnum, int ztag )
 {
     lumpcache_t*  lumpcache;
 
     //SoM: 4/8/2000: Don't keep doing operations to the lump variable!
-    int  llump = LUMPNUM(lump);
-    int  lfile = WADFILENUM(lump);
+    unsigned int  llump = LUMPNUM(lumpnum);
+    unsigned int  lfile = WADFILENUM(lumpnum);
 
 #ifdef DEBUG_CHEXQUEST
    // [WDJ] Crashes in chexquest with black screen, cannot debug
-   if(lump == -1) {
+   if( ! VALID_LUMP(lumpnum) ) {
       lump_read = 0;  // no data
        // [WDJ] prevent SIGSEGV in chexquest
-      I_SoftError ("W_CacheLumpNum: -1 passed!\n");
+      I_SoftError ("W_CacheLumpNum: not VALID_LUMP passed!\n");
       return NULL;
     }
 #endif   
 #ifdef PARANOIA
     // check return value of a previous W_CheckNumForName()
     //SoM: 4/8/2000: Do better checking. No more SIGSEGV's!
-    if(lump == -1)	// [WDJ] must be first to protect use as index
-      I_Error ("W_CacheLumpNum: -1 passed!\n");
+    if( ! VALID_LUMP(lumpnum) )  // [WDJ] must be first to protect use as index
+      I_Error ("W_CacheLumpNum: not VALID_LUMP passed!\n");
     if (lfile >= numwadfiles)
       I_Error("W_CacheLumpNum: %i >= numwadfiles(%i)\n", lfile, numwadfiles);
     if (llump >= wadfiles[lfile]->numlumps)
       I_Error ("W_CacheLumpNum: %i >= numlumps", llump);
-    if(llump < 0)
-      I_Error ("W_CacheLumpNum: %i < 0!\n", llump);
+//    if(llump < 0)  // not possible
+//      I_Error ("W_CacheLumpNum: %i < 0!\n", llump);
 #endif
 
     lumpcache = wadfiles[lfile]->lumpcache;
@@ -806,8 +808,8 @@ void* W_CacheLumpNum ( int lump, int ztag )
         // read the lump in
 
         //debug_Printf ("cache miss on lump %i\n",lump);
-        byte* ptr = Z_Malloc (W_LumpLength (lump), ztag, &lumpcache[llump]);
-        W_ReadLumpHeader (lump, ptr, 0);   // read whole lump
+        byte* ptr = Z_Malloc ( W_LumpLength(lumpnum), ztag, &lumpcache[llump]);
+        W_ReadLumpHeader( lumpnum, ptr, 0 );   // read whole lump
 //        W_ReadLumpHeader (lump, lumpcache[llump], 0);   // read whole lump
         lump_read = 1; // cache miss, read lump, caller must apply endian fix
     }
@@ -890,7 +892,7 @@ void release_patch_array( patch_t ** pp, int count )
 // Cache the patch with endian conversion
 // [WDJ] Only read patches using this function, hardware render too.
 // [WDJ] Removed inline because is also called from in hardware/hw_cache.c.
-void* W_CachePatchNum_Endian ( int lump, int ztag )
+void* W_CachePatchNum_Endian ( lumpnum_t lump, int ztag )
 {
 // __BIG_ENDIAN__ is defined on MAC compilers, not on WIN, nor LINUX
 #ifdef __BIG_ENDIAN__
@@ -921,24 +923,24 @@ void* W_CachePatchNum_Endian ( int lump, int ztag )
 #ifdef HWRENDER
 
 // Called from many draw functions
-void* W_CachePatchNum ( int lump, int ztag )
+void* W_CachePatchNum ( lumpnum_t lumpnum, int ztag )
 {
     MipPatch_t*   grPatch;
 
     if( rendermode == render_soft ) {
-        return W_CachePatchNum_Endian ( lump, ztag );
+        return W_CachePatchNum_Endian ( lumpnum, ztag );
     }
    
     // hardware render
 
 #ifdef PARANOIA
     // check the return value of a previous W_CheckNumForName()
-    if ( ( lump==-1 ) ||
-         (LUMPNUM(lump) >= wadfiles[WADFILENUM(lump)]->numlumps) )
-        I_Error ("W_CachePatchNum: %i >= numlumps", LUMPNUM(lump));
+    if ( ( ! VALID_LUMP(lumpnum) )
+	 || (LUMPNUM(lumpnum) >= wadfiles[WADFILENUM(lumpnum)]->numlumps) )
+        I_Error ("W_CachePatchNum: %i >= numlumps", LUMPNUM(lumpnum));
 #endif
 
-    grPatch = &(wadfiles[WADFILENUM(lump)]->hwrcache[LUMPNUM(lump)]);
+    grPatch = &(wadfiles[WADFILENUM(lumpnum)]->hwrcache[LUMPNUM(lumpnum)]);
 
     if( ! grPatch->mipmap.grInfo.data ) 
     {   // first time init grPatch fields
@@ -955,18 +957,18 @@ void* W_CachePatchNum ( int lump, int ztag )
 }
 
 // [WDJ] Called from hardware render for special mapped sprites
-void* W_CacheMappedPatchNum ( int lump, uint32_t drawflags )
+void* W_CacheMappedPatchNum ( lumpnum_t lumpnum, uint32_t drawflags )
 {
     MipPatch_t*   grPatch;
 
 #ifdef PARANOIA
     // check the return value of a previous W_CheckNumForName()
-    if ( ( lump==-1 ) ||
-         (LUMPNUM(lump) >= wadfiles[WADFILENUM(lump)]->numlumps) )
-        I_Error ("W_CachePatchNum: %i >= numlumps", LUMPNUM(lump));
+    if ( ( ! VALID_LUMP(lumpnum) )
+	 || (LUMPNUM(lumpnum) >= wadfiles[WADFILENUM(lumpnum)]->numlumps) )
+        I_Error ("W_CachePatchNum: %i >= numlumps", LUMPNUM(lumpnum));
 #endif
 
-    grPatch = &(wadfiles[WADFILENUM(lump)]->hwrcache[LUMPNUM(lump)]);
+    grPatch = &(wadfiles[WADFILENUM(lumpnum)]->hwrcache[LUMPNUM(lumpnum)]);
 
     if( ! grPatch->mipmap.grInfo.data )
     {   // first time init grPatch fields
@@ -1006,7 +1008,7 @@ void W_release_patch( patch_t * patch )
 // HWRENDER
 #else
 // Software renderer only, simplified
-void* W_CachePatchNum ( int lump, int ztag )
+void* W_CachePatchNum ( lumpnum_t lump, int ztag) // Er hat das umbennen der variable vergessen..
 {
     return W_CachePatchNum_Endian( lump, ztag );
 }
@@ -1025,11 +1027,11 @@ void* W_CachePatchName ( const char* name, int ztag )
     int lumpid;
     // substitute known name for name not found
     lumpid = W_Check_Namespace( name, LNS_patch );
-    if( lumpid == -1 )
+    if( ! VALID_LUMP(lumpid) )
     {
         name = "BRDR_MM";
         lumpid = W_Check_Namespace( name, LNS_patch );
-        if( lumpid == -1 )
+        if( ! VALID_LUMP(lumpid) )
         I_Error ("W_CachePatchName: %s not found!\n", name);
     }
     return W_CachePatchNum( lumpid, ztag);
@@ -1039,26 +1041,26 @@ void* W_CachePatchName ( const char* name, int ztag )
 // convert raw heretic picture to legacy pic_t format
 // Used for heretic: TITLE, HELP1, HELP2, ORDER, CREDIT, FINAL1, FINAL2, E2END
 // Used for raven demo screen
-void* W_CacheRawAsPic( int lump, int width, int height, int ztag)
+void* W_CacheRawAsPic( lumpnum_t lumpnum, int width, int height, int ztag)
 {
     // [WDJ] copy of CacheLumpNum with larger lump allocation,
     // read into pic, and no endian fixes
     lumpcache_t*  lumpcache;
     //SoM: 4/8/2000: Don't keep doing operations to the lump variable!
-    int  llump = LUMPNUM(lump);
-    int  lfile = WADFILENUM(lump);
+    unsigned int  llump = LUMPNUM(lumpnum);
+    unsigned int  lfile = WADFILENUM(lumpnum);
 
 #ifdef PARANOIA
     // check return value of a previous W_CheckNumForName()
     //SoM: 4/8/2000: Do better checking. No more SIGSEGV's!
-    if(lump == -1)
-      I_Error ("W_CacheRawAsPic: -1 passed!\n");
+    if( ! VALID_LUMP(lumpnum) )
+      I_Error ("W_CacheRawAsPic: not VALID_LUMP passed!\n");
     if (lfile >= numwadfiles)
       I_Error("W_CacheRawAsPic: %i >= numwadfiles(%i)\n", lfile, numwadfiles);
     if (llump >= wadfiles[lfile]->numlumps)
       I_Error ("W_CacheRawAsPic: %i >= numlumps", llump);
-    if(llump < 0)
-      I_Error ("W_CacheRawAsPic: %i < 0!\n", llump);
+//    if(llump < 0)  // not possible
+//      I_Error ("W_CacheRawAsPic: %i < 0!\n", llump);
 #endif
 
     lumpcache = wadfiles[lfile]->lumpcache;
@@ -1067,10 +1069,10 @@ void* W_CacheRawAsPic( int lump, int width, int height, int ztag)
         // read the lump in
 
         // Allocation is larger than what W_CacheLumpNum does
-        pic_t* pic = Z_Malloc (W_LumpLength (lump)+sizeof(pic_t),
+        pic_t* pic = Z_Malloc (W_LumpLength(lumpnum)+sizeof(pic_t),
                                ztag, &lumpcache[llump]);
         // read lump + pic into pic->data (instead of lumpcache)
-        W_ReadLumpHeader (lump, pic->data, 0);
+        W_ReadLumpHeader( lumpnum, pic->data, 0 );
         // set pic info from caller parameters, (which are literals)
         pic->width = width;
         pic->height = height;
@@ -1089,7 +1091,7 @@ void* W_CacheRawAsPic( int lump, int width, int height, int ztag)
 
 
 // Cache and endian convert a pic_t
-void* W_CachePicNum( int lumpnum, int ztag )
+void* W_CachePicNum( lumpnum_t lumpnum, int ztag )
 {
 // __BIG_ENDIAN__ is defined on MAC compilers, not on WIN, nor LINUX
 #ifdef __BIG_ENDIAN__
@@ -1118,12 +1120,12 @@ void* W_CachePicName( const char* name, int tag )
 // Search for all DEHACKED lump in all wads and load it.
 void W_Load_DehackedLumps( int wadnum )
 {
-    int clump = 0;
+    lumpnum_t  clump = 0;
     
     while (1)
     { 
-        clump = W_CheckNumForNamePwad("DEHACKED", wadnum, clump);
-        if(clump == -1)
+        clump = W_CheckNumForNamePwad("DEHACKED", wadnum, LUMPNUM(clump));
+        if( ! VALID_LUMP(clump) )
             break;
         GenPrintf(EMSG_info, "Loading dehacked from %s\n",wadfiles[wadnum]->filename);
         DEH_LoadDehackedLump(clump);

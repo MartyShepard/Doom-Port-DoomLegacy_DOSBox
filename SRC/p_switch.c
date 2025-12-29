@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_switch.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
+// $Id: p_switch.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -177,7 +177,7 @@ void P_Init_SwitchList(void)
   }
 
   // Check for Boom SWITCHES lump.
-  if(W_CheckNumForName("SWITCHES") != -1)
+  if( VALID_LUMP( W_CheckNumForName("SWITCHES") ) )
   {
     // Load the SWITCHES lump.
     switches_lump = (switchlist_t *)W_CacheLumpName("SWITCHES", PU_IN_USE);

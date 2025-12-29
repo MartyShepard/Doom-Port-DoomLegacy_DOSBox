@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 1347 2017-07-29 18:21:14Z wesleyjohnson $
+// $Id: doomtype.h 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -151,7 +151,6 @@ typedef enum {
         #define strncasecmp             strnicmp
         #define strcasecmp              strcmpi
     #endif
-		
     #ifdef __DJGPP__
         #include <dos.h>
         #include <sys\types.h>
@@ -262,5 +261,11 @@ typedef union {
 typedef int16_t   lightlev_t;
 
 typedef uint16_t  statenum_t;
+
+// [WDJ] I would prefer this was uint32_t, but it is being kept signed so that
+// tests for -1 can be preserved.  This reduces the chance of logical errors
+// due to older fail tests that have not been discovered yet (2018).
+// The number of wads is limited to 32, and signed allows over 8000 wads.
+typedef int32_t  lumpnum_t;
 
 #endif  //__DOOMTYPE__

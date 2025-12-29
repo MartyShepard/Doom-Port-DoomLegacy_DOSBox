@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
+// $Id: v_video.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -472,7 +472,7 @@ static void LoadPalette(const char *lumpname)
   int i, palsize;
   byte * pal;  // stepping through pal lump;
    
-  if ( W_CheckNumForName ( lumpname ) < 0 )
+  if( ! VALID_LUMP( W_CheckNumForName( lumpname ) ) )
   {
       // [WDJ] Missing palette lump will be detected later,
       // but need a palette to print the messages.
@@ -1932,7 +1932,7 @@ static uint16_t  fill_mask_tab[ 8 ] =
 //   x, y, w, h : drawinfo coordinates (if w=vid.width then vid coordinates)
 //   scale : 0..15, where 0=unscaled, 15=full scaled
 // Called by M_DrawTextBox
-void V_DrawFlatFill(int x, int y, int w, int h, int scale, int flatnum)
+void V_DrawFlatFill(int x, int y, int w, int h, int scale, lumpnum_t flatnum)
 {
     // vid : from video setup
     // drawinfo : from V_SetupDraw
@@ -2035,7 +2035,7 @@ void V_DrawFlatFill(int x, int y, int w, int h, int scale, int flatnum)
 
 // Fill entire screen with flat.
 // Called by WI_slamBackground, F_TextWrite (entire screen), M_DrawTextBox
-void V_ScreenFlatFill( int flatnum )
+void V_ScreenFlatFill( lumpnum_t flatnum )
 {
 #ifdef HWRENDER
     if( rendermode != render_soft )
@@ -2773,7 +2773,7 @@ int V_StringHeight( const char *string)
 // Draw text using font B.
 //
 //---------------------------------------------------------------------------
-int FontBBaseLump;
+lumpnum_t  FontBBaseLump;
 
 // per drawinfo
 void V_DrawTextB(const char *text, int x, int y)

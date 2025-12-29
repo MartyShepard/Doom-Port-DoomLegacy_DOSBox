@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1414 2018-12-06 22:01:48Z wesleyjohnson $
+// $Id: v_video.h 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -286,9 +286,9 @@ void V_DrawScaledFill(int x, int y, int w, int h, byte color);
 //  For fullscreen, set w=vid.width.
 //   x, y, w, h : screen coordinates
 //   scale : 0 .. 15
-void V_DrawFlatFill(int x, int y, int w, int h, int scale, int flatnum);
+void V_DrawFlatFill(int x, int y, int w, int h, int scale, lumpnum_t flatnum);
 // Fill entire screen with flat.
-void V_ScreenFlatFill( int flatnum );
+void V_ScreenFlatFill( lumpnum_t flatnum );
 
 //added:10-02-98: fade down the screen buffer before drawing the menu over
 void V_FadeScreen (void);
@@ -321,7 +321,7 @@ int V_StringWidth (const char* string);
 int V_StringHeight (const char* string);
 
 // draw text with fontB (big font)
-extern int FontBBaseLump;
+extern lumpnum_t  FontBBaseLump;
 void V_DrawTextB(const char *text, int x, int y);
 void V_DrawTextBGray(const char *text, int x, int y);
 int V_TextBWidth(const char *text);

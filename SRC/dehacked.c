@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1367 2017-11-01 01:15:56Z wesleyjohnson $
+// $Id: dehacked.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -2670,13 +2670,13 @@ void DEH_LoadDehackedFile(myfile_t* f, byte bex_permission)
 
 // read dehacked lump in a wad (there is special trick for for deh 
 // file that are converted to wad in w_wad.c)
-void DEH_LoadDehackedLump(int lump)
+void DEH_LoadDehackedLump( lumpnum_t lumpnum )
 {
     myfile_t f;
     
-    f.size = W_LumpLength(lump);
+    f.size = W_LumpLength(lumpnum);
     f.data = Z_Malloc(f.size + 1, PU_IN_USE, 0);  // temp
-    W_ReadLump(lump, f.data);
+    W_ReadLump(lumpnum, f.data);
     f.curpos = f.data;
     f.data[f.size] = 0;
 

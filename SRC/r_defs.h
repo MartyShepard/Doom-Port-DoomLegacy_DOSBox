@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1397 2018-07-02 03:39:47Z wesleyjohnson $
+// $Id: r_defs.h 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -929,7 +929,7 @@ typedef enum { SRP_NULL, SRP_1, SRP_8, SRP_16 }  sprite_rotation_pattern_e;
 // size 8
 typedef struct
 {
-    uint32_t    lumppat;   // lump number 16:16 wad:lump
+    lumpnum_t   pat_lumpnum;   // lump number of patch
     uint16_t    spritelump_id; // into spritelumps[]
     byte        flip;    // Flip bit (1 = flip)
 } sprite_frot_t;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: am_map.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -577,7 +577,8 @@ static void AM_loadPics(void)
         sprintf(namebuf, "AMMNUM%d", i);
         marknums[i] = W_CachePatchName(namebuf, PU_STATIC);
     }
-    if( W_CheckNumForName("AUTOPAGE")>=0 )
+
+    if( VALID_LUMP( W_CheckNumForName("AUTOPAGE") ) )
         maplump = W_CacheLumpName("AUTOPAGE", PU_STATIC);
     else
         maplump = NULL;

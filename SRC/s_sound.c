@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1413 2018-12-06 21:59:43Z wesleyjohnson $
+// $Id: s_sound.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -360,7 +360,7 @@ void S_GetSfxLump( sfxinfo_t * sfx )
 {
     char lmpname[20] = "\0\0\0\0\0\0\0\0";  // do not leave this to chance [WDJ]
     byte * sfx_lump_data;
-    int sfxlump;
+    lumpnum_t  sfx_lumpnum;
 
     if (EN_heretic) {	// [WDJ] heretic names are different
        sprintf(lmpname, "%s", sfx->name);
@@ -375,13 +375,13 @@ void S_GetSfxLump( sfxinfo_t * sfx )
     // I do not do runtime patches to that variable. Instead, we will use a
     // default sound for replacement.
 
-    if (W_CheckNumForName(lmpname) == -1)
+    if( ! VALID_LUMP( W_CheckNumForName(lmpname) ) )
     {
         // sound not found
         // try plain name too (hth2.wad amb*)
-        if (W_CheckNumForName(sfx->name) >= 0)
+        if( VALID_LUMP( W_CheckNumForName(sfx->name) ) )
         {
-            sfxlump = W_GetNumForName(sfx->name);
+            sfx_lumpnum = W_GetNumForName(sfx->name);
             goto lump_found;
         }
 
@@ -391,25 +391,25 @@ void S_GetSfxLump( sfxinfo_t * sfx )
         // but not after game starts.  These come from list of sounds
         // in sounds.c, but not all those are in the game.
         if (EN_heretic)
-            sfxlump = W_GetNumForName("keyup");
+            sfx_lumpnum = W_GetNumForName("keyup");
         else
-            sfxlump = W_GetNumForName("dspistol");
+            sfx_lumpnum = W_GetNumForName("dspistol");
     }
     else
     {
-        sfxlump = W_GetNumForName(lmpname);
+        sfx_lumpnum = W_GetNumForName(lmpname);
     }
 
  lump_found:
     // if lump not found, W_GetNumForName would have done I_Error
-    sfx->lumpnum = sfxlump;
+    sfx->lumpnum = sfx_lumpnum;
 
     // Get the sound data from the WAD, allocate lump
     //  in zone memory.
-    sfx->length = W_LumpLength(sfxlump);
+    sfx->length = W_LumpLength(sfx_lumpnum);
     // Copy is necessary because lump may be used by multiple sfx.
     // Free of shared lump would corrupt other sfx using it.
-    sfx_lump_data = W_CacheLumpNum(sfxlump, PU_SOUND);
+    sfx_lump_data = W_CacheLumpNum(sfx_lumpnum, PU_SOUND);
     sfx->data = Z_Malloc( sfx->length, PU_SOUND, 0 );
     memcpy( sfx->data, sfx_lump_data, sfx->length );
     Z_ChangeTag( sfx_lump_data, PU_CACHE );
@@ -494,7 +494,8 @@ void S_Init(int sfxVolume, int musicVolume)
     for (i = 1; i < NUMSFX; i++)
     {
         sfxinfo_t * sfx = & S_sfx[i];
-        sfx->lumpnum = sfx->usefulness = -1;    // for I_GetSfx()
+        sfx->usefulness = -1;    // for I_GetSfx()
+        sfx->lumpnum = NO_LUMP;
         sfx->data = NULL;
         sfx->length = 0;
 #if 1
@@ -1341,13 +1342,20 @@ void S_ChangeMusic(int music_num, byte looping)
     S_StopMusic();
 
     // get lumpnum if neccessary
-    if (!music->lumpnum)
+    // Test of the music ever being looked up, not a test of VALID_LUMP.
+    if( music->lumpnum == 0 )
     {
         if (EN_heretic)
             music->lumpnum = W_GetNumForName(music->name);
         else
             music->lumpnum = W_GetNumForName(va("d_%s", music->name));
     }
+#if 0
+    // W_GetNumForName will I_Error instead of returning NO_LUMP.
+    if( ! VALID_LUMP(music->lumpnum) )
+        return;
+#endif
+
 #ifdef MUSSERV
     // Play song, with information for ports with music servers.
     music->data = NULL;

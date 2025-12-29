@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_cheat.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: m_cheat.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1133,7 +1133,7 @@ static void CheatWarpFunc(player_t * player, Cheat_t * cheat)
     episode = cheat->args[0] - '0';
     map = cheat->args[1] - '0';
     mapname = G_BuildMapName(episode, map);
-    if (W_CheckNumForName(mapname) > 0)
+    if( VALID_LUMP( W_CheckNumForName(mapname) ) )
     {
         G_DeferedInitNew(gameskill, mapname, false);
         P_SetMessage(player, TXT_CHEATWARP, 58);

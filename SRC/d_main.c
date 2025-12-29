@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
+// $Id: d_main.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -315,8 +315,9 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1416"
+#define SVN_REV "1417"
 #endif
+
 
 // Version number: major.minor.revision
 const int  VERSION  = 147; // major*100 + minor
@@ -493,7 +494,7 @@ void  owner_wad_search_order( void )
         }
         else
         if(    (strcmp( defdir, cv_home.string ) != 0) // not home directory
-	    && (strcmp( defdir, progdir ) != 0)        // not program directory
+            && (strcmp( defdir, progdir ) != 0)        // not program directory
             && (strcmp( defdir, progdir_wads ) != 0) ) // not wads directory
         {
 #endif
@@ -638,8 +639,6 @@ void D_Display(void)
         wipe = true;
         wipe_StartScreen();
     }
-    else
-        wipe = false;
 
     // draw buffered stuff to screen
     // BP: Used only by linux GGI version
@@ -651,10 +650,12 @@ void D_Display(void)
         case GS_LEVEL:
             if (!gametic)
                 break;
+
             // On each gametic
             HU_Erase();
             if (automapactive)
                 AM_Drawer();
+
             if (wipe || menuactivestate
 #ifdef HWRENDER
                 || rendermode != render_soft
@@ -912,6 +913,7 @@ void D_DoomLoop(void)
         // user settings
         COM_BufAddText("exec autoexec.cfg\n");
     }
+
     // end of loading screen: CONS_Printf() will no more call FinishUpdate()
     con_self_refresh = false;
 
@@ -1150,7 +1152,7 @@ void D_DoAdvanceDemo(void)
             else if (gamemode == heretic)
             {
                 pagetic = 200;
-                if (W_CheckNumForName("e2m1") == -1)
+                if( ! VALID_LUMP( W_CheckNumForName("e2m1") ) )
                     pagename = "ORDER";
                 else
                     pagename = "CREDIT";
@@ -1195,7 +1197,7 @@ void D_DoAdvanceDemo(void)
 void D_StartTitle(void)
 {
     if( command_EV_param )
-        CV_Restore_User_Settings();  // remove temp settings   
+        CV_Restore_User_Settings();  // remove temp settings     
     gameaction = ga_nothing;
     playerdeadview = false;
     displayplayer = consoleplayer = statusbarplayer = 0;
@@ -1947,12 +1949,13 @@ void D_CheckWadVersion()
 {
     int wadversion = 0;
     char hs[128];
-    int wv2, lump, hlen;
+    int wv2, hlen;
+    lumpnum_t ln;
 /* BP: disabled since this should work fine now...
     // check main iwad using demo1 version 
-    lump = W_CheckNumForNameFirst("demo1");
+    ln = W_CheckNumForNameFirst("demo1");
     // well no demo1, this is not a main wad file
-    if(lump == -1)
+    if( ! VALID_LUMP(ln) )
         I_Error("%s is not a Main wad file (IWAD)\n"
                 "try with Doom.wad or Doom2.wad\n"
                 "\n"
@@ -1968,14 +1971,14 @@ void D_CheckWadVersion()
                 "but this can cause Legacy to hang\n",wadfiles[0]->filename,wadversion/100,wadversion%100);
 */
     // check version, of legacy.wad using version lump
-    lump = W_CheckNumForName("version");
-    if (lump == -1)
+    ln = W_CheckNumForName("version");
+    if( ! VALID_LUMP(ln) )
     {
         I_SoftError("No legacy.wad file.\n");
         fatal_error = 1;
         return;
     }
-    hlen = W_ReadLumpHeader(lump, &hs, 128);
+    hlen = W_ReadLumpHeader(ln, &hs, 128);
     if (hlen < 128)
     {
         hs[hlen] = '\0';
@@ -2156,6 +2159,7 @@ void D_DoomMain()
     CONS_Printf("StartupGraphics...\n");
     // setup loading screen with dedicated=0 and vid=800,600
     V_Init_VideoControl();  // before I_StartupGraphics
+
     if( ! dedicated )
     {
 #if defined( __DJGPP__ )
@@ -2175,7 +2179,8 @@ void D_DoomMain()
 #endif		
         I_StartupGraphics();    // window
         SCR_Startup();
-    }			
+    }
+
     if( verbose > 1 )
         CONS_Printf("Init DEH, cht, menu\n");
     P_clear_state_ext();  // init state_ext
@@ -2577,8 +2582,10 @@ restart_command:
         {
             int i;
             for (i = 0; i < 23; i++)
-                if (W_CheckNumForName(name[i]) < 0)
+            {
+                if( ! VALID_LUMP( W_CheckNumForName(name[i]) ) )
                     CONS_Printf("\nThis is not the registered version.");
+            }
         }
       }
    
@@ -2651,7 +2658,7 @@ restart_command:
     // After this line, are committed to the game and video port selected.
     // Use I_Error.
 
-    if ( W_CheckNumForName ( "PLAYPAL" ) < 0 )
+    if( ! VALID_LUMP( W_CheckNumForName ( "PLAYPAL" ) ) )
     {
         //Hurdler: I'm tired of that question ;)
         I_Error (
@@ -3131,8 +3138,8 @@ void D_Quit_Save ( quit_severity_e severity )
         {
             // [WDJ] Check on errors during I_Error shutdown.
             // Avoid repeat errors during bad environment shutdown.
-            int endtxt_num = W_CheckNumForName("ENDOOM");
-            if( endtxt_num >= 0 )
+            lumpnum_t endtxt_num = W_CheckNumForName("ENDOOM");
+            if( VALID_LUMP(endtxt_num) )
                 endtext = W_CacheLumpNum( endtxt_num, PU_STATIC );
             // If there are any more errors, then do not show the end text.
         }

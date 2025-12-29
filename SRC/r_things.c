@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
+// $Id: r_things.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -368,7 +368,7 @@ void  transfer_from_spritetmp( spritedef_t * spritedef,
 //
 //
 static
-void R_InstallSpriteLump ( uint32_t      lumppat,     // graphics patch
+void R_InstallSpriteLump ( lumpnum_t     lumppat,     // graphics patch
                            uint16_t      spritelump_id, // spritelump_t
                            byte          frame,
                            char          rotation_char,
@@ -445,7 +445,7 @@ void R_InstallSpriteLump ( uint32_t      lumppat,     // graphics patch
         fmp->rotation_pattern = SRP_1;
 #if 0
         // Only rotation 0.
-        rtp->lumppat = lumppat;
+        rtp->pat_lumpnum = lumppat;
         rtp->spritelump_id  = spritelump_id;
         rtp->flip = (byte)flipped;
 #else
@@ -453,7 +453,7 @@ void R_InstallSpriteLump ( uint32_t      lumppat,     // graphics patch
         // SRP_8 will keep the single rotation as the default.
         for (r=0 ; r<NUM_SPRITETMP_ROT ; r++)
         {
-            rtp->lumppat = lumppat;
+            rtp->pat_lumpnum = lumppat;
             rtp->spritelump_id  = spritelump_id;
             rtp->flip = (byte)flipped;
             rtp++;
@@ -489,7 +489,7 @@ void R_InstallSpriteLump ( uint32_t      lumppat,     // graphics patch
     // when using sprites in pwad : the lumppat points the new graphics
     // [WDJ] Nope, lump patch and size data both come from the lump.
     // This is the only func that changes them, and they are always both updated.
-    rtp->lumppat = lumppat;
+    rtp->pat_lumpnum = lumppat;
     rtp->spritelump_id = spritelump_id;
     rtp->flip = (byte)flipped;
 }
@@ -514,7 +514,9 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
     sprite_frot_t * rtp;
     lumpinfo_t *lumpinfo;
     uint32_t    numname;
-    int         l, lumpnum, lumpfnd = 0;
+    lumpnum_t   lumpnum;
+    lumpnum_t   fnd_lumpnum = 0;
+    int         l;
     int         frame;
     int         spritelump_id;
     patch_t     patch;	// temp for read header
@@ -585,7 +587,7 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
 
             //----------------------------------------------------
 
-            lumpfnd = lumpnum;
+            fnd_lumpnum = lumpnum;
             R_InstallSpriteLump (lumpnum, spritelump_id, frame, rotation_char, false);
 
             if (lumpinfo[l].name[6])
@@ -655,12 +657,12 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
             {
                 // we test the patch lump, or the id lump whatever
                 // if it was not loaded the two are -1
-                if( rtp->lumppat == -1)
+                if( ! VALID_LUMP(rtp->pat_lumpnum) )
                 {
                     I_SoftError("R_Init_Sprites: Sprite %s frame %c is missing rotation %i\n",
                              sprname, frame+'A', rotation);
                     // Limp, use the last sprite lump read for this sprite.
-                    rtp->lumppat = lumpfnd;
+                    rtp->pat_lumpnum = fnd_lumpnum;
                 }
                 rtp++;
             }
@@ -673,12 +675,12 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
             {
                 // we test the patch lump, or the id lump whatever
                 // if it was not loaded the two are -1
-                if( rtp->lumppat == -1)
+                if( ! VALID_LUMP(rtp->pat_lumpnum) )
                 {
                     I_SoftError("R_Init_Sprites: Sprite %s frame %c is missing rotation %i\n",
                              sprname, frame+'A', rotation);
                     // Limp, use the last sprite lump read for this sprite.
-                    rtp->lumppat = lumpfnd;
+                    rtp->pat_lumpnum = fnd_lumpnum;
                 }
                 rtp++;
             }
@@ -723,29 +725,27 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
 //
 void R_AddSpriteDefs (char** namelist, int wadnum)
 {
-    int         i;
-    int         start, end;
+    lumpnum_t  start_ln, end_ln;
+    int         i, ln1, ln2;
     int         addsprites;
 
     // find the sprites section in this pwad
     // we need at least the S_END
     // (not really, but for speedup)
 
-    start = W_CheckNumForNamePwad ("S_START",wadnum,0);
-    if (start==-1)
-        start = W_CheckNumForNamePwad ("SS_START",wadnum,0); //deutex compatib.
-    if (start==-1)
-        start=0;      // search frames from start of wad
-                              // (lumpnum low word is 0)
+    start_ln = W_CheckNumForNamePwad ("S_START",wadnum,0);
+    if( ! VALID_LUMP(start_ln) )
+        start_ln = W_CheckNumForNamePwad ("SS_START",wadnum,0); //deutex compatib.
+    if( ! VALID_LUMP(start_ln) )
+        ln1 = 0;      // search frames from start of wad
     else
-        start++;   // just after S_START
+        ln1 = LUMPNUM(start_ln) + 1;   // just after S_START
 
-    start &= 0xFFFF;    // 0 based in lumpinfo
 
-    end = W_CheckNumForNamePwad ("S_END",wadnum,0);
-    if (end==-1)
-        end = W_CheckNumForNamePwad ("SS_END",wadnum,0);     //deutex compatib.
-    if (end==-1)
+    end_ln = W_CheckNumForNamePwad ("S_END",wadnum,0);
+    if( ! VALID_LUMP(end_ln) )
+        end_ln = W_CheckNumForNamePwad ("SS_END",wadnum,0);     //deutex compatib.
+    if( ! VALID_LUMP(end_ln) )
     {
         if (devparm)
             GenPrintf(EMSG_dev, "no sprites in pwad %d\n", wadnum);
@@ -753,7 +753,7 @@ void R_AddSpriteDefs (char** namelist, int wadnum)
         //I_Error ("R_AddSpriteDefs: S_END, or SS_END missing for sprites "
         //         "in pwad %d\n",wadnum);
     }
-    end &= 0xFFFF;
+    ln2 = LUMPNUM( end_ln );
 
     //
     // scan through lumps, for each sprite, find all the sprite frames
@@ -763,7 +763,7 @@ void R_AddSpriteDefs (char** namelist, int wadnum)
     {
         spritename = namelist[i];
 
-        if (R_AddSingleSpriteDef (spritename, &sprites[i], wadnum, start, end) )
+        if (R_AddSingleSpriteDef (spritename, &sprites[i], wadnum, ln1, ln2) )
         {
             // if a new sprite was added (not just replaced)
             addsprites++;
@@ -1603,7 +1603,7 @@ static void R_ProjectSprite (mobj_t* thing)
     //Fab: lumppat is the lump number of the patch to use, this is different
     //     than spritelump_id for sprites-in-pwad : the graphics are patched
     // [WDJ] Nope, both are updated from the lump together.
-    vis->patch = sprfrot->lumppat;
+    vis->patch = sprfrot->pat_lumpnum;
 
 
 //
@@ -1851,7 +1851,7 @@ void R_DrawPSprite (pspdef_t* psp)
         vis->startfrac += vis->xiscale*(vis->x1-x1);
 
     //Fab: see above for more about spritelump_id,lumppat
-    vis->patch = sprfrot->lumppat;
+    vis->patch = sprfrot->pat_lumpnum;
     vis->translucentmap = NULL;
     vis->translucent_index = 0;
     if (viewplayer->mo->flags & MF_SHADOW)      // invisibility effect

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_sound.h 1255 2016-08-29 21:28:38Z wesleyjohnson $
+// $Id: i_sound.h 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -19,8 +19,6 @@
 //
 // $Log: i_sound.h,v $
 // Include: DOS DJGPP Fixes
-//
-// Revision 1.9  2003/07/13 13:16:15  hurdler
 //
 // Revision 1.8  2002/12/13 22:34:27  ssntails
 // MP3/OGG support!
@@ -121,7 +119,7 @@ void I_ResumeSong(int handle);
 // Information for ports with music servers.
 //  name : name of song
 //  lumpnum : lumpnum of the song data
-int I_PlayServerSong( char * name, int lumpnum, byte looping );
+int I_PlayServerSong( char * name, lumpnum_t lumpnum, byte looping );
 #else
 // Registers a song handle to song data.
 //  data : ptr to lump data

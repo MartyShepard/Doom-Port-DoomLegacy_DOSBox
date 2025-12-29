@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1415 2018-12-06 22:02:39Z wesleyjohnson $
+// $Id: m_menu.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1422,7 +1422,7 @@ void M_DrawSetupMultiPlayerMenu(void)
 
     // draw player sprite
     // temp usage of sprite lump, until end of function
-    patch = W_CachePatchNum (sprfrot->lumppat, PU_CACHE_DEFAULT);  // endian fix
+    patch = W_CachePatchNum (sprfrot->pat_lumpnum, PU_CACHE_DEFAULT);  // endian fix
     if( itemOn>0 )  // Edit skin or color
     {
       // Some skins are too large for the screen, cause segfault.
@@ -1816,6 +1816,9 @@ enum
 menuitem_t VideoOptionsMenu[]=
 {
     {IT_STRING | IT_SUBMENU,0, "Video Modes..."   , &VidModeDef       , 0},
+#ifndef __DJGPP__
+    {IT_STRING | IT_CVAR,0,    "Fullscreen"       , &cv_fullscreen    , 0},
+#endif
 // if these are moved then fix MenuGammaFunc_dependencies
     {IT_STRING | IT_CVAR,0,    "Gamma Function"   , &cv_gammafunc     , 0},
     {IT_STRING | IT_CVAR
@@ -1825,9 +1828,6 @@ menuitem_t VideoOptionsMenu[]=
     {IT_STRING | IT_CVAR
      | IT_CV_SLIDER     ,0,    "Brightness"       , &cv_bright        , 0},
     {IT_STRING | IT_CVAR,0,    "Wait Retrace"     , &cv_vidwait       , 0},
-#ifndef __DJGPP__
-    {IT_STRING | IT_CVAR,0,    "Fullscreen"       , &cv_fullscreen    , 0},
-#endif
     {IT_STRING | IT_CVAR
      | IT_CV_SLIDER     ,0,    "Screen Size"      , &cv_viewsize      , 0},
     {IT_STRING | IT_CVAR,0,    "Scale Status Bar" , &cv_scalestatusbar, 0},
@@ -5206,25 +5206,25 @@ void M_Configure (void)
     }
 
     // irreversible
-    if( W_CheckNumForName("E2M1")<0 )
+    if( ! VALID_LUMP( W_CheckNumForName("E2M1") ) )
     {
         exmy_cons_t[9].value = 0;
         exmy_cons_t[9].strvalue = NULL;
     }
     else
-    if( W_CheckNumForName("E3M1")<0 )
+    if( ! VALID_LUMP( W_CheckNumForName("E3M1") ) )
     {
         exmy_cons_t[18].value = 0;
         exmy_cons_t[18].strvalue = NULL;
     }
     else
-    if( W_CheckNumForName("E4M1")<0 )
+    if( ! VALID_LUMP( W_CheckNumForName("E4M1") ) )
     {
         exmy_cons_t[27].value = 0;
         exmy_cons_t[27].strvalue = NULL;
     }
     else
-    if( W_CheckNumForName("E5M1")<0 )
+    if( ! VALID_LUMP( W_CheckNumForName("E5M1") ) )
     {
         exmy_cons_t[36].value = 0;
         exmy_cons_t[36].strvalue = NULL;

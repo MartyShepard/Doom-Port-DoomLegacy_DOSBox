@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_sound.c 1403 2018-07-06 09:49:21Z wesleyjohnson $
+// $Id: I_sound.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -133,7 +133,7 @@ void I_FreeSfx (sfxinfo_t* sfx)
 {
     byte*    dssfx;
 
-    if (sfx->lumpnum<0)
+    if( ! VALID_LUMP(sfx->lumpnum) )
         return;
 
     // free sample data
@@ -146,7 +146,7 @@ void I_FreeSfx (sfxinfo_t* sfx)
     }
 
     sfx->data = NULL;
-    sfx->lumpnum = -1;
+    sfx->lumpnum = NO_LUMP;
 }
 
 
@@ -184,7 +184,7 @@ void I_SetMusicVolume(int volume)
 // Pitching (that is, increased speed of playback)
 //  is set, but currently not used by mixing.
 /* Neue Deklaration */
-int I_StartSound ( sfxid_t       sfxid,
+int I_StartSound ( sfxid_t       sfxid,  // Marty: Funktion und Variable nicht ändern. Ist Aktuell.
                    int           vol,
                    int           sep,
                    int           pitch,
@@ -462,7 +462,7 @@ void I_ShutdownMusic(void)
     music_started=false;
 }
 
-void I_PlaySong(int handle, byte looping)
+void I_PlaySong(int handle, byte looping) // Marty: Funktion und Variable nicht ändern. Ist Aktuell.
 {
     if(nomusic)
         return;

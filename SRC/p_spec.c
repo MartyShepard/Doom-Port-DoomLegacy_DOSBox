@@ -2,7 +2,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1395 2018-06-17 04:52:14Z wesleyjohnson $
+// $Id: p_spec.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -20,7 +20,6 @@
 //
 // $Log: p_spec.c,v $
 // Include: DOS DJGPP Fixes
-
 //
 // Revision 1.45  2003/07/23 17:26:36  darkwolf95
 // SetLineTexture function for Fraggle Script
@@ -313,7 +312,7 @@ void P_Init_PicAnims (void)
   //  Init animation
   int         i;
 
-  if(W_CheckNumForName("ANIMATED") != -1)
+  if( VALID_LUMP( W_CheckNumForName("ANIMATED") ) )
   {
     animdefs = (animdef_t *)W_CacheLumpName("ANIMATED", PU_IN_USE);
     // [WDJ] From wad, Do endian conversion on speed
@@ -360,7 +359,7 @@ void P_Init_PicAnims (void)
     }
     else
     {
-      if ((W_CheckNumForName(animdefs[i].startname)) == -1)
+      if( ! VALID_LUMP( W_CheckNumForName(animdefs[i].startname) ) )
           continue;
 
       lastanim->picnum = R_FlatNumForName (animdefs[i].endname);
@@ -3026,7 +3025,7 @@ void P_SpawnSpecials (void)
     // [WDJ] At one time this may have been important, but is not used now.
     // Appears in prboom.
     int episode = 1;
-    if (W_CheckNumForName("texture2") >= 0)
+    if( VALID_LUMP( W_CheckNumForName("texture2") ) )
         episode = 2;
 #endif
 

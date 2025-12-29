@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sounds.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: sounds.h 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -122,7 +122,7 @@ struct sfxinfo_struct
     int16_t     usefulness;  // lowest is removed
 
     // lump number of sfx
-    int16_t     lumpnum;
+    lumpnum_t   lumpnum;
 
     void*       data;      // sound data
 
@@ -147,7 +147,7 @@ typedef struct
       // Allocated strings for loaded names and deh.
 
     // lump number of music
-    int         lumpnum;
+    lumpnum_t   lumpnum;
 
     // music data
     void*       data;

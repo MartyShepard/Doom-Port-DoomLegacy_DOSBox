@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
+// $Id: console.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -330,7 +330,9 @@ static void CON_SetupBackColormap (void)
     }
 
     // wad containing PLAYPAL may not be found yet.
-    if( W_CheckNumForName( "PLAYPAL" ) < 0 )  return;
+    if( ! VALID_LUMP( W_CheckNumForName( "PLAYPAL" ) ) )
+        return;
+
     pal = W_CacheLumpName ("PLAYPAL",PU_CACHE); // temp, only used next loop
 
     for(i=0,k=0; i<768; i+=3,k++)
