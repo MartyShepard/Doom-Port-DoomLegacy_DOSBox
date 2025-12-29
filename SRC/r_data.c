@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1419 2019-01-29 08:01:42Z wesleyjohnson $
+// $Id: r_data.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1372,11 +1372,12 @@ lumpnum_t  R_CheckNumForNameList(const char *name, lumplist_t* list, int listsiz
 }
 
 
-lumplist_t*  colormaplumps;
-int          numcolormaplumps;
+// Extra colormaps
+lumplist_t * colormaplumps = NULL;  // malloc
+int          numcolormaplumps = 0;
 
 // called by R_Init_Colormaps
-void R_Init_ExtraColormaps()
+static void R_Init_ExtraColormaps()
 {
     lumpnum_t  start_ln, end_ln;
     int       cfile;
@@ -1593,8 +1594,6 @@ void R_Init_SpriteLumps (void)
 // size and format as the Doom colormap.
 // WATERMAP is predefined by Boom, but may be overloaded.
 
-void R_Init_ExtraColormaps();
-void R_Clear_Colormaps();
 
 // called by R_Init_Data
 void R_Init_Colormaps (void)
@@ -1604,7 +1603,7 @@ void R_Init_Colormaps (void)
     // Load in the standard colormap lightmap tables (defined by lump),
     // now 64k aligned for smokie...
     ln = W_GetNumForName("COLORMAP");
-    reg_colormaps = Z_MallocAlign ( W_LumpLength(ln), PU_STATIC, 0, 16);
+    reg_colormaps = Z_MallocAlign ( W_LumpLength(ln), PU_STATIC, NULL, 16);
     W_ReadLump( ln, reg_colormaps );
 
     //SoM: 3/30/2000: Init Boom colormaps.
@@ -1615,7 +1614,7 @@ void R_Init_Colormaps (void)
 }
 
 
-lumpnum_t  fnd_colormap_lump[MAXCOLORMAPS];  // lump number
+lumpnum_t  extra_colormap_lumpnum[MAXCOLORMAPS];  // lump number
 
 //SoM: Clears out extra colormaps between levels.
 // called by P_SetupLevel after ZFree(PU_LEVEL,..)
@@ -1628,13 +1627,20 @@ void R_Clear_Colormaps()
      GenPrintf(EMSG_warn, "Number of colormaps: %i\n", num_extra_colormaps );
 #endif
 
+  // extra_colormaps are always present [MAXCOLORMAPS]
   num_extra_colormaps = 0;
   for(i = 0; i < MAXCOLORMAPS; i++)
   {
-    fnd_colormap_lump[i] = -1;
-    // The ZMalloc colormap was PU_LEVEL and thus is already cleared.
+    extra_colormap_lumpnum[i] = NO_LUMP;
+    // [WDJ] The ZMalloc colormap used to be PU_LEVEL, releasing memory without setting the ptrs NULL.
+    // It is now PU_COLORMAP, and it is released only by this function.
+    if( extra_colormaps[i].colormap )
+    {
+        Z_Free( extra_colormaps[i].colormap );
+        extra_colormaps[i].colormap = NULL;
+    }
   }
-  memset(extra_colormaps, 0, sizeof(extra_colormaps));
+//  memset(extra_colormaps, 0, sizeof(extra_colormaps));
 }
 
 
@@ -1679,10 +1685,16 @@ void  R_Colormap_Analyze( int mapnum )
     // Analyze the Boom colormap for the hardware renderer.
     // The Boom colormap has been loaded already.
     // lighttable_t = byte array
-    byte * cm = extra_colormaps[mapnum].colormap; // Boom colormap
+    byte * cm = colormapp->colormap; // Boom colormap
     byte * tstcolor = & doom_analyze_index[0];  // colors to test
     RGBA_t work_rgba;
     int i;
+
+    if( cm == NULL )  // no colormap to analyze
+    {
+        GenPrintf(EMSG_warn, "R_Colormap_Analyze: map %i, has no colormap\n", mapnum );
+        return;
+    }
 
     if( EN_heretic )
        tstcolor = & heretic_analyze_index[0];  // heretic colors to test
@@ -1844,7 +1856,7 @@ int R_ColormapNumForName(const char *name)
 
   for(i = 0; i < num_extra_colormaps; i++)
   {
-    if(lumpnum == fnd_colormap_lump[i])
+    if(lumpnum == extra_colormap_lumpnum[i])
       return i;
   }
 
@@ -1855,12 +1867,15 @@ int R_ColormapNumForName(const char *name)
     return 0;
   }
 
-  fnd_colormap_lump[num_extra_colormaps] = lumpnum;
+  extra_colormap_lumpnum[num_extra_colormaps] = lumpnum;
+  extracolormap_t * ecmp = & extra_colormaps[num_extra_colormaps];
 
-  // aligned on 8 bit for asm code
-  extra_colormaps[num_extra_colormaps].colormap = Z_MallocAlign (W_LumpLength(lumpnum), PU_LEVEL, 0, 8);
+  // The extra_colormap structure is static and allocated ptrs in it must be set NULL upon release.
+  // Align on 16 bits, like other colormap allocations.
+  // ecmp->colormap =
+      Z_MallocAlign (W_LumpLength(lumpnum), PU_COLORMAP, (void**)&(ecmp->colormap), 16);
   // read colormap tables [][] of byte, mapping to alternative palette colors
-  W_ReadLump( lumpnum, extra_colormaps[num_extra_colormaps].colormap );
+  W_ReadLump( lumpnum, ecmp->colormap );
 
 #ifdef VIEW_COLORMAP_GEN
   GenPrintf(EMSG_info, "\nBoom Colormap: num=%i name= %8.8s\n", num_extra_colormaps, name );
@@ -1990,7 +2005,8 @@ int R_Create_Colormap(char *colorstr, char *ctrlstr, char *fadestr)
   // find any identical existing colormap
   for(i = 0; i < num_extra_colormaps; i++)
   {
-    if(fnd_colormap_lump[i] != -1)
+    // created colormaps only
+    if( VALID_LUMP(extra_colormap_lumpnum[i]) )
       continue;
     if(maskcolor == extra_colormaps[i].maskcolor &&
        fadecolor == extra_colormaps[i].fadecolor &&
@@ -2015,7 +2031,8 @@ int R_Create_Colormap(char *colorstr, char *ctrlstr, char *fadestr)
   }
   num_extra_colormaps++;
 
-  fnd_colormap_lump[mapnum] = -1;
+  // Created colormaps do not have lumpnum
+  extra_colormap_lumpnum[mapnum] = NO_LUMP;
   extra_colormap_p = &extra_colormaps[mapnum];
 
   // aligned on 8 bit for asm code
@@ -2036,7 +2053,10 @@ int R_Create_Colormap(char *colorstr, char *ctrlstr, char *fadestr)
     double othermask = 1.0 - maskalpha;
     double by_alpha = maskalpha / 255.0;
      
-    extra_colormap_p->colormap = colormap_p = Z_MallocAlign((256 * 34) + 10, PU_LEVEL, 0, 16); // Aligning on 16 bits, NOT 8, keeps it from crashing! SSNTails 12-13-2002
+    // The extra_colormap structure is static and allocated ptrs in it must be set NULL upon release.
+    // Aligning on 16 bits, NOT 8, keeps it from crashing! SSNTails 12-13-2002
+    extra_colormap_p->colormap = colormap_p =
+        Z_MallocAlign((256 * 34) + 10, PU_COLORMAP, (void**)&(extra_colormap_p->colormap), 16);
      
     // premultiply, this messes up rgba calc so it must be done here
     color_r *= by_alpha;  // to 0.0 .. 1.0 range
@@ -2197,7 +2217,7 @@ int RoundUp(double number)
 
 
 
-char *R_ColormapNameForNum(int num)
+char * R_ColormapNameForNum(int num)
 {
   if(num == -1)
     return "NONE";
@@ -2208,11 +2228,10 @@ char *R_ColormapNameForNum(int num)
     return "NONE";
   }
 
-  if(fnd_colormap_lump[num] == -1)
-    return "INLEVEL";
+  if( ! VALID_LUMP(extra_colormap_lumpnum[num]) )
+    return "INLEVEL";  // created colormap
 
-//  return wadfiles[WADFILENUM(fnd_colormap_lump[num])]->lumpinfo[LUMPNUM(fnd_colormap_lump[num])].name;
-  return wadfiles[WADFILENUM(fnd_colormap_lump[num])]->lumpinfo[LUMPNUM(fnd_colormap_lump[num])].name;
+  return wadfiles[WADFILENUM(extra_colormap_lumpnum[num])]->lumpinfo[LUMPNUM(extra_colormap_lumpnum[num])].name;
 }
 
 
@@ -2953,3 +2972,19 @@ void R_PrecacheLevel (void)
     Analyze_translucent_maps();
 #endif
 }
+
+
+void R_Init_rdata(void)
+{
+    int i;
+
+    // clear for easier debugging
+    memset(extra_colormaps, 0, sizeof(extra_colormaps));
+
+    for(i = 0; i < MAXCOLORMAPS; i++)
+    {
+        extra_colormap_lumpnum[i] = NO_LUMP;
+        extra_colormaps[i].colormap = NULL;
+    }
+}
+

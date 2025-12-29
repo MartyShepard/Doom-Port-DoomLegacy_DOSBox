@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: st_stuff.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -129,13 +129,17 @@ void ST_Release_FaceGraphics (void);
 // return if player a is in the same team of the player b
 boolean ST_SameTeam(player_t *a,player_t *b);
 
+void ST_Load_Graphics(void);
+void ST_Release_Graphics(void);
+
 // get the frags of the player
 // only one function for calculation : more simple code
 int  ST_PlayerFrags (int playernum);
 
 
 // Heretic status bar
-void SB_Heretic_Init(void);
+void SB_Heretic_Load_Graphics(void);
+void SB_Heretic_Release_Graphics(void);
 void SB_Heretic_Ticker(void);
 void SB_Heretic_Drawer( boolean refresh );
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: m_menu.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -5558,6 +5558,103 @@ void M_HandleFogColor(int key)
 }
 
 #endif
+
+
+//===========================================================================
+// Register Menu cv_ commands that do not have another Init to use.
+void M_Register_Menu_Controls( void )
+{
+    // Any cv_ with CV_SAVE needs to be registered, even if it is not used.
+    // Otherwise there will be error messages when config is loaded.
+
+    CV_RegisterVar(&cv_crosshair);
+    //CV_RegisterVar (&cv_crosshairscale); // doesn't work for now
+    CV_RegisterVar(&cv_autorun);
+    CV_RegisterVar(&cv_showmessages);
+
+    //CV_RegisterVar (&cv_showmessages2);
+    CV_RegisterVar(&cv_autorun2);
+    //CV_RegisterVar (&cv_crosshair2);
+    //CV_RegisterVar (&cv_autoaim2);
+    //CV_RegisterVar (&cv_controlperkey2);
+
+    CV_RegisterVar(&cv_screenslink);
+
+    // p_mobj.c
+    CV_RegisterVar(&cv_itemrespawntime);
+    CV_RegisterVar(&cv_itemrespawn);
+    CV_RegisterVar(&cv_respawnmonsters);
+    CV_RegisterVar(&cv_respawnmonsterstime);
+    CV_RegisterVar(&cv_fastmonsters);
+    CV_RegisterVar(&cv_predictingmonsters);     //added by AC for predmonsters
+    CV_RegisterVar(&cv_splats);
+    CV_RegisterVar(&cv_maxsplats);
+
+    // misc
+    CV_RegisterVar(&cv_deathmatch);  // after cv_itemrespawn
+
+    // d_clisrv
+    CV_RegisterVar(&cv_playdemospeed);
+    CV_RegisterVar(&cv_server1);
+    CV_RegisterVar(&cv_server2);
+    CV_RegisterVar(&cv_server3);
+
+    // p_inter
+    CV_RegisterVar(&cv_fragsweaponfalling);
+
+    // g_game
+    CV_RegisterVar(&cv_allowjump);
+    CV_RegisterVar(&cv_allowrocketjump);
+    CV_RegisterVar(&cv_allowautoaim);
+    CV_RegisterVar(&cv_allowturbo);
+    CV_RegisterVar(&cv_allowmlook);
+    CV_RegisterVar(&cv_allowexitlevel);
+
+    //g_input.c
+    CV_RegisterVar(&cv_grabinput);
+#ifdef SMIF_SDL
+    CV_RegisterVar(&cv_mouse_motion);
+#endif
+    CV_RegisterVar(&cv_usemouse);
+    CV_RegisterVar(&cv_alwaysfreelook);
+    CV_RegisterVar(&cv_mouse_move);
+    CV_RegisterVar(&cv_mouse_invert);
+    CV_RegisterVar(&cv_mouse_sens_x);
+    CV_RegisterVar(&cv_mouse_sens_y);
+
+    CV_RegisterVar(&cv_usemouse2);
+    CV_RegisterVar(&cv_alwaysfreelook2);
+    CV_RegisterVar(&cv_mouse2_move);
+    CV_RegisterVar(&cv_mouse2_invert);
+    CV_RegisterVar(&cv_mouse2_sens_x);
+    CV_RegisterVar(&cv_mouse2_sens_y);
+
+    // WARNING : the order is important when inititing mouse2 
+    //           we need the mouse2port
+    CV_RegisterVar(&cv_mouse2port);
+#ifdef LMOUSE2
+    CV_RegisterVar(&cv_mouse2opt);
+#endif
+#if defined( __DJGPP__ )
+    CV_RegisterVar(&cv_usejoystick);
+    CV_RegisterVar(&cv_joystickfreelook);
+#endif
+    CV_RegisterVar(&cv_controlperkey);
+
+    //s_sound.c
+    CV_RegisterVar(&cv_soundvolume);
+    CV_RegisterVar(&cv_musicvolume);
+    CV_RegisterVar(&cv_numChannels);
+    CV_RegisterVar(&cv_rndsoundpitch);
+   
+#ifdef CDMUS
+    //i_cdmus.c
+    CV_RegisterVar(&cd_volume);
+#if defined( __DJGPP__ )
+    CV_RegisterVar(&cdUpdate);
+#endif
+#endif
+}
 
 
 #ifdef LAUNCHER

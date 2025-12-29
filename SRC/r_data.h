@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 1419 2019-01-29 08:01:42Z wesleyjohnson $
+// $Id: r_data.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -171,6 +171,7 @@ byte* R_GetFlat (int  flatnum);
 void R_Init_Data (void);
 void R_PrecacheLevel (void);
 
+void R_Init_rdata(void);
 
 // Retrieval.
 // Floor/ceiling opaque texture tiles,

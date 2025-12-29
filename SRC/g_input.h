@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.h 1387 2018-04-15 02:09:32Z wesleyjohnson $
+// $Id: g_input.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -119,7 +119,12 @@ extern consvar_t   cv_mouse_sens_y;
 #ifdef SMIF_SDL
 extern consvar_t   cv_mouse_motion;
 #endif
-
+#if defined( __DJGPP__ )
+extern int             joyxmove;
+extern int             joyymove;
+extern consvar_t   cv_usejoystick;
+extern consvar_t   cv_joystickfreelook;
+#endif
 // splitscreen with second mouse
 extern consvar_t   cv_usemouse2;
 extern consvar_t   cv_mouse2port;
@@ -144,23 +149,9 @@ extern int             dclicktime2;
 extern int             dclickstate2;
 extern int             dclicks2;
 
-extern consvar_t       cv_allowjump;
-extern consvar_t       cv_allowrocketjump;
-extern consvar_t       cv_allowautoaim;
-
 extern boolean gamekeydown[NUMINPUTS];
 extern boolean gamekeytapped[NUMINPUTS];
-#if defined( __DJGPP__ )
-extern int             joyxmove;
-extern int             joyymove;
-extern consvar_t   cv_usejoystick;
-extern consvar_t   cv_joystickfreelook;
-#endif
 
-#ifdef LJOYSTICK
-extern consvar_t   cv_joyport;
-extern consvar_t   cv_joyscale;
-#endif
 // two key codes (or virtual key) per game control
 extern  int     gamecontrol[num_gamecontrols][2];
 extern  int     gamecontrol2[num_gamecontrols][2];    // secondary splitscreen player

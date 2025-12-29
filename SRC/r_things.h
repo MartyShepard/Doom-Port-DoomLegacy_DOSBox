@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: r_things.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -110,6 +110,8 @@ void R_DrawSprites (void);  //draw all vissprites
 void R_DrawMasked (void);
 
 void R_ClipVisSprite ( vissprite_t* vis, int xl, int xh );
+
+void R_DrawPlayerSprites (void);
 
 
 // -----------

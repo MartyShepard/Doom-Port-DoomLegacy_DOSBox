@@ -419,9 +419,10 @@ void P_LoadSegs ( lumpnum_t lumpnum )
         li->v2 = &vertexes[vn2];
 
 #ifdef HWRENDER // not win32 only 19990829 by Kin
-        // used for the hardware render
-        if (rendermode != render_soft)
+        // [WDJ] Initialize irregardless
+//        if (rendermode != render_soft)
         {
+            // used for the hardware render
             li->pv1 = li->pv2 = NULL;
             li->length = P_SegLength (li);
             //Hurdler: 04/12/2000: for now, only used in hardware mode
@@ -1865,14 +1866,10 @@ boolean P_SetupLevel (int      to_episode,
     rejectmatrix = W_CacheLumpNum (level_lumpnum+ML_REJECT,PU_LEVEL);
     P_GroupLines ();
 
-#ifdef HWRENDER // not win32 only 19990829 by Kin
-    if (rendermode != render_soft)
+#ifdef HWRENDER
+    if( rendermode != render_soft )
     {
-        // BP: reset light between levels (we draw preview frame lights on current frame)
-        HWR_Reset_Lights();
-        // Correct missing sidedefs & deep water trick
-        HWR_CorrectSWTricks();
-        HWR_Create_PlanePolygons();
+        HWR_SetupLevel();
     }
 #endif
 
@@ -1939,11 +1936,10 @@ boolean P_SetupLevel (int      to_episode,
 #endif
 
     // preload graphics
-#ifdef HWRENDER // not win32 only 19990829 by Kin
-    if (rendermode != render_soft)
+#ifdef HWRENDER
+    if( rendermode != render_soft )
     {
-        HWR_Prep_LevelCache (numtextures);
-        HWR_Create_StaticLightmaps();
+        HWR_Preload_Graphics();
     }
 #endif
 

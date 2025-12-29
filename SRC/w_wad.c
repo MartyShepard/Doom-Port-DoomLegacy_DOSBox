@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1419 2019-01-29 08:01:42Z wesleyjohnson $
+// $Id: w_wad.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -401,13 +401,13 @@ int W_Load_WadFile (const char *filename)
     //     because these were causing a lot of fragmentation of the heap,
     //     considering they are never freed.
     length = numlumps * sizeof(MipPatch_t);
-    grPatch = Z_Malloc (length, PU_HWRPATCHINFO, 0);    //never freed
+    grPatch = Z_Malloc (length, PU_HWRPATCHINFO, NULL);    //never freed
     // set mipmap.downloaded to false
     memset (grPatch, 0, length);
     for (i=0; i<numlumps; i++)
     {
         // store the software patch lump number for each MipPatch
-        grPatch[i].patchlump = WADLUMP(filenum,i);  // form file/lump
+        grPatch[i].patch_lumpnum = WADLUMP(filenum,i);  // form file/lump
     }
     wadfile->hwrcache = grPatch;
 #endif
@@ -922,11 +922,12 @@ void* W_CachePatchNum_Endian ( lumpnum_t lump, int ztag )
 
 
 // Called from many draw functions
-void* W_CachePatchNum ( lumpnum_t lump, int ztag )
+void* W_CachePatchNum ( lumpnum_t lumpnum, int ztag )
 {
+#ifdef HWRENDER // Was ist los mit dir?
     MipPatch_t*   grPatch;
 
-#ifdef HWRENDER
+
     if( ! HWR_patchstore ) {
         return W_CachePatchNum_Endian ( lumpnum, ztag );
     }
@@ -946,7 +947,7 @@ void* W_CachePatchNum ( lumpnum_t lump, int ztag )
     if( ! grPatch->mipmap.grInfo.data ) 
     {   // first time init grPatch fields
         // we need patch w,h,offset,...
-        patch_t* tmp_patch = W_CachePatchNum_Endian(grPatch->patchlump, PU_LUMP); // temp use
+        patch_t* tmp_patch = W_CachePatchNum_Endian(grPatch->patch_lumpnum, PU_LUMP); // temp use
         // default no TF_Opaquetrans
         HWR_MakePatch ( tmp_patch, grPatch, &grPatch->mipmap, 0);
         Z_Free (tmp_patch);
@@ -957,7 +958,7 @@ void* W_CachePatchNum ( lumpnum_t lump, int ztag )
     return (void*)grPatch;
 #else
     // Software renderer only, simplified
-    return W_CachePatchNum_Endian( lump, ztag );
+    return W_CachePatchNum_Endian( lumpnum, ztag );
 #endif
 }
 
@@ -979,7 +980,7 @@ void* W_CacheMappedPatchNum ( lumpnum_t lumpnum, uint32_t drawflags )
     if( ! grPatch->mipmap.grInfo.data )
     {   // first time init grPatch fields
         // we need patch w,h,offset,...
-        patch_t *tmp_patch = W_CachePatchNum_Endian(grPatch->patchlump, PU_LUMP); // temp use
+        patch_t *tmp_patch = W_CachePatchNum_Endian(grPatch->patch_lumpnum, PU_LUMP); // temp use
         // pass TF_Opaquetrans
         HWR_MakePatch ( tmp_patch, grPatch, &grPatch->mipmap, drawflags);
         Z_Free (tmp_patch);

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1382 2018-03-04 06:48:19Z wesleyjohnson $
+// $Id: wi_stuff.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -905,9 +905,6 @@ void WI_Draw_wait( int net_nodes, int net_players, int wait_players, int wait_ti
         V_DrawString( 12, 36, V_WHITEMAP, msg2 );
 }
 
-
-
-static void WI_Release_Data(void);
 
 
 // used for write introduce next level
@@ -2040,7 +2037,7 @@ load_patch_t  heretic_wi_patches[13] =
 
      
 
-static void WI_Load_Data(void)
+void WI_Load_Data(void)
 {
     // vid : from video setup
     int   i;
@@ -2177,7 +2174,7 @@ static void WI_Load_Data(void)
     stpb = W_CachePatchName("STPB0", PU_LOCK_SB);  // never unlocked
 }
 
-static void WI_Release_Data(void)
+void WI_Release_Data(void)
 {
     byte j;
     byte wb_epsd;

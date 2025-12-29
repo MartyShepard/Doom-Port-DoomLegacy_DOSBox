@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 1420 2019-01-29 08:03:08Z wesleyjohnson $
+// $Id: w_wad.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -62,8 +62,6 @@
 
 #ifdef HWRENDER
 #include "hardware/hw_data.h"
-#else
-typedef void MipPatch_t;
 #endif
 
 #ifdef __GNUG__
@@ -169,7 +167,9 @@ typedef struct wadfile_s
     char             *filename;
     lumpinfo_t*      lumpinfo;
     lumpcache_t*     lumpcache;
+#ifdef HWRENDER
     MipPatch_t*      hwrcache;   // patches are cached in renderer's native format
+#endif
     int              numlumps;   // this wad's number of resources
     int              handle;
     uint32_t         filesize;   // for network
@@ -185,6 +185,18 @@ wadfile_t * lumpnum_to_wad( lumpnum_t lumpnum );
 // [WDJ] Indicates cache miss, new lump read requires endian fixing.
 extern boolean lump_read;
 
+
+// =========================================================================
+// Patch handling
+
+// Patch Header
+typedef struct
+{
+    uint16_t            width;          // bounding box size
+    uint16_t            height;
+    int16_t             leftoffset;     // pixels to the left of origin
+    int16_t             topoffset;      // pixels below the origin
+} pat_hdr_t;
 
 // =========================================================================
 

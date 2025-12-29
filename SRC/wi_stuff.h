@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: wi_stuff.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -55,6 +55,10 @@ void WI_Drawer (void);
 
 // Setup for an intermission screen.
 void WI_Start(wb_start_t *  wb_start);
+
+void WI_Load_Data(void);
+void WI_Release_Data(void);
+
 
 boolean teamingame(int teamnum);
 

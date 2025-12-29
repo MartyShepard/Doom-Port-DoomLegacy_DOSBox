@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1373 2017-12-18 17:19:58Z wesleyjohnson $
+// $Id: command.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1320,8 +1320,12 @@ void CV_Set (consvar_t *cvar, const char *str_value)
     if(!cvar->string)
         I_Error("CV_Set : %s no string set ?!\n", cvar->name);
 #endif
-    if(strcasecmp(cvar->string, str_value) == 0)
+
+    if( cvar->string )
+    {
+      if(strcasecmp(cvar->string, str_value) == 0)
         return; // no changes
+    }
 
     if (netgame)
     {
@@ -1511,7 +1515,7 @@ show_value:
     {
         for( i = 0;  ; i++ )
         {
-	    if( cvar->PossibleValue[i].strvalue == NULL )  break;
+            if( cvar->PossibleValue[i].strvalue == NULL )  break;
             if( cvar->PossibleValue[i].value == tval )
             {
                 tstr = cvar->PossibleValue[i].strvalue;
@@ -1523,7 +1527,7 @@ show_value:
     CONS_Printf ("\"%s\" is \"%i\" config \"%s\" default is \"%s\"\n",
                  cvar->name, tval, cvar->string, cvar->defaultvalue);
     return true;
-	
+
 show_by_str:
     CONS_Printf ("\"%s\" is \"%s\" config \"%s\" default is \"%s\"\n",
                  cvar->name, tstr, cvar->string, cvar->defaultvalue);

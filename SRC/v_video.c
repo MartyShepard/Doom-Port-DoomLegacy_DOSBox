@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1419 2019-01-29 08:01:42Z wesleyjohnson $
+// $Id: v_video.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -662,6 +662,13 @@ void V_Init_VideoControl( void )
     CV_RegisterVar(&cv_black);
     CV_RegisterVar(&cv_bright);
     CV_RegisterVar(&cv_gammafunc);
+   
+    // Screen
+    CV_RegisterVar(&cv_fullscreen);     // only for opengl so use differant name please and move it to differant place
+    CV_RegisterVar(&cv_scr_depth);
+    CV_RegisterVar(&cv_scr_width);
+    CV_RegisterVar(&cv_scr_height);
+    CV_RegisterVar(&cv_fuzzymode);
 }
 
 

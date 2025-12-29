@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_state.h 1093 2014-03-25 23:03:53Z wesleyjohnson $
+// $Id: r_state.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -64,8 +64,6 @@
   // m_fixed.h, r_defs.h
 #include "r_defs.h"
   // m_fixed.h
-#include "command.h"
-  // consvar_t
 
 
 #ifdef __GNUG__
@@ -165,8 +163,6 @@ extern angle_t          viewangle;
 extern angle_t          aimingangle;
 extern angle_t          bspangle;
 extern player_t*        viewplayer;
-
-extern consvar_t        cv_allowmlook;
 
 // ?
 extern angle_t          clipangle;

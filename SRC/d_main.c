@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1421 2019-01-29 08:04:17Z wesleyjohnson $
+// $Id: d_main.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2189,9 +2189,27 @@ void D_DoomMain()
     cht_Init();	 // init iwad independent cheats info, needed by Responder
 
     M_Init();    // init menu
+    R_Init_rdata();
+
     if( verbose > 1 )
-        CONS_Printf("Console inits\n");
+        CONS_Printf( "Register\n" );
+
+    // Any cv_ with CV_SAVE need to be registered here, before reading the config.
+    // Some of these are dependent upon the dedicated command line switch.
     CON_Register();
+    D_Register_ClientCommands(); //Hurdler: be sure that this is called before D_Setup_NetGame
+    D_Register_MiscCommands();	//[WDJ] more than just DeathMatch
+
+    M_Register_Menu_Controls();
+    HU_Register_Commands();
+    ST_Register_Commands();
+
+    T_Register_Commands();    // fragglescript
+    B_Register_Commands();    //added by AC for acbot
+    R_Register_EngineStuff();
+    S_Register_SoundStuff();
+
+    P_Register_Info_Commands();
 
 #ifdef LAUNCHER
     CV_RegisterVar(&cv_home);
@@ -2200,6 +2218,13 @@ void D_DoomMain()
     CV_Set( &cv_doomwaddir, doomwaddir[0] ? doomwaddir[0] : "" );
     cv_doomwaddir.flags &= ~CV_MODIFIED;
 #endif
+
+    //Fab:29-04-98: do some dirty chatmacros strings initialisation
+    HU_Init_Chatmacros();
+
+    // load default control
+    G_Controldefault();
+   
 
     // Before this line are initializations that are run only one time.
     //---------------------------------------------------- 
@@ -2476,7 +2501,7 @@ restart_command:
     p = M_CheckParm("-wart");
     if (p)
     {
-        // big hack, change to -warp so a later CheckParam does the warp.
+        // big hack, change to -warp so a later CheckParm does the warp.
         myargv[p][4] = 'p';
 
         // Map name handling.  Form wad name from map/episode numbers.
@@ -2655,7 +2680,7 @@ restart_command:
 #endif
     
     //--------------------------------------------------------- 
-    // After this line, are committed to the game and video port selected.
+    // After this line, commit to the initial game and video port selected.
     // Use I_Error.
 
     if( ! VALID_LUMP( W_CheckNumForName ( "PLAYPAL" ) ) )
@@ -2674,13 +2699,19 @@ restart_command:
         I_Error ( "Shutdown due to fatal error.\n" );
     }
 
+    //----------------------------------------------------
+   
+    // Load the config before the full graphics.
+   
+    M_FirstLoadConfig();        // WARNING : this do a "COM_BufExecute()"
+
     //---------------------------------------------------- READY SCREEN
     // we need to check for dedicated before initialization of some subsystems
     dedicated = M_CheckParm("-dedicated") != 0;
     if( dedicated )
     {
         nodrawers = true;
-        vid.draw_ready = 0;        
+        vid.draw_ready = 0;
         I_ShutdownGraphics();
         EOUT_flags = EOUT_log;
     }
@@ -2776,18 +2807,7 @@ restart_command:
 
     // [WDJ] This triggers the first draw to the screen,
     // debug it here instead of waiting for CONS_Printf in BloodTime_OnChange
-    CONS_Printf( "Register...\n" );
-    D_Register_ClientCommands(); //Hurdler: be sure that this is called before D_Setup_NetGame
-
-    D_Register_MiscCommands();	//[WDJ] more than just DeathMatch
-    ST_Register_Commands();
-    T_Register_Commands();
-    B_Register_Commands();    //added by AC for acbot
-    HU_Register_Commands();
-    P_Register_Info_Commands();
-    R_Register_EngineStuff();
-    S_Register_SoundStuff();
-    CV_RegisterVar(&cv_screenslink);
+    CONS_Printf( "Init after ...\n" );
 
     CONS_Printf(text[W_INIT_NUM]);
     // adapt tables to legacy needs
@@ -2811,10 +2831,8 @@ restart_command:
 
     B_Init_Bots();       //added by AC for acbot
 
-    //Fab:29-04-98: do some dirty chatmacros strings initialisation
-    HU_Init_Chatmacros();
     //--------------------------------------------------------- CONFIG.CFG
-    M_FirstLoadConfig();        // WARNING : this do a "COM_BufExecute()"
+//    M_FirstLoadConfig();        // WARNING : this do a "COM_BufExecute()"
 
     // set user default mode or mode set at cmdline
     SCR_CheckDefaultMode();
@@ -2927,9 +2945,7 @@ restart_command:
     CONS_Printf(text[ST_INIT_NUM]);
     ST_Init();
 
-    ////////////////////////////////
     // SoM: Init FraggleScript
-    ////////////////////////////////
     T_Init_FS();
 
     // init all NETWORK
@@ -2941,7 +2957,7 @@ restart_command:
     p = M_CheckParm("-statcopy");
     if (p && p < myargc - 1)
     {
-        I_Error("Sorry but statcopy isn't supported at this time\n");
+        I_SoftError("Sorry but statcopy isn't supported at this time\n");
         /*
            // for statistics driver
            extern  void*   statcopy;
@@ -3000,10 +3016,11 @@ restart_command:
         }
         else
         {  // playdemo
-        CONS_Printf("Playing demo %s.\n", demo_name);				
+            CONS_Printf("Playing demo %s.\n", demo_name);				
             singledemo = true;  // quit after one demo
             G_DeferedPlayDemo(demo_name);
         }
+
         gamestate = wipegamestate = GS_NULL;
 
         return;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: g_game.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -508,7 +508,14 @@ consvar_t cv_alwaysfreelook2  = {"alwaysmlook2","0",CV_SAVE,CV_OnOff};
 consvar_t cv_showmessages     = {"showmessages","2",CV_SAVE | CV_CALL | CV_NOINIT,showmessages_cons_t,ShowMessage_OnChange};
 consvar_t cv_pickupflash      = {"pickupflash" ,"1",CV_SAVE, pickupflash_cons_t};
 consvar_t cv_weapon_recoil    = {"weaponrecoil","0",CV_SAVE | CV_NETVAR, CV_OnOff};  // Boom weapon recoil
+
 consvar_t cv_allowturbo       = {"allowturbo"  ,"0",CV_NETVAR | CV_CALL, CV_YesNo, AllowTurbo_OnChange};
+consvar_t cv_allowjump        = {"allowjump"   ,"1",CV_NETVAR,CV_YesNo};
+consvar_t cv_allowautoaim     = {"allowautoaim","1",CV_NETVAR,CV_YesNo};
+//SoM: 3/28/2000: Working rocket jumping.
+consvar_t cv_allowrocketjump  = {"allowrocketjump","0",CV_NETVAR,CV_YesNo};
+consvar_t cv_allowmlook       = {"allowmlook"  ,"1",CV_NETVAR,CV_YesNo};
+consvar_t cv_allowexitlevel   = {"allowexitlevel", "1", CV_NETVAR, CV_YesNo, NULL };
 
 #if MAXPLAYERS>32
 #error please update "player_name" table using the new value for MAXPLAYERS

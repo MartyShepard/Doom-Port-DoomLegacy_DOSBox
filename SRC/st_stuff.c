@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1419 2019-01-29 08:01:42Z wesleyjohnson $
+// $Id: st_stuff.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -307,8 +307,8 @@ boolean     stbar_recalc;
 // ST_Start() has just been called
 boolean     st_force_refresh;
 
-// used to execute ST_Init() only once
-static int  veryfirsttime = 1;
+// facegraphics loaded
+static byte  facegraphics_loaded = false;
 
 // used for timing
 static unsigned int     st_clock;
@@ -335,7 +335,7 @@ static boolean          st_cursor_on;
 static boolean          st_notdeathmatch;
 
 // main bar left
-static patch_t*         sbar;
+static patch_t*         sbar = NULL;
 
 // 0-9, tall numbers, minus at [10], percent at [11].
 static patch_t*         tallnum[12];
@@ -1127,14 +1127,21 @@ load_patch_t  st_patches[13] =
 };
 
 
-static void ST_Load_Graphics(void)
+// Called by ST_Init
+void ST_Load_Graphics(void)
 {
     int         i;
-    // [Stylinkski] Compiler complains of possible buffer overrun, requires [10].
+    // [Stylinski] Compiler complains of possible buffer overrun, requires [10].
     char        namebuf[12];
     // [WDJ] all ST graphics are loaded endian fixed
     // [WDJ] Lock the status bar graphics against other texture users.
 
+    if( EN_heretic )
+    {
+        SB_Heretic_Load_Graphics();
+        return;
+    }
+   
     st_patches_loaded = 1;
     load_patch_list( st_patches );
 
@@ -1235,34 +1242,34 @@ void ST_Load_FaceGraphics (const char *facestr)
         faceback = W_CachePatchName("STFB0", PU_LOCK_SB);
 
     ST_Invalidate();
+    facegraphics_loaded = true;
 }
 
 
-#if 0
-// Unused
-static void ST_Load_Data(void)
-{
-    ST_Load_Graphics();
-}
-#endif
 
 void ST_Release_Graphics(void)
 {
     int i;
 
+    if( EN_heretic )
+    {
+        SB_Heretic_Release_Graphics();
+        return;
+    }
+   
     //faB: GlidePatch_t are always purgeable
-    if( rendermode==render_soft && st_patches_loaded )
+    if( st_patches_loaded )
     {
         st_patches_loaded = 0;
         release_patch_list( st_patches );
 
         // unload the numbers, tall and short
-	release_patch_array( tallnum, 12 );
+        release_patch_array( tallnum, 12 );
         release_patch_array( shortnum, 10 );
-        
+
         // unload gray #'s
         for (i=0;i<6;i++)
-            Z_ChangeTag(arms[i][0], PU_UNLOCK_CACHE);
+            W_release_patch( arms[i][0] );
 
         // unload the key cards
         release_patch_array( keys, NUMCARDS );
@@ -1275,24 +1282,18 @@ void ST_Release_Graphics(void)
 // Called by SetPlayerSkin, ST_Release_Graphics
 void ST_Release_FaceGraphics (void)
 {
-    //faB: GlidePatch_t are always purgeable
-    if (rendermode==render_soft)
+    //faB: MipPatch_t are always purgeable
+    if( facegraphics_loaded )
     {
+        facegraphics_loaded = false;
         release_patch_array( faces, ST_NUMFACES );
         
         // face background
-        Z_ChangeTag(faceback, PU_UNLOCK_CACHE);
+        W_release_patch( faceback );
     }
 }
 
 
-#if 0
-// Unused
-void ST_Release_Data(void)
-{
-    ST_Release_Graphics();
-}
-#endif
 
 // Doom only.
 static void ST_init_stbar(void)
@@ -1551,17 +1552,12 @@ void ST_Init (void)
     // [WDJ] Lock against other users of same patch releasing it!.
     scr_borderflat = W_CacheLumpNum (st_borderflat_num, PU_LOCK_SB);
 
+    ST_Load_Graphics();  // Doom and Heretic
+
     if( EN_heretic )
-    {
-        SB_Heretic_Init();
         return;
-    }
    
     // Doom only
-    veryfirsttime = 0;
-//    ST_Load_Data();
-    ST_Load_Graphics();
-
     //
     // cache the status bar overlay icons  (fullscreen mode)
     //

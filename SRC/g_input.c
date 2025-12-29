@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.c 1387 2018-04-15 02:09:32Z wesleyjohnson $
+// $Id: g_input.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -76,11 +76,7 @@ consvar_t  cv_mouse_sens_x    = {"mousesensx","10",CV_SAVE,mousesens_cons_t};
 consvar_t  cv_mouse_sens_y    = {"mousesensy","10",CV_SAVE,mousesens_cons_t};
 consvar_t  cv_mouse2_sens_x   = {"mouse2sensx","10",CV_SAVE,mousesens_cons_t};
 consvar_t  cv_mouse2_sens_y   = {"mouse2sensy","10",CV_SAVE,mousesens_cons_t};
-consvar_t  cv_allowjump    = {"allowjump","1",CV_NETVAR,CV_YesNo};
-consvar_t  cv_allowautoaim = {"allowautoaim","1",CV_NETVAR,CV_YesNo};
-consvar_t  cv_controlperkey = {"controlperkey","1",CV_SAVE,onecontrolperkey_cons_t};
-//SoM: 3/28/2000: Working rocket jumping.
-consvar_t  cv_allowrocketjump = {"allowrocketjump","0",CV_NETVAR,CV_YesNo};
+consvar_t  cv_controlperkey   = {"controlperkey","1",CV_SAVE,onecontrolperkey_cons_t};
 
 #ifdef SMIF_SDL
 CV_PossibleValue_t mouse_motion_cons_t[]={{0,"Absolute"},{1,"Relative"},{0,NULL}};
@@ -88,6 +84,25 @@ consvar_t  cv_mouse_motion = {"mousemotion","0", CV_SAVE|CV_CALL, mouse_motion_c
 #endif
 consvar_t  cv_grabinput = {"grabinput","1", CV_SAVE|CV_CALL, CV_OnOff, CV_mouse_OnChange };
 
+#if defined( __DJGPP__ )	
+CV_PossibleValue_t usejoystick_cons_t[] = { {0, "Off"}
+, {1, "4 BUttons"}
+, {2, "Standart"}
+, {3, "6 Buttons"}
+, {4, "Wingman Extreme"}
+, {5, "Flightstick Pro"}
+, {6, "8 Buttons"}
+, {7, "Sidewinder"}
+, {8, "GamePad Pro"}
+, {9, "Snes lpt1"}
+, {10, "Snes lpt2"}
+, {11, "Snes lpt3"}
+, {12, "Wingman Warrior"}
+, {0, NULL}
+};
+
+consvar_t cv_usejoystick = { "use_joystick", "0", CV_SAVE | CV_CALL, usejoystick_cons_t, I_InitJoystick };
+#endif
 
 // Called for cv_grabinput, cv_mouse_motion
 void  CV_mouse_OnChange( void )

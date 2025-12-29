@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01422 ]: w108.10 unload data
+          DOS: Move allegro Joystick enum to g_input.c
+					
 [01421 ]: w108.0 v147.3 nr
 [01420 ]: w108.8 flatanim
 [01419 ]: w108.7 lumpnum2

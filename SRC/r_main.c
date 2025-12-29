@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1388 2018-04-15 02:10:08Z wesleyjohnson $
+// $Id: r_main.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -225,7 +225,7 @@ lighttable_t*           scalelightfixed[MAXLIGHTSCALE];
 lighttable_t*           zlight[LIGHTLEVELS][MAXLIGHTZ];
 
 //SoM: 3/30/2000: Hack to support extra boom colormaps.
-int                     num_extra_colormaps;
+int                     num_extra_colormaps = 0;
 extracolormap_t         extra_colormaps[MAXCOLORMAPS];
 
 // bumped light from gun blasts
@@ -234,7 +234,6 @@ lightlev_t  extralight_fog;  // partial extralight used by FF_FOG
 lightlev_t  extralight_cm;   // partial extralight used by colormap->fog
 
 consvar_t cv_chasecam       = {"chasecam","0",0,CV_OnOff};
-consvar_t cv_allowmlook     = {"allowmlook","1",CV_NETVAR,CV_YesNo};
 
 consvar_t cv_psprites       = {"playersprites","1",0,CV_OnOff};
 consvar_t cv_perspcorr      = {"perspectivecrunch","0",0,CV_OnOff};
@@ -851,7 +850,7 @@ void R_Init_LightTables (void)
 //  because it might be in the middle of a refresh.
 // The change will take effect next refresh.
 //
-boolean         setsizeneeded;
+boolean         setsizeneeded = false;
 
 // Called by R_Init, SCR_Recalc
 // Called by cv_viewsize, cv_detaillevel, cv_scalestatusbar, cv_grtranslucenthud
@@ -1482,16 +1481,16 @@ void R_RotateBuffere (void)
 // [WDJ] Our video buffer is not locked, only driver can lock direct
 // buffer, and only for duration of transfer.
 
-void R_DrawPlayerSprites (void);
 
 //extern consvar_t cv_grsoftwareview; //r_glide.c
 extern void R_DrawFloorSplats (void);   //r_plane.c
 
-// Draw player view
+// Draw player view, render_soft.
 // In splitscreen the ylookup tables and viewwindowy are adjusted per player.
 // Global variables include:  ylookup[], viewwindowy, rdraw_viewheight
 void R_RenderPlayerView (player_t* player)
 {
+    // rendermode == render_soft
     R_SetupFrame (player);
 
     // Clear buffers.
@@ -1578,18 +1577,16 @@ void R_RenderPlayerView (player_t* player)
 
 void R_Register_EngineStuff (void)
 {
-    //26-07-98
+    // Any cv_ with CV_SAVE needs to be registered, even if it is not used.
+    // Otherwise there will be error messages when config is loaded.
     CV_RegisterVar (&cv_gravity);
+    CV_RegisterVar (&cv_fog_effect);
+    CV_RegisterVar (&cv_boom_colormap);
+    CV_RegisterVar (&cv_invul_skymap);
+    CV_RegisterVar (&cv_water_effect);
 
-    // Enough for ded. server
-    if( dedicated )
-        return;
-
-    CV_RegisterVar (&cv_chasecam);
-    CV_RegisterVar (&cv_allowmlook);
-    CV_RegisterVar (&cv_cam_dist );
-    CV_RegisterVar (&cv_cam_height);
-    CV_RegisterVar (&cv_cam_speed );
+    CV_RegisterVar(&cv_screenshot_dir);
+    CV_RegisterVar(&cv_screenshot_type);
 
     CV_RegisterVar (&cv_viewsize);
     CV_RegisterVar (&cv_psprites);
@@ -1603,8 +1600,19 @@ void R_Register_EngineStuff (void)
     CV_RegisterVar (&cv_scalestatusbar);
     CV_RegisterVar (&cv_grtranslucenthud);
 
-    CV_RegisterVar(&cv_screenshot_dir);
-    CV_RegisterVar(&cv_screenshot_type);
+//added by Hurdler
+#ifdef HWRENDER
+    HWR_Register_Gr1Commands ();
+#endif
+   
+   // Enough for ded. server
+    if( dedicated )
+        return;
+
+    CV_RegisterVar (&cv_chasecam);
+    CV_RegisterVar (&cv_cam_dist );
+    CV_RegisterVar (&cv_cam_height);
+    CV_RegisterVar (&cv_cam_speed );
 
     // unfinished, not for release
 #ifdef PERSPCORRECT
@@ -1616,14 +1624,4 @@ void R_Register_EngineStuff (void)
     CV_RegisterVar (&cv_tiltview);
 #endif
 
-//added by Hurdler
-#ifdef HWRENDER
-    if( rendermode != render_soft )
-        HWR_Register_Gr1Commands ();
-#endif
-
-    CV_RegisterVar (&cv_boom_colormap);
-    CV_RegisterVar (&cv_invul_skymap);
-    CV_RegisterVar (&cv_water_effect);
-    CV_RegisterVar (&cv_fog_effect);
 }

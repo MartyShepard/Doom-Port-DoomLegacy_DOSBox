@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: d_netcmd.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -130,7 +130,6 @@
 // cv_ vars and settings from many sources, needed by Command_ functions
 #include "hu_stuff.h"
 #include "g_input.h"
-#include "m_menu.h"
 #include "r_local.h"
 #include "r_things.h"
 #include "p_inter.h"
@@ -243,30 +242,8 @@ consvar_t cv_teamdamage = { "teamdamage", "0", CV_NETVAR, CV_OnOff };
 consvar_t cv_fraglimit = { "fraglimit", "0", CV_NETVAR | CV_VALUE | CV_CALL | CV_NOINIT, fraglimit_cons_t, FragLimit_OnChange };
 consvar_t cv_timelimit = { "timelimit", "0", CV_NETVAR | CV_VALUE | CV_CALL | CV_NOINIT, CV_Unsigned, TimeLimit_OnChange };
 consvar_t cv_deathmatch = { "deathmatch", "0", CV_NETVAR | CV_CALL, deathmatch_cons_t, Deathmatch_OnChange };
-consvar_t cv_allowexitlevel = { "allowexitlevel", "1", CV_NETVAR, CV_YesNo, NULL };
 
 consvar_t cv_netstat = { "netstat", "0", 0, CV_OnOff };
-
-#if defined( __DJGPP__ )	
-CV_PossibleValue_t usejoystick_cons_t[] = { {0, "Off"}
-, {1, "4 BUttons"}
-, {2, "Standart"}
-, {3, "6 Buttons"}
-, {4, "Wingman Extreme"}
-, {5, "Flightstick Pro"}
-, {6, "8 Buttons"}
-, {7, "Sidewinder"}
-, {8, "GamePad Pro"}
-, {9, "Snes lpt1"}
-, {10, "Snes lpt2"}
-, {11, "Snes lpt3"}
-, {12, "Wingman Warrior"}
-, {0, NULL}
-};
-//#error "cv_usejoystick don't have possible value for this OS !"
-#include "i_joy.h"
-consvar_t cv_usejoystick = { "use_joystick", "0", CV_SAVE | CV_CALL, usejoystick_cons_t, I_InitJoystick };
-#endif
 
 // =========================================================================
 //                           CLIENT STARTUP
@@ -323,25 +300,10 @@ void D_Register_ClientCommands(void)
     //Added by Hurdler for master server connection
     MS_Register_Commands();
 
-    // p_mobj.c
-    CV_RegisterVar(&cv_itemrespawntime);
-    CV_RegisterVar(&cv_itemrespawn);
-    CV_RegisterVar(&cv_respawnmonsters);
-    CV_RegisterVar(&cv_respawnmonsterstime);
-    CV_RegisterVar(&cv_fastmonsters);
-    CV_RegisterVar(&cv_predictingmonsters);     //added by AC for predmonsters
-    CV_RegisterVar(&cv_splats);
-    CV_RegisterVar(&cv_maxsplats);
+    // Any cv_ with CV_SAVE needs to be registered, even if it is not used.
+    // Otherwise there will be error messages when config is loaded.
 
-    //
-    //  The above commands are enough for dedicated server
-    //
-    if (dedicated)
-        return;
-    //
-    // register main variables
-    //
-    //register these so it is saved to config
+    // register these so it is saved to config
     cv_playername.defaultvalue = I_GetUserName();
     if (cv_playername.defaultvalue == NULL)
         cv_playername.defaultvalue = "gi john";
@@ -354,19 +316,11 @@ void D_Register_ClientCommands(void)
     //misc
     CV_RegisterVar(&cv_teamplay);
     CV_RegisterVar(&cv_teamdamage);
-    CV_RegisterVar(&cv_fraglimit);
-    CV_RegisterVar(&cv_deathmatch);
+//    CV_RegisterVar(&cv_deathmatch);  // moved to m_menu to be after cv_itemrespawn
     CV_RegisterVar(&cv_timelimit);
-    CV_RegisterVar(&cv_playdemospeed);
+    CV_RegisterVar(&cv_fraglimit);
     CV_RegisterVar(&cv_netstat);
-    CV_RegisterVar(&cv_server1);
-    CV_RegisterVar(&cv_server2);
-    CV_RegisterVar(&cv_server3);
-
-    COM_AddCommand("load", Command_Load_f);
-    Register_NetXCmd(XD_LOADGAME, Got_NetXCmd_LoadGamecmd);
-    COM_AddCommand("save", Command_Save_f);
-    Register_NetXCmd(XD_SAVEGAME, Got_NetXCmd_SaveGamecmd);
+   
     // r_things.c (skin NAME)
     CV_RegisterVar(&cv_skin);
     // secondary player (splitscreen)
@@ -374,77 +328,16 @@ void D_Register_ClientCommands(void)
     CV_RegisterVar(&cv_playername2);
     CV_RegisterVar(&cv_playercolor2);
 
-    //m_menu.c
-    CV_RegisterVar(&cv_crosshair);
-    //CV_RegisterVar (&cv_crosshairscale); // doesn't work for now
-    CV_RegisterVar(&cv_autorun);
-    CV_RegisterVar(&cv_showmessages);
+    //
+    //  The above commands are enough for dedicated server
+    //
+    if (dedicated)
+        return;
 
-    //see m_menu.c
-    //CV_RegisterVar (&cv_showmessages2);
-    CV_RegisterVar(&cv_autorun2);
-    //CV_RegisterVar (&cv_crosshair2);
-    //CV_RegisterVar (&cv_autoaim2);
-    //CV_RegisterVar (&cv_controlperkey2);
-
-    //g_input.c
-    CV_RegisterVar(&cv_grabinput);
-#ifdef SMIF_SDL
-    CV_RegisterVar(&cv_mouse_motion);
-#endif
-    CV_RegisterVar(&cv_usemouse);
-    CV_RegisterVar(&cv_alwaysfreelook);
-    CV_RegisterVar(&cv_mouse_move);
-    CV_RegisterVar(&cv_mouse_invert);
-    CV_RegisterVar(&cv_mouse_sens_x);
-    CV_RegisterVar(&cv_mouse_sens_y);
-
-    CV_RegisterVar(&cv_usemouse2);
-    CV_RegisterVar(&cv_alwaysfreelook2);
-    CV_RegisterVar(&cv_mouse2_move);
-    CV_RegisterVar(&cv_mouse2_invert);
-    CV_RegisterVar(&cv_mouse2_sens_x);
-    CV_RegisterVar(&cv_mouse2_sens_y);
-
-    // WARNING : the order is important when inititing mouse2 
-    //           we need the mouse2port
-    CV_RegisterVar(&cv_mouse2port);
-#ifdef LMOUSE2
-    CV_RegisterVar(&cv_mouse2opt);
-#endif
-
-    CV_RegisterVar(&cv_controlperkey);
-
-    CV_RegisterVar(&cv_allowjump);
-    CV_RegisterVar(&cv_allowrocketjump);
-    CV_RegisterVar(&cv_allowautoaim);
-    CV_RegisterVar(&cv_allowturbo);
-    CV_RegisterVar(&cv_allowexitlevel);
-#if defined( __DJGPP__ )
-    CV_RegisterVar(&cv_usejoystick);
-    CV_RegisterVar(&cv_joystickfreelook);
-#endif
-
-    //s_sound.c
-    CV_RegisterVar(&cv_soundvolume);
-    CV_RegisterVar(&cv_musicvolume);
-    CV_RegisterVar(&cv_numChannels);
-    CV_RegisterVar(&cv_rndsoundpitch);
-
-#ifdef CDMUS
-    //i_cdmus.c
-    CV_RegisterVar(&cd_volume);
-#if defined( __DJGPP__ )
-    CV_RegisterVar(&cdUpdate);
-#endif
-#endif
-    // screen.c ?
-    CV_RegisterVar(&cv_fullscreen);     // only for opengl so use differant name please and move it to differant place
-    CV_RegisterVar(&cv_scr_depth);
-    CV_RegisterVar(&cv_scr_width);
-    CV_RegisterVar(&cv_scr_height);
-    CV_RegisterVar(&cv_fuzzymode);
-    CV_RegisterVar(&cv_fragsweaponfalling);
+    COM_AddCommand("load", Command_Load_f);
+    Register_NetXCmd(XD_LOADGAME, Got_NetXCmd_LoadGamecmd);
+    COM_AddCommand("save", Command_Save_f);
+    Register_NetXCmd(XD_SAVEGAME, Got_NetXCmd_SaveGamecmd);
 
     // add cheat commands, I'm bored of deh patches renaming the idclev ! :-)
     COM_AddCommand("noclip", Command_CheatNoClip_f);
