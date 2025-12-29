@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.c 1405 2018-07-15 19:31:09Z wesleyjohnson $
+// $Id: s_sound.c 1413 2018-12-06 21:59:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1228,7 +1228,7 @@ void S_UpdateSounds(void)
                 // judgecutor:
                 // Avoid channel reverse if surround
                 if (cv_stereoreverse.value && sp1.sep < SURROUND_SEP )
-                sp1.sep = -sp1.sep;
+                    sp1.sep = -sp1.sep;
 #else
                 if (cv_stereoreverse.value)
                     sp1.sep = -sp1.sep;

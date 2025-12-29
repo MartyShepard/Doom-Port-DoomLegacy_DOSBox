@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1408 2018-07-15 19:33:04Z wesleyjohnson $
+// $Id: r_things.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -553,7 +553,7 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
             rotation_char = lumpinfo[l].name[5];
 
             // skip NULL sprites from very old dmadds pwads
-            if (W_LumpLength( lumpnum )<=8)
+            if( W_LumpLength( lumpnum ) <= 8 )
                 continue;
 
             // store sprite info in lookup tables
@@ -1914,7 +1914,7 @@ void R_DrawPSprite (pspdef_t* psp)
 //
 // R_DrawPlayerSprites
 //
-// Draw the viewplayer weapon
+// Draw the viewplayer weapon, render_soft.
 void R_DrawPlayerSprites (void)
 {
     int         i = 0;
@@ -1923,9 +1923,7 @@ void R_DrawPlayerSprites (void)
 
     int kikhak;
 
-    if (rendermode != render_soft)
-        return;
-   
+    // rendermode == render_soft
     // [WDJ] 11/14/2012 use viewer variables for viewplayer
 
     // get light level
@@ -1968,7 +1966,6 @@ void R_DrawPlayerSprites (void)
 
 
 
-//
 // R_Create_DrawNodes
 // Creates and sorts a list of drawnodes for the scene being rendered.
 static void           R_Create_DrawNodes();
@@ -1977,6 +1974,7 @@ static drawnode_t*    R_CreateDrawNode (drawnode_t* link);
 static drawnode_t     nodebankhead;
 static drawnode_t     nodehead;
 
+// called by R_DrawMasked
 static void R_Create_DrawNodes( void )
 {
   drawnode_t*   entry;
@@ -2185,7 +2183,7 @@ static void R_Create_DrawNodes( void )
 
 
 
-
+// called by R_Create_DrawNodes
 static drawnode_t* R_CreateDrawNode (drawnode_t* link)
 {
   drawnode_t* node;

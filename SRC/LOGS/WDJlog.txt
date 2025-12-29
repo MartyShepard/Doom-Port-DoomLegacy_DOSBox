@@ -6715,26 +6715,51 @@ patchfile = w107_103_sprite16_fix.patch
 - commit revision 1408
 Fix the missing 'G' rotation in the sprite name detection.
 
-*** w107_sprite16_fix
+*** w107_1.47_docs
 patchfile = w107_104_1.47_docs.patch
 - commit revision 1409
 Docs updated for 1.47, features and bug fixes.
 
 *** w107_Version1472
-patchfile = w107_106_Version1472.patch
+patchfile = w107_105_Version1472.patch
 - commit revision 1410
 Release version 1.47.2.
 
 *** w107_linux_x11
-patchfile = w107_105_linux_x11.patch
+patchfile = w107_106_linux_x11.patch
 - commit revision 1411
 Fix some compile warnings in the linux_x port.
 
 *** w107_linux_x11
-patchfile = w107_105_linux_x11.patch
+patchfile = w107_107_linux_x11.patch
 - commit revision 1412
 Turn off the DEBUG in linux_x11 sound server.
 
+*** w108_sound
+patchfile = w108_1_sound.patch
+- commit revsion 1413
+Fix the sdl sound interface to use the samplerate from
+the sound effect header.
+Adjust the audio device number of samples for our new sample rate,
+like Eternity does.
+The added sounds in biowar now sound more reasonable.
+This fixes bug 0645, concerning sound sample rate.
+About bug 0646, the modifies the buffer size, which was the concern.
+Whether an explicit control is needed is still an issue.
+
+*** w108_misc
+patchfile = w108_2_misc.patch
+- commit revsion 1414
+Some code indenting, commenting, and some code rearrangement that has
+no new code, nor code testing issues.
+
+*** w108_menu
+patchfile = w108_3_menu.patch
+- commit revsion 1415
+Rearrange some of the menu code for video modes, in preparation for
+using it to alter the drawmode.
+These changes should have no net effect, yet.
+Some of the video menus have been rearranged.
 
 
 

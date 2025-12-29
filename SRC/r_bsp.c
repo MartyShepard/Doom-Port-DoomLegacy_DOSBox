@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1397 2018-07-02 03:39:47Z wesleyjohnson $
+// $Id: r_bsp.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -92,6 +92,9 @@
 #include "p_local.h"
   //SoM: 4/10/2000: camera
 #include "z_zone.h"
+
+// Draw
+// rendermode == render_soft
 
 seg_t*          curline;
 side_t*         sidedef;

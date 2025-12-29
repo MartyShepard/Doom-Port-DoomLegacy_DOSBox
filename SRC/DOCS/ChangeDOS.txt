@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01414 ]: w108 2 misc
+[01413*]: w108 1 sound (sdl)
 [01412 ]: Fix critical TAGHASH bug (r1351 regression)
           The newly inserted macro in svn 1351
           causes a crash. See HTH2.wad, which

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1402 2018-07-04 11:13:16Z wesleyjohnson $
+// $Id: w_wad.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -992,7 +992,7 @@ void W_release_patch( patch_t * patch )
         if( ! verify_Z_Malloc(patch))
         {
             GenPrintf( EMSG_error, "Error W_release_patch: Not a memory block %x\n", *patch);
-	    return;
+            return;
         }
 #endif
         Z_ChangeTag( patch, PU_UNLOCK_CACHE );

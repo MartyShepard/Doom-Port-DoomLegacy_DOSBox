@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1412 2018-07-19 07:00:39Z wesleyjohnson $
+// $Id: d_main.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -315,7 +315,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1412-Fix"
+#define SVN_REV "1414"
 #endif
 
 // Version number: major.minor.revision
@@ -600,7 +600,7 @@ void D_Display(void)
     boolean done;
     boolean wipe;
     boolean redrawsbar;
-    boolean viewactivestate = false;
+    boolean viewactivestate;
 
     if (dedicated)
         return;
@@ -608,7 +608,10 @@ void D_Display(void)
     if (nodrawers)
         return; // for comparative timing / profiling
 
+    wipe = false;
     redrawsbar = false;
+    viewactivestate = false;
+    done = false;
 
     //added:21-01-98: check for change of screen size (video mode)
     if ( setmodeneeded.modetype )
@@ -648,6 +651,7 @@ void D_Display(void)
         case GS_LEVEL:
             if (!gametic)
                 break;
+            // On each gametic
             HU_Erase();
             if (automapactive)
                 AM_Drawer();
@@ -2163,11 +2167,11 @@ void D_DoomMain()
            p = M_CheckParm("-bpp");  // specific bit per pixel color
            if( p )
            {
-	          // binding, should fail if cannot find a mode
-	          req_bitpp = atoi(myargv[p + 1]);
-	          if( V_CanDraw( req_bitpp ) ) req_drawmode = REQ_specific;
-	          else I_Error( "-bpp invalid\n");
-	         }
+           // binding, should fail if cannot find a mode
+              req_bitpp = atoi(myargv[p + 1]);
+              if( V_CanDraw( req_bitpp ) ) req_drawmode = REQ_specific;
+              else I_Error( "-bpp invalid\n");
+           }
 #endif		
         I_StartupGraphics();    // window
         SCR_Startup();
@@ -2718,7 +2722,7 @@ restart_command:
         // we need the font of the console
         CONS_Printf(text[HU_INIT_NUM]);
         // switch off use_font1 when hu_font is loaded
-        HU_Load_Graphics();  // dependent upon dedicated and raven
+        HU_Load_Graphics();  // dependent upon dedicated and game
 
         CON_Init_Video();  // dependent upon vid, hu_font
         EOUT_flags = EOUT_log | EOUT_con;

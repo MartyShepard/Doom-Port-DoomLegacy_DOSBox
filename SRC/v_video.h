@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: v_video.h 1414 2018-12-06 22:01:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -98,7 +98,7 @@ void V_Setup_Wad_VideoResc(void);
 // Set the current RGB palette lookup to use for palettized graphics
 void V_SetPalette( int palettenum );
 
-void V_SetPaletteLump( char *pal );
+void V_SetPaletteLump( const char *pal );
 
 extern RGBA_t  *pLocalPalette;
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1395 2018-06-17 04:52:14Z wesleyjohnson $
+// $Id: st_stuff.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -463,7 +463,7 @@ static void ST_Refresh_Background( void )
     V_DrawMappedPatch (stbar_x+ST_FX, stbar_y, faceback, colormap);
 
     // copy the statusbar buffer to the screen
-    if ( rendermode==render_soft )
+    if( rendermode == render_soft )
         V_CopyRect(0, vid.height-stbar_height, BG, vid.width, stbar_height, 0, vid.height-stbar_height, FG);
 }
 
@@ -986,7 +986,7 @@ static void ST_Draw_Widgets( void )
                 w_keyboxes[i].command = STLIB_FLASH;
         }
         else if( w_keyboxes[0].command == STLIB_FLASH_CLEAR
-                 && rendermode == render_soft )
+                 && ( rendermode == render_soft ) )
         {
             // Restore the background
             V_CopyRect(stbar_x + ST_KEYSBOX_X, stbar_y + ST_KEYSBOX_Y, BG,
@@ -1081,7 +1081,7 @@ void ST_Drawer ( boolean refresh )
             // Draw status bar background to BG buffer
             ST_Refresh_Background();   // st_plyr
 
-            stlib_enable_erase = (rendermode==render_soft);
+            stlib_enable_erase = (rendermode == render_soft);
             stlib_force_refresh = true;  // stlib refreshes from BG buffer.
         }
         else
@@ -1482,7 +1482,7 @@ static void ST_Stop (void)
 // Doom or Heretic.
 // Single and SplitPlayer.
 // Called by G_DoLoadLevel, P_SpawnPlayer, P_AddWadFile
-// Called by ST_changeDemoView
+// Called by ST_Change_DemoView
 void ST_Start (void)
 {
     // Doom and Heretic common.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_argv.c 1391 2018-05-31 04:51:23Z wesleyjohnson $
+// $Id: m_argv.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -143,7 +143,7 @@ static void expand_argv_memory( int total_req )
     {
         // clear the added argv, but not the occupied argv
         memset( &myargv[myarg_alloc], 0,
-		sizeof(char *) * (total_req - myarg_alloc));
+                sizeof(char *) * (total_req - myarg_alloc));
     }
     myarg_alloc = total_req;
 }
@@ -178,16 +178,16 @@ static void finish_expand( int fromindex )
     if( prev_argv )
     {
         if( newcnt > myarg_alloc )
-	    expand_argv_memory( newcnt );
+            expand_argv_memory( newcnt );
         // copy command line args after insert
         for (k = fromindex; k < prev_argc; k++)
-	    myargv[myargc++] = prev_argv[k];
+            myargv[myargc++] = prev_argv[k];
 
         if( prev_alloc )  // was from malloc
         {
-	    free( prev_argv );
-	    prev_argv = NULL;
-	}
+            free( prev_argv );
+            prev_argv = NULL;
+        }
     }
 }
 
@@ -211,8 +211,8 @@ void M_FindResponseFile (void)
             size_t          size;
             int             k;
             boolean         inquote = false;
-	    char * file_mem;  // alloc mem, will be in use but this ptr will be lost
-	    char * infile;
+            char * file_mem;  // alloc mem, will be in use but this ptr will be lost
+            char * infile;
 
             // READ THE RESPONSE FILE INTO MEMORY
             handle = fopen (&myp[1],"rb");
@@ -230,7 +230,7 @@ void M_FindResponseFile (void)
             fclose (handle);
 
             // Keep ARGV[0] and args upto this arg
-	    expand_args( myargc + FILEARGS_INC, myi );
+            expand_args( myargc + FILEARGS_INC, myi );
 
             infile = file_mem;
             for( k = 0; k < size ; )
@@ -323,10 +323,10 @@ void M_Remove_matching_Param( const char * p1, const char * p2 )
         M_Remove_Param( found );  // shuffles next arg down to found
         if( p2 )
         {
-	    while( myargv[found] && myargv[found][0] != '-'
-		   && myargv[found][0] != '+' && myargv[found][0] != '@' )
-	        M_Remove_Param( found );
-	}
+            while( myargv[found] && myargv[found][0] != '-'
+                   && myargv[found][0] != '+' && myargv[found][0] != '@' )
+                M_Remove_Param( found );
+        }
     }
 }
 
@@ -348,23 +348,23 @@ void M_Add_Param( const char * p1, const char * p2 )
     for( myargc = 1; ;  )
     {
         if( myargc >= myarg_alloc )
-	   expand_argv_memory( myargc + 8 );
+           expand_argv_memory( myargc + 8 );
         ps = strchr( pa, ' ' );  // more than one param in the string
         if( ps )  // found a delimiter
-	{
-	    M_Arg_string( pa, ps-pa, myargc );
-	    myargc ++;
-	    pa = ps;
-	    while( *pa == ' ' )  pa++;  // skip space (1 or more)
-	    if( *pa )   continue;
-	    // end of string
-	}
+        {
+            M_Arg_string( pa, ps-pa, myargc );
+            myargc ++;
+            pa = ps;
+            while( *pa == ' ' )  pa++;  // skip space (1 or more)
+            if( *pa )   continue;
+            // end of string
+        }
         else
         {
-	    // copy the rest of the string
-	    M_Arg_string( pa, strlen(pa), myargc );
-	    myargc ++;
-	}
+            // copy the rest of the string
+            M_Arg_string( pa, strlen(pa), myargc );
+            myargc ++;
+        }
         if( ! p2 )  break;
         pa = p2;  // continue with insert of p2 string
         p2 = NULL;  // to exit the loop next time

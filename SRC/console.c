@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1390 2018-05-31 04:49:52Z wesleyjohnson $
+// $Id: console.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -723,7 +723,7 @@ static int     comskips,varskips;
         // metzgermeister: boundary check !!
         if((key < NUMINPUTS) && bindtable[key])
         {
-           // [WDJ] Must be done as one string, it could try to execute a partial string.
+            // [WDJ] Must be done as one string, it could try to execute a partial string.
             COM_BufAddText ( va( "%s\n", bindtable[key] ) );
             return true;
         }
@@ -851,8 +851,8 @@ static int     comskips,varskips;
             return true;  // nothing significant
 
         // push the command
-       // [WDJ] Must be done as one string, it could try to execute a partial string.
-	// The first char is prompt, not part of the command.
+        // [WDJ] Must be done as one string, it could try to execute a partial string.
+        // The first char is prompt, not part of the command.
         COM_BufAddText ( va( "%s\n", inputlines[inputline]+1 ));
 
         CONS_Printf("%s\n",inputlines[inputline]);
@@ -1589,7 +1589,7 @@ void CON_Draw_Console (void)
     else
     {
 #ifdef HWRENDER // not win32 only 19990829 by Kin
-        if (rendermode==render_soft)
+        if( rendermode == render_soft )
 #endif
         {
             w = fip->xinc * vid.dupx;  // font1 or wad font

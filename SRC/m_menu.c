@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1406 2018-07-15 19:31:51Z wesleyjohnson $
+// $Id: m_menu.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2716,7 +2716,7 @@ void M_DrawVideoMode(void)
         sprintf(temp, "D to make %s the default", VID_GetModeName(vid.modenum));
         M_CentreText(VidModeDef.y+80+24,temp);
 
-        sprintf(temp, "Current default is %dx%d (%d bits)", (int)cv_scr_width.value, (int)cv_scr_height.value, (int)cv_scr_depth.value);
+        sprintf(temp, "Current default is %dx%d (%d bits)", (uint16_t)cv_scr_width.value, (uint16_t)cv_scr_height.value, (uint16_t)cv_scr_depth.value);
         M_CentreText(VidModeDef.y+90+24,temp);
 
         M_CentreText(VidModeDef.y+100+24,"Press ESC to exit");

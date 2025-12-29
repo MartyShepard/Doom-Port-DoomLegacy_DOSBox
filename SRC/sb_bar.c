@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: sb_bar.c 1366 2017-11-01 01:14:15Z wesleyjohnson $
+// $Id: sb_bar.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -550,6 +550,8 @@ static void ShadeChain(void)
     }
 }
 
+
+
 //---------------------------------------------------------------------------
 //
 // PROC SB_Heretic_Drawer
@@ -645,7 +647,7 @@ void SB_Heretic_Drawer( boolean refresh )
         // Single Player only, keeps old status.
         if(SB_state == SBS_refresh)
         {
-            if ( rendermode==render_soft )
+            if( rendermode == render_soft )
             {
                 V_CopyRect(0, vid.height-stbar_height, BG, vid.width,
                            stbar_height, 0, vid.height-stbar_height, FG);

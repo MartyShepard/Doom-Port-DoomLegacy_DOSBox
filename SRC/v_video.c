@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
+// $Id: v_video.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -467,7 +467,7 @@ int    num_palette = 0;
 // Update working palette when palette loaded, or gamma changes.
 // Keep a copy of the palette so that we can get the RGB
 // value for a color index at any time.
-static void LoadPalette(char *lumpname)
+static void LoadPalette(const char *lumpname)
 {
   int i, palsize;
   byte * pal;  // stepping through pal lump;
@@ -541,7 +541,7 @@ void V_SetPalette(int palettenum)
 #endif
 
 #ifdef HWRENDER
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
         HWR_SetPalette(&pLocalPalette[palettenum * 256]);
     else
 #endif
@@ -556,13 +556,13 @@ void V_SetPalette(int palettenum)
 }
 
 // Called by finale: F_DrawHeretic, F_Responder
-void V_SetPaletteLump(char *pal)
+void V_SetPaletteLump(const char *pal)
 {
     // vid : from video setup
     LoadPalette(pal);
 
 #ifdef HWRENDER
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
         HWR_SetPalette(pLocalPalette);
     else
 #endif
@@ -1048,7 +1048,7 @@ void V_DrawMappedPatch(int x, int y, patch_t * patch, byte * colormap)
 
     // draw a hardware converted patch
 #ifdef HWRENDER
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
     {
         // Fully subject to drawinfo.
         HWR_DrawMappedPatch((MipPatch_t *) patch, x, y, drawinfo.effectflags, colormap);
@@ -1126,7 +1126,7 @@ void V_DrawMappedPatch_Box(int x, int y, patch_t * patch, byte * colormap, int b
 
     // draw a hardware converted patch
 #ifdef HWRENDER
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
     {
         // Fully subject to drawinfo.
         HWR_DrawMappedPatch((MipPatch_t *) patch, x, y, drawinfo.effectflags, colormap);
@@ -1250,7 +1250,7 @@ void V_DrawScaledPatch(int x, int y, patch_t * patch)
     fixed_t colfrac;
 
 #ifdef HWRENDER
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
     {
         // Draw a hardware converted patch, using drawinfo scaling.
         HWR_DrawPatch((MipPatch_t *) patch, x, y,
@@ -1398,7 +1398,7 @@ void V_DrawSmallScaledPatch(int x, int y, int scrn, patch_t * patch, byte * colo
 
     // draw an hardware converted patch
 #ifdef HWRENDER
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
     {
         HWR_DrawSmallPatch((MipPatch_t *) patch, x, y, scrn, colormap);
         return;
@@ -1482,7 +1482,7 @@ void V_DrawTranslucentPatch(int x, int y, patch_t * patch)
 
     // draw an hardware converted patch
 #ifdef HWRENDER
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
     {
         // Enable drawinfo scaling.
         HWR_DrawPatch((MipPatch_t *) patch, x, y,
@@ -1609,7 +1609,7 @@ void V_DrawPatch(int x, int y, int scrn, patch_t * patch)
 
     // draw an hardware converted patch
 #ifdef HWRENDER
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
     {
         // Vid coordinates.
         HWR_DrawPatch((MipPatch_t *) patch, x, y, V_NOSCALE);
@@ -1711,7 +1711,7 @@ void V_GetBlock(int x, int y, int scrn, int width, int height, byte * dest)
     // vid : from video setup
     byte *src;  // within video buffer
 
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
         I_Error("V_GetBlock: called in non-software mode");
 
 #ifdef RANGECHECK
@@ -1783,7 +1783,7 @@ static void V_BlitScalePic(int x1, int y1, pic_t * pic)
 void V_DrawScalePic_Num(int x1, int y1, int lumpnum)
 {
 #ifdef HWRENDER
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
     {
         HWR_DrawPic(x1, y1, lumpnum);
         return;
@@ -1799,10 +1799,10 @@ void V_DrawScalePic_Num(int x1, int y1, int lumpnum)
 void V_DrawRawScreen_Num(int x1, int y1, int lumpnum, int width, int height)
 {
 #ifdef HWRENDER
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
     {
         // save size somewhere and mark lump as a raw pic !
-        MipPatch_t *grpatch = &(wadfiles[lumpnum >> 16]->hwrcache[lumpnum & 0xffff]);
+        MipPatch_t *grpatch = &(wadfiles[WADFILENUM(lumpnum)]->hwrcache[LUMPNUM(lumpnum)]);
         grpatch->width = width;
         grpatch->height = height;
         grpatch->mipmap.tfflags |= TF_Her_Raw_Pic;  // Heretic Raw Pic
@@ -1830,7 +1830,7 @@ void V_DrawVidFill(int x, int y, int w, int h, byte color)
     int u, v;
 
 #ifdef HWRENDER
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
     {
         HWR_DrawVidFill(x, y, w, h, color);
         return;
@@ -1856,7 +1856,7 @@ void V_DrawVidFill(int x, int y, int w, int h, byte color)
 void V_DrawFill(int x, int y, int w, int h, byte color)
 {
 #ifdef HWRENDER
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
     {
         HWR_DrawVidFill(x * vid.fdupx, y * vid.fdupy, w * vid.fdupx, h * vid.fdupy, color);
         return;
@@ -1876,7 +1876,7 @@ void V_DrawScaledFill(int x, int y, int w, int h, byte color)
     int u, v;
 
 #ifdef HWRENDER
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
     {
         HWR_DrawVidFill( x * drawinfo.fdupx0, y * drawinfo.fdupy0,
                          w * drawinfo.fdupx, h * drawinfo.fdupy, color );
@@ -1944,7 +1944,7 @@ void V_DrawFlatFill(int x, int y, int w, int h, int scale, int flatnum)
     int imask, sizeshift;
 
 #ifdef HWRENDER
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
     {
         if( w == vid.width )
             HWR_DrawVidFlatFill(x, y, w, h, scale, flatnum);
@@ -2038,7 +2038,7 @@ void V_DrawFlatFill(int x, int y, int w, int h, int scale, int flatnum)
 void V_ScreenFlatFill( int flatnum )
 {
 #ifdef HWRENDER
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
     {
         HWR_DrawVidFlatFill(0, 0, vid.width, vid.height, 15, flatnum);
         return;
@@ -2072,7 +2072,7 @@ void V_FadeRect(int x1, int x2, int y2,
     uint32_t *buf;
 
 #ifdef HWRENDER
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
     {
         // Note: y1 is always 0.
         // OpenGL requires stronger color tint.
@@ -2251,7 +2251,7 @@ void V_FadeConsBack(int x1, int x2, int y2)
 
 #ifdef HWRENDER
     // The green tint is weak for OpenGL.
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
        tint = tint*2;  // works for small values of green < 127
 #endif
     V_FadeRect( x1, x2, y2,
@@ -2587,7 +2587,7 @@ int V_DrawCharacter(int x, int y, byte c)
     boolean white = c & 0x80;
     c &= 0x7f;
 
-    if ( use_font1 && (rendermode==render_soft))
+    if( use_font1 && (rendermode == render_soft))
     {
          return  V_Drawfont1_char( x, y, c);;
     }
