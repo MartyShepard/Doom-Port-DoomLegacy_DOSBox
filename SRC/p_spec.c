@@ -2,7 +2,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1419 2019-01-29 08:01:42Z wesleyjohnson $
+// $Id: p_spec.c 1420 2019-01-29 08:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -194,8 +194,28 @@ static void P_SpawnScrollers(void);
 static void P_SpawnFriction(sector_t *);
 static void P_SpawnPushers(void);
 static void Add_Pusher(int type, fixed_t x_mag, fixed_t y_mag, mobj_t* source, int affectee); //SoM: 3/9/2000
-void P_FindAnimatedFlat (int i);
+static void P_FindAnimatedFlat (int i);
 
+
+typedef struct {
+    int  base_texnum;   // starting texture
+    int  end_texnum;    // ending texture
+} anim_texture_t;
+
+#ifdef ANIM_FLAT_2
+typedef struct {
+    levelflat_t *  flat_ref;  // the animated flat
+    int            animseq;   // offset in the animation
+} anim_flatlist_t;
+#endif
+
+typedef struct {
+    lumpnum_t  base_flat_lumpnum;  // starting flat
+    lumpnum_t  end_flat_lumpnum;   // ending flat
+#ifdef ANIM_FLAT_2
+    anim_flatlist_t *  flat_list;  // array[numpics] entries (owned)
+#endif
+} anim_flat_t;
 
 // 
 //
@@ -205,13 +225,15 @@ void P_FindAnimatedFlat (int i);
 // [WDJ] 5/18/2010 Eliminate -1 value in boolean field.
 typedef struct
 {
-    boolean     istexture; // false= flat, true= texture
-   // lumpnum_t  FIXME
-    int         picnum;
-   // lumpnum_t  FIXME
-    int         basepic; // starting texture or flat id number
     int         numpics;
     int         speed;	// in tics
+    boolean     istexture; // false= flat, true= texture
+    union {
+      anim_texture_t  at;
+      // [WDJ] A lumpnum_t might not fit into an int,
+      // and might be encoded otherwise.
+      anim_flat_t     af;
+    };
 } animtex_t;
 
 
@@ -232,13 +254,10 @@ typedef struct
 
 
 
-// #define MAXANIMS     32   // unused [WDJ] 5/18/2010
-
-
-//SoM: 3/7/2000: New sturcture without limits.
+//SoM: 3/7/2000: New structure without limits.
+static animtex_t*   anims = NULL;  // animations  (malloc, owned)
 static animtex_t*   lastanim;  // next empty slot in anims
-static animtex_t*   anims;
-static size_t    maxanims;  // size of anims
+static size_t    num_anims_alloc;  // size of anims allocation
 
 //
 // P_InitPicAnims
@@ -300,20 +319,44 @@ animdef_t    harddefs[] =
 //      Animating line specials
 //
 
+void P_Release_PicAnims(void)
+{
+    if( anims == NULL )  return;
+
+#ifdef ANIM_FLAT_2
+    animtex_t * ap;
+    for (ap = anims ; ap < lastanim ; ap++)
+    {
+        if( ! ap->istexture )
+        {
+            // Release flat list
+            if( ap->af.flat_list )
+                free( ap->af.flat_list );
+        }
+    }
+#endif
+
+    free( anims );
+    anims = NULL;
+}
+
 //
 // Init animated textures
 // - now called at level loading P_SetupLevel()
 //
 
-static animdef_t   *animdefs;
+static animdef_t * animdefs = NULL;
 
 //SoM: 3/7/2000: Use new boom method of reading lump from wad file.
+// Called by P_SetupLevel, before loading the level structures.
 // [WDJ] 5/18/2010 Eliminate -1 value in boolean field, use lastanim as loop test.
 void P_Init_PicAnims (void)
 {
   //  Init animation
   int         i;
 
+  P_Release_PicAnims();  // in case were not released before
+   
   if( VALID_LUMP( W_CheckNumForName("ANIMATED") ) )
   {
     animdefs = (animdef_t *)W_CacheLumpName("ANIMATED", PU_IN_USE);
@@ -337,10 +380,10 @@ void P_Init_PicAnims (void)
     // [WDJ] Compiler source, do NOT endian convert speed
   }
 
-  maxanims = 0;
-  for (i = 0; animdefs[i].istexture != 0xFF; i++, maxanims++)	// count
+  num_anims_alloc = 0;
+  for (i = 0; animdefs[i].istexture != 0xFF; i++, num_anims_alloc++)	// count
      ;
-  anims = (animtex_t *)malloc(sizeof(animtex_t) * maxanims);
+  anims = (animtex_t *)malloc(sizeof(animtex_t) * num_anims_alloc);
   if( anims == NULL ) {
      I_Error( "Anims: memory allocation failure" );
   }
@@ -349,34 +392,42 @@ void P_Init_PicAnims (void)
   for (i = 0; animdefs[i].istexture != 0xFF; i++)
   {
     // Anim defs that do not apply to this level are ignored.
-    // Thus anims can be shorter than the maxanims.
+    // Thus anims can be shorter than the num_anims_alloc.
     if (animdefs[i].istexture)
     {
       // different episode ?
       if (R_CheckTextureNumForName(animdefs[i].startname) == -1)
           continue;
 
-      lastanim->picnum = R_TextureNumForName (animdefs[i].endname);
-      lastanim->basepic = R_TextureNumForName (animdefs[i].startname);
+      lastanim->at.end_texnum = R_TextureNumForName (animdefs[i].endname);
+      lastanim->at.base_texnum = R_TextureNumForName (animdefs[i].startname);
+      lastanim->numpics = lastanim->at.end_texnum - lastanim->at.base_texnum + 1;
     }
     else
     {
+      // FlatNumForName does not simply return NO_LUMP, so must check first.
       if( ! VALID_LUMP( W_CheckNumForName(animdefs[i].startname) ) )
           continue;
 
-      lastanim->picnum = R_FlatNumForName (animdefs[i].endname);
-      lastanim->basepic = R_FlatNumForName (animdefs[i].startname);
+      if( ! VALID_LUMP( W_CheckNumForName(animdefs[i].endname) ) )
+          continue;
+
+      lastanim->af.end_flat_lumpnum = R_FlatNumForName (animdefs[i].endname);
+      lastanim->af.base_flat_lumpnum = R_FlatNumForName (animdefs[i].startname);
+      lastanim->numpics = LUMPNUM(lastanim->af.end_flat_lumpnum) - LUMPNUM(lastanim->af.base_flat_lumpnum) + 1;
+#ifdef ANIM_FLAT_2
+      lastanim->af.flat_list = NULL;
+#endif
     }
 
 
     lastanim->istexture = ( animdefs[i].istexture != 0 ); // char to boolean
-    lastanim->numpics = lastanim->picnum - lastanim->basepic + 1;
 
     if (lastanim->numpics < 2)
     {
-        I_Error ("P_InitPicAnims: bad cycle from %s to %s",
-                  animdefs[i].startname,
-                  animdefs[i].endname);
+        I_SoftError ("P_InitPicAnims: animation %i, bad cycle from %s to %s",
+            i, animdefs[i].startname, animdefs[i].endname);
+        continue;
     }
 
     lastanim->speed = animdefs[i].speed * NEWTICRATERATIO;
@@ -390,35 +441,73 @@ void P_Init_PicAnims (void)
 //  Check for flats in levelflats, that are part
 //  of a flat anim sequence, if so, set them up for animation
 //
+// Called by P_SetupLevel->P_Setup_LevelFlatAnims, at end of LoadSectors.
 //SoM: 3/16/2000: Changed parameter from pointer to "anims" entry number
+static
 void P_FindAnimatedFlat (int animnum)
 {
-    int            i;
-    lumpnum_t      startflatnum,endflatnum;
+    int            i, start_ln, end_ln, fln, wadnum;
     levelflat_t*   foundflats = levelflats;
 
-    startflatnum = anims[animnum].basepic;
-    endflatnum   = anims[animnum].picnum;
+    lumpnum_t start_flat_lumpnum = anims[animnum].af.base_flat_lumpnum;
+    lumpnum_t end_flat_lumpnum   = anims[animnum].af.end_flat_lumpnum;
 
-    // note: high word of lumpnum is the wad number
-    if( WADFILENUM(startflatnum) != WADFILENUM(endflatnum) )
+    if( ! VALID_LUMP(start_flat_lumpnum) )
+        return;
+
+    if( ! VALID_LUMP(end_flat_lumpnum) )
+        return;
+
+    // [WDJ] No more tricky math that depends on lumpnum representation.
+    start_ln = LUMPNUM(start_flat_lumpnum);
+    end_ln = LUMPNUM(end_flat_lumpnum);
+    wadnum = WADFILENUM(start_flat_lumpnum);
+    if( WADFILENUM(end_flat_lumpnum) != wadnum )
     {
-       I_Error ("AnimatedFlat start %s not in same wad as end %s\n",
+       I_SoftError ("AnimatedFlat start %s not in same wad as end %s\n",
                 animdefs[animnum].startname, animdefs[animnum].endname);
+       anims[animnum].af.base_flat_lumpnum = NO_LUMP;
+       return;
     }
 
+    if( anims[animnum].numpics > 128 )  // too many, something is wrong
+        return;
+   
+#ifdef ANIM_FLAT_2
+    anim_flatlist_t * flat_list = (anim_flatlist_t *) malloc( sizeof(anim_flatlist_t) * anims[animnum].numpics );
+    anims[animnum].af.flat_list = flat_list;
+    if( flat_list == NULL )
+        return; // allocation error
+    memset( flat_list, 0, sizeof(anim_flatlist_t) * anims[animnum].numpics );
+#endif   
     //
     // now search through the levelflats if this anim flat sequence is used
     //
     for (i = 0; i<numlevelflats; i++, foundflats++)
     {
         // is that levelflat from the flat anim sequence ?
-        if (foundflats->lumpnum >= startflatnum &&
-            foundflats->lumpnum <= endflatnum)
+        if( WADFILENUM(foundflats->lumpnum) != wadnum )  // rare
+            continue;
+
+        fln = LUMPNUM(foundflats->lumpnum);
+        if( fln >= start_ln && fln <= end_ln )
         {
-            foundflats->baselumpnum = startflatnum;
-            foundflats->animseq = foundflats->lumpnum - startflatnum;
-            foundflats->numpics = endflatnum - startflatnum + 1;
+#ifdef ANIM_FLAT_2
+            int animseq = fln - start_ln;  // index in the anim seq
+            flat_list[animseq].animseq = animseq;
+            flat_list[animseq].flat_ref = foundflats; // ptr to levelflat that will be animated
+
+            if (devparm)
+            {
+                GenPrintf(EMSG_dev,
+                   "animflat: %#03d name:%.8s animseq:%d numpics:%d speed:%d\n",
+                            i, foundflats->name, animseq,
+                            anims[animnum].numpics, anims[animnum].speed);
+            }
+#else
+            foundflats->base_lumpnum = start_flat_lumpnum;
+            foundflats->animseq = fln - start_ln;  // index in the anim seq
+            foundflats->numpics = end_ln - start_ln + 1;
             foundflats->speed = anims[animnum].speed;
 
             if (devparm)
@@ -428,6 +517,7 @@ void P_FindAnimatedFlat (int animnum)
                             i, foundflats->name, foundflats->animseq,
                             foundflats->numpics,foundflats->speed);
             }
+#endif
         }
     }
 
@@ -442,7 +532,7 @@ void P_Setup_LevelFlatAnims (void)
 {
     int    i;
     // [WDJ] 5/18/2010 Eliminate -1 value in boolean field.
-    // List can be shorter than maxanims because it is missing entries
+    // List can be shorter than num_anims_alloc because it is missing entries
     // for flats and textures that do not appear in this level.
     int  animlen = lastanim - anims;  // count of entries
 
@@ -2775,10 +2865,12 @@ void P_PlayerInSpecialSector (player_t* player)
 void P_UpdateSpecials (void)
 {
     animtex_t*  anim;
-    int         i;
-    int         pic; //SoM: 3/8/2000
-
+#ifdef ANIM_FLAT_2
+    anim_flatlist_t * fl;  // flat animation list
+#else
     levelflat_t*     foundflats;        // for flat animation
+#endif
+    int  i;
 
     //  LEVEL TIMER
     if (timelimit_tics && (timelimit_tics < leveltime))
@@ -2787,15 +2879,34 @@ void P_UpdateSpecials (void)
     //  ANIMATE TEXTURES
     for (anim = anims ; anim < lastanim ; anim++)
     {
-      for (i=anim->basepic ; i<anim->basepic+anim->numpics ; i++)
+      if( anim->istexture )
       {
-        pic = anim->basepic + ( (leveltime/anim->speed + i)%anim->numpics );
-        if (anim->istexture)
-          texturetranslation[i] = pic;
+        // Update animation indirection for all the textures in the animation sequence.
+        // They can be used in large synchronized animations.
+        for (i=anim->at.base_texnum ; i<anim->at.base_texnum+anim->numpics ; i++)
+        {
+          texturetranslation[i] = anim->at.base_texnum + ( (leveltime/anim->speed + i)%anim->numpics );
+        }
       }
+#ifdef ANIM_FLAT_2
+      else
+      {
+        // Flat animation
+        fl = anim->af.flat_list;
+        if( ! fl )  continue;
+        for(i=anim->numpics; i>0 ; i--)  // count, in case list is full
+        {
+          if( fl->flat_ref == NULL )  break;  // end of list
+          // update the levelflat lump number
+          fl->flat_ref->lumpnum = ADD_TO_LUMPNUM( anim->af.base_flat_lumpnum,
+               (leveltime/anim->speed + fl->animseq) % anim->numpics );
+          fl++;
+        }
+      }
+#endif
     }
 
-
+#ifndef ANIM_FLAT_2
     //  ANIMATE FLATS
     //Fab:FIXME: do not check the non-animate flat.. link the animated ones?
     // note: its faster than the original anyway since it animates only
@@ -2805,11 +2916,20 @@ void P_UpdateSpecials (void)
     {
          if (foundflats->speed) // it is an animated flat
          {
+#if 1
              // update the levelflat lump number
-             foundflats->lumpnum = foundflats->baselumpnum +
-                                   ( (leveltime/foundflats->speed + foundflats->animseq) % foundflats->numpics);
+             foundflats->lumpnum = ADD_TO_LUMPNUM( foundflats->base_lumpnum,
+                                   ( (leveltime/foundflats->speed + foundflats->animseq) % foundflats->numpics) );
+#else
+             // Otherwise, how it should be done:
+             int wadnum = WADFILENUM(foundflats->base_lumpnum);
+             int ln = LUMPNUM(foundflats->base_lumpnum);
+             foundflats->lumpnum =
+                WADLUMP(wadnum, ln + ( (leveltime/foundflats->speed + foundflats->animseq) % foundflats->numpics) );
+#endif
          }
     }
+#endif
 
     //  DO BUTTONS
     for (i = 0; i < MAXBUTTONS; i++)

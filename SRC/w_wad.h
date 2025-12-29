@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: w_wad.h 1420 2019-01-29 08:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -153,6 +153,8 @@ typedef enum {
 #define LUMPNUM(lump)          ((lump)&0xffff)
 // Combined wad and lump parameter.
 #define WADLUMP(wad,lump)      (((wad)<<16)+(lump))
+// This is tricky math that is dependent upon the lumpnum representation.
+#define ADD_TO_LUMPNUM(lump,offset)    ((lump)+(offset))
 
 // MAX_WADPATH moved to doomdef.h, for other users.
 

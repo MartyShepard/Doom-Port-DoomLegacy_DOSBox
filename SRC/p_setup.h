@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.h 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: p_setup.h 1420 2019-01-29 08:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -56,6 +56,9 @@ extern  mapthing_t      *deathmatchstarts[MAX_DM_STARTS];
 extern  int             numdmstarts;
 //extern  mapthing_t**    deathmatch_p;
 
+// Animate flats using anim structure instead of using levelflat fields.
+#define ANIM_FLAT_2
+
 // MAP used flats lookup table
 //
 typedef struct
@@ -63,11 +66,13 @@ typedef struct
     // most often used reference first, keeps it aligned
     lumpnum_t   lumpnum;        // lump number of the flat (mod by animation)
 
+#ifndef ANIM_FLAT_2   
     // for flat animation
-    lumpnum_t   baselumpnum;    // first flat in animation
+    lumpnum_t   base_lumpnum;   // first flat in animation
     int16_t     animseq;        // start pos. in the anim sequence
     uint16_t    numpics;
     int16_t     speed;
+#endif
 
     // for better packing, odd bytes last
     uint16_t    size_index;     // flat size index

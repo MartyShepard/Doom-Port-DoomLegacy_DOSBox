@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: p_setup.c 1420 2019-01-29 08:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1729,6 +1729,8 @@ boolean P_SetupLevel (int      to_episode,
     // will be set by player think.
     players[consoleplayer].viewz = 1;
 
+    P_Release_PicAnims();
+   
     // [WDJ] 7/2010 Free allocated memory in sectors before PU_LEVEL purge
     for (i=0 ; i<numsectors ; i++)
     {

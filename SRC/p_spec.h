@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: p_spec.h 1420 2019-01-29 08:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -87,6 +87,7 @@
 extern consvar_t  cv_zerotags;
 
 // at game start
+void    P_Release_PicAnims(void);
 void    P_Init_PicAnims (void);
 
 // at map load (sectors)
