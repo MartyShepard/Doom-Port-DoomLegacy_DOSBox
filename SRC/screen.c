@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
+// $Id: screen.c 1418 2019-01-29 08:01:04Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -165,6 +165,11 @@ void SCR_SetMode (void)
     if (setmodeneeded.modetype == MODE_NOP)
         return;                 //should never happen
 
+#ifdef HWRENDER
+    // Set the rendermode patch storage.
+    HWR_patchstore = (rendermode > render_soft);
+#endif
+   
     // VID_SetMode will clear vid.draw_ready if it has print messages.
 #ifdef DEBUG_WINDOWED
     {

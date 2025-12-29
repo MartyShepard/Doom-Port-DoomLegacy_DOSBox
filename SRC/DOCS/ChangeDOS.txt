@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01418 ]: w108.6 hwrpatch
+          Compile fix: Wad.c, He has forgot to rename the lump variable.. 
+					
 [01417 ]: w108.5 lumpnum
           Compile fix: Wad.c, He has forgot to rename the lump variable
 					

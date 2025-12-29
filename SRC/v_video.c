@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: v_video.c 1418 2019-01-29 08:01:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -165,6 +165,11 @@ byte  req_bitpp = 8;  // set by d_main checks on command line
 byte  req_drawmode = REQ_default;  // reqdrawmode_t
 
 byte  graphics_state = VGS_off; // Is used in console.c and screen.c
+
+#ifdef HWRENDER
+// patches are stored in HWR format, set when HWR rendermode.
+byte  HWR_patchstore = false;
+#endif
 
 // To disable fullscreen at startup; is set in VID_PrepareModeList
 boolean allow_fullscreen = false;
@@ -1780,7 +1785,7 @@ static void V_BlitScalePic(int x1, int y1, pic_t * pic)
 //  CURRENTLY USED FOR StatusBarOverlay, scale pic but not starting coords
 //  per drawinfo, scaled, abs start coord.
 //
-void V_DrawScalePic_Num(int x1, int y1, int lumpnum)
+void V_DrawScalePic_Num(int x1, int y1, lumpnum_t lumpnum)
 {
 #ifdef HWRENDER
     if( rendermode != render_soft )
@@ -1796,7 +1801,7 @@ void V_DrawScalePic_Num(int x1, int y1, int lumpnum)
 
 // Heretic raw pic
 //  per drawinfo, scaled, abs start coord.
-void V_DrawRawScreen_Num(int x1, int y1, int lumpnum, int width, int height)
+void V_DrawRawScreen_Num(int x1, int y1, lumpnum_t lumpnum, int width, int height)
 {
 #ifdef HWRENDER
     if( rendermode != render_soft )

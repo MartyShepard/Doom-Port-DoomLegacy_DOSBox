@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: hu_stuff.c 1418 2019-01-29 08:01:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -120,7 +120,7 @@ patch_t*                hu_font[HU_FONTSIZE];
 static player_t*        plr;
 boolean                 chat_on;
 
-static boolean          headsupactive = false;
+static boolean          headsup_active = false;
 
 boolean                 hu_showscores;        // draw deathmatch rankings
 
@@ -136,6 +136,16 @@ consvar_t*   chat_macros[10];
 patch_t*     crosshair[3];     //3 precached crosshair graphics
 
 static byte  hu_fonts_loaded = 0;
+
+#ifdef HWRENDER
+// The settings of HWR_patchstore by SCR_SetMode seem to be adequate.
+// This only would be needed if there were additional problems.
+// It is more expensive.
+//#define HU_HWR_PATCHSTORE_SAVE
+#ifdef HU_HWR_PATCHSTORE_SAVE
+static byte  hu_HWR_patchstore;  // the HWR_patchstore setting used by fonts.
+#endif
+#endif
 
 
 // -------
@@ -153,7 +163,7 @@ static void HU_Draw_Tip();
 
 void HU_Stop(void)
 {
-    headsupactive = false;
+    headsup_active = false;
 }
 
 // 
@@ -161,13 +171,13 @@ void HU_Stop(void)
 //
 void HU_Start(void)
 {
-    if (headsupactive)
+    if (headsup_active)
         HU_Stop();
 
     plr = consoleplayer_ptr;
     chat_on = false;
 
-    headsupactive = true;
+    headsup_active = true;
 }
 
 void HU_Load_Graphics( void )
@@ -206,17 +216,34 @@ void HU_Load_Graphics( void )
     }
 
     hu_fonts_loaded = 1;
+#ifdef HU_HWR_PATCHSTORE_SAVE
+    hu_HWR_patchstore = HWR_patchstore;
+#endif
 }
 
 void HU_Release_Graphics( void )
 {
+#ifdef HU_HWR_PATCHSTORE_SAVE
+    byte saved_HWR_patchstore = HWR_patchstore;
+#endif
+
     if( hu_fonts_loaded )
     {
         hu_fonts_loaded = 0;
+        
+#ifdef HU_HWR_PATCHSTORE_SAVE
+        // Must use setting from when fonts were saved.
+	// This is necessary because releasing the font is delayed until the last second.
+        HWR_patchstore = hu_HWR_patchstore;
+#endif
 
         // Has protection against individual NULL ptr in array.
         release_patch_array( hu_font, HU_FONTSIZE );
         release_patch_array( crosshair, HU_CROSSHAIRS );
+       
+#ifdef HU_HWR_PATCHSTORE_SAVE
+        HWR_patchstore = saved_HWR_patchstore;
+#endif
     }
 }
 
@@ -729,7 +756,7 @@ void HU_Clear_Tips()
 //======================================================================
 typedef struct
 {
-  int       lumpnum;
+  lumpnum_t lumpnum;
   int       xpos;
   int       ypos;
   patch_t   *data;
@@ -772,7 +799,7 @@ void HU_Init_FSPics()
   // Init the added slots to empty.
   for(i = newstart; i < newend; i++)
   {
-    piclist[i].lumpnum = -1;
+    piclist[i].lumpnum = NO_LUMP;
     piclist[i].data = NULL;
     piclist[i].draw = false;
     piclist[i].xpos = 0;
@@ -781,7 +808,7 @@ void HU_Init_FSPics()
 }
 
 // Return slot number (handle) for pic, [ 0 .. num_piclist_alloc-1 ].
-int  HU_Get_FSPic(int lumpnum, int xpos, int ypos)
+int  HU_Get_FSPic( lumpnum_t lumpnum, int xpos, int ypos )
 {
   int  i;
 
@@ -791,7 +818,8 @@ int  HU_Get_FSPic(int lumpnum, int xpos, int ypos)
 getpic_retry:  // retry
   for(i = 0; i < num_piclist_alloc; i++)
   {
-    if(piclist[i].lumpnum != -1)
+    // Find empty slot
+    if( VALID_LUMP(piclist[i].lumpnum) )
       continue;
 
     piclist[i].lumpnum = lumpnum;
@@ -812,18 +840,18 @@ int  HU_Delete_FSPic(int handle)
   if(handle < 0 || handle >= num_piclist_alloc)
     return -1;
 
-  piclist[handle].lumpnum = -1;
+  piclist[handle].lumpnum = NO_LUMP;
   piclist[handle].data = NULL;
   return 0;
 }
 
 
-int  HU_Modify_FSPic(int handle, int lumpnum, int xpos, int ypos)
+int  HU_Modify_FSPic( int handle, lumpnum_t lumpnum, int xpos, int ypos )
 {
   if(handle < 0 || handle >= num_piclist_alloc)
     return -1;
 
-  if(piclist[handle].lumpnum == -1)
+  if( ! VALID_LUMP(piclist[handle].lumpnum) )
     return -1;
 
   piclist[handle].lumpnum = lumpnum;
@@ -839,7 +867,7 @@ int  HU_FS_Display(int handle, boolean enable_draw)
 {
   if(handle < 0 || handle >= num_piclist_alloc)
     return -1;
-  if(piclist[handle].lumpnum == -1)
+  if( ! VALID_LUMP(piclist[handle].lumpnum) )
     return -1;
 
   piclist[handle].draw = enable_draw;
@@ -859,7 +887,10 @@ void HU_Draw_FSPics()
 
   for(i = 0; i < num_piclist_alloc; i++)
   {
-    if(piclist[i].lumpnum == -1 || piclist[i].draw == false)
+    if( ! VALID_LUMP(piclist[i].lumpnum) )
+      continue;
+
+    if( ! piclist[i].draw )
       continue;  // not enabled
 
     if(piclist[i].xpos >= vid.width || piclist[i].ypos >= vid.height)
@@ -1180,15 +1211,15 @@ consvar_t cv_chatmacro9 = {"_chatmacro9", NULL, CV_SAVE,NULL};
 consvar_t cv_chatmacro0 = {"_chatmacro0", NULL, CV_SAVE,NULL};
 
 
-// set the chatmacros original text, before config is executed
-// if a dehacked patch was loaded, it will set the hacked texts,
-// but the config.cfg will override it.
+// Set the chatmacros original text, before config is executed.
+// If a dehacked patch is loaded, it will change the default text strings.
+// The config.cfg strings will override these.
 //
-void HU_HackChatmacros (void)
+void HU_Init_Chatmacros (void)
 {
     int    i;
 
-    // this is either the original text, or dehacked ones
+    // this is the original text, dehacked can modify it as a default value
     cv_chatmacro0.defaultvalue = HUSTR_CHATMACRO0;
     cv_chatmacro1.defaultvalue = HUSTR_CHATMACRO1;
     cv_chatmacro2.defaultvalue = HUSTR_CHATMACRO2;

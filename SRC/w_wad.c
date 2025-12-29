@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: w_wad.c 1418 2019-01-29 08:01:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -113,8 +113,8 @@
 #include "w_wad.h"
 #include "z_zone.h"
 
-#include "i_video.h"
-  // rendermode
+#include "v_video.h"
+  // HWR_patchstore
 #include "d_netfil.h"
 #include "dehacked.h"
   // DEH_LoadDehackedLump
@@ -920,18 +920,19 @@ void* W_CachePatchNum_Endian ( lumpnum_t lump, int ztag )
 }
 
 
-#ifdef HWRENDER
 
 // Called from many draw functions
-void* W_CachePatchNum ( lumpnum_t lumpnum, int ztag )
+void* W_CachePatchNum ( lumpnum_t lump, int ztag )
 {
     MipPatch_t*   grPatch;
 
-    if( rendermode == render_soft ) {
+#ifdef HWRENDER
+    if( ! HWR_patchstore ) {
         return W_CachePatchNum_Endian ( lumpnum, ztag );
     }
    
     // hardware render
+    // Patches are stored in HWR patch format.
 
 #ifdef PARANOIA
     // check the return value of a previous W_CheckNumForName()
@@ -954,8 +955,13 @@ void* W_CachePatchNum ( lumpnum_t lumpnum, int ztag )
 
     // return MipPatch_t, which can be casted to (patch_t) with valid patch header info
     return (void*)grPatch;
+#else
+    // Software renderer only, simplified
+    return W_CachePatchNum_Endian( lump, ztag );
+#endif
 }
 
+#ifdef HWRENDER
 // [WDJ] Called from hardware render for special mapped sprites
 void* W_CacheMappedPatchNum ( lumpnum_t lumpnum, uint32_t drawflags )
 {
@@ -983,42 +989,31 @@ void* W_CacheMappedPatchNum ( lumpnum_t lumpnum, uint32_t drawflags )
     // return MipPatch_t, which can be casted to (patch_t) with valid patch header info
     return (void*)grPatch;
 }
+#endif
 
 // Release patches made with W_CachePatchNum, W_CachePatchName.
 void W_release_patch( patch_t * patch )
 {
-    if( rendermode == render_soft )
+#ifdef HWRENDER
+    if( HWR_patchstore )
     {
-        // Software render: the patches were allocated with Z_Malloc       
-#ifdef PARANOIA
-        if( ! verify_Z_Malloc(patch))
-        {
-            GenPrintf( EMSG_error, "Error W_release_patch: Not a memory block %x\n", *patch);
-            return;
-        }
-#endif
-        Z_ChangeTag( patch, PU_UNLOCK_CACHE );
-    }else{
         // Hardware render: the patches are fake, and are allocated in a large array
         MipPatch_t*  grPatch = (MipPatch_t*) patch; // sneaky HWR casting
         HWR_release_Patch( grPatch, &grPatch->mipmap );
+        return;       
     }
-}
-
-// HWRENDER
-#else
-// Software renderer only, simplified
-void* W_CachePatchNum ( lumpnum_t lump, int ztag) // Er hat das umbennen der variable vergessen..
-{
-    return W_CachePatchNum_Endian( lump, ztag );
-}
-
-// Release patches made with W_CachePatchNum, W_CachePatchName.
-void W_release_patch( patch_t * patch )
-{
+#endif
+   
+    // Software render: the patches were allocated with Z_Malloc       
+#ifdef PARANOIA
+    if( ! verify_Z_Malloc(patch))
+    {
+        GenPrintf( EMSG_error, "Error W_release_patch: Not a memory block %x\n", *patch);
+        return;
+    }
+#endif
     Z_ChangeTag( patch, PU_UNLOCK_CACHE );
 }
-#endif // HWRENDER version
 
 
 // Find patch in LNS_patch namespace
@@ -1032,7 +1027,7 @@ void* W_CachePatchName ( const char* name, int ztag )
         name = "BRDR_MM";
         lumpid = W_Check_Namespace( name, LNS_patch );
         if( ! VALID_LUMP(lumpid) )
-        I_Error ("W_CachePatchName: %s not found!\n", name);
+            I_Error ("W_CachePatchName: %s not found!\n", name);
     }
     return W_CachePatchNum( lumpid, ztag);
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: v_video.h 1418 2019-01-29 08:01:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -85,6 +85,8 @@ extern  consvar_t cv_usegamma;
 extern  consvar_t cv_gammafunc;
 extern  consvar_t cv_black;	// input to gammafunc
 extern  consvar_t cv_bright;	// input to gammafunc
+
+extern byte  HWR_patchstore;  // patches are stored in HWR format
 
 // Early setup of video controls, register cv_ vars
 void V_Init_VideoControl( void );
@@ -261,11 +263,11 @@ void V_GetBlock ( int x, int y,
 #endif
 
 // draw a pic_t, SCALED
-void V_DrawScalePic_Num ( int x1, int y1, int lumpnum );
+void V_DrawScalePic_Num ( int x1, int y1, lumpnum_t lumpnum );
 
 // Heretic raw pic
 void V_DrawRawScreen_Num(int x, int y,
-                         int lumpnum,
+                         lumpnum_t lumpnum,
                          int width, int height);
 
 #ifdef DIRTY_RECT

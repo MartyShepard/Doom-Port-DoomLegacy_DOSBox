@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.h 1370 2017-11-01 01:20:14Z wesleyjohnson $
+// $Id: hu_stuff.h 1418 2019-01-29 08:01:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -97,9 +97,8 @@ void    HU_Erase(void);
 // used by console input
 char ForeignTranslation(unsigned char ch);
 
-// set chatmacros cvars point the original or dehacked texts, before
-// config.cfg is executed !!
-void HU_HackChatmacros (void);
+// Initialize the chatmacros.
+void HU_Init_Chatmacros (void);
 
 // chatmacro <0-9> "message" console command
 void Command_Chatmacro_f (void);
@@ -115,9 +114,9 @@ void HU_Clear_Tips();
 
 void HU_Draw_FSPics();
 void HU_Clear_FSPics();
-int  HU_Get_FSPic(int lumpnum, int xpos, int ypos);
+int  HU_Get_FSPic( lumpnum_t lumpnum, int xpos, int ypos );
 int  HU_Delete_FSPic(int handle);
-int  HU_Modify_FSPic(int handle, int lumpnum, int xpos, int ypos);
+int  HU_Modify_FSPic(int handle, lumpnum_t lumpnum, int xpos, int ypos);
 
 int  HU_FS_Display(int handle, boolean enable_draw);
 #endif
