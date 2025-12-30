@@ -1,5 +1,10 @@
 * Not need to Compile.
 
+[01423 F]: w108.11 vid driver interface
+          DOS: Compile Video Driver Fix..
+          There's still a lot of useless crap that's only for modern
+					operating systems. Anyway. Modes and bits are working again.
+
 [01423 ]: w108.11 vid driver interface
 				  DOS: It completely corrupts the video DOS source code. Isn't that great...?
 					Warum macht man das?

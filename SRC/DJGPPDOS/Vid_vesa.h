@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.h 1423 2019-01-29 08:06:47Z wesleyjohnson $
+// $Id: Vid_vesa.h 1257 2016-09-20 17:14:21Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -33,7 +33,7 @@
 #include "doomtype.h"
 #include "screen.h"
 
-
+#define NUMSCREENS    4 //Temporary
 #define MODE_SUPPORTED_IN_HW    0x0001
 #define COLOR_MODE              0x0008
 #define GRAPHICS_MODE           0x0010
@@ -126,6 +126,7 @@ void VID_InitVGAModes(void);
 // add the VESA modes to the list
 int VID_GetModes ( byte request_drawmode, byte select_bitpp );
 // setup a video mode, this is to be called from the menu
-int  VID_SetMode (int modenum);
-
+int  VID_SetMode (modenum_t modenum);
+// Ruft die Information seperat ab
+void VID_GetModeInfo_c(vmode_t *pv, modenum_t mn);
 #endif

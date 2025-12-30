@@ -2182,18 +2182,35 @@ void D_DoomMain()
     {
 #if defined( __DJGPP__ )
         // Diese Arguemente (für den Screen) werden für die DOS Version zu spät aufgerufen
-           if( M_CheckParm("-highcolor") ) req_drawmode = REQ_highcolor;  // 15 or 16 bpp	         
-           if( M_CheckParm("-truecolor") ) req_drawmode = REQ_truecolor;  // 24 or 32 bpp
-           if( M_CheckParm("-native") )    req_drawmode = REQ_native;  // bpp of the default screen
-
-           p = M_CheckParm("-bpp");  // specific bit per pixel color
-           if( p )
-           {
-           // binding, should fail if cannot find a mode
-              req_bitpp = atoi(myargv[p + 1]);
-              if( V_CanDraw( req_bitpp ) ) req_drawmode = REQ_specific;
-              else I_Error( "-bpp invalid\n");
-           }
+        set_drawmode = cv_drawmode.EV;
+        req_bitpp = 0;  // because of launcher looping
+        req_alt_bitpp = 0;
+        if( M_CheckParm("-highcolor") )
+        {
+            set_drawmode = DRM_explicit_bpp;  // 15 or 16 bpp
+            req_bitpp = 16;
+            req_alt_bitpp = 15;
+        }
+        if( M_CheckParm("-truecolor") )
+        {
+            set_drawmode = DRM_explicit_bpp;  // 24 or 32 bpp
+            req_bitpp = 32;
+            req_alt_bitpp = 24;
+        }
+        if( M_CheckParm("-native") )
+        {
+            set_drawmode = DRM_native;  // bpp of the default screen
+        }
+        p = M_CheckParm("-bpp");  // specific bit per pixel color
+        if( p )
+        {
+            // binding, should fail if cannot find a mode
+            req_bitpp = atoi(myargv[p + 1]);
+            if( ! V_CanDraw( req_bitpp ) )            
+              I_Error( "-bpp invalid\n");
+            
+            set_drawmode = DRM_explicit_bpp;
+        }
 #endif		
         I_StartupGraphics();    // window
         SCR_Startup();
