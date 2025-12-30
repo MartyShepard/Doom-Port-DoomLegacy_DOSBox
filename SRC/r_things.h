@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: r_things.h 1431 2019-03-16 06:28:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -64,6 +64,7 @@
   // consvar_t
 #include "d_player.h"
   
+#define CLIP_IN_BAND
 
 // MAXVISSPRITES was 128, then 256 (2-2-98)
 #define MAXVISSPRITES   16000
@@ -72,8 +73,8 @@ extern consvar_t  cv_spritelim;
 
 // Constant arrays used for psprite clipping
 //  and initializing clipping.
-extern short            negonearray[MAXVIDWIDTH];
-extern short            screenheightarray[MAXVIDWIDTH];
+extern short            clip_screen_top_min[MAXVIDWIDTH];
+extern short            clip_screen_bot_max[MAXVIDWIDTH];
 
 // vars for R_DrawMaskedColumn
 // clipping array[x], in int screen coord.

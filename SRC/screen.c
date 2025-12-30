@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1426 2019-01-29 08:09:01Z wesleyjohnson $
+// $Id: screen.c 1431 2019-03-16 06:28:43Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -69,7 +69,6 @@
 #include "z_zone.h"
 //#include "d_main.h"
 #include "hardware/hw_main.h"
-
 
 
 
@@ -517,7 +516,7 @@ void SCR_Recalc (void)
         //              -> allocated at the maximum vidsize, static.
 
     // r_main : x_to_viewangle, allocated at the maximum size.
-    // r_things : negonearray, screenheightarray allocated max. size.
+    // r_things : clip_screen_top_min, clip_screen_bot_max allocated max. size.
 
     // scr_viewsize doesn't change, neither detailLevel, but the pixels
     // per screenblock is different now, since we've changed resolution.

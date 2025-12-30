@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: console.c 1431 2019-03-16 06:28:43Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -95,6 +95,8 @@
 #include "z_zone.h"
 #include "d_main.h"
 
+#include "r_local.h"
+  // CLIP_IN_BAND
 #if defined( __DJGPP__ )	
 int     con_keymap;      //0 english, 1 french
 
@@ -145,10 +147,17 @@ boolean  console_open = false;  // console is open
 int      con_destlines;  // vid lines used by console at final position
 static int  con_curlines;  // vid lines currently used by console
 
+#ifdef CLIP_IN_BAND
+// Clip value for planes & sprites, so that the part of the view covered by the
+// console is not drawn.
+// It is set to the first drawable line under the console, and 0 when console is off.
+int      con_clipviewtop;
+#else
 int      con_clipviewtop;// clip value for planes & sprites, so that the
                          // part of the view covered by the console is not
                          // drawn when not needed, this must be -1 when
                          // console is off
+#endif
 
 // TODO: choose max hud msg lines
 #define  CON_MAXHUDLINES      5
@@ -429,7 +438,11 @@ void CON_Init_Video(void)
     CON_SetupBackColormap ();
 
     //note: CON_Ticker should always execute at least once before D_Display()
+#ifdef CLIP_IN_BAND
+    con_clipviewtop = 0;  // does not clip
+#else
     con_clipviewtop = -1;     // -1 does not clip
+#endif
 
     // load console background pic
     con_backpic = (pic_t*) W_CachePicName ("CONSBACK",PU_STATIC);
@@ -599,7 +612,11 @@ void CON_ToggleOff (void)
     con_curlines = 0;
     CON_Clear_HUD ();
     con_forcepic = 0;
+#ifdef CLIP_IN_BAND
+    con_clipviewtop = 0;  // turn off console clip
+#else
     con_clipviewtop = -1;       //remove console clipping of view
+#endif
     console_open = false;  // instant off
 }
 
@@ -651,15 +668,32 @@ void CON_Ticker (void)
 
 
     // clip the view, so that the part under the console is not drawn
+#ifdef CLIP_IN_BAND
+    con_clipviewtop = 0;
+#else
     con_clipviewtop = -1;
+#endif
     if (cons_backpic.value)   // clip only when using an opaque background
     {
         if (con_curlines > 0)
+        {
+#ifdef CLIP_IN_BAND
+            // [WDJ] Set to highest drawable line under console.	   
+//            con_clipviewtop = con_curlines;  // [WDJ] what it should be
+            con_clipviewtop = con_curlines - viewwindowy - 10;
+#else
             con_clipviewtop = con_curlines - viewwindowy - 1 - 10;
+#endif
 //NOTE: BIG HACK::SUBTRACT 10, SO THAT WATER DON'T COPY LINES OF THE CONSOLE
 //      WINDOW!!! (draw some more lines behind the bottom of the console)
+        }
+
         if (con_clipviewtop<0)
+#ifdef CLIP_IN_BAND
+            con_clipviewtop = 0;  // limit to drawable window
+#else
             con_clipviewtop = -1;   //maybe not necessary, provided it's <0
+#endif
     }
 
     // check if console ready for prompt

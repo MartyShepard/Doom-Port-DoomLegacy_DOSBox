@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.h 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: r_plane.h 1431 2019-03-16 06:28:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -119,6 +119,11 @@ typedef void (*planefunction_t) (int top, int bottom);
 extern planefunction_t  floorfunc;
 extern planefunction_t  ceilingfunc_t;
 
+#ifdef CLIP_IN_BAND
+// [WDJ] Clip values are inside the drawable area.
+// This makes it easier to do limit tests, without needing +1 and -1.
+// In original doom, the clip values were outside the drawable area.
+#endif
 extern short            floorclip[MAXVIDWIDTH];
 extern short            ceilingclip[MAXVIDWIDTH];
 //extern short            waterclip[MAXVIDWIDTH];   //added:18-02-98:WATER!
@@ -164,14 +169,18 @@ typedef struct ff_planemgr_s
   visplane_t*  plane;
   fixed_t      height;
   boolean      valid_mark;
+  // These fixed_t are actually HEIGHTFRAC (12 bit fraction)
   fixed_t      front_pos;  // Front sector
   fixed_t      back_pos;   // Back sector
   fixed_t      front_frac;	// from front_pos and scale
   fixed_t      front_step;
   fixed_t      back_frac;	// from back_pos and scale
   fixed_t      back_step;
-  short        front_clip[MAXVIDWIDTH];
-  short        con_clip[MAXVIDWIDTH];	// console clipping
+#ifdef CLIP_IN_BAND   
+  // [WDJ] Draw clip for draw of this plane, top and bottom row inside drawable area.
+#endif  
+  short  front_clip_bot[MAXVIDWIDTH];
+  short  plane_clip_top[MAXVIDWIDTH];	// and console clipping
 
   struct ffloor_s  *ffloor;
 } ff_planemgr_t;

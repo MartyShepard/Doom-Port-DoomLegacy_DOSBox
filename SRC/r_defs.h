@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1429 2019-02-11 21:41:27Z wesleyjohnson $
+// $Id: r_defs.h 1431 2019-03-16 06:28:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -903,7 +903,8 @@ typedef struct vissprite_s
     sector_t*           sector; //The sector containing the thing.
 
     //SoM: Precalculated top and bottom screen coords for the sprite.
-    // [WDJ] sz_ only used in r_things.c, these are NOT fixed point nor frac
+    // [WDJ] sz_ only used in r_things.c, as cut, used for clip tests.
+    // Do not really need cut, just set sz_top, and sz_bot properly.
     int                 sz_bot;
     int                 sz_top;
 

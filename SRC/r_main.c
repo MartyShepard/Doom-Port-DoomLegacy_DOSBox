@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1425 2019-01-29 08:07:59Z wesleyjohnson $
+// $Id: r_main.c 1431 2019-03-16 06:28:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -976,7 +976,11 @@ void R_ExecuteSetViewSize (void)
 
     // thing clipping
     for (i=0 ; i<rdraw_viewwidth ; i++)
-        screenheightarray[i] = rdraw_viewheight;
+#ifdef CLIP_IN_BAND
+        clip_screen_bot_max[i] = rdraw_viewheight - 1;
+#else
+        clip_screen_bot_max[i] = rdraw_viewheight;
+#endif
 
     // setup sky scaling for old/new skies (uses pspriteyscale)
     R_SetSkyScale ();
