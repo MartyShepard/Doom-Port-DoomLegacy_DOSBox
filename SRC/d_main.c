@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1426 2019-01-29 08:09:01Z wesleyjohnson $
+// $Id: d_main.c 1433 2019-04-26 10:33:53Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1432"
+#define SVN_REV "1433"
 #endif
 
 
@@ -2821,6 +2821,7 @@ restart_command:
 #endif  //== END #if !defined( __DJGPP__ )
 
         // text only, incomplete for rendering
+        V_Setup_VideoDraw();
         SCR_Recalc();
         V_SetPalette (0);  // on new screen
         V_Clear_Display();

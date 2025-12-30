@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.c 1295 2017-02-13 18:45:58Z wesleyjohnson $
+// $Id: Vid_vesa.c 1433 2019-04-26 10:33:53Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -299,16 +299,15 @@ modenum_t  VID_GetModeForSize( int rw, int rh, byte rmodetype )
         // find closest dist
         if( bestdist > tdist )
         {
-      bestdist = tdist;
-      modenum.index = mi;
-      
-      if( tdist == 0 )
-      {
-        //GenPrintf( EMSG_ver, "Vid_Init [VID_GetModeForSize]: mi %d\n",modenum.index);	
-        break;   // found exact match
-    }
-  }
-  mi++;
+            bestdist = tdist;
+            modenum.index = mi;
+           if( tdist == 0 )
+           {
+             //GenPrintf( EMSG_ver, "Vid_Init [VID_GetModeForSize]: mi %d\n",modenum.index);	
+             break;   // found exact match
+           }
+         }
+         mi++;
     }
 
 done:
@@ -397,6 +396,31 @@ vmode_t *VID_GetModePtr (modenum_t modenum)
     return pv;
 fail:
     return NULL;
+}
+
+/*
+  Wofür ?. Kam mit r1433 rein.
+*/
+modestat_t  VID_GetMode_Stat( modenum_t modenum )
+{
+    modestat_t  ms;
+
+    // fullscreen and window modes  1..
+    vmode_t * pv = VID_GetModePtr(modenum);
+    if( pv )
+    {
+        ms.width = pv->width;
+        ms.height = pv->height;
+        ms.type = MODE_either;
+        ms.mark = "";
+    }
+    else
+    {
+        ms.type = MODE_NOP;
+        ms.width = ms.height = 0;
+        ms.mark = NULL;
+    }
+    return ms;
 }
 
 
@@ -568,6 +592,7 @@ void *VID_ExtraFarToLinear (void *ptr)
 // In:  vesa mode number, from the vesa videomodenumbers list
 // Out: false, if no info for given modenum
 // ========================================================================
+static
 int VID_VesaGetModeInfo (int modenum, byte gmi_req_bitpp)
 {
 	
