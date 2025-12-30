@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw8.c 1424 2019-01-29 08:07:27Z wesleyjohnson $
+// $Id: r_draw8.c 1428 2019-02-11 21:40:51Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 // Portions Copyright (C) 2000-2016 by DooM Legacy Team.
@@ -1083,18 +1083,18 @@ void R_DrawFogSpan_8(void)
         while (count4--)
         {
             *dest = ds_colormap[ ftranslucent[3][ (*dest) << 8 ]];
-            dest += vid.ybytes;
+            dest ++;
             *dest = ds_colormap[ ftranslucent[2][ (*dest) << 8 ]];
-            dest += vid.ybytes;
+            dest ++;
             *dest = ds_colormap[ ftranslucent[1][ (*dest) << 8 ]];
-            dest += vid.ybytes;
+            dest ++;
             *dest = ds_colormap[ ftranslucent[0][ (*dest) << 8 ]];
-            dest += vid.ybytes;
+            dest ++;
         }
         while( count-- )
         {
             *dest = ds_colormap[ ftranslucent[count&0x03][ (*dest) << 8 ]];
-            dest += vid.ybytes;
+            dest ++;
         }
     }
 }
