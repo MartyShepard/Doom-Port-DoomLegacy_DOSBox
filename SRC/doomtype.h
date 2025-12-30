@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: doomtype.h 1423 2019-01-29 08:06:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -102,6 +102,7 @@ typedef enum {
     FAIL_invalid_input = -3,  // invalid input to the function
     FAIL_create = -100,
     FAIL_memory = -101,
+    FAIL_select = -102,
 } status_return_e;
 
 

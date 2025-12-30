@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: v_video.c 1423 2019-01-29 08:06:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -154,26 +154,287 @@
 
 // [WDJ] Interfaces to port video control, common to all
 
-rendermode_e    rendermode=render_soft;
-
 // Each screen is vid.screen_size (which may be larger than width * height)
 // width*height is wrong for the Mac, which pads buffer to power of 2
 // someone stuck in an extra screen ptr
 byte *screens[NUMSCREENS+1];
 
-byte  req_bitpp = 8;  // set by d_main checks on command line
-byte  req_drawmode = REQ_default;  // reqdrawmode_t
+rendermode_e   rendermode = render_soft;
+byte  rendermode_recalc = false;  // signal a change
 
-byte  graphics_state = VGS_off; // Is used in console.c and screen.c
+byte  drawmode_recalc = false;
 
 #ifdef HWRENDER
 // patches are stored in HWR format, set when HWR rendermode.
 byte  HWR_patchstore = false;
 #endif
 
+// Request to the drivers.
+byte  req_drawmode = DRM_none;  // vid_drawmode_e
+byte  req_bitpp = 0;  // DRM_explicit_bpp param
+byte  req_alt_bitpp = 0;  // DRM_explicit_bpp param
+
+// Driver state
+byte  graphics_state = VGS_off; // Is used in console.c and screen.c
+byte  native_bitpp;
+byte  native_bytepp;
+byte  native_drawmode; // vid_drawmode_e
+
 // To disable fullscreen at startup; is set in VID_PrepareModeList
 boolean allow_fullscreen = false;
 boolean mode_fullscreen = false;
+
+
+void Setmode_OnChange( void );
+
+// values from vid_drawmode_e
+CV_PossibleValue_t drawmode_sel_t[] = {
+   {DRM_8pal,"Software 8bit"},
+   {DRM_15,"Software 15bit"},
+   {DRM_16,"Software 16bit"},
+   {DRM_24,"Software 24bit"},
+   {DRM_32,"Software 32bit"},
+   {DRM_native,"Native"},
+#ifdef HWRENDER
+   {DRM_opengl,"OpenGL"},
+#ifdef SMIF_WIN_NATIVE
+   {DRM_minigl, "MiniGL"},
+   {DRM_glide, "Glide"},
+   {DRM_d3d,   "D3D"},
+#endif
+#endif
+   {0,NULL} };
+consvar_t cv_drawmode = { "drawmode", "Software 8bit", CV_SAVE | CV_CALL, drawmode_sel_t, Setmode_OnChange  };
+
+byte set_drawmode = 255;  // vid_drawmode_e
+const byte num_drawmode_sel = 8;
+
+void Setmode_OnChange( void )
+{
+    drawmode_recalc = true;
+}
+
+
+// Reverse index into drawmode_sel_t
+// indexed by vid_drawmode_e
+byte drawmode_to_drawmode_sel_t[] = {
+   0,  // DRM_none
+   0,  // DRM_8pal
+   1,  // DRM_15,
+   2,  // DRM_16,
+   3,  // DRM_24,
+   4,  // DRM_32,
+   0,  // DRM_explicit_bpp
+   5,  // DRM_native
+#ifdef HWRENDER
+   6,  // DRM_opengl
+#ifdef SMIF_WIN_NATIVE
+   7,  // DRM_minigl
+   8,  // DRM_glide
+   9,  // DRM_d3d
+#else
+   0, 0, 0,
+#endif
+#else
+   0, 0, 0, 0,
+#endif
+   0   // DRM_END
+};
+
+// indexed by vid_drawmode_e
+byte drawmode_sel_avail[] = {
+   0,  // DRM_none
+   DRM_8pal,  // 8 bit
+#ifdef ENABLE_DRAW15
+   DRM_15,
+#else
+   0,
+#endif
+#ifdef ENABLE_DRAW16
+   DRM_16,
+#else
+   0,
+#endif
+#ifdef ENABLE_DRAW24
+   DRM_24,
+#else
+   0,
+#endif
+#ifdef ENABLE_DRAW32
+   DRM_32,
+#else
+   0,
+#endif
+   DRM_explicit_bpp,  // -bpp -truecolor -highcolor
+   DRM_native,  // Native
+#ifdef HWRENDER
+   DRM_opengl,  // OpenGL
+#ifdef SMIF_WIN_NATIVE
+   DRM_minigl,  // MiniGL
+   DRM_glide,   // Glide
+   DRM_d3d,     // D3D
+#else
+   0, 0,
+#endif
+#else
+   0, 0, 0,
+#endif
+   0,  // DRM_END
+};
+
+// indexed by vid_drawmode_e
+static
+byte drawmode_to_bpp[] = {0,8,15,16,24,32, 99,99,99,99,99,99,99};
+
+// indexed by vid_drawmode_e
+static
+byte drawmode_to_rendermode[] = {
+   render_soft, // none
+   render_soft, // Software 8 bit
+   render_soft, // Software 15 bit
+   render_soft, // Software 16 bit
+   render_soft, // Software 24 bit
+   render_soft, // Software 32 bit
+   render_soft, // Software req_bitpp
+   render_soft, // Software native
+   render_opengl, // OpenGL
+   render_opengl, // MiniGL
+   render_glide,  // Glide
+   render_d3d,    // D3D
+};
+
+// Indexed by rendermode_e
+const char * rendermode_name[] = {
+    "",
+    "Software",
+    "OpenGL",
+#ifdef SMIF_WIN_NATIVE
+    "Glide",
+    "D3D",
+#else
+     "", "",
+#endif
+    "None"
+};
+
+
+
+// Set rendermode
+//  drawmode : drawmode_sel_t
+//  change_config : boolean
+// Called by D_DoomMain, SCR_SetMode
+byte  V_switch_drawmode( byte drawmode )
+{
+    unsigned int old_drawmode = cv_drawmode.EV;
+    unsigned int old_render = rendermode;
+
+#ifdef DEBUG_DRAWMODE
+    GenPrintf( EMSG_debug, "V_switch_drawmode  ( %i )\n", drawmode );
+#endif
+
+    if( drawmode >= DRM_END )  return 0;
+    // restore of vs settings is last
+   
+    if( drawmode <= DRM_32 )
+    {
+        req_bitpp = drawmode_to_bpp[drawmode];
+        if( ! V_CanDraw( req_bitpp ) )  goto candraw_reject;
+        if( ! VID_Query_Modelist( drawmode, cv_fullscreen.EV, req_bitpp ) )  goto query_reject;
+        req_drawmode = DRM_explicit_bpp;  // explicit bpp
+        rendermode = render_soft;
+    }
+    else if( drawmode == DRM_native )  // Native
+    {
+        if( ! V_CanDraw( native_bitpp ) )  goto candraw_reject;
+        if( ! VID_Query_Modelist( DRM_native, cv_fullscreen.EV, native_bitpp ) )  goto query_reject;
+        req_drawmode = DRM_native;  // bpp of the default screen
+        rendermode = render_soft;
+    }
+   
+    if( drawmode >= DRM_opengl && drawmode < DRM_END )
+    {
+#ifdef HWRENDER
+        // Hardware drawmodes use native or some internal drawmode,
+        if( ! VID_Query_Modelist( drawmode, cv_fullscreen.EV, native_bitpp ) )  goto query_reject;
+        req_drawmode = drawmode;  // let driver know which hardware mode
+        rendermode = drawmode_to_rendermode[ drawmode ];
+#else
+        goto reject;
+#endif
+    }
+    else if( drawmode == DRM_explicit_bpp )
+    {
+        // command line, bpp, highcolor, truecolor.
+        // req_bitpp and req_alt_bpp have been set by caller
+
+        // Error reporting uses req_bitpp and req_alt_bitpp,
+        // so don't change them before error checking is done.
+
+        byte cd = V_CanDraw( req_bitpp );
+        byte cd_alt = V_CanDraw( req_alt_bitpp );
+        if( !cd && !cd_alt )  goto candraw_reject;  // report error on req_
+
+        if( cd && VID_Query_Modelist( DRM_explicit_bpp, cv_fullscreen.EV, req_bitpp ) )
+        {
+            // use req_bitpp
+        }
+        else if( cd_alt && VID_Query_Modelist( DRM_explicit_bpp, cv_fullscreen.EV, req_alt_bitpp ))
+        {
+            // use the alt
+            req_bitpp = req_alt_bitpp;
+	    req_alt_bitpp = 0;
+        }
+        else
+            goto query_reject;
+
+        req_drawmode = DRM_explicit_bpp;
+        rendermode = render_soft;
+    }
+
+    // Setup HWR calls so can set values.
+    if( (old_drawmode != drawmode) || (old_render != rendermode) )
+    {
+#ifdef DEBUG_DRAWMODE
+        GenPrintf( EMSG_debug, "V_switch_drawmode  rendermode= %i\n", rendermode );
+#endif
+        rendermode_recalc = true;  // the only place this is set
+    }
+
+    // Any HWR functions triggered by any OnChange functions
+    // must have been setup in I_Rendermode_setup.
+
+    if( drawmode <= DRM_END )
+    {
+        // save the new drawmode as temporary
+        cv_drawmode.EV = drawmode;
+        // To change the save value:  CV_SetValue( &cv_drawmode, cv_drawmode.EV );
+    }
+
+    return 1;
+
+// Error handling
+candraw_reject:
+    if( verbose )
+    {
+        if( req_alt_bitpp )
+            GenPrintf( EMSG_ver, "Cannot draw %i bitpp, nor %i bitpp.\n", req_bitpp, req_alt_bitpp );
+        else
+            GenPrintf( EMSG_ver, "Cannot draw %i bitpp.\n", req_bitpp );
+    }
+    goto reject;
+
+query_reject:
+    if( verbose )
+        GenPrintf( EMSG_ver, "No modes for %s, %i\n", cv_fullscreen.EV ? "Fullscreen":"Window", req_bitpp );
+
+reject:
+#ifdef DEBUG_DRAWMODE
+    GenPrintf( EMSG_debug, "  V_switch_drawmode  ( %i )  REJECT\n", drawmode );
+#endif
+    return 0;
+}
+
+
 
 // Darker background
 CV_PossibleValue_t darkback_sel_t[] = {
@@ -657,6 +918,7 @@ void V_Init_VideoControl( void )
     CV_RegisterVar(&cv_darkback);
     CV_RegisterVar(&cv_con_fontsize);
     CV_RegisterVar(&cv_msg_fontsize);
+    CV_RegisterVar(&cv_drawmode);
     // Needs be done for config loading
     CV_RegisterVar(&cv_usegamma);
     CV_RegisterVar(&cv_black);
@@ -2934,7 +3196,7 @@ void V_Setup_VideoDraw(void)
 
 #ifdef HWRENDER // not win32 only 19990829 by Kin
     // hardware modes do not use screens[] pointers
-    if (rendermode != render_soft)
+    if( rendermode != render_soft )
     {
         // Hardware draw only.
         // be sure to cause a NULL read/write error so we detect it, in case of..

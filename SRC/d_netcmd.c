@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: d_netcmd.c 1423 2019-01-29 08:06:47Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -320,7 +320,7 @@ void D_Register_ClientCommands(void)
     CV_RegisterVar(&cv_timelimit);
     CV_RegisterVar(&cv_fraglimit);
     CV_RegisterVar(&cv_netstat);
-   
+
     // r_things.c (skin NAME)
     CV_RegisterVar(&cv_skin);
     // secondary player (splitscreen)

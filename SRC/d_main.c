@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: d_main.c 1423 2019-01-29 08:06:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -591,17 +591,17 @@ void D_Display(void)
 {
     // vid : from video setup
     static boolean menuactivestate = false;
+    static boolean draw_refresh = false;
     static gamestate_e oldgamestate = GS_FORCEWIPE; // invalid state
-    static int borderdrawcount;
+    static int borderdrawcount = 0;
 
     tic_t nowtime;
     tic_t tics;
     tic_t wipestart;
     int y;
-    boolean done;
+    boolean wipe_done;
     boolean wipe;
     boolean redrawsbar;
-    boolean viewactivestate;
 
     if (dedicated)
         return;
@@ -611,17 +611,17 @@ void D_Display(void)
 
     wipe = false;
     redrawsbar = false;
-    viewactivestate = false;
-    done = false;
+    wipe_done = false;
 
     //added:21-01-98: check for change of screen size (video mode)
-    if ( setmodeneeded.modetype )
+    if( setmodeneeded.modetype || drawmode_recalc )
     {
         SCR_SetMode();  // change video mode
         //added:26-01-98: NOTE! setsizeneeded is set by SCR_Recalc()
         SCR_Recalc();
           // setsizeneeded -> redrawsbar
           // con_recalc, stbar_recalc, am_recalc
+        drawmode_recalc = 0;
     }
 
     // change the view size if needed
@@ -629,8 +629,8 @@ void D_Display(void)
     {
         R_ExecuteSetViewSize();  // set rdraw, view scale, limits, projection
         oldgamestate = GS_FORCEWIPE;  // force background redraw
-        borderdrawcount = 3;
         redrawsbar = true;
+        draw_refresh = true;
     }
 
     // save the current screen if about to wipe
@@ -661,7 +661,9 @@ void D_Display(void)
                 || rendermode != render_soft
 #endif
                 || vid.recalc)
+            {
                 redrawsbar = true;
+            }
             break;
 
         case GS_INTERMISSION:
@@ -689,34 +691,35 @@ void D_Display(void)
             break;
     }
 
-    // clean up border stuff
-    // see if the border needs to be initially drawn
     if (gamestate == GS_LEVEL)
     {
         if (oldgamestate != GS_LEVEL)
         {
-            viewactivestate = false;    // view was not active
+            // Level map play display initialize
             R_FillBackScreen(); // draw the pattern into the back screen
+            // the border needs to be initially drawn
+            draw_refresh = true;
         }
 
-        // see if the border needs to be updated to the screen
-        if (!automapactive && (rdraw_scaledviewwidth != vid.width))
-        {
-            // the menu may draw over parts out of the view window,
-            // which are refreshed only when needed
-            if (menuactive || menuactivestate || !viewactivestate)
-                borderdrawcount = 3;
-
-            if (borderdrawcount)
-            {
-                R_DrawViewBorder();     // erase old menu stuff
-                borderdrawcount--;
-            }
-        }
-
+        // Level map play display
         // draw the view directly
         if (!automapactive)
         {
+            // see if the border needs to be updated to the screen
+            if( rdraw_scaledviewwidth != vid.width )
+            {
+                // the menu may draw over parts out of the view window,
+                // which are refreshed only when needed
+                if( menuactive || menuactivestate || draw_refresh )
+                    borderdrawcount = 3;
+
+                if( borderdrawcount )
+                {
+                    borderdrawcount--;
+                    R_DrawViewBorder();     // erase old menu stuff
+                }
+            }
+
             if (displayplayer_ptr->mo)
             {
 #ifdef CLIENTPREDICTION2
@@ -765,11 +768,16 @@ void D_Display(void)
         HU_Drawer();
 
         ST_Drawer(redrawsbar);
+       
+        draw_refresh = false;
     }
-
-    // change gamma if needed
-    if (gamestate != oldgamestate && gamestate != GS_LEVEL)
-        V_SetPalette(0);
+    else
+    {
+        // not GS_LEVEL
+        // change gamma if needed
+        if( gamestate != oldgamestate )
+            V_SetPalette(0);
+    }
 
     menuactivestate = menuactive;
     oldgamestate = wipegamestate = gamestate;
@@ -790,6 +798,7 @@ void D_Display(void)
 
     //added:24-01-98:vid size change is now finished if it was on...
     vid.recalc = 0;
+    rendermode_recalc = false;
 
     // Exl: draw a faded background
     if( fs_fadealpha != 0 )
@@ -879,12 +888,12 @@ void D_Display(void)
             tics = nowtime - wipestart;
         } while (!tics);
         wipestart = nowtime;
-        done = wipe_ScreenWipe(cv_screenslink.value - 1, tics);
+        wipe_done = wipe_ScreenWipe(cv_screenslink.value - 1, tics);
         I_OsPolling();
         I_UpdateNoBlit();
         M_Drawer();     // menu is drawn even on top of wipes
         I_FinishUpdate();       // page flip or blit buffer
-    } while (!done && I_GetTime() < (unsigned) y);
+    } while (!wipe_done && I_GetTime() < (unsigned) y);
 
     ST_Invalidate();
 }
@@ -920,8 +929,17 @@ void D_DoomLoop(void)
     oldentertics = I_GetTime();
 
     // make sure to do a d_display to init mode _before_ load a level
-    SCR_SetMode();      // change video mode
-    SCR_Recalc();
+    if( setmodeneeded.modetype || drawmode_recalc )
+    {
+        SCR_SetMode();      // change video mode
+        SCR_Recalc();
+        drawmode_recalc = 0;
+    }
+    if( rendermode_recalc )
+    {
+        I_Rendermode_setup();
+        rendermode_recalc = 0;
+    }
 
     D_Clear_Events();  // clear input events to prevent startup jerks,
                          // motion during screen wipe still gets through
@@ -2712,42 +2730,84 @@ restart_command:
     {
         nodrawers = true;
         vid.draw_ready = 0;
+        drawmode_recalc = false;
         I_ShutdownGraphics();
         EOUT_flags = EOUT_log;
     }
     else
     {
-#if !defined( __DJGPP__ )
-        // Diese argumente habe vorgezogen weil das f?r die DOS version zu sp?t ist den Bit zu setzen.
-        // I_RequestFullGraphics macht kein sinn weil die DOS Version kein Fenstermodus nativ hat.
+        set_drawmode = cv_drawmode.EV;
+        req_bitpp = 0;  // because of launcher looping
+        req_alt_bitpp = 0;
+
         if( M_CheckParm("-highcolor") )
         {
-            req_drawmode = REQ_highcolor;  // 15 or 16 bpp
+            set_drawmode = DRM_explicit_bpp;  // 15 or 16 bpp
+            req_bitpp = 16;
+            req_alt_bitpp = 15;
         }
         if( M_CheckParm("-truecolor") )
         {
-            req_drawmode = REQ_truecolor;  // 24 or 32 bpp
+            set_drawmode = DRM_explicit_bpp;  // 24 or 32 bpp
+            req_bitpp = 32;
+            req_alt_bitpp = 24;
         }
         if( M_CheckParm("-native") )
         {
-            req_drawmode = REQ_native;  // bpp of the default screen
+            set_drawmode = DRM_native;  // bpp of the default screen
         }
         p = M_CheckParm("-bpp");  // specific bit per pixel color
         if( p )
         {
             // binding, should fail if cannot find a mode
             req_bitpp = atoi(myargv[p + 1]);
-            if( V_CanDraw( req_bitpp ) )
-              req_drawmode = REQ_specific;
-            else
+            if( ! V_CanDraw( req_bitpp ) )
+            {
+#ifdef LAUNCHER   
+              I_SoftError( "-bpp invalid\n");
+              goto restart_command;
+#else
               I_Error( "-bpp invalid\n");
+#endif
+            }
+            set_drawmode = DRM_explicit_bpp;
         }
 
+        // Allow a config file for opengl to overload the config settings.
+        // It may be edited to set only what settings should be specific to opengl.
+        // May be a problem if opengl cannot really be started.
+
+        if( M_CheckParm("-opengl") )
+        {
+            set_drawmode = DRM_opengl; // opengl temporary
+        }
+#ifdef SMIF_WIN_NATIVE
+#ifdef HWRENDER   
+        else if( M_CheckParm ("-3dfx") || M_CheckParm ("-glide") )
+        {
+            set_drawmode = DRM_glide; // glide temporary
+        }
+        else if( M_CheckParm ("-minigl") ) // MiniGL is considered to be opengl
+        {
+            set_drawmode = DRM_minigl; // opengl temporary
+        }
+        else if( M_CheckParm ("-d3d") )
+        {
+            set_drawmode = DRM_d3d; // D3D temporary
+        }
+#endif
+#endif
         //--------------------------------------------------------- CONSOLE
         // setup loading screen
         CONS_Printf("RequestFullGraphics...\n");
-        I_RequestFullGraphics( cv_fullscreen.value );
+        V_switch_drawmode( set_drawmode );  // command line, do not change config files
+#ifdef DEBUG_WINDOWED
+        I_RequestFullGraphics( false );
+#else
+        I_RequestFullGraphics( cv_fullscreen.EV );
 #endif
+        // text only, incomplete for rendering
+        I_Rendermode_setup();  // need HWR_SetPalette
         SCR_Recalc();
         V_SetPalette (0);  // on new screen
         V_Clear_Display();

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: m_menu.c 1423 2019-01-29 08:06:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2769,8 +2769,8 @@ void M_DrawVideoMode(void)
 // Return 0= continue, 1= intercept key, 2= testing.
 byte  video_test_key_handler( int key )
 {
-//    cmd_req_drawmode = REQ_default;  // cancel any command line setup
-    req_drawmode = REQ_default;  // cancel any command line setup
+    set_drawmode = DRM_none;
+    req_drawmode = DRM_none;  // cancel any command line setup
 
     if (vidm_testing_cnt>0)
     {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_video.h 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: i_video.h 1423 2019-01-29 08:06:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -44,11 +44,28 @@
 #pragma interface
 #endif
 
+// configure settings, all possibilities
+// Index to several tables.
+typedef enum {
+  DRM_none,
+  // software draw modes
+  DRM_8pal, DRM_15, DRM_16, DRM_24, DRM_32,
+  // internal signaling, command line support
+  DRM_explicit_bpp,
+  DRM_native,
+  // hardware draw modes, DRM_opengl is boundary test
+  DRM_opengl,
+  DRM_minigl,
+  DRM_glide,
+  DRM_d3d,
+  DRM_END
+} vid_drawmode_e;
+
 typedef enum {
     render_soft   = 1,
-    render_glide  = 2,
+    render_opengl = 2, //Hurdler: the same for render_minigl
     render_d3d    = 3,
-    render_opengl = 4, //Hurdler: the same for render_minigl
+    render_glide  = 4,
     render_none   = 5  // for dedicated server
 } rendermode_e;
 
@@ -74,7 +91,7 @@ typedef struct {
 
 extern boolean  allow_fullscreen;  // controlled by i_video
 extern boolean  mode_fullscreen;   // can window before going to cv_fullscreen
-extern byte graphics_state;
+
 #if defined( __DJGPP__ )
 boolean    highcolor; // local
 int        BitsColor; // Definiert die Bit Palette
@@ -93,23 +110,29 @@ extern consvar_t cv_vidwait;
 
 extern consvar_t cv_fullscreen; // for fullscreen support
 
-// WDJ 2012-2-8, command line request to port driver
-typedef enum {
-  REQ_default, REQ_native, REQ_specific, REQ_highcolor, REQ_truecolor
-} reqdrawmode_t;
-
+// Request to video drivers.
+extern byte req_drawmode;  // vid_drawmode_e
 extern byte req_bitpp;
-extern byte req_drawmode;  // reqdrawmode_t
+// Parameter to V_switch_drawmode
+extern byte req_alt_bitpp;
+// From video drivers.
+extern byte native_drawmode;  // vid_drawmode_e
+extern byte native_bitpp;
+extern byte native_bytepp;
 
-// Return true if engine can draw the using bitpp
+// Return true if engine can draw using the bitpp
 boolean V_CanDraw( byte bitpp );
 
 // ---------------------------------------------
 
+// Setup HWR calls according to rendermode.
+int  I_Rendermode_setup( void );
+
 // Initial windowed graphics
 void I_StartupGraphics (void);
 // Full game playing graphics, with hardware drawing, and options
-void I_RequestFullGraphics( byte select_fullscreen );
+// Returns FAIL_select, FAIL_end, FAIL_create, of status_return_e, 1 on success;
+int I_RequestFullGraphics( byte select_fullscreen );
 // Restore original video mode.
 void I_ShutdownGraphics(void);
 
@@ -135,6 +158,13 @@ char  *  VID_GetModeName(modenum_t modenum);
 // rmodetype is of modetype_e
 // Returns MODE_NOP when none found
 modenum_t  VID_GetModeForSize( int rw, int rh, byte rmodetype );
+
+// To check if can draw the video
+//   request_drawmode : vid_drawmode_e
+//   request_fullscreen : true if want fullscreen modes
+//   request_bitpp : bits per pixel
+// Return true if there are viable modes.
+boolean  VID_Query_Modelist( byte request_drawmode, boolean request_fullscreen, byte request_bitpp );
 
 //  By setting setmodeneeded to a value > 0,
 //  the video mode change is delayed until the start of the next refresh

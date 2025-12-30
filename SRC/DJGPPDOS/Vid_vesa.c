@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.c 1295 2017-02-13 18:45:58Z wesleyjohnson $
+// $Id: Vid_vesa.c 1423 2019-01-29 08:06:47Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -57,7 +57,7 @@
 
 // PROTOS
 static vmode_t *VID_GetModePtr (modenum_t modenum);
-int  VID_VesaGetModeInfo (int modenum);
+int  VID_VesaGetModeInfo (int modenum, byte gmi_req_bitpp);
 void VID_VesaGetExtraModes (void);
 int  VID_VesaInitMode (viddef_t *lvid, vmode_t *currentmode_p);
 
@@ -77,26 +77,25 @@ void VID_Command_Mode_f (void);
 // -----------------------------------------------------
 
 static int totalvidmem;
-
+static byte  vesa_bitpp;
 static vmode_t      vesa_modes[MAX_VESA_MODES] = {{NULL, NULL}};
 static vesa_extra_t vesa_extra[MAX_VESA_MODES];
 
 //this is the only supported non-vesa mode : standard 320x200x256c.
 #define NUMVGAVIDMODES  1
-static int VGA_InitMode (viddef_t *lvid, vmode_t *currentmode_p);
-static int TXT_InitMode (viddef_t *lvid, vmode_t *currentmode_p);
-static vmode_t      vgavidmodes[NUMVGAVIDMODES+1] = {
+int VGA_InitMode (viddef_t *lvid, vmode_t *currentmode_p);
+static vmode_t      vgavidmodes[NUMVGAVIDMODES] = {
   { // 0 mode, HIDDEN
-    & vgavidmodes/*specialmodes*/[1],
+    & specialmodes[1],
     "Initial",
     INITIAL_WINDOW_WIDTH, INITIAL_WINDOW_HEIGHT,
     INITIAL_WINDOW_WIDTH, 1,     // rowbytes, bytes per pixel
     MODE_window, 1,  // windowed, numpages
     NULL,
-    TXT_InitMode
+    VGA_InitMode
   },
   {
-    & vgavidmodes/*specialmodes*/[2],
+    NULL,
     "320x200",
     320, 200,  //(200.0/320.0)*(320.0/240.0),
     320, 1,    // rowbytes, bytes per pixel
@@ -190,19 +189,52 @@ void VID_InitVGAModes(void)
 {
     // do not include Mode 0 (INITIAL) in count
     all_vidmodes = &vgavidmodes[0];
-    num_all_vidmodes += NUMVGAVIDMODES;
-				
+    num_all_vidmodes = NUMVGAMODES-1;
+    num_full_vidmodes = 0;
 }
 
-static void append_full_vidmodes( vmode_t* newmodes, int nummodes )
+static void append_full_vidmodes( vmode_t newmodes, int nummodes )
 {
     full_vidmodes = newmodes;
-    vgavidmodes[NUMVGAVIDMODES].next = newmodes;
-	  
+    vgavidmodes[NUMVGAVIDMODES-1].next = newmodes;
+	    
     num_full_vidmodes += nummodes;
     num_all_vidmodes += nummodes;
 }
 
+
+static inline
+int  VID_NumModes(void)
+{
+    return ( vid.fullscreen )? num_full_vidmodes : num_all_vidmodes;
+}
+
+//   request_drawmode : vid_drawmode_e
+//   request_fullscreen : true if want fullscreen modes
+//   request_bitpp : bits per pixel
+// Return true if there are viable modes.
+boolean  VID_Query_Modelist( byte request_drawmode, boolean request_fullscreen, byte request_bitpp )
+{
+    // Require modelist before rendermode is set.
+    if( request_drawmode >= DRM_opengl )
+        return false;
+   
+    if( request_fullscreen )
+    {
+        full_vidmodes = NULL;
+        currentmode_p = NULL;
+        num_full_vidmodes = 0;
+        // get available display modes for the device
+        VID_VesaGetExtraModes ( request_bitpp );
+        if( num_full_vidmodes )  return true;
+    }
+    else
+    {
+        if( num_all_vidmodes )
+            return true;
+    }
+    return false;
+}
 
 // modetype is of modetype_e
 range_t  VID_ModeRange( byte modetype )
@@ -211,13 +243,11 @@ range_t  VID_ModeRange( byte modetype )
     // INITIAL_WINDOW mode 0 is not included
     if(modetype == MODE_fullscreen)
     {   // fullscreen  2..
-        mrange.first = NUMVGAVIDMODES;//-1;
+        mrange.first = NUMVGAMODES;
         mrange.last = mrange.first + num_full_vidmodes;
     }
     else
-    {   // window   1..,
-	      // does not include mode 0
-				//mrange.first = 1;
+    {   // window   1..
         mrange.last = num_all_vidmodes;
     }
     return mrange;
@@ -225,7 +255,7 @@ range_t  VID_ModeRange( byte modetype )
 
 
 //added:21-03-98: return info on video mode
-char *VID_ModeInfo (modenum_t modenum, char **ppheader)
+char *VID_ModeInfo (int modenum, char **ppheader)
 {
     static char *badmodestr = "Bad video mode number\n";
     vmode_t     *pv;
@@ -249,22 +279,21 @@ char *VID_ModeInfo (modenum_t modenum, char **ppheader)
 
 
 //added:03-02-98: return a video mode number from the dimensions
-modenum_t  VID_GetModeForSize( int rw, int rh, byte rmodetype )
+modenum_t  VID_GetModeForSize( int w, int h, byte modetype )
 {
     modenum_t  modenum = { MODE_NOP, 0 };
-    int tdist;
-    int bestdist = MAXINT;
-		int mi = 0;
+    int mi = 1;
+    int tdist = MAXINT;
+    int bestdist;
+    vmode_t * best;
     vmode_t * pv = all_vidmodes;
 
-    if( rmodetype == MODE_fullscreen )
+    if( modetype == MODE_fullscreen )
     {
         if( num_full_vidmodes == 0 )  goto done;
-        mi = NUMVGAVIDMODES;  // fullscreen modes start after
+        mi += NUMSPECIALMODES;  // fullscreen modes start after
         pv = full_vidmodes;
-				
     }
-		modenum.modetype = rmodetype;
     for ( ; pv!=NULL; pv=pv->next )
     {
         tdist = abs(pv->width - rw) + abs(pv->height - rh);
@@ -272,16 +301,13 @@ modenum_t  VID_GetModeForSize( int rw, int rh, byte rmodetype )
         if( bestdist > tdist )
         {
 	    bestdist = tdist;
-	    modenum.index = mi;
-			
-	    if( tdist == 0 )
-			{
-				//GenPrintf( EMSG_ver, "Vid_Init [VID_GetModeForSize]: mi %d\n",modenum.index);	
-				break;   // found exact match
-			}
+	    best = i;
+	    if( tdist == 0 )  break;   // found exact match
 	}
 	mi++;
     }
+    modenum.index = mi;
+    modenum.modetype = rmodetype;
 
 done:
     return modenum;
@@ -301,24 +327,32 @@ void VID_Init (void)
 }
 
 // Get Fullscreen, VESA modes, append to VGA window modes
-void VID_GetModes(void)
+int VID_GetModes ( byte request_drawmode, byte select_bitpp )
 {
-    // setup the videmodes list,
+    // setup the video modes list,
     // note that mode 0 must always be VGA mode 0x13
     full_vidmodes = NULL;
     currentmode_p = NULL;
     num_full_vidmodes = 0;
+   
     // setup the vesa_modes list
-    VID_VesaGetExtraModes ();
+    VID_VesaGetExtraModes ( select_bitpp );
 
+    if (num_full_vidmodes==0)
+        goto no_modes;
+   
     // the game boots in 320x200 standard VGA, but
     // we need a highcolor mode to run the game in highcolor
-    if (highcolor && num_full_vidmodes==0)
+    if( select_bitpp > 8 && num_full_vidmodes == 0)
     {
-        I_SoftError ("No highcolor VESA2 video mode found, cannot run in highcolor.\n");
-        highcolor = 0;
-        VID_VesaGetExtraModes ();
+        GenPrintf( EMSG_info, "No highcolor VESA2 video mode found, cannot run in highcolor.\n");
+//        VID_VesaGetExtraModes ( 8 );
+        goto no_modes; // must return correct signaling to v_video logic
     }
+    return 1;
+
+no_modes:
+    return FAIL_select;
 }
 
 
@@ -330,36 +364,20 @@ vmode_t *VID_GetModePtr (modenum_t modenum)
 {
     // first mode in all_vidmodes is the HIDDEN INITIAL_WINDOW
     vmode_t *pv = all_vidmodes;  // window
-    int mi = modenum.index;//-1;      // 0..
-		
-    byte TextStartup=1;
-		
-    if ( modenum.modetype == 0 )
+    int mi = modenum.index;      // 0..
+
+    if ( modenum.modetype == MODE_fullscreen )
     {
         pv = full_vidmodes;
-        mi = modenum.index;// - NUMVGAVIDMODES;  // 2..
-        debug_Printf("*VID_GetModePtr: %s\n",pv->name);
+        mi = modenum.index - NUMSPECIALMODES;  // 2..
     }
-
-    if (!pv || mi < 0 ) 
-		{
-			if (TextStartup=0)
-			{
-			  I_SoftError("VID_error 1\n");
-			  goto fail;
-			}
-		}
+    if (!pv || mi < 0 )  goto fail;
 
     while (mi--)
     {
         pv = pv->next;
-
-        if (!pv)
-				{
-          //I_SoftError("VID_error 2\n");					
-          goto fail;					
-				}		
-    }		
+        if (!pv)  goto fail;
+    }
     return pv;
 fail:
     return NULL;
@@ -418,47 +436,16 @@ int VID_SetMode (modenum_t modenum)
     vid.width  = currentmode_p->width;
     vid.height = currentmode_p->height;
     vid.bytepp = currentmode_p->bytesperpixel;
-    // vid.bitpp = (vid.bytepp==1)? 8:15;
+    vid.bitpp = (vid.bytepp==1)? 8:15;
 
-	
-    // Using Updated Commandline
-    if( req_drawmode == REQ_highcolor)
-    {
-        vid.bitpp = 15; vid.drawmode = DRAW15; vid.bytepp=2;
-    }
-    else if( req_drawmode == REQ_truecolor)
-    {
-        vid.bitpp = 32; vid.drawmode = DRAW32;; vid.bytepp=4;
-    }
-    else if( req_drawmode == REQ_specific)
-    {
-        switch(req_bitpp)
-        {
-          case 15: vid.bitpp = 15; vid.drawmode = DRAW15; vid.bytepp=2;  break;
-          case 16: vid.bitpp = 16; vid.drawmode = DRAW16; vid.bytepp=2;  break;						
-          case 24: vid.bitpp = 24; vid.drawmode = DRAW24; vid.bytepp=3;   break;
-          case 32: vid.bitpp = 32; vid.drawmode = DRAW32; vid.bytepp=4;   break;
-          default: vid.bitpp = 8;  vid.drawmode = DRAW8PAL; vid.bytepp=1;  break;
-        }
-    }
-    else
-    {
-        vid.bitpp = 8; vid.drawmode = DRAW8PAL; vid.bytepp=1;  
-    }
-		
-    /* Nicht die 3 weiteren Zeilen entfernen. Sonst st¸rzt das Bild ab.*/
-    vid.direct_rowbytes = currentmode_p->rowbytes;
-    vid.widthbytes = vid.width * vid.bytepp;
-    vid.direct_size = vid.direct_rowbytes * vid.height;			
-		
-    stat = (*currentmode_p->setmode_func) (&vid, currentmode_p);
+    stat = (*pcurrentmode->setmode_func) (&vid, pcurrentmode);
       // sets vid.direct, vid.buffer, vid.display, vid.ybytes, vid.screen_size, vid.screen1
     if (stat < 0)
     {
         if (stat == FAIL_create)
         {
             // hardware could not setup mode
-            //if (!VID_SetMode (vid.modenum))
+            //if (VID_SetMode (vid.modenum) < 0)
             //    I_Error ("VID_SetMode: couldn't set video mode (hard failure)");
             I_SoftError("Couldn't set video mode %d\n", modenum);
         }
@@ -475,30 +462,27 @@ int VID_SetMode (modenum_t modenum)
         vid.height = oldvid.height;
         vid.bytepp = oldvid.bytepp;
         vid.bitpp = oldvid.bitpp;
-        (*currentmode_p->setmode_func) (&vid, currentmode_p);
+        (*pcurrentmode->setmode_func) (&vid, pcurrentmode);
         return FAIL_create;
     }
 
-    //vid.widthbytes = vid.width * vid.bytepp;
-    //vid.drawmode = (vid.bytepp==1)? DRAW8PAL:DRAW15;
+    vid.widthbytes = vid.width * vid.bytepp;
+    vid.drawmode = (vid.bytepp==1)? DRAW8PAL:DRAW15;
     vid.direct_rowbytes = currentmode_p->rowbytes;
     vid.direct_size = vid.direct_rowbytes * vid.height;
     vid.modenum = modenum;
     vid.fullscreen = set_fullscreen;
 
+#ifdef DEBUG
     debug_Printf("after VID_SetMode\n");
-
-    debug_Printf("vid.name     %s\n",currentmode_p->name);
     debug_Printf("vid.width    %d\n",vid.width);
     debug_Printf("vid.height   %d\n",vid.height);
     debug_Printf("vid.buffer   %x\n",vid.buffer);
-    debug_Printf("vid.bitpp    %d\n",vid.bitpp);			
-    debug_Printf("vid.byteppp  %d\n",vid.bytepp*8);		
-    debug_Printf("vid.rowbytes %d\n",vid.direct_rowbytes);
+    debug_Printf("vid.rowbytes %d\n",vid.rowbytes);
     debug_Printf("vid.numpages %d\n",vid.numpages);
     debug_Printf("vid.recalc   %d\n",vid.recalc);
     debug_Printf("vid.direct   %x\n",vid.direct);
-
+#endif
     //debug
     //if (vid.rowbytes != vid.width)
     //    I_Error("vidrowbytes (%d) <> vidwidth(%d)\n",vid.rowbytes,vid.width);
@@ -531,9 +515,9 @@ void *VID_ExtraFarToLinear (void *ptr)
 // In:  vesa mode number, from the vesa videomodenumbers list
 // Out: false, if no info for given modenum
 // ========================================================================
-int VID_VesaGetModeInfo (int modenum)
+static
+int VID_VesaGetModeInfo (int modenum, byte gmi_req_bitpp)
 {
-	
     int     bytes_per_pixel;
     int     i;
     __dpmi_regs regs;
@@ -552,18 +536,24 @@ int VID_VesaGetModeInfo (int modenum)
     {
         dosmemget (MASK_LINEAR(__tb), sizeof(vesamodeinfo_t), &vesamodeinfo);
 
-        bytes_per_pixel = (vesamodeinfo.BitsPerPixel+1)/8;
+        bytes_per_pixel = (vesamodeinfo.BitsPerPixel+7)/8;
 
-       // we add either highcolor or lowcolor video modes, not all
-       if (vesamodeinfo.BitsPerPixel != BitsColor)
-       return false;						
-       /*
+#if 1
+        if (vesamodeinfo.BitsPerPixel != gmi_req_bitpp)
+            return false;
+#else
+        // we add either highcolor or lowcolor video modes, not the two
         if (highcolor && (vesamodeinfo.BitsPerPixel != 15))
             return false;
         if (!highcolor && (vesamodeinfo.BitsPerPixel != 8))
             return false;
-       */
-        if ((bytes_per_pixel > 4/*2*/) ||
+#endif
+
+#if 1       
+        if ((bytes_per_pixel > 4) ||
+#else
+        if ((bytes_per_pixel > 2) ||
+#endif
             (vesamodeinfo.XResolution > MAXVIDWIDTH) ||
             (vesamodeinfo.YResolution > MAXVIDHEIGHT))
         {
@@ -601,27 +591,29 @@ int VID_VesaGetModeInfo (int modenum)
 
 #ifdef DEBUG
         debug_Printf("VID: (VESA) info for mode 0x%x\n", modeinfo.modenum);
-        debug_Printf("  mode attrib        = 0x%0x\n", modeinfo.mode_attributes);
-        /*debug_Printf("  win a attrib       = 0x%0x\n", *(unsigned char*)(infobuf+2));*/
-        /*debug_Printf("  win b attrib       = 0x%0x\n", *(unsigned char*)(infobuf+3));*/
-        debug_Printf("  win a seg          = 0x%0x\n", (int) modeinfo.winasegment);
-        debug_Printf("  win b seg          = 0x%0x\n", (int) modeinfo.winbsegment);
-        debug_Printf("  bytes per scanline = %d\n",modeinfo.bytes_per_scanline);
-        debug_Printf("  width = %d, height = %d\n", modeinfo.width,modeinfo.height);
-        debug_Printf("  win                = %c\n", 'A' + modeinfo.win);
-        debug_Printf("  win granularity    = %d\n", modeinfo.granularity);
-        debug_Printf("  win size           = %d\n", modeinfo.win_size);
-        debug_Printf("  bits per pixel     = %d\n", modeinfo.bits_per_pixel);
-        debug_Printf("  bytes per pixel    = %d\n", modeinfo.bytes_per_pixel);
-        debug_Printf("  memory model       = 0x%x\n", modeinfo.memory_model);
-        debug_Printf("  num pages          = %d\n", modeinfo.num_pages);
-        debug_Printf("  red width          = %d\n", modeinfo.red_width);
-        debug_Printf("  red pos            = %d\n", modeinfo.red_pos);
-        debug_Printf("  green width        = %d\n", modeinfo.green_width);
-        debug_Printf("  green pos          = %d\n", modeinfo.green_pos);
-        debug_Printf("  blue width         = %d\n", modeinfo.blue_width);
-        debug_Printf("  blue pos           = %d\n", modeinfo.blue_pos);
-        debug_Printf("  phys mem           = %x\n", modeinfo.pptr);				
+        debug_Printf("  mode attrib = 0x%0x\n", modeinfo.mode_attributes);
+        debug_Printf("  win a attrib = 0x%0x\n", *(unsigned char*)(infobuf+2));
+        debug_Printf("  win b attrib = 0x%0x\n", *(unsigned char*)(infobuf+3));
+        debug_Printf("  win a seg 0x%0x\n", (int) modeinfo.winasegment);
+        debug_Printf("  win b seg 0x%0x\n", (int) modeinfo.winbsegment);
+        debug_Printf("  bytes per scanline = %d\n",
+                modeinfo.bytes_per_scanline);
+        debug_Printf("  width = %d, height = %d\n", modeinfo.width,
+                modeinfo.height);
+        debug_Printf("  win = %c\n", 'A' + modeinfo.win);
+        debug_Printf("  win granularity = %d\n", modeinfo.granularity);
+        debug_Printf("  win size = %d\n", modeinfo.win_size);
+        debug_Printf("  bits per pixel = %d\n", modeinfo.bits_per_pixel);
+        debug_Printf("  bytes per pixel = %d\n", modeinfo.bytes_per_pixel);
+        debug_Printf("  memory model = 0x%x\n", modeinfo.memory_model);
+        debug_Printf("  num pages = %d\n", modeinfo.num_pages);
+        debug_Printf("  red width = %d\n", modeinfo.red_width);
+        debug_Printf("  red pos = %d\n", modeinfo.red_pos);
+        debug_Printf("  green width = %d\n", modeinfo.green_width);
+        debug_Printf("  green pos = %d\n", modeinfo.green_pos);
+        debug_Printf("  blue width = %d\n", modeinfo.blue_width);
+        debug_Printf("  blue pos = %d\n", modeinfo.blue_pos);
+        debug_Printf("  phys mem = %x\n", modeinfo.pptr);
 #endif
     }
 
@@ -636,7 +628,8 @@ int VID_VesaGetModeInfo (int modenum)
 #define MAXVESADESC 100
 static char vesadesc[MAXVESADESC] = "";
 
-void VID_VesaGetExtraModes (void)
+// append modes to modelist
+void VID_VesaGetExtraModes ( byte select_bitpp )
 {
     int             i;
     unsigned long   addr;
@@ -667,17 +660,10 @@ void VID_VesaGetExtraModes (void)
     dosmemget(MASK_LINEAR(__tb), sizeof(vbeinfoblock_t), &vesainfo);
 
     if (strncmp(vesainfo.VESASignature, "VESA", 4) != 0)
-    {
-no_vesa:
-        CONS_Printf ("No VESA driver\n");
-        return;
-    }
+        goto no_vesa;
 
     if (vesainfo.VESAVersion < (VBEVERSION<<8))
-    {
-        CONS_Printf ("VESA VBE %d.0 not available\n", VBEVERSION);
-        return;
-    }
+        goto wrong_vesa;
 
     //
     // vesa version number
@@ -702,55 +688,31 @@ no_vesa:
     CONS_Printf ("%s)\n",vesadesc);
 
     totalvidmem = vesainfo.TotalMemory << 16;
-    nummodes  = 0;
-    numvmodes = 0;		
+
+    vesa_bitpp = select_bitpp;
+
+   //
+   // find 8 bit modes
+   //
+    numvmodes = 0;
     mode_ptr = RM_TO_LINEAR(vesainfo.VideoModePtr);
-
-    while (nummodes < MAX_VESA_MODES)
+    while ((vmode[numvmodes] = _farpeekw(_dos_ds, mode_ptr)) != 0xFFFF)
     {
-       vesamode = _farpeekw(_dos_ds, mode_ptr);
-    
-       // Sicherheitschecks ñ das ist der Trick!
-       if (vesamode == 0xFFFF)        // normales Ende
-           break;
-       if (vesamode < 0x100)           // ung¸ltig (unter 0x100 = Textmodi)
-           break;
-       if (mode_ptr >= RM_TO_LINEAR(vesainfo.VideoModePtr) + 512)
-           break;                      // Liste zu lang ? Abbruch (Schutz!)
-
-       vmode[numvmodes++] = vesamode;
-       mode_ptr += 2;
+        numvmodes++;
+        if( numvmodes == MAX_VESA_MODES )
+            break;
+        mode_ptr += 2;
     }
-    vmode[numvmodes] = 0xFFFF;  // sauber abschlieﬂen
+    vmode[numvmodes] = 0xffff;
 
-    nummodes  = 0;  // number of video modes accepted for the game	
-    numvmodes = 0;  // go again through vmodes table
+    nummodes = 0;       // number of video modes accepted for the game
+
+    numvmodes=0;  // go again through vmodes table
     while ( ((vesamode=vmode[numvmodes++]) != 0xFFFF) && (nummodes < MAX_VESA_MODES) )
-    {		
-  
+    {
         //fill the modeinfo struct.
-        if (VID_VesaGetModeInfo (vesamode))
+        if (VID_VesaGetModeInfo (vesamode, select_bitpp))
         {
-
-           // ================================================================
-           // 2. Doppelte Auflˆsungen entfernen (egal welches BPP ñ einfach den ersten behalten)
-           // ================================================================
-           if (nummodes > 1)
-           {
-             int write_idx = 1;  // wo wir hinschreiben
-
-             for (i = 1; i < nummodes; i++)
-             {
-               // Wenn Auflˆsung anders ist als die vorherige ? behalten
-               if (vesa_modes[i].width  != vesa_modes[write_idx-1].width || vesa_modes[i].height != vesa_modes[write_idx-1].height)
-               {
-                   vesa_modes[write_idx++] = vesa_modes[i];			      			
-               }
-               // sonst: gleiche Auflˆsung ? verwerfen (egal welches BPP)
-              }
-              nummodes = write_idx;  // neue Anzahl
-            }
-
             vesa_modes[nummodes].next = &vesa_modes[nummodes+1];
             if (vesamodeinfo.XResolution > 999)
             {
@@ -791,7 +753,6 @@ no_vesa:
             vesa_modes[nummodes].rowbytes = vesamodeinfo.BytesPerScanLine;
             vesa_modes[nummodes].modetype = MODE_fullscreen;
             vesa_modes[nummodes].extradata = &vesa_extra[nummodes];
-            vesa_modes[nummodes].setmode_func = VID_VesaInitMode; /* Nicht entfernen. Crasht */
 
             if (vesamodeinfo.ModeAttributes & LINEAR_FRAME_BUFFER)
             {
@@ -828,9 +789,7 @@ no_vesa:
             }
 
             vesa_modes[nummodes].bytesperpixel = (vesamodeinfo.BitsPerPixel+1)/8;
-#if DEBUG            						
-				    GenPrintf( EMSG_info,  " + Mode: %-3d [ %-4dx%-4dx%-1d ]\n",nummodes, vesamodeinfo.XResolution, vesamodeinfo.YResolution, vesamodeinfo.BitsPerPixel);											
-#endif
+
             nummodes++;
         }
     }
@@ -841,7 +800,15 @@ no_vesa:
         vesa_modes[nummodes-1].next = NULL; //full_vidmodes;
         append_full_vidmodes( &vesa_modes[0], nummodes );
     }
+    return;
+   
+no_vesa:
+    CONS_Printf ("No VESA driver\n");
+    return;
 
+wrong_vesa:
+    CONS_Printf ("VESA VBE %d.0 not available\n", VBEVERSION);
+    return;
 }
 
 
@@ -884,8 +851,9 @@ boolean VID_FreeAndAllocVidbuffer (viddef_t *lvid)
     // initially clear the video buffer
     memset (lvid->buffer, 0, vidbuffersize);
 
-
-    debug_Printf("VID_FreeAndAllocVidbuffer done, vidbuffersize: %x\n",vidbuffersize);
+#ifdef DEBUG
+ debug_Printf("VID_FreeAndAllocVidbuffer done, vidbuffersize: %x\n",vidbuffersize);
+#endif
     return true;
 }
 
@@ -906,7 +874,7 @@ int VGA_InitMode (viddef_t *lvid, vmode_t *currentmode_p)
 
     //set mode 0x13
     regs.h.ah = 0;
-    regs.h.al = 0x13; // Benutze 0x108 (640x480 Textmodus als Start)
+    regs.h.al = 0x13;
     __dpmi_int(0x10, &regs);
 
     // here it is the standard VGA 64k window, not an LFB
@@ -917,6 +885,7 @@ int VGA_InitMode (viddef_t *lvid, vmode_t *currentmode_p)
 
     return 1;
 }
+
 
 // ========================================================================
 // Set video mode routine for VESA video modes, see VID_SetMode()
@@ -929,33 +898,18 @@ int VID_VesaInitMode (viddef_t *lvid, vmode_t *currentmode_p)
 
     extra = currentmode_p->extradata;
 
-
- debug_Printf("\n\n=== VID_VesaInitMode DEBUG Mode: ===\n");
- debug_Printf("currentmode_p->Name %s\n",currentmode_p->name);
- debug_Printf(" Width   : %d\n",currentmode_p->width);
- debug_Printf(" Height  : %d\n",currentmode_p->height);
- debug_Printf(" Rowbytes: %d\n",currentmode_p->rowbytes);
- debug_Printf(" Numpages: %d\n",currentmode_p->numpages); 
- switch(currentmode_p->modetype)
- {
-   case 0:debug_Printf(" ModeType: %d [MODE_NOP]\n",currentmode_p->modetype);break;
-   case 1:debug_Printf(" ModeType: %d [MODE_window]\n",currentmode_p->modetype);break;
-   case 2:debug_Printf(" ModeType: %d [MODE_fullscreen]\n",currentmode_p->modetype);break;
-   case 3:debug_Printf(" ModeType: %d [MODE_voodoo]\n",currentmode_p->modetype);break;
-   case 4:debug_Printf(" ModeType: %d [MODE_either]\n",currentmode_p->modetype);break;
-   case 5:debug_Printf(" ModeType: %d [MODE_other]\n",currentmode_p->modetype);break;		
- } 
- switch(currentmode_p->bytesperpixel)
- {
-	 case 1:debug_Printf(" BytesPerPixel %d [8bit]\n",currentmode_p->bytesperpixel);break;
-   case 2:debug_Printf(" BytesPerPixel %d [15/16bit]\n",currentmode_p->bytesperpixel);break;
-   case 3:debug_Printf(" BytesPerPixel %d [24bit]\n",currentmode_p->bytesperpixel);break;
-   case 4:debug_Printf(" BytesPerPixel %d [32bit]\n",currentmode_p->bytesperpixel);break;		
- } 
-
- debug_Printf("currentmode_p->Extradata :\n");
- debug_Printf(" ->VesaMode  = %x\n",extra->vesamode);
- debug_Printf(" ->LinearMEM = %x\n\n",extra->linearmem);
+#ifdef DEBUG
+ debug_Printf("VID_VesaInitMode...\n");
+ debug_Printf(" currentmode_p->name %s\n",currentmode_p->name);
+ debug_Printf("               width %d\n",currentmode_p->width);
+ debug_Printf("               height %d\n",currentmode_p->height);
+ debug_Printf("               rowbytes %d\n",currentmode_p->rowbytes);
+ debug_Printf("               windowed %d\n",currentmode_p->windowed);
+ debug_Printf("               numpages %d\n",currentmode_p->numpages);
+ debug_Printf(" currentmode_p->extradata :\n");
+ debug_Printf("                ->vesamode %x\n",extra->vesamode);
+ debug_Printf("                ->linearmem %x\n\n",extra->linearmem);
+#endif
 
     //added:20-01-98:no page flipping now... TO DO!!!
     lvid->numpages = 1;
@@ -998,8 +952,10 @@ int VID_VesaInitMode (viddef_t *lvid, vmode_t *currentmode_p)
 //added:21-03-98:
 void VID_Command_NumModes_f (void)
 {
-     range_t  mr = VID_ModeRange( MODE_fullscreen );
-     GenPrintf( EMSG_info, "Video modes %d to %d available(s)\n", mr.first, mr.last );		 
+    int     nummodes;
+
+    nummodes = VID_NumModes ();
+    CONS_Printf ("%d video mode(s) available(s)\n", nummodes);
 }
 
 
@@ -1007,24 +963,33 @@ void VID_Command_NumModes_f (void)
 //
 void VID_Command_ModeInfo_f (void)
 {
-    range_t  mr = VID_ModeRange( MODE_fullscreen );
-    modenum_t   mn = {MODE_fullscreen, 0};
     vmode_t     *pv;
+    int         modenum;
 
     if (COM_Argc()!=2)
-        mn = vid.modenum;          // describe the current mode
+        modenum = vid.modenum;          // describe the current mode
     else
-       mn.index = atoi (COM_Argv(1));   //    .. the given mode number
+        modenum = atoi (COM_Argv(1));   //    .. the given mode number
 
-    if (mn.index > mr.last || mn.index < mr.first ) //faB: dont accept the windowed mode 0
+    if (modenum >= VID_NumModes())
     {
-        GenPrintf( EMSG_warn, "No such video mode\n");
+        CONS_Printf ("No such video mode\n");
         return;
     }
 
-    pv = VID_GetModePtr(mn);
-    VID_GetModeInfo_c(pv,mn);
+    pv = VID_GetModePtr (modenum);
 
+    CONS_Printf ("%s\n", VID_ModeInfo (modenum, NULL));
+    CONS_Printf ("width : %d\n"
+                 "height: %d\n"
+                 "bytes per scanline: %d\n"
+                 "bytes per pixel: %d\n"
+                 "numpages: %d\n",
+                 pv->width,
+                 pv->height,
+                 pv->rowbytes,
+                 pv->bytesperpixel,
+                 pv->numpages );
 }
 
 
@@ -1032,36 +997,23 @@ void VID_Command_ModeInfo_f (void)
 //
 void VID_Command_ModeList_f (void)
 {
-    range_t  mr = VID_ModeRange( MODE_fullscreen );
-    modenum_t   mn = {MODE_fullscreen, 0};
-    int         i;
-    char        *modename;
-    char        *attr_str;
-		vmode_t     *pv;
+    int         i, nummodes;
+    char        *pinfo, *pheader;
+    vmode_t     *pv;
     boolean     na;
-    
-		na = false;
 
-    for (i=mr.first ; i<=mr.last ; i++)
-    {			  
-	      mn.index = i;
-				modename = VID_GetModeName (mn);
-        pv = VID_GetModePtr (mn);
-        if( pv )
-				{
-			  /*
-			  attr_str = (pv->bytesperpixel==1)? " (hicolor)" : "";
-				GenPrintf( EMSG_info, "%d: %s%s\n", i, modename, attr_str);
-				*/
+    na = false;
+
+    nummodes = VID_NumModes ();
+    for (i=0 ; i<nummodes ; i++)
+    {
+        pv = VID_GetModePtr (i);
+        pinfo = VID_ModeInfo (i, &pheader);
+
         if (i==0 || pv->bytesperpixel==1)
-            GenPrintf( EMSG_info, "%d: %s\n", i, modename);
-        else if (pv->bytesperpixel==2)
-            GenPrintf( EMSG_info, "%d: %s (Highcolor 15/16Bit)\n", i, modename);
-        else if (pv->bytesperpixel==3)
-            GenPrintf( EMSG_info, "%d: %s (Truecolor 24Bit)\n", i, modename);
-        else if (pv->bytesperpixel==4)
-            GenPrintf( EMSG_info, "%d: %s (Truecolor 32Bit)\n", i, modename);
-				}
+            CONS_Printf ("%d: %s\n", i, pinfo);
+        else
+            CONS_Printf ("%d: %s (hicolor)\n", i, pinfo);
     }
 
 }
@@ -1070,182 +1022,20 @@ void VID_Command_ModeList_f (void)
 //  vid_mode <modenum>
 //
 void VID_Command_Mode_f (void)
-{	  
-    range_t  mr = VID_ModeRange( MODE_fullscreen );
-    modenum_t   mn = {MODE_fullscreen, 0};
-    vmode_t *pv;
-		
+{
+    int         modenum;
+
     if (COM_Argc()!=2)
     {
-        GenPrintf( EMSG_info, "vid_mode <modenum> : set video mode\n");
+        CONS_Printf ("vid_mode <modenum> : set video mode\n");
         return;
     }
 
-    mn.index = atoi(COM_Argv(1));
-    if (mn.index > mr.last || mn.index < mr.first ) //faB: dont accept the windowed mode 0
-        GenPrintf( EMSG_info, "No such video mode\n");
+    modenum = atoi(COM_Argv(1));
+
+    if (modenum >= VID_NumModes())
+        CONS_Printf ("No such video mode\n");
     else
-    {
         // request vid mode change
-        setmodeneeded = mn;
-        pv = VID_GetModePtr(mn);
-        VID_GetModeInfo_c(pv,mn);
-    }
+        setmodeneeded = modenum+1;
 }
-
-void VID_GetModeInfo_c(vmode_t *pv, modenum_t mn)
-{
-	
-    GenPrintf( EMSG_info,"Current Screen Resolution Mode(%d): %s\n", mn.index,VID_ModeInfo (mn, NULL));
-    GenPrintf( EMSG_info,"- Width : %d\n"
-                 "- Height: %d\n",
-                 pv->width,
-                 pv->height);
-
-    switch (pv->bytesperpixel)
-    {
-       case 0: GenPrintf( EMSG_info,"- Bytes per Pixel %d (%1dBit Mode)\n",pv->bytesperpixel,BitsColor); break;
-       case 1: GenPrintf( EMSG_info,"- Bytes per Pixel %d (%1dBit Mode)\n",pv->bytesperpixel,BitsColor); break;
-       case 2:
-       {
-          if (BitsColor==15)
-              GenPrintf( EMSG_info,"- Bytes per Pixel %d (%dBit Mode)\n",pv->bytesperpixel,BitsColor);
-          else
-              GenPrintf( EMSG_info,"- Bytes per Pixel %d (%dBit Mode)\n",pv->bytesperpixel,BitsColor);
-          break;
-       }
-       case 3: GenPrintf( EMSG_info,"- Bytes per Pixel %d (%dBit Mode)\n",pv->bytesperpixel,BitsColor); break;
-       case 4: GenPrintf( EMSG_info,"- Bytes per Pixel %d (%dBit Mode)\n",pv->bytesperpixel,BitsColor); break;
-    }
-
-    GenPrintf( EMSG_info,"- Bytes per Scanline: %d\n"
-                 "- Numpages: %d\n",
-                 pv->rowbytes,
-                 pv->numpages);
-}
-
-/* ========================================================================
-   Folgendes wurde mit svn 1069 entfernt und von mir wieder eingef¸gt damit
- 	 der Code funktioniert. Fixed.
-   ========================================================================
-	 
-   added:30-01-98: return number of video modes in pvidmodes list	 
-*/
-static inline
-int VID_NumModes(void)
-{
-  return ( vid.fullscreen )? num_full_vidmodes : num_all_vidmodes;
-}
-
-/* ========================================================================
-   zus‰tzliche funktionen... alles noch nicht final
-   ======================================================================== 
-*/
-static
-void I_RequestMode(modenum_t modenum)
-{
-  
-  int i;
-  int W;
-  int H;
-  int Bit;  
-  
-  vmode_t *vmode;  
-  vmode   =VID_GetModePtr(modenum);
-  
-  i  = modenum.index;
-  W  = vmode->width;
-	H  = vmode->height;
-	Bit= vmode->bytesperpixel*8;
-          
-  debug_Printf("I_RequestMode: %s: [%d] %dx%dx%dbit (Name: '%s')\n",(vmode->modetype==MODE_fullscreen)?"MODE_FullScreen":"MODE_Window    "
-                                                                          ,i
-                                                                          ,W
-                                                                          ,H
-                                                                          ,Bit
-                                                                          ,vmode->name);   
-}
-
-modenum_t I_RequestGetScreen(modenum_t modenum)
-{
-    int i;
-    int W;
-    int H;
-    int Bit;
-    char *ModeName;
-    
-    vmode_t *vmode; 
-    range_t  range = VID_ModeRange( MODE_fullscreen);     
-    
-    for (i=range.first ; i<=range.last ; i++)
-    {
-      modenum.index = i;
-      ModeName      = VID_GetModeName (modenum);
-      
-      vmode = VID_GetModePtr (modenum);
-      if( vmode )
-      {
-        I_RequestMode(modenum);
-      }
-    }
-      
-    /*
-     Manuelle Selection wenn keine Config oder Auflˆsung angegeben ist
-    */    
-    modenum.index = 1;
-    return modenum;
-}
-
-void I_RequestConGraphics(void)
-{		
-    /*
-     initalisierung der Auflˆung kurz bevor des Initial der Console Graphic
-    */    
-    modenum_t modenum = vid.modenum;    
-    debug_Printf("I_RequestConGraphics...\n");
-    debug_Printf("I_RequestConGraphics [ Mode: %d ]\n",modenum.index);
-    
-		if (modenum.index==0)
-    {
-			if (req_drawmode > 0)
-			{
-        /*
-        bei Auflˆsungen der Bit grˆﬂe 15,16,24,32 den ersten Mode unter
-        vgavidmodes '320x200x8bit' ¸berspringen
-        */
-        all_vidmodes = NULL;       
-        all_vidmodes = &vgavidmodes[1];
-			}      
-      modenum = I_RequestGetScreen(modenum);
-        
-      VID_SetMode (modenum);
-    }
-    debug_Printf("I_RequestConGraphics: Selectet\n");   
-    I_RequestMode(modenum);
-}
-
-static
-int TXT_InitMode (viddef_t *lvid, vmode_t *currentmode_p)
-{
-    __dpmi_regs   regs;
-
-    if (!VID_FreeAndAllocVidbuffer (lvid))
-       return FAIL_memory;  //no mem
-
-    //added:26-01-98: should clear video mem here
-
-    //set mode 0x13
-    regs.h.ah = 0;
-    regs.h.al = 0xFF;//0x108/*0x13*/; // Benutze 0x108 (640x480 Textmodus als Start)
-		regs.h.al +=0x9;
-    __dpmi_int(0x10, &regs);
-
-    // here it is the standard VGA 64k window, not an LFB
-    // (you could have 320x200x256c with LFB in the vesa modes)
-    lvid->direct = (byte *) real2ptr (0xa0000);
-    lvid->numpages = 1;
-    lvid->bytepp = currentmode_p->bytesperpixel+1;
-
-    return 1;
-}
-

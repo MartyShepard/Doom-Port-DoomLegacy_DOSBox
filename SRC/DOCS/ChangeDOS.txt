@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01423 ]: w108.11 vid driver interface
+				  DOS: It completely corrupts the video DOS source code. Isn't that great...?
+					Warum macht man das?
+
 [01422 ]: w108.10 unload data
           DOS: Move allegro Joystick enum to g_input.c
 					
