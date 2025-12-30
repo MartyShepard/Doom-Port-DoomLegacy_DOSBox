@@ -85,7 +85,7 @@ static vesa_extra_t vesa_extra[MAX_VESA_MODES];
 #define NUMVGAVIDMODES  1
 static int VGA_InitMode (viddef_t *lvid, vmode_t *currentmode_p);
 static int TXT_InitMode (viddef_t *lvid, vmode_t *currentmode_p);
-static vmode_t      vgavidmodes[NUMVGAVIDMODES+1] = {
+static vmode_t      vgavidmodes[NUMVGAVIDMODES] = {
   { // 0 mode, HIDDEN
     & vgavidmodes/*specialmodes*/[1],
     "Initial",

@@ -297,6 +297,7 @@
   static const char DOSSTRING[] = "[" DOSNAME "]";
 
   // Proto
+  void Commandline_GetBitModi(void);
   void ListSupportetWads(void);
   void ListSupportetWads_Command(void);  
 
@@ -2178,40 +2179,12 @@ void D_DoomMain()
     // setup loading screen with dedicated=0 and vid=800,600
     V_Init_VideoControl();  // before I_StartupGraphics
 
+    #if defined( __DJGPP__ )
+        Commandline_GetBitModi();
+    #endif
+
     if( ! dedicated )
-    {
-#if defined( __DJGPP__ )
-        // Diese Arguemente (für den Screen) werden für die DOS Version zu spät aufgerufen
-        set_drawmode = cv_drawmode.EV;
-        req_bitpp = 0;  // because of launcher looping
-        req_alt_bitpp = 0;
-        if( M_CheckParm("-highcolor") )
-        {
-            set_drawmode = DRM_explicit_bpp;  // 15 or 16 bpp
-            req_bitpp = 16;
-            req_alt_bitpp = 15;
-        }
-        if( M_CheckParm("-truecolor") )
-        {
-            set_drawmode = DRM_explicit_bpp;  // 24 or 32 bpp
-            req_bitpp = 32;
-            req_alt_bitpp = 24;
-        }
-        if( M_CheckParm("-native") )
-        {
-            set_drawmode = DRM_native;  // bpp of the default screen
-        }
-        p = M_CheckParm("-bpp");  // specific bit per pixel color
-        if( p )
-        {
-            // binding, should fail if cannot find a mode
-            req_bitpp = atoi(myargv[p + 1]);
-            if( ! V_CanDraw( req_bitpp ) )            
-              I_Error( "-bpp invalid\n");
-            
-            set_drawmode = DRM_explicit_bpp;
-        }
-#endif		
+    {	
         I_StartupGraphics();    // window
         SCR_Startup();
     }
@@ -2750,10 +2723,11 @@ restart_command:
         drawmode_recalc = false;
         I_ShutdownGraphics();
         EOUT_flags = EOUT_log;
-    }
+    }   
     else
-    {
+    {     
         set_drawmode = cv_drawmode.EV;
+#if !defined( __DJGPP__ )          
         req_bitpp = 0;  // because of launcher looping
         req_alt_bitpp = 0;
 
@@ -2789,7 +2763,6 @@ restart_command:
             }
             set_drawmode = DRM_explicit_bpp;
         }
-
         // Allow a config file for opengl to overload the config settings.
         // It may be edited to set only what settings should be specific to opengl.
         // May be a problem if opengl cannot really be started.
@@ -2823,6 +2796,8 @@ restart_command:
 #else
         I_RequestFullGraphics( cv_fullscreen.EV );
 #endif
+#endif  //== END #if !defined( __DJGPP__ )
+
         // text only, incomplete for rendering
         I_Rendermode_setup();  // need HWR_SetPalette
         SCR_Recalc();
@@ -3507,6 +3482,33 @@ void ListSupportetWads_Command(void)
     ListSupportetWads();
     exit(0);    
 }
-  
+ 
+void Commandline_GetBitModi(void)
+{
+  uint16_t p;
+  set_drawmode = cv_drawmode.EV;
+  req_bitpp = req_alt_bitpp = 0;
+  if( M_CheckParm("-highcolor") )   // 15 or 16 bpp
+  {
+     set_drawmode = DRM_explicit_bpp; req_bitpp = 16; req_alt_bitpp = 15;
+  }
+  if( M_CheckParm("-truecolor") )   // 24 or 32 bpp
+  {
+     set_drawmode = DRM_explicit_bpp; req_bitpp = 32; req_alt_bitpp = 24;
+  }
+  if( M_CheckParm("-native") )      // bpp of the default screen        
+      set_drawmode = DRM_native;
+       
+  p = M_CheckParm("-bpp");          // specific bit per pixel color
+  if( p )
+  {          
+    req_bitpp = atoi(myargv[p + 1]);
+    if( ! V_CanDraw( req_bitpp ) )          
+          I_Error( "-bpp invalid\n");
+            
+    set_drawmode = DRM_explicit_bpp;
+  }
+  V_switch_drawmode( set_drawmode );  // command line, do not change config files  
+}       
 #endif
 

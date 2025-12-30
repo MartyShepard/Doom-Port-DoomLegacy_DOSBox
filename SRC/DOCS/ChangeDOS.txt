@@ -1,9 +1,15 @@
 * Not need to Compile.
 
-[01423 F]: w108.11 vid driver interface
+[01423F1]: w108.11 vid driver interface
+           DOS: Change DMain Arg funktion to use one mode
+					 and bitmode funktion and not lot of loopings.
+					 
+[01423F0]: w108.11 vid driver interface
           DOS: Compile Video Driver Fix..
-          There's still a lot of useless crap that's only for modern
-					operating systems. Anyway. Modes and bits are working again.
+          There's still a lot of useless shit that's only for modern
+					operating systems. Anyway, modes and bits are working again.
+					That guy should stop adding new code to broken code without
+					testing it.
 
 [01423 ]: w108.11 vid driver interface
 				  DOS: It completely corrupts the video DOS source code. Isn't that great...?

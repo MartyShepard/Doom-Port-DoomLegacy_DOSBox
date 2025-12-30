@@ -371,8 +371,8 @@ void I_StartupGraphics( void )
 
     /* Sartet mit dem gebennen Bit Modus */
     BitsColor = 8;
-    req_bitpp = 8;
-    req_drawmode = DRM_8pal;
+    //req_bitpp = 8;
+    //req_drawmode = DRM_8pal;
 /*
     if( req_drawmode == REQ_highcolor)
     {
