@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1427 2019-02-11 21:40:13Z wesleyjohnson $
+// $Id: r_defs.h 1429 2019-02-11 21:41:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -283,7 +283,7 @@ typedef struct lightlist_s {
   uint32_t                flags;
   lightlev_t *            lightlevel;
   extracolormap_t*        extra_colormap;
-  ffloor_t*               caster;
+  ffloor_t*               caster;  // ffloor that is source of light or shadow
 } ff_light_t;
 
 
@@ -294,9 +294,10 @@ typedef struct r_lightlist_s {
   fixed_t                 botheight;
   fixed_t                 botheightstep;
   lightlev_t              lightlevel;
-  lightlev_t              vlight;  // visible light 0..255
-  extracolormap_t*        extra_colormap;
-  lighttable_t*           rcolormap;
+//  lightlev_t              vlight;  // visible light 0..255
+  lighttable_t**          vlightmap;  // scalelights
+  extracolormap_t*        extra_colormap; // colormap tables
+  lighttable_t*           rcolormap;  // rendering colormap
   uint32_t                flags;
 } r_lightlist_t;
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
+// $Id: r_bsp.c 1429 2019-02-11 21:41:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1026,6 +1026,7 @@ void R_Prep3DFloors(sector_t*  sector)
   fixed_t        bestheight, maxheight;
   int            count, i, mapnum;
   sector_t*      modelsec;
+  ff_light_t   * ff_light;
 
   // count needed lightlist entries
   count = 1;
@@ -1053,17 +1054,19 @@ void R_Prep3DFloors(sector_t*  sector)
   memset(sector->lightlist, 0, sizeof(ff_light_t) * count);
 
   // init [0] to sector light
-  sector->lightlist[0].height = sector->ceilingheight + 1;
-  sector->lightlist[0].lightlevel = &sector->lightlevel;
-  sector->lightlist[0].caster = NULL;
-  sector->lightlist[0].extra_colormap = sector->extra_colormap;
-  sector->lightlist[0].flags = 0;
+  ff_light = & sector->lightlist[0];
+  ff_light->height = sector->ceilingheight + 1;
+  ff_light->lightlevel = &sector->lightlevel;
+  ff_light->caster = NULL;
+  ff_light->extra_colormap = sector->extra_colormap;
+  ff_light->flags = 0;
 
   // Work down from highest light to lowest light.
   // Determine each light in lightlist.
   maxheight = FIXED_MAX;  // down from max, previous light
   for(i = 1; i < count; i++)
   {
+    ff_light = & sector->lightlist[i];
     bestheight = -FIXED_MAX;
     best = NULL;
     for(rover = sector->ffloors; rover; rover = rover->next)
@@ -1095,9 +1098,9 @@ void R_Prep3DFloors(sector_t*  sector)
       return;
     }
 
-    sector->lightlist[i].height = maxheight = bestheight;
-    sector->lightlist[i].caster = best;
-    sector->lightlist[i].flags = best->flags;
+    ff_light->height = maxheight = bestheight;
+    ff_light->caster = best;
+    ff_light->flags = best->flags;
 
     // Setup the model sector extra_colormap
     // this could be done elsewhere, once.
@@ -1113,14 +1116,14 @@ void R_Prep3DFloors(sector_t*  sector)
     if(best->flags & FF_NOSHADE)
     {
       // FF_NOSHADE, copy next higher light
-      sector->lightlist[i].lightlevel = sector->lightlist[i-1].lightlevel;
-      sector->lightlist[i].extra_colormap = sector->lightlist[i-1].extra_colormap;
+      ff_light->lightlevel = sector->lightlist[i-1].lightlevel;
+      ff_light->extra_colormap = sector->lightlist[i-1].extra_colormap;
     }
     else
     {
       // usual light
-      sector->lightlist[i].lightlevel = best->toplightlevel;
-      sector->lightlist[i].extra_colormap = modelsec->extra_colormap;
+      ff_light->lightlevel = best->toplightlevel;
+      ff_light->extra_colormap = modelsec->extra_colormap;
     }
 
     if(best->flags & FF_SLAB_SHADOW)
@@ -1133,8 +1136,8 @@ void R_Prep3DFloors(sector_t*  sector)
         // Stopped segfault by init to 0.
         // Happens when bottom is found without finding top.
         // Get from lastlight indirect.
-        sector->lightlist[i].lightlevel = sector->lightlist[best->lastlight].lightlevel;
-        sector->lightlist[i].extra_colormap = sector->lightlist[best->lastlight].extra_colormap;
+        ff_light->lightlevel = sector->lightlist[best->lastlight].lightlevel;
+        ff_light->extra_colormap = sector->lightlist[best->lastlight].extra_colormap;
       }
       else
       {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_splats.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: r_splats.h 1429 2019-02-11 21:41:27Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -58,8 +58,7 @@
 // WALL SPLATS are patches drawn on top of wall segs
 struct wallsplat_s {
     int         patch;      // lump id.
-    vertex_t    v1;         // vertices along the linedef
-    vertex_t    v2;
+    vertex_t    v1, v2;     // vertices along the linedef
     fixed_t     top;
     fixed_t     offset;     // offset in columns<<FRACBITS from start of linedef to start of splat
     int         flags;
@@ -75,7 +74,7 @@ typedef struct wallsplat_s wallsplat_t;
 struct floorsplat_s {
     int         pic;        // a pic_t lump id
     int         flags;
-    vertex_t    verts[4];   // (x,y) as viewn from above on map
+    vertex_t    verts[4];   // (x,y) as viewed from above on map
     fixed_t     z;          //     z (height) is constant for all the floorsplat
     subsector_t* subsector;       // the parent subsector
     struct floorsplat_s * next;
