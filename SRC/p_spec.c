@@ -2,7 +2,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1420 2019-01-29 08:03:08Z wesleyjohnson $
+// $Id: p_spec.c 1427 2019-02-11 21:40:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1081,13 +1081,22 @@ sector_t *P_FindModelCeilingSector(fixed_t ceildestheight,int secnum)
 
 
 #if !defined (__DJGPP__)
-#define TAGHASH( tag, hashsize )   ((unsigned int) tag & (unsigned) hashsize)
+// [WDJ] Fixed horrible and buggy tag hash, sometimes only had two bins.
+// Make it a fixed size with a fixed mask.
+// Prboom fixed this by using a modulo instead of a mask.
+#define SECTOR_TAGHASH_SIZE  256
+#define LINE_TAGHASH_SIZE  64
+#define SECTOR_TAGHASH( tag )   (((unsigned int)(tag)) & (SECTOR_TAGHASH_SIZE-1))
+#define LINE_TAGHASH( tag )   (((unsigned int)(tag)) & (LINE_TAGHASH_SIZE-1))
+int32_t  sector_taghash_secnum[SECTOR_TAGHASH_SIZE];
+int32_t  line_taghash_linenum[LINE_TAGHASH_SIZE];
   /*
-  Bringt Legacy zum Absturz weil:
-  kein Hash, sondern ein Bitwise AND! Hashsize ist normalerweise "numsectors-1"
-  (also z. B. 1023, 2047, 4095 – immer 2^n - 1).
+    r1412 Bringt Legacy zum Absturz weil:
+    kein Hash, sondern ein Bitwise AND! Hashsize ist normalerweise "numsectors-1"
+    (also z. B. 1023, 2047, 4095 – immer 2^n - 1). Update 1427: sieht schlimmer aus....
   */
 #else
+static void P_Init_TagLists_From_SVN_1412(void);
 static inline int TAGHASH(uint16_t tag, int hashsize)
 {
     return (unsigned)tag % (unsigned)hashsize;
@@ -1106,7 +1115,11 @@ int  P_FindSectorFromLineTag ( line_t* line, int start )
 {
   start = (start >= 0) ?
     sectors[start].nexttag
+#if !defined (__DJGPP__)
+    : sector_taghash_secnum[ SECTOR_TAGHASH( line->tag )];
+#else
     : sectors[ TAGHASH( line->tag, numsectors )].firsttag;
+#endif
   while (start >= 0 && sectors[start].tag != line->tag)
     start = sectors[start].nexttag;
   return start;
@@ -1122,7 +1135,11 @@ int  P_FindSectorFromTag( uint16_t tag, int start )
 {
   start = (start >= 0) ?
     sectors[start].nexttag
+#if !defined (__DJGPP__)
+    : sector_taghash_secnum[ SECTOR_TAGHASH( tag )];
+#else
     : sectors[ TAGHASH( tag, numsectors )].firsttag;
+#endif
   while (start >= 0 && sectors[start].tag != tag)
     start = sectors[start].nexttag;
   return start;
@@ -1134,7 +1151,11 @@ int P_FindLineFromTag( uint16_t tag, int start)
 {
   start = (start >= 0) ?
      lines[start].nexttag
+#if !defined (__DJGPP__)
+     : line_taghash_linenum[ LINE_TAGHASH( tag )];
+#else
      : lines[ TAGHASH( tag, numlines )].firsttag;
+#endif
   while (start >= 0 && lines[start].tag != tag)
     start = lines[start].nexttag;
   return start;
@@ -1147,7 +1168,11 @@ int P_FindLineFromLineTag(const line_t *line, int start)
 {
   start = (start >= 0) ?
      lines[start].nexttag
+#if !defined (__DJGPP__)
+     : line_taghash_linenum[ LINE_TAGHASH( line->tag )];
+#else
      : lines[ TAGHASH( line->tag, numlines )].firsttag;
+#endif
   while (start >= 0 && lines[start].tag != line->tag)
     start = lines[start].nexttag;
   return start;
@@ -1158,25 +1183,33 @@ int P_FindLineFromLineTag(const line_t *line, int start)
 // Hash the sector tags across the sectors and linedefs.
 static void P_Init_TagLists(void)
 {
+#if !defined (__DJGPP__)
   register int i;
-
-  for (i=numsectors; --i>=0; )
-    sectors[i].firsttag = -1;
-  for (i=numsectors; --i>=0; )
+  for (i=SECTOR_TAGHASH_SIZE-1; i>=0; i-- )
   {
-      unsigned int j = TAGHASH( sectors[i].tag, numsectors );
-      sectors[i].nexttag = sectors[j].firsttag;
-      sectors[j].firsttag = i;
+      sector_taghash_secnum[i] = -1;
   }
-
-  for (i=numlines; --i>=0; )
-    lines[i].firsttag = -1;
-  for (i=numlines; --i>=0; )
+  for (i=LINE_TAGHASH_SIZE-1; i>=0; i-- )
   {
-      unsigned int j = TAGHASH( lines[i].tag, numlines );
-      lines[i].nexttag = lines[j].firsttag;
-      lines[j].firsttag = i;
+      line_taghash_linenum[i] = -1;
   }
+  for (i=numsectors-1; i>=0; i-- )
+  {
+      if( sectors[i].tag == 0 && !cv_zerotags.EV )  continue;
+      unsigned int j = SECTOR_TAGHASH( sectors[i].tag );
+      sectors[i].nexttag = sector_taghash_secnum[j];
+      sector_taghash_secnum[j] = i;
+  }
+  for (i=numlines-1; i>=0; i-- )
+  {
+      if( lines[i].tag == 0 && !cv_zerotags.EV )  continue;
+      unsigned int j = LINE_TAGHASH( lines[i].tag );
+      lines[i].nexttag = line_taghash_linenum[j];
+      line_taghash_linenum[j] = i;
+  }
+#else
+  P_Init_TagLists_From_SVN_1412();
+#endif
 }
 
 
@@ -4582,3 +4615,30 @@ static void P_SpawnPushers(void)
         } // switch
     } // for
 }
+
+#if defined (__DJGPP__)
+static void P_Init_TagLists_From_SVN_1412(void)
+{
+  /*
+    Benutze die version von 1412
+  */
+  register int i;
+  for (i=numsectors; --i>=0; )
+    sectors[i].firsttag = -1;
+  for (i=numsectors; --i>=0; )
+  {
+      unsigned int j = TAGHASH( sectors[i].tag, numsectors );
+      sectors[i].nexttag = sectors[j].firsttag;
+      sectors[j].firsttag = i;
+  }
+
+  for (i=numlines; --i>=0; )
+    lines[i].firsttag = -1;
+  for (i=numlines; --i>=0; )
+  {
+      unsigned int j = TAGHASH( lines[i].tag, numlines );
+      lines[i].nexttag = lines[j].firsttag;
+      lines[j].firsttag = i;
+  }
+}
+#endif

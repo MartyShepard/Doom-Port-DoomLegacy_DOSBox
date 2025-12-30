@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1425 2019-01-29 08:07:59Z wesleyjohnson $
+// $Id: r_defs.h 1427 2019-02-11 21:40:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -18,6 +18,8 @@
 //
 //
 // $Log: r_defs.h,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.35  2003/05/04 04:14:08  sburke
 // Prevent misaligned access on Solaris/Sparc.
 //
@@ -346,7 +348,11 @@ typedef struct sector_s
     short       special;	 // special type code (highly encoded with fields)
     short       oldspecial;      //SoM: 3/6/2000: Remember if a sector was secret (for automap)
     uint16_t    tag;
-    int nexttag,firsttag;        //SoM: 3/6/2000: by killough: improves searches for tags.
+#if defined( __DJGPP__ )													 
+    int32_t nexttag,firsttag;        //SoM: 3/6/2000: by killough: improves searches for tags.
+#else		
+    int32_t     nexttag;         // linked list of sectors with that tag, improves searches for tags.
+#endif		
 
     // 0 = untraversed, 1,2 = sndlines -1
     byte        soundtraversed;
@@ -539,8 +545,11 @@ typedef struct line_s
     //SoM: 3/6/2000
     int translu_eff;       // translucency effect table, 0 == none 
                            // TRANSLU_med or (TRANSLU_ext + translu_store index)
-    int firsttag,nexttag;  // improves searches for tags.
-
+#if defined( __DJGPP__ )													 
+    int32_t firsttag,nexttag;  // improves searches for tags.
+#else		
+    int32_t     nexttag;   // linked list of lines with that tag value, improves searches for tags.
+#endif
 //    int ecolormap;         // SoM: Used for 282 linedefs
 } line_t;
 

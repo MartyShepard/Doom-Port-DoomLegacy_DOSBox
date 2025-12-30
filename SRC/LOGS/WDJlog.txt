@@ -6887,4 +6887,41 @@ Cleanup and update the video mode functions in the menu system.
 Change the submenus to use ">>" instead of "..", which is much easier
 to see.
 
+*** w108_taglist
+patchfile = w108_15_taglist.patch
+- commit revision 1427
+Old tag hash was buggy, used the sector count as the hash mask,
+which could cause segfaults by returning a bad hash,
+and could result in only two hash bins being used while all the
+other firsttag fields went unused.
+Removed firsttag field from sectors and lines.
+Created fixed size hash bin tables.
+Fixed the hash functions.
+More consistent operation, uses less memory, with much better
+locality of reference.
+
+*** w108_fogdraw8
+patchfile = w108_16_fogdraw8.patch
+- commit revision 1428
+Corrected the span fog draw for 8bit, which had the
+wrong stepping for dark fog.
+
+*** w108_colormap
+patchfile = w108_16_colormap.patch
+- commit revision 1429
+Reviewed and optimized much of the software draw colormap handling.
+The colormap selection has been moved outside of the draw loops.
+The light intensity mapping has also been moved outside of the draw
+loops.
+Have regularized much of the colormap handling, which makes it more
+consistent.
+Eliminated tests that made no difference in the result.  Previous code
+had a test if the colormap was NULL before assigning it as a value.
+If the dest var used is known to be NULL, then the test is unecessary.
+The assignment of NULL is faster than doing the test.
+Found some discrepancies which were corrected.
+Found some code that could not have worked, and it was repaired.
+This may have fixed some bugs.
+The issue of precedence when there are multiple colormaps and multiple
+sources of FOG information, still remains.
 

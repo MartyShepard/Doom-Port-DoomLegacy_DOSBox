@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01427 ]: w108_15 taglist.patch
+          DOS: Using Tag Fix from 1412 Fixed
+					
 [01426 ]: w108.14 drawmode menu
           DOS: Compile fix HWR_PatchStorage
 					
