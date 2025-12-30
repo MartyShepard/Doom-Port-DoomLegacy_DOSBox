@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01425 ]: w108.13 colormap
 [01424 ]: w108.12 untab
 [01423F1]: w108.11 vid driver interface
            DOS: Change DMain Arg funktion to use one mode

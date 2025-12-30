@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 1424 2019-01-29 08:07:27Z wesleyjohnson $
+// $Id: r_data.h 1425 2019-01-29 08:07:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -156,7 +156,7 @@ extern int             numtextures;
 extern CV_PossibleValue_t Color_cons_t[];
 
 // Load TEXTURE1/TEXTURE2/PNAMES definitions, create lookup tables
-void  R_LoadTextures (void);
+void  R_Load_Textures (void);
 void  R_FlushTextureCache (void);
 
 // Generate a texture from texture desc. and patches.
@@ -168,10 +168,12 @@ byte* R_GetColumn (int texnum, int col);
 byte* R_GetFlat (int  flatnum);
 
 // I/O, setting up the stuff.
-void R_Init_Data (void);
+void R_Load_Data (void);
 void R_PrecacheLevel (void);
 
 void R_Init_rdata(void);
+// Upon change in rendermode.
+void R_rdata_setup_rendermode( void );
 
 // Retrieval.
 // Floor/ceiling opaque texture tiles,
@@ -191,7 +193,7 @@ int R_ColormapNumForName(const char *name);
 // The colorstr is the toptexture name.
 // The ctrlstr is the midtexture name.
 // The fadestr is the bottomtexture name.
-int R_Create_Colormap(char *colorstr, char *ctrlstr, char *fadestr);
+int R_Create_Colormap_str(char *colorstr, char *ctrlstr, char *fadestr);
 
 // [WDJ] Analyze an extra colormap to derive some GL parameters
 void  R_Colormap_Analyze( int mapnum );

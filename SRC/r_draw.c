@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 1419 2019-01-29 08:01:42Z wesleyjohnson $
+// $Id: r_draw.c 1425 2019-01-29 08:07:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -78,6 +78,7 @@
 #include "console.h"
   //Som: Until I get buffering finished
 #include "r_draw.h"
+#include "r_data.h"
 
 #ifdef HWRENDER
 #include "hardware/hw_main.h"

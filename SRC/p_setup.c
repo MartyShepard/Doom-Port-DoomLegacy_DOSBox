@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1420 2019-01-29 08:03:08Z wesleyjohnson $
+// $Id: p_setup.c 1425 2019-01-29 08:07:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1182,7 +1182,7 @@ void P_LoadSideDefs2(int lump)
             if(msd->toptexture[0] == '#' || msd->bottomtexture[0] == '#')
             {
               // generate colormap from sidedef1 texture text strings
-              sec->midmap = R_Create_Colormap(msd->toptexture, msd->midtexture, msd->bottomtexture);
+              sec->midmap = R_Create_Colormap_str(msd->toptexture, msd->midtexture, msd->bottomtexture);
               sd->toptexture = sd->bottomtexture = 0;
               sec->extra_colormap = &extra_colormaps[sec->midmap];
             }
@@ -1818,7 +1818,7 @@ boolean P_SetupLevel (int      to_episode,
     leveltime = 0;
 
     // textures are needed first
-//    R_LoadTextures ();
+//    R_Load_Textures ();
 //    R_FlushTextureCache();
 
     R_Clear_FW_effect();  // clear and init of fog store
@@ -2053,7 +2053,7 @@ boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
     // cached textures, so the only safe thing to do is rebuild them all.
     // This fixes bad textures on netgames, and after Map command.
     R_FlushTextureCache();  // clear all previous
-    R_LoadTextures();       // reload all textures
+    R_Load_Textures();       // reload all textures
 
     //
     // look for skins
