@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1423 2019-01-29 08:06:47Z wesleyjohnson $
+// $Id: v_video.c 1426 2019-01-29 08:09:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -3194,7 +3194,13 @@ void V_Setup_VideoDraw(void)
     vid.centerofs = (((vid.height%BASEVIDHEIGHT)/2) * vid.ybytes) +
                     (((vid.width%BASEVIDWIDTH)/2)  * vid.bytepp) ;
 
-#ifdef HWRENDER // not win32 only 19990829 by Kin
+//    if( cv_gammafunc.value != cv_gammafunc.EV )
+    {
+        cv_gammafunc.EV = cv_gammafunc.value;
+        CV_gammafunc_OnChange();
+    }
+
+#ifdef HWRENDER
     // hardware modes do not use screens[] pointers
     if( rendermode != render_soft )
     {
@@ -3206,11 +3212,15 @@ void V_Setup_VideoDraw(void)
         vid.drawmode = DRAWGL;
         if( graphics_state >= VGS_active )
             vid.draw_ready = 1;
+
+        HWR_Startup_Render();  // hardware render init
+       
         return;
     }
 #endif
 
     // Software draw only.
+    byte EN_HWR_flashpalette = 0;  // software and default (Marty: Add Missing type for varible)
 
     if( vid.display == NULL )
     {

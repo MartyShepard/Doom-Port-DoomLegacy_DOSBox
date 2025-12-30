@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01426 ]: w108.14 drawmode menu
+          DOS: Compile fix HWR_PatchStorage
+					
 [01425 ]: w108.13 colormap
 [01424 ]: w108.12 untab
 [01423F1]: w108.11 vid driver interface

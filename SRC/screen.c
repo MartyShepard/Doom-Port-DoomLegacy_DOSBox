@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1418 2019-01-29 08:01:04Z wesleyjohnson $
+// $Id: screen.c 1426 2019-01-29 08:09:01Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -68,6 +68,10 @@
 #include "hu_stuff.h"
 #include "z_zone.h"
 //#include "d_main.h"
+#include "hardware/hw_main.h"
+
+
+
 
 
 
@@ -159,31 +163,84 @@ void (*skydrawerfunc[2]) (void);
 // Called from D_Display, when setmodeneeded
 void SCR_SetMode (void)
 {
-    if(dedicated)
-        return;
+    int ret_value = 0;
+    byte old_HWR_patchstore = HWR_patchstore;
 
-    if (setmodeneeded.modetype == MODE_NOP)
+    if(dedicated)
+        goto done;
+
+    if( (setmodeneeded.modetype == MODE_NOP) && (!drawmode_recalc) )
         return;                 //should never happen
 
+    // Possible change of rendermode
+    if( drawmode_recalc )
+    {
+        // Switch the drawmode, this may change the rendermode.
+        ret_value = V_switch_drawmode( set_drawmode );
+        if( setmodeneeded.modetype == MODE_NOP )
+	{
+            if( ! ret_value )  goto done;
+            setmodeneeded = vid.modenum;
+	}
+    }
+
+    // triggered by V_switch_drawmode
+    if( rendermode_recalc )
+    {
+        // Tear down of structures dependent upon rendermode
+        // Release using old HWR_patchstore setting.
+        SB_Heretic_Release_Graphics();
+        ST_Release_Graphics();
+        ST_Release_FaceGraphics();
+        WI_Release_Data();
+
+        if( HWR_patchstore )
+        {
 #ifdef HWRENDER
-    // Set the rendermode patch storage.
-    HWR_patchstore = (rendermode > render_soft);
-#endif
-   
+            HWR_Shutdown_Render();
+#endif       
+        }
+
+        Z_FreeTags( PU_PURGELEVEL, PU_UNLOCK_CACHE);
+
+        // Safe to switch to the new rendermode patch storage..
+        HWR_patchstore = (rendermode > render_soft);
+    }
+
     // VID_SetMode will clear vid.draw_ready if it has print messages.
 #ifdef DEBUG_WINDOWED
     {
       // Disable fullscreen so can switch to debugger at breakpoints.
       mode_fullscreen = false;
+      if( rendermode_recalc )
+      {
+          I_Rendermode_setup();
+          ret_value = I_RequestFullGraphics( false );
+      }
       modenum_t mode800 = VID_GetModeForSize(800,600, MODE_window);  // debug window
       VID_SetMode(mode800);
       vid.modenum = setmodeneeded; // fix the display
     }
 #else
     // video system interface, sets vid.recalc
-    VID_SetMode(setmodeneeded);
-#endif
+    if( rendermode_recalc )
+    {
+        I_Rendermode_setup();
+        // Graphics drawmode setup, get video modes
+        ret_value = I_RequestFullGraphics( cv_fullscreen.EV && allow_fullscreen );
 
+        if( ret_value < 0 && cv_fullscreen.EV )
+        {
+            ret_value = I_RequestFullGraphics( 0 );  // window mode
+	}
+    }
+    else
+    {
+        // Select a video mode, within the drawmode and mode list.
+        ret_value = VID_SetMode(setmodeneeded);
+    }
+#endif
+   
     // The screens must be setup before any error or verbose messages are
     // printed, or else it will segfault on the bad screen ptr.
     // Redundant call, for some video drivers,
@@ -339,11 +396,33 @@ void SCR_SetMode (void)
     // set fuzzcolfunc
     CV_Fuzzymode_OnChange();
 
-    setmodeneeded.modetype = MODE_NOP;  // NULL
-    return;
+    if( rendermode_recalc )
+    {
+        byte new_HWR_patchstore = HWR_patchstore;
+        // must release with the proper patchstore setting
+	HWR_patchstore = old_HWR_patchstore;
+        HU_Release_Graphics();  // need this until last second, for fonts
+       
+        // Setup patch load, again.
+        HWR_patchstore = new_HWR_patchstore;
+        HU_Load_Graphics();
+        ST_Load_Graphics();  // Doom and Heretic
+        WI_Load_Data();
+#ifdef HWRENDER
+        if( rendermode != render_soft )
+        {
+            HWR_Preload_Graphics();
+        }
+#endif       
+        R_Setup_SkyDraw();
+     }
+
+ done:   
+     setmodeneeded.modetype = MODE_NOP;  // NULL
+     return;
 
  bpp_err:
-    I_Error ("SetMode: cannot draw %i bits per pixel\n", vid.bitpp);
+     I_Error ("SetMode: cannot draw %i bits per pixel\n", vid.bitpp);
 }
 
 
@@ -480,17 +559,17 @@ void SCR_CheckDefaultMode (void)
 
     if (scr_forcex && scr_forcey)
     {
-        CONS_Printf("Using resolution: %d x %d\n",scr_forcex,scr_forcey);
+        CONS_Printf("Using resolution: %d x %d\n", scr_forcex, scr_forcey );
         // returns -1 if not found, (no mode change)
-        setmodeneeded = VID_GetModeForSize(scr_forcex,scr_forcey, modetype);
+        setmodeneeded = VID_GetModeForSize( scr_forcex, scr_forcey, modetype);
         //if (scr_forcex!=BASEVIDWIDTH || scr_forcey!=BASEVIDHEIGHT)
     }
     else
     {
         CONS_Printf("Default resolution: %d x %d (%d bits)\n",
-             cv_scr_width.value,cv_scr_height.value,cv_scr_depth.value);
+             cv_scr_width.value, cv_scr_height.value, cv_scr_depth.value );
         // see note above
-        setmodeneeded = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value, modetype);
+        setmodeneeded = VID_GetModeForSize( cv_scr_width.value, cv_scr_height.value, modetype);
     }
 }
 

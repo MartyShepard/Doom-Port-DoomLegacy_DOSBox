@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 1425 2019-01-29 08:07:59Z wesleyjohnson $
+// $Id: r_draw.c 1426 2019-01-29 08:09:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -367,6 +367,12 @@ void R_Init_TranslationTables (void)
     }
 }
 
+// Changes in drawmode
+void  R_Setup_Drawmode( void )
+{
+    R_PrecacheLevel();
+    R_rdata_setup_rendermode();
+}
 
 
 // ==========================================================================

@@ -6871,7 +6871,7 @@ Remove tabs from r_data, r_draw, etc..
 
 *** w108_colormap
 patchfile = w108_13_colormap.patch
-- commit revision 14??
+- commit revision 1425
 Make it possible to update extra_colormap upon change of rendermode.
 Initialize the colormap structures properly.
 Use the RGBA_t type in the colormap structure, replacing
@@ -6879,7 +6879,7 @@ explicit shift and mask operations.
 
 *** w108_drawmode
 patchfile = w108_14_drawmode.patch
-- commit revision 1425
+- commit revision 1426
 Change the cv_drawmode variable from the menu system.
 Make the changes to update rendermode dependent data when the
 rendermode changes.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.h 1419 2019-01-29 08:01:42Z wesleyjohnson $
+// $Id: r_draw.h 1426 2019-01-29 08:09:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -174,6 +174,9 @@ void    R_Init_TranslationTables (void);
 void    R_Init_ViewBuffer ( int width, int height );
 
 void    R_Init_ViewBorder (void);
+
+// Changes in drawmode
+void    R_Setup_Drawmode (void);
 
 void    R_VideoErase ( unsigned int ofs, int count );
 

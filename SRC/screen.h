@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 1295 2017-02-13 18:45:58Z wesleyjohnson $
+// $Id: screen.h 1426 2019-01-29 08:09:01Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -17,6 +17,8 @@
 //
 //
 // $Log: screen.h,v $
+// Include: DOS DJGPP Fixes
+//
 // Revision 1.14  2004/05/16 20:34:47  hurdler
 //
 // Revision 1.13  2004/05/16 19:11:44  hurdler
@@ -92,9 +94,10 @@ extern int stbar_height;   // status bar, may be scaled
 
 
 // WDJ 2012-2-6, provide structure to complete the draw capability
+// optimized for test speed, array indexing
 typedef enum {
   DRAW8PAL, DRAW15, DRAW16, DRAW24, DRAW32, DRAWGL
-} drawmode_t;
+} sw_drawmode_e;
 
 
 // WDJ 2012-2-6, Provide structure and isolation of driver problems.
@@ -129,7 +132,7 @@ typedef struct viddef_s
     int         height;
     int         bytepp;          // BYTES per pixel: 1=256color, 2, 4
     modenum_t   modenum;         // vidmode num, same as setmodeneeded
-    byte        drawmode;        // drawing mode, optimized for tables and switch stmts
+    byte        drawmode;        // drawing mode, optimized for tables and switch stmts, drawmode_e
     byte        bitpp;		 // BITS per pixel: 8, 15, 16, 24, 32
     byte        numpages;        // always 1, PAGE FLIPPING TODO!!!
 //    byte        windowed;        // windowed or fullscreen mode ?
@@ -272,4 +275,7 @@ void SCR_Startup (void);
 
 void SCR_ChangeFullscreen (void);
 
+#if defined( __DJGPP__ )
+byte  HWR_patchstore;  // patches are stored in HWR format
+#endif
 #endif // SCREEN_H
