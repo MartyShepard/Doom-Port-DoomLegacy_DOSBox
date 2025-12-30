@@ -271,7 +271,8 @@ static void R_DrawSplatColumn (column_t* column)
         dc_yh = rdraw_viewheight - 1;
     }
 #endif
-#else
+#endif
+#ifdef CLIP2_LIMIT
         //[WDJ] phobiata.wad has many views that need clipping
         if ( dc_yl < 0 ) dc_yl = 0;
         if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
@@ -636,7 +637,8 @@ void R_Render2sidedMultiPatchColumn (column_t* column)
         dc_yh = rdraw_viewheight - 1;
     }
 #endif
-#else
+#endif
+#ifdef CLIP2_LIMIT
     //[WDJ] phobiata.wad has many views that need clipping
     if ( dc_yl < 0 )   dc_yl = 0;
     if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
@@ -1975,7 +1977,8 @@ void R_RenderSegLoop (void)
         dc_yh = rdraw_viewheight - 1;
     }
 #endif
-#else
+#endif
+#ifdef CLIP2_LIMIT
             //[WDJ] phobiata.wad has many views that need clipping
             if ( dc_yl < 0 )   dc_yl = 0;
             if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
@@ -2052,7 +2055,8 @@ void R_RenderSegLoop (void)
         dc_yh = rdraw_viewheight - 1;
     }
 #endif
-#else
+#endif
+#ifdef CLIP2_LIMIT
                     //[WDJ] phobiata.wad has many views that need clipping
                     if ( dc_yl < 0 )   dc_yl = 0;
                     if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
@@ -2132,7 +2136,8 @@ void R_RenderSegLoop (void)
         dc_yh = rdraw_viewheight - 1;
     }
 #endif
-#else
+#endif
+#ifdef CLIP2_LIMIT
                     //[WDJ] phobiata.wad has many views that need clipping
                     if ( dc_yl < 0 )   dc_yl = 0;
                     if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;

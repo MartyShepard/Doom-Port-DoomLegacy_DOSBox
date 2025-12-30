@@ -6956,3 +6956,79 @@ There is some RANGECHECK code there now, during regression testing.
 Found some usage of a fixed point type with 12 bits of fraction.
 Gave it a name (HEIGHTFRAC), and some conversion functions.
 
+*** w108_clipfix
+patchfile = w108_20_clipfix.patch
+- commit revision 1432
+Change the way some CLIP2_LIMIT optional tests are conditionally
+compiled.  This includes the safety tests during regression testing.
+
+*** w108_vidstat
+patchfile = w108_21_vidstat.patch
+- commit revision 1433
+Add a function to the video drivers, VID_GetMode_Stat().
+This returns the video mode width, height, and some other attributes.
+Some of the drivers can use it internally.
+It is needed for some future enhancements.
+
+Fix the VID_GetModeName code for some of the drivers, to prevent buffer overrun.
+
+Added a missing call to V_Setup_VideoDraw, to prevent segfaults on
+early console display.
+
+*** w108_config
+patchfile = w108_22_config.patch
+- commit revision 1434
+Revise the config and cvar code to support a separate config file for
+each drawmode.  This supports loading two config files, tracking
+which config file each cvar value came from, and saving each cvar
+value back to the correct config file.
+
+Each drawmode can have separate settings for video mode, fullscreen,
+gamma, and can save any other cvar that has the CV_SAVE flag.
+
+The main config file will be loaded first, and that can load all
+the saved cvar.
+
+Based on the drawmode selected, a drawmode config file
+will also be loaded, if available.  Each drawmode has a different name
+for its config file.  The drawmode config file is optional.
+The cvar values in the drawmode config file will push down
+and hide the main config file values.
+
+Changing a menu value will change the current cvar value.  That value
+will be saved back to the config file that last loaded the cvar value.
+
+The menu interface can also edit which cvar are saved in each config
+file.  Entries can be inserted and deleted.
+F1 = normal menu
+F2 = Main config values only
+F3 = Drawmode config values only
+F4 = normal menu
+INSERT = add the menu item to the config file
+DEL = delete the menu item from the config file
+
+Menu entries that are relevant to the drawmode config, like the control
+key assignments, do not have support for insert to the drawmode config
+file.
+
+The config files can always be edited using an ordinary editor
+to include anything.
+
+*** w108_draw
+patchfile = w108_23_draw.patch
+- commit revision 1435
+General cleanup and renaming of draw code.
+Added dm_texturemid, so could remove a hidden save and restore of dc_texturemid.
+Renamed some fields of the vissprite, and reorganized it, for better understanding.
+No significant change in function.
+Added many comments.
+
+*** w108_sofware_corona
+patchfile = w108_24_softcorona.patch
+- commit revision 1436
+Add software draw of coronas.
+Add code to draw using a patch of alpha values.
+This is the initial code, without changing the hardware draw effects.
+The common tables are moved to p_lights.
+The menu controls are moved to a new submenu, under effects.
+

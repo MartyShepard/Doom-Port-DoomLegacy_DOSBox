@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1431 2019-03-16 06:28:43Z wesleyjohnson $
+// $Id: r_things.c 1432 2019-04-26 10:32:42Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1146,7 +1146,8 @@ void R_DrawMaskedColumn (column_t* column)
 	dc_yh = rdraw_viewheight - 1;
     }
 #endif
-#else
+#endif
+#ifdef CLIP2_LIMIT
             //[WDJ] phobiata.wad has many views that need clipping
             if ( dc_yl < 0 )   dc_yl = 0;
             if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
