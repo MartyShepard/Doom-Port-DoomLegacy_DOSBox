@@ -77,25 +77,25 @@ void R_DrawColumn_32 (void)
         fixed_t texheight = dc_texheight << FRACBITS;
         // From Boom, to fix the odd frac
         if (frac < 0)
-	    while ((frac += texheight) < 0);
+            while ((frac += texheight) < 0);
         else
-	    while (frac >= texheight)  frac -= texheight;
+            while (frac >= texheight)  frac -= texheight;
         // Inner loop that does the actual texture mapping.
         do
         {
-	    // Re-map color indices from wall texture column
-	    //  using a lighting/special effects LUT.
+            // Re-map color indices from wall texture column
+            //  using a lighting/special effects LUT.
 #ifdef HIGHCOLORMAPS
-	    c32.ui32 = hicolormaps[ dc_source[(frac>>FRACBITS)] ];
+            c32.ui32 = hicolormaps[ dc_source[(frac>>FRACBITS)] ];
 #else
-	    c32.ui32 = color8.to32[ dc_colormap[ dc_source[(frac>>FRACBITS)] ] ];
+            c32.ui32 = color8.to32[ dc_colormap[ dc_source[(frac>>FRACBITS)] ] ];
 #endif
-	    *(pixel32_t*)dest = c32.pix32;
-	    dest += vid.ybytes;
-	    frac += fracstep;
-	    if( frac >= texheight )
-	        frac -= texheight;
-	} while (--count);
+            *(pixel32_t*)dest = c32.pix32;
+            dest += vid.ybytes;
+            frac += fracstep;
+            if( frac >= texheight )
+                frac -= texheight;
+        } while (--count);
     }
     else
     {
@@ -103,17 +103,17 @@ void R_DrawColumn_32 (void)
         // Inner loop that does the actual texture mapping.
         do
         {
-	    // Re-map color indices from wall texture column
-	    //  using a lighting/special effects LUT.
+            // Re-map color indices from wall texture column
+            //  using a lighting/special effects LUT.
 #ifdef HIGHCOLORMAPS
-	    c32.ui32 = hicolormaps[ dc_source)[(frac>>FRACBITS)&heightmask] ];
+            c32.ui32 = hicolormaps[ dc_source)[(frac>>FRACBITS)&heightmask] ];
 #else
-	    c32.ui32 = color8.to32[ dc_colormap[ dc_source[(frac>>FRACBITS)&heightmask] ] ];
+            c32.ui32 = color8.to32[ dc_colormap[ dc_source[(frac>>FRACBITS)&heightmask] ] ];
 #endif
-	    *(pixel32_t*)dest = c32.pix32;
-	    dest += vid.ybytes;
-	    frac += fracstep;
-	} while (--count);
+            *(pixel32_t*)dest = c32.pix32;
+            dest += vid.ybytes;
+            frac += fracstep;
+        } while (--count);
     }
 }
 
@@ -245,16 +245,16 @@ void R_DrawShadeColumn_32(void)
     {
         // From Boom, to fix the odd frac
         if (frac < 0)
-	    while ((frac += texheight) < 0);
+            while ((frac += texheight) < 0);
         else
-	    while (frac >= texheight)  frac -= texheight;
+            while (frac >= texheight)  frac -= texheight;
     }
 
     do
     {
         // 8bpp: *dest = reg_colormaps[ LIGHTTABLE(dc_source[frac >> FRACBITS]) + (*dest) ];
-	// [WDJ] The source determines light level.
-	// light level values are 0..NUMCOLORMAPS-1, which is 0..32
+        // [WDJ] The source determines light level.
+        // light level values are 0..NUMCOLORMAPS-1, which is 0..32
 //        alpha = dc_source[frac >> FRACBITS] >> 3;  // reduce 0..255 to 0..32
         alpha = dc_source[frac >> FRACBITS];
         register pixel32_t * p32 = (pixel32_t*)dest;
@@ -265,7 +265,7 @@ void R_DrawShadeColumn_32(void)
         dest += vid.ybytes;
         frac += fracstep;
         if( frac >= texheight )
-	    frac -= texheight;
+            frac -= texheight;
     }
     while (count--);
 }
@@ -306,9 +306,9 @@ void R_DrawTranslucentColumn_32 (void)
     {
         // From Boom, to fix the odd frac
         if (frac < 0)
-	    while ((frac += texheight) < 0);
+            while ((frac += texheight) < 0);
         else
-	    while (frac >= texheight)  frac -= texheight;
+            while (frac >= texheight)  frac -= texheight;
     }
     if( fracstep < 0 )
        I_Error( "DrawTranslucent: fracstep < 0\n");
@@ -318,151 +318,151 @@ void R_DrawTranslucentColumn_32 (void)
     {
      case 0:
         {
-	    // alpha translucent, by dr_alpha
-	    unsigned int alpha_d = dr_alpha;
-	    unsigned int alpha_r = 255 - alpha_d;
-	    do
-	    {
+            // alpha translucent, by dr_alpha
+            unsigned int alpha_d = dr_alpha;
+            unsigned int alpha_r = 255 - alpha_d;
+            do
+            {
 #ifdef HIGHCOLORMAPS
-	        c32.ui32 = hicolormaps[ dc_source[frac>>FRACBITS] ];
+                c32.ui32 = hicolormaps[ dc_source[frac>>FRACBITS] ];
 #else
-	        c32.ui32 = color8.to32[dc_colormap[dc_source[frac>>FRACBITS]]];
+                c32.ui32 = color8.to32[dc_colormap[dc_source[frac>>FRACBITS]]];
 //               c32.ui32 = color8.to32[dc_source[frac>>FRACBITS]];
 #endif
-	        // alpha translucent
-	        register pixel32_t * p32 = (pixel32_t*)dest;
-	        p32->b = (((unsigned int)p32->b * alpha_r) + (c32.pix32.b * alpha_d)) >> 8;
-	        p32->g = (((unsigned int)p32->g * alpha_r) + (c32.pix32.g * alpha_d)) >> 8;
-	        p32->r = (((unsigned int)p32->r * alpha_r) + (c32.pix32.r * alpha_d)) >> 8;
-	        dest += vid.ybytes;
-	        frac += fracstep;
-	        if( frac >= texheight )
-		    frac -= texheight;
-	    } while (count--);
-	}
+                // alpha translucent
+                register pixel32_t * p32 = (pixel32_t*)dest;
+                p32->b = (((unsigned int)p32->b * alpha_r) + (c32.pix32.b * alpha_d)) >> 8;
+                p32->g = (((unsigned int)p32->g * alpha_r) + (c32.pix32.g * alpha_d)) >> 8;
+                p32->r = (((unsigned int)p32->r * alpha_r) + (c32.pix32.r * alpha_d)) >> 8;
+                dest += vid.ybytes;
+                frac += fracstep;
+                if( frac >= texheight )
+                    frac -= texheight;
+            } while (count--);
+        }
         break;
      case TRANSLU_more: // 20 80  puffs, Linedef 285
         do
         {
-	    // 25/75 translucent
+            // 25/75 translucent
 #ifdef HIGHCOLORMAPS
-	    c32.ui32 = hicolormaps[ dc_source[frac>>FRACBITS] ];
+            c32.ui32 = hicolormaps[ dc_source[frac>>FRACBITS] ];
 #else
-	    c32.ui32 = color8.to32[dc_colormap[dc_source[frac>>FRACBITS]]];
+            c32.ui32 = color8.to32[dc_colormap[dc_source[frac>>FRACBITS]]];
 //	    c32.ui32 = color8.to32[dc_source[frac>>FRACBITS]];
 #endif
-	    register uint16_t dc0, dc1, dc2; // for overlapped execution
-	    register pixel32_t * p32 = (pixel32_t*)dest;
-	    dc0 = p32->b;
-	    p32->b = (dc0 + dc0 + dc0 + c32.pix32.b) >> 2;
-	    dc1 = p32->g;
-	    p32->g = (dc1 + dc1 + dc1 + c32.pix32.g) >> 2;
-	    dc2 = p32->r;
-	    p32->r = (dc2 + dc2 + dc2 + c32.pix32.r) >> 2;
-	    dest += vid.ybytes;
-	    frac += fracstep;
-	    if( frac >= texheight )
-	        frac -= texheight;
-	} while (count--);
+            register uint16_t dc0, dc1, dc2; // for overlapped execution
+            register pixel32_t * p32 = (pixel32_t*)dest;
+            dc0 = p32->b;
+            p32->b = (dc0 + dc0 + dc0 + c32.pix32.b) >> 2;
+            dc1 = p32->g;
+            p32->g = (dc1 + dc1 + dc1 + c32.pix32.g) >> 2;
+            dc2 = p32->r;
+            p32->r = (dc2 + dc2 + dc2 + c32.pix32.r) >> 2;
+            dest += vid.ybytes;
+            frac += fracstep;
+            if( frac >= texheight )
+                frac -= texheight;
+        } while (count--);
         break;
      case TRANSLU_hi:   // 10 90  blur effect, Linedef 286
         do
         {
-	    // 15/85 translucent
+            // 15/85 translucent
 #ifdef HIGHCOLORMAPS
-	    c32.ui32 = hicolormaps[ dc_source[frac>>FRACBITS] ];
+            c32.ui32 = hicolormaps[ dc_source[frac>>FRACBITS] ];
 #else
-	    c32.ui32 = color8.to32[dc_colormap[dc_source[frac>>FRACBITS]]];
+            c32.ui32 = color8.to32[dc_colormap[dc_source[frac>>FRACBITS]]];
 //	    c32.ui32 = color8.to32[dc_source[frac>>FRACBITS]];
 #endif
-	    register uint16_t dc0, dc1, dc2; // for overlapped execution
-	    register pixel32_t * p32 = (pixel32_t*)dest;
-	    dc0 = p32->b;
-	    p32->b = ((dc0<<3) - dc0 + c32.pix32.b) >> 3;
-	    dc1 = p32->g;
-	    p32->g = ((dc1<<3) - dc1 + c32.pix32.g) >> 3;
-	    dc2 = p32->r;
-	    p32->r = ((dc2<<3) - dc2 + c32.pix32.r) >> 3;
-	    dest += vid.ybytes;
-	    frac += fracstep;
-	    if( frac >= texheight )
-	        frac -= texheight;
-	} while (count--);
+            register uint16_t dc0, dc1, dc2; // for overlapped execution
+            register pixel32_t * p32 = (pixel32_t*)dest;
+            dc0 = p32->b;
+            p32->b = ((dc0<<3) - dc0 + c32.pix32.b) >> 3;
+            dc1 = p32->g;
+            p32->g = ((dc1<<3) - dc1 + c32.pix32.g) >> 3;
+            dc2 = p32->r;
+            p32->r = ((dc2<<3) - dc2 + c32.pix32.r) >> 3;
+            dest += vid.ybytes;
+            frac += fracstep;
+            if( frac >= texheight )
+                frac -= texheight;
+        } while (count--);
         break;
      case TRANSLU_med:  // sprite 50 backg 50, Linedef 260, 284, 300
      default:
         do
         {
-	    // 50/50 translucent
+            // 50/50 translucent
 #ifdef HIGHCOLORMAPS
-	    c32.ui32 = hicolormaps[ dc_source[frac>>FRACBITS] ];
+            c32.ui32 = hicolormaps[ dc_source[frac>>FRACBITS] ];
 #else
-	    c32.ui32 = color8.to32[dc_colormap[dc_source[frac>>FRACBITS]]];
+            c32.ui32 = color8.to32[dc_colormap[dc_source[frac>>FRACBITS]]];
 //	    c32.ui32 = color8.to32[dc_source[frac>>FRACBITS]];
 #endif
-	    register uint16_t dc0, dc1, dc2; // for overlapped execution
-	    register pixel32_t * p32 = (pixel32_t*)dest;
-	    dc0 = p32->b;
-	    p32->b = (dc0 + c32.pix32.b) >> 1;
-	    dc1 = p32->g;
-	    p32->g = (dc1 + c32.pix32.g) >> 1;
-	    dc2 = p32->r;
-	    p32->r = (dc2 + c32.pix32.r) >> 1;
-	    dest += vid.ybytes;
-	    frac += fracstep;
-	    if( frac >= texheight )
-	        frac -= texheight;
-	} while (count--);
+            register uint16_t dc0, dc1, dc2; // for overlapped execution
+            register pixel32_t * p32 = (pixel32_t*)dest;
+            dc0 = p32->b;
+            p32->b = (dc0 + c32.pix32.b) >> 1;
+            dc1 = p32->g;
+            p32->g = (dc1 + c32.pix32.g) >> 1;
+            dc2 = p32->r;
+            p32->r = (dc2 + c32.pix32.r) >> 1;
+            dest += vid.ybytes;
+            frac += fracstep;
+            if( frac >= texheight )
+                frac -= texheight;
+        } while (count--);
         break;
      case TRANSLU_fire: // Linedef 287
         // 50 50 but brighter for fireballs, shots
 #define TFIRE_OPTION  1
         do
         {
-	    // 50/50 translucent with modifications
-	    register int sb = dc_source[frac>>FRACBITS];
+            // 50/50 translucent with modifications
+            register int sb = dc_source[frac>>FRACBITS];
 #if TFIRE_OPTION==4
 //	    sb = dc_translucentmap[ (sb << 8) + 80 ]; // grays 80..111; // faded
 //	    sb = dc_translucentmap[ (sb << 8) + 110 ]; // grays 80..111;
-	    sb = dc_translucentmap[ (sb << 8) ]; // black
+            sb = dc_translucentmap[ (sb << 8) ]; // black
 #endif
 #ifdef HIGHCOLORMAPS
-	    c32.ui32 = hicolormaps[ sb  ];
+            c32.ui32 = hicolormaps[ sb  ];
 #else
-	    c32.ui32 = color8.to32[dc_colormap[ sb ]];
+            c32.ui32 = color8.to32[dc_colormap[ sb ]];
 //	    c32.ui32 = color8.to32[ sb ];
 #endif
 #if TFIRE_OPTION==1
-	    // dark background is enhanced before avg, to give light add effect
-	    register pixelunion32_t sh32;
-	    sh32.ui32 = (c32.ui32 >> 1) & 0x70707070;  // tint
+            // dark background is enhanced before avg, to give light add effect
+            register pixelunion32_t sh32;
+            sh32.ui32 = (c32.ui32 >> 1) & 0x70707070;  // tint
 //	    sh32.ui32 = (c32.ui32 >> 1) & 0x7F7F7F7F;  // heavy
-	    register uint16_t dc0, dc1, dc2; // for overlapped execution
-	    register pixel32_t * p32 = (pixel32_t*)dest;
-	    dc0 = p32->b;
-	    p32->b = ((dc0 | sh32.pix32.b) + c32.pix32.b) >> 1;
-	    dc1 = p32->g;
-	    p32->g = ((dc1 | sh32.pix32.g) + c32.pix32.g) >> 1;
-	    dc2 = p32->r;
-	    p32->r = ((dc2 | sh32.pix32.r) + c32.pix32.r) >> 1;
+            register uint16_t dc0, dc1, dc2; // for overlapped execution
+            register pixel32_t * p32 = (pixel32_t*)dest;
+            dc0 = p32->b;
+            p32->b = ((dc0 | sh32.pix32.b) + c32.pix32.b) >> 1;
+            dc1 = p32->g;
+            p32->g = ((dc1 | sh32.pix32.g) + c32.pix32.g) >> 1;
+            dc2 = p32->r;
+            p32->r = ((dc2 | sh32.pix32.r) + c32.pix32.r) >> 1;
 #endif
 #if TFIRE_OPTION==2
-	    // Bright and nearly opaque
-	    // additive light (not average)
-	    register uint16_t dc0, dc1, dc2; // for overlapped execution
-	    register pixel32_t * p32 = (pixel32_t*)dest;
-	    dc0 = p32->b;
-	    p32->b = (dc0 | c32.pix32.b);
-	    dc1 = p32->g;
-	    p32->g = (dc1 | c32.pix32.g);
-	    dc2 = p32->r;
-	    p32->r = (dc2 | c32.pix32.r);
+            // Bright and nearly opaque
+            // additive light (not average)
+            register uint16_t dc0, dc1, dc2; // for overlapped execution
+            register pixel32_t * p32 = (pixel32_t*)dest;
+            dc0 = p32->b;
+            p32->b = (dc0 | c32.pix32.b);
+            dc1 = p32->g;
+            p32->g = (dc1 | c32.pix32.g);
+            dc2 = p32->r;
+            p32->r = (dc2 | c32.pix32.r);
 #endif
-	    dest += vid.ybytes;
-	    frac += fracstep;
-	    if( frac >= texheight )
-	        frac -= texheight;
-	} while (count--);
+            dest += vid.ybytes;
+            frac += fracstep;
+            if( frac >= texheight )
+                frac -= texheight;
+        } while (count--);
         break;
      case TRANSLU_fx1:  // Linedef 288
         // 50 50 brighter some colors, else opaque for torches
@@ -470,69 +470,69 @@ void R_DrawTranslucentColumn_32 (void)
 #define FX1_OPTION 1
         do
         {
-	    // 50/50 translucent with modifications
-	    register int sb = dc_source[frac>>FRACBITS];
+            // 50/50 translucent with modifications
+            register int sb = dc_source[frac>>FRACBITS];
 #ifdef HIGHCOLORMAPS
-	    c32.ui32 = hicolormaps[ sb  ];
+            c32.ui32 = hicolormaps[ sb  ];
 #else
-	    c32.ui32 = color8.to32[dc_colormap[ sb ]];
+            c32.ui32 = color8.to32[dc_colormap[ sb ]];
 //	    c32.ui32 = color8.to32[ sb ];
 #endif
 #if FX1_OPTION==1
-	    // check translucent map for opaque, sprite vrs white bkg
-	    register byte twht = dc_translucentmap[ (sb << 8) + 4 ];
-	    register int  tdiff = sb - twht;  // any change
+            // check translucent map for opaque, sprite vrs white bkg
+            register byte twht = dc_translucentmap[ (sb << 8) + 4 ];
+            register int  tdiff = sb - twht;  // any change
 #else
-	    // check translucent map for opaque, blk bkg vrs white bkg
-	    register byte tblk = dc_translucentmap[ (sb << 8) ];
-	    register byte twht = dc_translucentmap[ (sb << 8) + 4 ];
-	    register int  tdiff = tblk - twht;
+            // check translucent map for opaque, blk bkg vrs white bkg
+            register byte tblk = dc_translucentmap[ (sb << 8) ];
+            register byte twht = dc_translucentmap[ (sb << 8) + 4 ];
+            register int  tdiff = tblk - twht;
 #endif
 
-	    if( tdiff > 2 || tdiff < -2 )
-	    {
-	        // 50/50
-	        register uint16_t dc0, dc1, dc2;
-	        register pixel32_t * p32 = (pixel32_t*)dest;
-	        dc0 = p32->b;
-	        p32->b = (dc0 + c32.pix32.b) >> 1;
-	        dc1 = p32->g;
-	        p32->g = (dc1 + c32.pix32.g) >> 1;
-	        dc2 = p32->r;
-	        p32->r = (dc2 + c32.pix32.r) >> 1;
-	    }
-	    else
-	    {
-		*(pixel32_t*)dest = c32.pix32;  // opaque
-	    }
-	    dest += vid.ybytes;
-	    frac += fracstep;
-	    if( frac >= texheight )
-	        frac -= texheight;
-	} while (count--);
+            if( tdiff > 2 || tdiff < -2 )
+            {
+                // 50/50
+                register uint16_t dc0, dc1, dc2;
+                register pixel32_t * p32 = (pixel32_t*)dest;
+                dc0 = p32->b;
+                p32->b = (dc0 + c32.pix32.b) >> 1;
+                dc1 = p32->g;
+                p32->g = (dc1 + c32.pix32.g) >> 1;
+                dc2 = p32->r;
+                p32->r = (dc2 + c32.pix32.r) >> 1;
+            }
+            else
+            {
+                *(pixel32_t*)dest = c32.pix32;  // opaque
+            }
+            dest += vid.ybytes;
+            frac += fracstep;
+            if( frac >= texheight )
+                frac -= texheight;
+        } while (count--);
         break;
      case TRANSLU_75: // 75 25
         do
         {
-	    // 75/25 translucent
+            // 75/25 translucent
 #ifdef HIGHCOLORMAPS
-	    c32.ui32 = hicolormaps[ dc_source[frac>>FRACBITS] ];
+            c32.ui32 = hicolormaps[ dc_source[frac>>FRACBITS] ];
 #else
-	    c32.ui32 = color8.to32[dc_colormap[dc_source[frac>>FRACBITS]]];
+            c32.ui32 = color8.to32[dc_colormap[dc_source[frac>>FRACBITS]]];
 #endif
-	    register uint16_t dc0, dc1, dc2; // for overlapped execution
-	    register pixel32_t * p32 = (pixel32_t*)dest;
-	    dc0 = c32.pix32.b;
-	    p32->b = (dc0 + dc0 + dc0 + p32->b) >> 2;
-	    dc1 = c32.pix32.g;
-	    p32->g = (dc1 + dc1 + dc1 + p32->g) >> 2;
-	    dc2 = c32.pix32.r;
-	    p32->r = (dc2 + dc2 + dc2 + p32->r) >> 2;
-	    dest += vid.ybytes;
-	    frac += fracstep;
-	    if( frac >= texheight )
-	        frac -= texheight;
-	} while (count--);
+            register uint16_t dc0, dc1, dc2; // for overlapped execution
+            register pixel32_t * p32 = (pixel32_t*)dest;
+            dc0 = c32.pix32.b;
+            p32->b = (dc0 + dc0 + dc0 + p32->b) >> 2;
+            dc1 = c32.pix32.g;
+            p32->g = (dc1 + dc1 + dc1 + p32->g) >> 2;
+            dc2 = c32.pix32.r;
+            p32->r = (dc2 + dc2 + dc2 + p32->r) >> 2;
+            dest += vid.ybytes;
+            frac += fracstep;
+            if( frac >= texheight )
+                frac -= texheight;
+        } while (count--);
         break;
     }
 }
@@ -581,9 +581,9 @@ void R_DrawTranslatedColumn_32 (void)
     {
         // From Boom, to fix the odd frac
         if (frac < 0)
-	    while ((frac += texheight) < 0);
+            while ((frac += texheight) < 0);
         else
-	    while (frac >= texheight)  frac -= texheight;
+            while (frac >= texheight)  frac -= texheight;
     }
 
     // Here we do an additional skin re-mapping.
@@ -598,7 +598,7 @@ void R_DrawTranslatedColumn_32 (void)
         dest += vid.ybytes;
         frac += fracstep;
         if( frac >= texheight )
-	    frac -= texheight;
+            frac -= texheight;
     } while (count--);
 }
 
@@ -693,9 +693,9 @@ void R_DrawTranslucentSpan_32(void)
         //  re-index using light/colormap.
         c32.ui32 = hicolormaps[ ds_source[spot] ];
 #else
-	c32.ui32 = color8.to32[ ds_colormap[ds_source[spot]] ];
+        c32.ui32 = color8.to32[ ds_colormap[ds_source[spot]] ];
 #endif
-	// alpha translucent
+        // alpha translucent
         p32->b = (((unsigned int)p32->b * alpha_r) + (c32.pix32.b * alpha_d)) >> 8;
         p32->g = (((unsigned int)p32->g * alpha_r) + (c32.pix32.g * alpha_d)) >> 8;
         p32->r = (((unsigned int)p32->r * alpha_r) + (c32.pix32.r * alpha_d)) >> 8;
@@ -725,16 +725,16 @@ void R_DrawFogSpan_32(void)
     p32 = (pixel32_t*)( ylookup[ds_y] + columnofs[ds_x1] );
 
     {
-	register unsigned int fb = fogcolor.pix32.b * alpha_d;
-	register unsigned int fg = fogcolor.pix32.g * alpha_d;
-	register unsigned int fr = fogcolor.pix32.r * alpha_d;
+        register unsigned int fb = fogcolor.pix32.b * alpha_d;
+        register unsigned int fg = fogcolor.pix32.g * alpha_d;
+        register unsigned int fr = fogcolor.pix32.r * alpha_d;
         while (count--)
         {
-	    p32->b = ((p32->b * alpha_r) + fb) >> 8;
-	    p32->g = ((p32->g * alpha_r) + fg) >> 8;
-	    p32->r = ((p32->r * alpha_r) + fr) >> 8;
-	    p32 ++;  // *4
-	}
+            p32->b = ((p32->b * alpha_r) + fb) >> 8;
+            p32->g = ((p32->g * alpha_r) + fg) >> 8;
+            p32->r = ((p32->r * alpha_r) + fr) >> 8;
+            p32 ++;  // *4
+        }
     }
 }
 
@@ -797,17 +797,17 @@ static pixelunion32_t fogcolor = {.ui32=0x00101010};
     dest = ylookup[dc_yl] + columnofs[dc_x];
 
     {
-	register unsigned int fb = fogcolor.pix32.b * alpha_d;
-	register unsigned int fg = fogcolor.pix32.g * alpha_d;
-	register unsigned int fr = fogcolor.pix32.r * alpha_d;
+        register unsigned int fb = fogcolor.pix32.b * alpha_d;
+        register unsigned int fg = fogcolor.pix32.g * alpha_d;
+        register unsigned int fr = fogcolor.pix32.r * alpha_d;
         do
         {
-	    register pixel32_t * p32 = (pixel32_t*)dest;
-	    p32->b = ((p32->b * alpha_r) + fb) >> 8;
-	    p32->g = ((p32->g * alpha_r) + fg) >> 8;
-	    p32->r = ((p32->r * alpha_r) + fr) >> 8;
-	    dest += vid.ybytes;
-	}
+            register pixel32_t * p32 = (pixel32_t*)dest;
+            p32->b = ((p32->b * alpha_r) + fb) >> 8;
+            p32->g = ((p32->g * alpha_r) + fg) >> 8;
+            p32->r = ((p32->r * alpha_r) + fr) >> 8;
+            dest += vid.ybytes;
+        }
         while (count--);
     }
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: r_data.c 1424 2019-01-29 08:07:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -246,19 +246,19 @@ void R_DrawColumnInCache ( column_t*     colpost,	// source, list of 0 or more p
         if (position < 0)
         {
             count += position;  // skip pixels off top
-	    // [WDJ] For this clipping to be technically correct, the pixels
-	    // in the source must be skipped too.
-	    // Other engines do not skip the post pixels either, to maintain
-	    // compatibility with the original doom engines, which had this bug.
-	    // Enabling this will make some textures slightly different
-	    // than displayed in other engines.
-	    // TEKWALL1 will have two boxes in the upper left corner with this
-	    // off and one box with it enabled.  The differences in other
-	    // textures are less noticable.
-	    if( corrected_clipping )
-	    {
-	        source -= position; // [WDJ] 1/29/2010 skip pixels in post
-	    }
+            // [WDJ] For this clipping to be technically correct, the pixels
+            // in the source must be skipped too.
+            // Other engines do not skip the post pixels either, to maintain
+            // compatibility with the original doom engines, which had this bug.
+            // Enabling this will make some textures slightly different
+            // than displayed in other engines.
+            // TEKWALL1 will have two boxes in the upper left corner with this
+            // off and one box with it enabled.  The differences in other
+            // textures are less noticable.
+            if( corrected_clipping )
+            {
+                source -= position; // [WDJ] 1/29/2010 skip pixels in post
+            }
             position = 0;
         }
 
@@ -353,7 +353,7 @@ byte* R_GenerateTexture (int texnum)
     if (patchcount==1)
     {
         // Texture patch format:
-	//   patch header (8 bytes), ignored
+        //   patch header (8 bytes), ignored
         //   array[ texture_width ] of column offset
         //   concatenated column posts, of variable length, terminate 0xFF
         //        ( post header (topdelta,length), pixel data )
@@ -364,172 +364,172 @@ byte* R_GenerateTexture (int texnum)
        
         // [WDJ] Protect every alloc using PU_CACHE from all Z_Malloc that
         // follow it, as that can deallocate the PU_CACHE unexpectedly.
-	
+
         // [WDJ] Only need patch lump for the following memcpy.
-	// [WDJ] Must use common patch read to preserve endian consistency.
-	// otherwise it will be in cache without endian changes.
+        // [WDJ] Must use common patch read to preserve endian consistency.
+        // otherwise it will be in cache without endian changes.
         realpatch = W_CachePatchNum (texpatch->patchnum, PU_IN_USE);  // texture lump temp
 
 #ifdef GENTEXT_BADPATCH_DETECT
         // [WDJ] W_CachePatchNum should only get lumps from PATCH section,
-	// but it will return a colormap of the same name.
-	// Validity checks.
-	// colormap size = 0x2200 to 0x2248
+        // but it will return a colormap of the same name.
+        // Validity checks.
+        // colormap size = 0x2200 to 0x2248
         {
-	    int patch_colofs_size = realpatch->width * sizeof( uint32_t );  // width * 4
-	    uint32_t* pat_colofs = (uint32_t*)&(realpatch->columnofs); // to match size in wad
-	    if( patch_colofs_size + 8 > patchsize )  // column list exceeds patch size
-	        goto make_dummy_texture;
-	    for( i=0; i< realpatch->width; i++)
-	    {
-	       if( *(pat_colofs++) > patchsize )
-		   goto make_dummy_texture;
-	    }
-	}
-#endif
-#if 1
-        // [WDJ] Detect PNG patches.
-	if(    ((byte*)realpatch)[0]==137
-	    && ((byte*)realpatch)[1]=='P'
-	    && ((byte*)realpatch)[2]=='N'
-	    && ((byte*)realpatch)[3]=='G' )
-        {
-	    // Found a PNG patch, which will crash the draw8 routine.
-	    // Must assume could be used for top or bottom of wall,
-	    // which require the patch run full height (no transparent).
-#if 1
-	    // Enable when want to know which textures are triggering this.
-	    GenPrintf(EMSG_info,"R_GenerateTexture: Texture %8s has PNG patch, using dummy texture.\n", texture->name );
-#endif
-make_dummy_texture:
-	  {
-	    // make a dummy texture
-	    int head_size = colofs_size + 8;
-	    txcblocksize = head_size + 4 + texture->height + 4;
-            txcblock = Z_Malloc (txcblocksize,
-                          PU_IN_USE,         // will change tag at end of this function
-                          (void**)&texturecache[texnum]);
-	    patch_t * txcpatch = (patch_t*) txcblock;
-	    txcpatch->width = texture->width;
-	    txcpatch->height = texture->height;
-	    txcpatch->leftoffset = 0;
-	    txcpatch->topoffset = 0;
-	    destpost = (post_t*) ((byte*)txcblock + head_size);  // posting area;
-	    destpost->topdelta = 0;
-	    destpost->length = texture->height;
-	    destpixels = (byte*)destpost + 3;
-	    destpixels[-1] = 0;	// pad 0
-	    for( i=0; i>texture->height; i++ )
-	    {
-	        destpixels[i] = 8; // mono color
-	    }
-	    destpixels[i+1] = 0; // pad 0
-	    destpixels[i+2] = 0xFF; // term
-	    // all columns use the same post
-	    colofs = (uint32_t*)&(txcpatch->columnofs);  // has patch header
-	    for(i=0 ; i< texture->width ; i++ )
-	         colofs[i] = head_size;
-	    goto single_patch_finish;
-	  }
+            int patch_colofs_size = realpatch->width * sizeof( uint32_t );  // width * 4
+            uint32_t* pat_colofs = (uint32_t*)&(realpatch->columnofs); // to match size in wad
+            if( patch_colofs_size + 8 > patchsize )  // column list exceeds patch size
+                goto make_dummy_texture;
+            for( i=0; i< realpatch->width; i++)
+            {
+               if( *(pat_colofs++) > patchsize )
+                   goto make_dummy_texture;
+            }
         }
 #endif
 #if 1
-	if( texpatch->originx != 0 || texpatch->originy != 0 )
-	{
-	    // [WDJ] Cannot copy patch to texture.
-	    // Fixes tekwall2, tekwall3, tekwall5 in FreeDoom,
-	    // which use right half of large combined patches.
-//	    debug_Printf("GenerateTexture %s: offset forced multipatch\n", texture->name );
-	    goto multipatch_combine;
-	}
+        // [WDJ] Detect PNG patches.
+        if(    ((byte*)realpatch)[0]==137
+            && ((byte*)realpatch)[1]=='P'
+            && ((byte*)realpatch)[2]=='N'
+            && ((byte*)realpatch)[3]=='G' )
+        {
+            // Found a PNG patch, which will crash the draw8 routine.
+            // Must assume could be used for top or bottom of wall,
+            // which require the patch run full height (no transparent).
+#if 1
+            // Enable when want to know which textures are triggering this.
+            GenPrintf(EMSG_info,"R_GenerateTexture: Texture %8s has PNG patch, using dummy texture.\n", texture->name );
+#endif
+make_dummy_texture:
+          {
+            // make a dummy texture
+            int head_size = colofs_size + 8;
+            txcblocksize = head_size + 4 + texture->height + 4;
+            txcblock = Z_Malloc (txcblocksize,
+                          PU_IN_USE,         // will change tag at end of this function
+                          (void**)&texturecache[texnum]);
+            patch_t * txcpatch = (patch_t*) txcblock;
+            txcpatch->width = texture->width;
+            txcpatch->height = texture->height;
+            txcpatch->leftoffset = 0;
+            txcpatch->topoffset = 0;
+            destpost = (post_t*) ((byte*)txcblock + head_size);  // posting area;
+            destpost->topdelta = 0;
+            destpost->length = texture->height;
+            destpixels = (byte*)destpost + 3;
+            destpixels[-1] = 0;	// pad 0
+            for( i=0; i>texture->height; i++ )
+            {
+                destpixels[i] = 8; // mono color
+            }
+            destpixels[i+1] = 0; // pad 0
+            destpixels[i+2] = 0xFF; // term
+            // all columns use the same post
+            colofs = (uint32_t*)&(txcpatch->columnofs);  // has patch header
+            for(i=0 ; i< texture->width ; i++ )
+                 colofs[i] = head_size;
+            goto single_patch_finish;
+          }
+        }
 #endif
 #if 1
-	if( realpatch->width > texture->width )
-	{
-	    // [WDJ] Texture is a portion of a large patch.
-	    // To prevent duplicate large copies.
-	    // Unfortunately this also catches the large RSKY that legacy
-	    // has in legacy.wad.
-	    if( strncmp(texture->name, "SKY", 3 ) == 0 )
-	    {
-	        // let sky match patch
-	        texture->height = realpatch->height;
-	    }
-	    else
-	    {
+        if( texpatch->originx != 0 || texpatch->originy != 0 )
+        {
+            // [WDJ] Cannot copy patch to texture.
+            // Fixes tekwall2, tekwall3, tekwall5 in FreeDoom,
+            // which use right half of large combined patches.
+//	    debug_Printf("GenerateTexture %s: offset forced multipatch\n", texture->name );
+            goto multipatch_combine;
+        }
+#endif
+#if 1
+        if( realpatch->width > texture->width )
+        {
+            // [WDJ] Texture is a portion of a large patch.
+            // To prevent duplicate large copies.
+            // Unfortunately this also catches the large RSKY that legacy
+            // has in legacy.wad.
+            if( strncmp(texture->name, "SKY", 3 ) == 0 )
+            {
+                // let sky match patch
+                texture->height = realpatch->height;
+            }
+            else
+            {
 //	        debug_Printf("GenerateTexture %s: width forced multipatch\n", texture->name );
-	        goto multipatch_combine;
-	    }
-	}
+                goto multipatch_combine;
+            }
+        }
         else
 #endif
 #if 1
-	if( realpatch->width < texture->width )
-	{
-	    // [WDJ] Messy situation. Single patch texture where the patch
-	    // width is smaller than the texture.  There will be segfaults when
-	    // texture columns are accessed that are not in the patch.
-	    // Rebuild the patch to meet draw expectations.
-	    // This occurs in phobiata and maybe heretic.
-	    // [WDJ] Too late to change texture size to match patch,
-	    // the caller can already be violating the patch width.
-	    // Single-sided textures need to be kept packed to preserve holes.
-	    // The texture may be rebuilt several times due to cache.
+        if( realpatch->width < texture->width )
+        {
+            // [WDJ] Messy situation. Single patch texture where the patch
+            // width is smaller than the texture.  There will be segfaults when
+            // texture columns are accessed that are not in the patch.
+            // Rebuild the patch to meet draw expectations.
+            // This occurs in phobiata and maybe heretic.
+            // [WDJ] Too late to change texture size to match patch,
+            // the caller can already be violating the patch width.
+            // Single-sided textures need to be kept packed to preserve holes.
+            // The texture may be rebuilt several times due to cache.
             int patch_colofs_size = realpatch->width * sizeof( uint32_t );  // width * 4
-	    int ofsdiff = colofs_size - patch_colofs_size;
-	    // reserve 4 bytes at end for empty post handling
-	    txcblocksize = patchsize + ofsdiff + 4;
+            int ofsdiff = colofs_size - patch_colofs_size;
+            // reserve 4 bytes at end for empty post handling
+            txcblocksize = patchsize + ofsdiff + 4;
 #if 0
-	    // Enable when want to know which textures are triggering this.
-	    GenPrintf(EMSG_info,"R_GenerateTexture: single patch width does not match texture width %8s\n",
-		   texture->name );
+            // Enable when want to know which textures are triggering this.
+            GenPrintf(EMSG_info,"R_GenerateTexture: single patch width does not match texture width %8s\n",
+                   texture->name );
 #endif
             txcblock = Z_Malloc (txcblocksize,
                           PU_LEVEL,         // will change tag at end of this function
                           (void**)&texturecache[texnum]);
-	    // patches have 8 byte patch header, part of patch_t
+            // patches have 8 byte patch header, part of patch_t
             memcpy (txcblock, realpatch, 8); // header
             memcpy (txcblock + colofs_size + 8, ((byte*)realpatch) + patch_colofs_size + 8, patchsize - patch_colofs_size - 8 ); // posts
-	    // build new column offset table of texture width
-	    {
-	        // Copy patch columnofs table to texture, adjusted for new
-		// length of columnofs table.
+            // build new column offset table of texture width
+            {
+                // Copy patch columnofs table to texture, adjusted for new
+                // length of columnofs table.
                 uint32_t* pat_colofs = (uint32_t*)&(realpatch->columnofs); // to match size in wad
                 colofs = (uint32_t*)&(((patch_t*)txcblock)->columnofs); // new
                 for( i=0; i< realpatch->width; i++)
-	                colofs[i] = pat_colofs[i] + ofsdiff;
+                        colofs[i] = pat_colofs[i] + ofsdiff;
                 // put empty post for all columns not in the patch.
-		// txcblock has 4 bytes reserved for this.
-	        int empty_post = txcblocksize - 4;
-	        txcblock[empty_post] = 0xFF;  // empty post list
-	        txcblock[empty_post+3] = 0xFF;  // paranoid
-	        for( ; i< texture->width ; i++ )
-		        colofs[i] = empty_post;
-	    }
-	    goto single_patch_finish;
-	}
+                // txcblock has 4 bytes reserved for this.
+                int empty_post = txcblocksize - 4;
+                txcblock[empty_post] = 0xFF;  // empty post list
+                txcblock[empty_post+3] = 0xFF;  // paranoid
+                for( ; i< texture->width ; i++ )
+                        colofs[i] = empty_post;
+            }
+            goto single_patch_finish;
+        }
 #endif   
-	{
+        {
             // Normal: Most often use patch as it is.
 #if 1
             // texturecache gets copy so that PU_CACHE deallocate clears the
-	    // texturecache automatically
+            // texturecache automatically
             txcblock = Z_Malloc (patchsize,
                           PU_IN_USE,  // will change tag at end of this function
                           (void**)&texturecache[texnum]);
-	    memcpy (txcblock, realpatch, patchsize);
-	    txcblocksize = patchsize;
+            memcpy (txcblock, realpatch, patchsize);
+            txcblocksize = patchsize;
 #else
         // FIXME: this version puts the z_block user as lumpcache,
         // instead of as texturecache, so deallocate by PU_CACHE leaves
         // texturecache with a bad ptr.
 //        texturecache[texnum] = txcblock = W_CachePatchNum (texpatch->patchnum, PU_IN_USE);
         texturecache[texnum] = txcblock = realpatch;
-	Z_ChangeOwner (realpatch, (void**)&texturecache[texnum]);
+        Z_ChangeOwner (realpatch, (void**)&texturecache[texnum]);
         Z_ChangeTag (realpatch, PU_IN_USE);
         txcblocksize = patchsize;
 #endif
-	}
+        }
 
   single_patch_finish:
         // Interface for texture picture format
@@ -538,8 +538,8 @@ make_dummy_texture:
         // colofs from patch are relative to start of table
         for (i=0; i<texture->width; i++)
              colofs[i] = colofs[i] + 3;  // adjust colofs from wad
-	      // offset to pixels instead of post header
-	      // Many callers will use colofs-3 to get back to header, but
+              // offset to pixels instead of post header
+              // Many callers will use colofs-3 to get back to header, but
               // some drawing functions need pixels.
        
         Z_ChangeTag (realpatch, PU_CACHE);  // safe
@@ -555,7 +555,7 @@ make_dummy_texture:
  // TGC_combine_patch vrs TGC_picture: Multiple patch textures.
     if( patchcount >= MAXPATCHNUM ) {
        I_SoftError("R_GenerateTexture: Combine patch count %i exceeds %i, ignoring rest\n",
-		   patchcount, MAXPATCHNUM);
+                   patchcount, MAXPATCHNUM);
        patchcount = MAXPATCHNUM - 1;
     }
    
@@ -568,7 +568,7 @@ make_dummy_texture:
         cp->postptr = NULL;	// disable until reach starting column
         cp->nxt_y = MAXINT;	// disable
 #ifdef GENTEXT_REUSECOL
-	cp->usedpatchdata = 0;
+        cp->usedpatchdata = 0;
 #endif
         cp->originx = texpatch->originx;
         cp->originy = texpatch->originy;
@@ -663,7 +663,7 @@ make_dummy_texture:
         // some drawing functions need pixels.
         colofs[x] = destpixels - (byte*)txcblock + 3;  // this column
         destpost = (post_t*)destpixels;	// first post in column
-	postlength = 0;  // length of current post
+        postlength = 0;  // length of current post
         bottom = 0;	 // next y in column
         segnxt_y = MAXINT - 10;	// init to very large, but less than disabled
         segbot_y = MAXINT - 10;
@@ -671,257 +671,257 @@ make_dummy_texture:
         // setup the columns, active or inactive
         for (p=0; p<patchcount; p++ )
         {
-	    compat_t * cp = &compat[p];
-	    int patch_x = x - cp->originx;	// within patch
-	    if( patch_x >= 0 && patch_x < cp->width )
-	    {
-	        realpatch = cp->patch;
-	        uint32_t* pat_colofs = (uint32_t*)&(realpatch->columnofs); // to match size in wad
+            compat_t * cp = &compat[p];
+            int patch_x = x - cp->originx;	// within patch
+            if( patch_x >= 0 && patch_x < cp->width )
+            {
+                realpatch = cp->patch;
+                uint32_t* pat_colofs = (uint32_t*)&(realpatch->columnofs); // to match size in wad
 #ifdef GENTEXT_BADPATCH_DETECT
-	        if( pat_colofs[patch_x] > cp->patchsize )  // detect bad patch
-		    goto patch_off;  // post is not within patch memory
+                if( pat_colofs[patch_x] > cp->patchsize )  // detect bad patch
+                    goto patch_off;  // post is not within patch memory
 #endif
-	        cp->postptr = (post_t*)( (byte*)realpatch + pat_colofs[patch_x] );  // patch column
-	        if ( cp->postptr->topdelta == 0xFF )
-		    goto patch_off;
+                cp->postptr = (post_t*)( (byte*)realpatch + pat_colofs[patch_x] );  // patch column
+                if ( cp->postptr->topdelta == 0xFF )
+                    goto patch_off;
 #ifdef GENTEXT_REUSECOL
-	       	// Empty columns may be shared too, but they are very small,
-	        // and it really adds to logic complexity, so only look at non-empty.
-	        if ( pat_colofs[patch_x] > cp->usedpatchdata )
-		    cp->usedpatchdata = pat_colofs[patch_x];  // track normal usage pattern
-	        else
-	        {
-		    // compaction detected, look for reused column
-		    int rpx = (cp->originx < 0) ? -cp->originx : 0;  // x in patch
+                // Empty columns may be shared too, but they are very small,
+                // and it really adds to logic complexity, so only look at non-empty.
+                if ( pat_colofs[patch_x] > cp->usedpatchdata )
+                    cp->usedpatchdata = pat_colofs[patch_x];  // track normal usage pattern
+                else
+                {
+                    // compaction detected, look for reused column
+                    int rpx = (cp->originx < 0) ? -cp->originx : 0;  // x in patch
 #ifdef DEBUG_REUSECOL
-		    if( DEBUG_REUSECOL )
-		       debug_Printf("GenerateTexture: %8s detected reuse of column %i in patch %i\n", texture->name, patch_x, p );
+                    if( DEBUG_REUSECOL )
+                       debug_Printf("GenerateTexture: %8s detected reuse of column %i in patch %i\n", texture->name, patch_x, p );
 #endif
-		    for( ; rpx<patch_x; rpx++ )  // find reused column
-		    {
-		        if( pat_colofs[rpx] == pat_colofs[patch_x] )  // reused in patch
-		        {
-			    int rtx = rpx + cp->originx; // x in texture
+                    for( ; rpx<patch_x; rpx++ )  // find reused column
+                    {
+                        if( pat_colofs[rpx] == pat_colofs[patch_x] )  // reused in patch
+                        {
+                            int rtx = rpx + cp->originx; // x in texture
 #if 1
-			    // Test for reused column is from single patch
-			    int p2;
-			    int livepatchcount2 = 0;
+                            // Test for reused column is from single patch
+                            int p2;
+                            int livepatchcount2 = 0;
 #ifdef DEBUG_REUSECOL
-			    if( DEBUG_REUSECOL )
-			       debug_Printf("GenerateTexture: testing reuse of %i, as %i\n", rpx, patch_x);
+                            if( DEBUG_REUSECOL )
+                               debug_Printf("GenerateTexture: testing reuse of %i, as %i\n", rpx, patch_x);
 #endif
-			    // [WDJ] If reused column is reused alone in both cases,
-			    // then assume they will be identical in final texture too.
-			    for (p2=0; p2<patchcount; p2++ )
-			    {
-			        compat_t * cp2 = &compat[p2];
-			        int p2_x = rtx - cp2->originx; // within patch
-			        if( p2_x >= 0 && p2_x < cp2->width )
-			        {
-				   livepatchcount2 ++;
-				}
-			    }
-			    if ( livepatchcount2 == 1 )
-			    {
-			        reuse_column = rpx + cp->originx; // column in generated texture
-			        break;
-			    }
+                            // [WDJ] If reused column is reused alone in both cases,
+                            // then assume they will be identical in final texture too.
+                            for (p2=0; p2<patchcount; p2++ )
+                            {
+                                compat_t * cp2 = &compat[p2];
+                                int p2_x = rtx - cp2->originx; // within patch
+                                if( p2_x >= 0 && p2_x < cp2->width )
+                                {
+                                   livepatchcount2 ++;
+                                }
+                            }
+                            if ( livepatchcount2 == 1 )
+                            {
+                                reuse_column = rpx + cp->originx; // column in generated texture
+                                break;
+                            }
 #else
-			    // Compare with texture column, reuse when identical
-			    post_t * rpp = (post_t*)( txcblock + colofs[rtx] - 3 );  // texture column
-			    post_t * ppp = cp->postptr;
+                            // Compare with texture column, reuse when identical
+                            post_t * rpp = (post_t*)( txcblock + colofs[rtx] - 3 );  // texture column
+                            post_t * ppp = cp->postptr;
 #ifdef DEBUG_REUSECOL
-			    if( DEBUG_REUSECOL )
-			       debug_Printf("GenerateTexture: testing reuse of %i, as %i\n", rpx, patch_x);
+                            if( DEBUG_REUSECOL )
+                               debug_Printf("GenerateTexture: testing reuse of %i, as %i\n", rpx, patch_x);
 #endif
-			    // [WDJ] Comparision is made difficult by the pad bytes,
-			    // which we set to 0, and Requiem.wad does not.
-			    while (rpp->topdelta != 0xff)  // find column end
-			    {
-			        int len = rpp->length;
-			        if( rpp->topdelta != ppp->topdelta )  goto reject_1;
-			        if( rpp->length != ppp->length )  goto reject_1;
-			        // skip leading pad, and trailing pad
-			        if( memcmp( ((byte*)rpp)+3, ((byte*)ppp)+3, len ) )  goto reject_1;
-			        // next post
-				len += 4;  // sizeof post_t + lead pad + trail pad
-			        rpp = (post_t *) (((byte *)rpp) + len);
-			        ppp = (post_t *) (((byte *)ppp) + len);
-			    }
-			    if ( ppp->topdelta == 0xff )
-			    {
-			        // columns match
-			        reuse_column = rtx;
-			        break;
-			    }
-			   reject_1:
-			    continue;
+                            // [WDJ] Comparision is made difficult by the pad bytes,
+                            // which we set to 0, and Requiem.wad does not.
+                            while (rpp->topdelta != 0xff)  // find column end
+                            {
+                                int len = rpp->length;
+                                if( rpp->topdelta != ppp->topdelta )  goto reject_1;
+                                if( rpp->length != ppp->length )  goto reject_1;
+                                // skip leading pad, and trailing pad
+                                if( memcmp( ((byte*)rpp)+3, ((byte*)ppp)+3, len ) )  goto reject_1;
+                                // next post
+                                len += 4;  // sizeof post_t + lead pad + trail pad
+                                rpp = (post_t *) (((byte *)rpp) + len);
+                                ppp = (post_t *) (((byte *)ppp) + len);
+                            }
+                            if ( ppp->topdelta == 0xff )
+                            {
+                                // columns match
+                                reuse_column = rtx;
+                                break;
+                            }
+                           reject_1:
+                            continue;
 #endif
-			}
-		    }
-		}
-	        livepatchcount++;
+                        }
+                    }
+                }
+                livepatchcount++;
 #endif	       
-	        cp->nxt_y = cp->originy + cp->postptr->topdelta;
-	        cp->bot_y = cp->nxt_y + cp->postptr->length;
-	    }else{
-	       patch_off: // empty post
-	        // clip left and right by turning this patch off
-	        cp->postptr = NULL;
-	        cp->nxt_y = MAXINT;
-	        cp->bot_y = MAXINT;
-	    }
-	}  // for all patches
+                cp->nxt_y = cp->originy + cp->postptr->topdelta;
+                cp->bot_y = cp->nxt_y + cp->postptr->length;
+            }else{
+               patch_off: // empty post
+                // clip left and right by turning this patch off
+                cp->postptr = NULL;
+                cp->nxt_y = MAXINT;
+                cp->bot_y = MAXINT;
+            }
+        }  // for all patches
 
 #ifdef GENTEXT_REUSECOL
         if( livepatchcount == 1 )
         {
-	    if( reuse_column >= 0 )
-	    {
-	         // reuse the column
-	         colofs[x] = colofs[reuse_column];
+            if( reuse_column >= 0 )
+            {
+                 // reuse the column
+                 colofs[x] = colofs[reuse_column];
 #ifdef DEBUG_REUSECOL
-       		 // DEBUG: enable to see column reuse
-	         if( DEBUG_REUSECOL )
-	           debug_Printf("GenerateTexture: reuse %i\n", reuse_column);
+                 // DEBUG: enable to see column reuse
+                 if( DEBUG_REUSECOL )
+                   debug_Printf("GenerateTexture: reuse %i\n", reuse_column);
 #endif
-	         continue;  // next x
-	    }
-	}
+                 continue;  // next x
+            }
+        }
 #endif
        
         for(;;) // all posts in column
         {
             // Find next post y in this column.
-	    // Only need the last patch, as that overwrites every other patch.
-	    nxtpat = -1;	// patch with next post
+            // Only need the last patch, as that overwrites every other patch.
+            nxtpat = -1;	// patch with next post
             segnxt_y = MAXINT-64;	// may be negative, must be < MAXINT
             compat_t * cp = &compat[0];
             for (p=0; p<patchcount; p++, cp++)
             {
-	        // Skip over any patches that have been passed.
-		// Includes those copied, or covered by those copied.
-	        while( cp->bot_y <= bottom )
-	        {
-		    // this post has been passed, go to next post
-		    cp->postptr = (post_t*)( ((byte*)cp->postptr) + cp->postptr->length + 4);
-		    if( cp->postptr->topdelta == 0xFF )  // end of post column
-		    {
-		        // turn this patch off
-		        cp->postptr = NULL;
-		        cp->nxt_y = MAXINT;	// beyond texture size
-		        cp->bot_y = MAXINT;
-		        break;
-		    }
-		    cp->nxt_y = cp->originy + cp->postptr->topdelta;
-		    cp->bot_y = cp->nxt_y + cp->postptr->length;
-		}
-	        if( cp->nxt_y <= segnxt_y )
-	        {
-		    // Found an active post
-		    nxtpat = p;	// last draw into this segment
-		    // Check for continuing in the middle of a post.
-		    segnxt_y = (cp->nxt_y < bottom)?
-		       bottom	// continue previous
-		       : cp->nxt_y; // start at top of post
-		    // Only a later drawn patch can overwrite this post.
-		    segbot_y = cp->bot_y;
-		}
-	        else
-	        {
-		    // Limit bottom of this post segment by later drawn posts.
-		    if( cp->nxt_y < segbot_y )   segbot_y = cp->nxt_y;
-		}
-	    }
-	    // Exit test, end of column, which may be empty
-	    if( segnxt_y >= texture->height )   break;
-	   
-	    // copy whole/remainder of post, or cut it short
-	    // assert: segbot_y <= cp->bot_y+1  because it is set in loop
-	    if( segbot_y > texture->height )   segbot_y = texture->height;
+                // Skip over any patches that have been passed.
+                // Includes those copied, or covered by those copied.
+                while( cp->bot_y <= bottom )
+                {
+                    // this post has been passed, go to next post
+                    cp->postptr = (post_t*)( ((byte*)cp->postptr) + cp->postptr->length + 4);
+                    if( cp->postptr->topdelta == 0xFF )  // end of post column
+                    {
+                        // turn this patch off
+                        cp->postptr = NULL;
+                        cp->nxt_y = MAXINT;	// beyond texture size
+                        cp->bot_y = MAXINT;
+                        break;
+                    }
+                    cp->nxt_y = cp->originy + cp->postptr->topdelta;
+                    cp->bot_y = cp->nxt_y + cp->postptr->length;
+                }
+                if( cp->nxt_y <= segnxt_y )
+                {
+                    // Found an active post
+                    nxtpat = p;	// last draw into this segment
+                    // Check for continuing in the middle of a post.
+                    segnxt_y = (cp->nxt_y < bottom)?
+                       bottom	// continue previous
+                       : cp->nxt_y; // start at top of post
+                    // Only a later drawn patch can overwrite this post.
+                    segbot_y = cp->bot_y;
+                }
+                else
+                {
+                    // Limit bottom of this post segment by later drawn posts.
+                    if( cp->nxt_y < segbot_y )   segbot_y = cp->nxt_y;
+                }
+            }
+            // Exit test, end of column, which may be empty
+            if( segnxt_y >= texture->height )   break;
 
-	    seglen = segbot_y - segnxt_y;
+            // copy whole/remainder of post, or cut it short
+            // assert: segbot_y <= cp->bot_y+1  because it is set in loop
+            if( segbot_y > texture->height )   segbot_y = texture->height;
 
-	    if( postlength != 0 )
-	    {
-	       // Check if next patch does not append to bottom of current patch
-	       if( ((segnxt_y > bottom) && (bottom > 0))
-		 || (postlength + seglen > 255) ) // if postlength would be too long
-	       {
-		   // does not append, start new post after existing post
-		   destpost = (post_t*)((byte*)destpost + destpost->length + 4);
-		   postlength = 0;
-	       }
-	    }
-	   
-	    // Only one patch is drawn last in this segment, copy that one
-	    cp = &compat[nxtpat];
-	    srcpost = cp->postptr;
+            seglen = segbot_y - segnxt_y;
+
+            if( postlength != 0 )
+            {
+               // Check if next patch does not append to bottom of current patch
+               if( ((segnxt_y > bottom) && (bottom > 0))
+                 || (postlength + seglen > 255) ) // if postlength would be too long
+               {
+                   // does not append, start new post after existing post
+                   destpost = (post_t*)((byte*)destpost + destpost->length + 4);
+                   postlength = 0;
+               }
+            }
+
+            // Only one patch is drawn last in this segment, copy that one
+            cp = &compat[nxtpat];
+            srcpost = cp->postptr;
             // offset>0 when copy starts part way into this source post
-	    // NOTE: cp->nxt_y = cp->originy + srcpost->topdelta;
-	    offset = ( segnxt_y > cp->nxt_y )? (segnxt_y - cp->nxt_y) : 0;
-	    // consider y clipping problem
-	    if( cp->nxt_y < 0  &&  !corrected_clipping )
-	    {
+            // NOTE: cp->nxt_y = cp->originy + srcpost->topdelta;
+            offset = ( segnxt_y > cp->nxt_y )? (segnxt_y - cp->nxt_y) : 0;
+            // consider y clipping problem
+            if( cp->nxt_y < 0  &&  !corrected_clipping )
+            {
                 // Original doom had bug in y clipping, such that it
-		// would clip the width but not skip the source pixels.
-	        // Given that segnxt_y was already correctly clipped.
-	        offset += cp->nxt_y; // reproduce original doom clipping
-	    }
-	   
-	    if( postlength == 0 )
-	    {
-	        if( destpixels + 3 >= texture_end )  goto exceed_alloc_error;
-	        if( segnxt_y > 254 )   goto exceed_topdelta;
-	        // new post header and 0 pad byte
-	        destpost->topdelta = segnxt_y;
-	        // append at
-	        destpixels = (byte*)destpost + 3;
-	        destpixels[-1] = 0;	// pad 0
-	    }
+                // would clip the width but not skip the source pixels.
+                // Given that segnxt_y was already correctly clipped.
+                offset += cp->nxt_y; // reproduce original doom clipping
+            }
 
-	    seglen = segbot_y - segnxt_y;
-	    if( destpixels + seglen >= texture_end )  goto exceed_alloc_error;
-	   
-	    // append to existing post
-	    memcpy( destpixels, ((byte*)srcpost + offset + 3), seglen );
-	    destpixels += seglen;
-	    postlength += seglen;
-	    bottom = segbot_y;
-	    // finish post bookkeeping so can terminate loop easily
-	    *destpixels = 0;	// pad 0
-	    if( postlength > 255 )   goto exceed_post_length;
-	    destpost->length = postlength;
-	} // for all posts in column
+            if( postlength == 0 )
+            {
+                if( destpixels + 3 >= texture_end )  goto exceed_alloc_error;
+                if( segnxt_y > 254 )   goto exceed_topdelta;
+                // new post header and 0 pad byte
+                destpost->topdelta = segnxt_y;
+                // append at
+                destpixels = (byte*)destpost + 3;
+                destpixels[-1] = 0;	// pad 0
+            }
+
+            seglen = segbot_y - segnxt_y;
+            if( destpixels + seglen >= texture_end )  goto exceed_alloc_error;
+
+            // append to existing post
+            memcpy( destpixels, ((byte*)srcpost + offset + 3), seglen );
+            destpixels += seglen;
+            postlength += seglen;
+            bottom = segbot_y;
+            // finish post bookkeeping so can terminate loop easily
+            *destpixels = 0;	// pad 0
+            if( postlength > 255 )   goto exceed_post_length;
+            destpost->length = postlength;
+        } // for all posts in column
         destpixels++;		// skip pad 0
         *destpixels++ = 0xFF;	// mark end of column
         // may be empty column so do not reference destpost
-	continue; // next x
+        continue; // next x
 #ifdef GENTEXT_REALLOC
  exceed_alloc_error:
        {
         // Re-alloc the texture
         byte* old_txcblock = txcblock;
         int old_txcblocksize = txcblocksize;
-	// inc alloc by a proportional amount, plus one column
+        // inc alloc by a proportional amount, plus one column
         txcblocksize += (texture->width - x + 1) * txcblocksize / texture->width;
 #if 1
-	// enable to print re-alloc events
-	if( verbose )
-	    GenPrintf(EMSG_ver, "R_GenerateTexture: %8s re-alloc from %i to %i\n",
-		    texture->name, old_txcblocksize, txcblocksize );
+        // enable to print re-alloc events
+        if( verbose )
+            GenPrintf(EMSG_ver, "R_GenerateTexture: %8s re-alloc from %i to %i\n",
+                    texture->name, old_txcblocksize, txcblocksize );
 #endif
         txcblock = Z_Malloc (txcblocksize, PU_IN_USE,
                       (void**)&texturecache[texnum]);
         memcpy( txcblock, old_txcblock, old_txcblocksize );
-	texture_end = txcblock + txcblocksize - 2; // do not exceed
-	txcdata = (byte*)txcblock + colofs_size + 8;  // posting area
+        texture_end = txcblock + txcblocksize - 2; // do not exceed
+        txcdata = (byte*)txcblock + colofs_size + 8;  // posting area
         destpixels = (byte*)txcblock + colofs[x] - 3;  // this column
-	{
-	    patch_t * txcpatch = (patch_t*) txcblock; // header of txcblock
-	    colofs = (uint32_t*)&(txcpatch->columnofs);  // has patch header
-	}
-	x--;  // redo this column
+        {
+            patch_t * txcpatch = (patch_t*) txcblock; // header of txcblock
+            colofs = (uint32_t*)&(txcpatch->columnofs);  // has patch header
+        }
+        x--;  // redo this column
         Z_Free(old_txcblock);  // also nulls texturecache ptr
         texturecache[texnum] = txcblock; // replace ptr undone by Z_Free
        }
@@ -941,7 +941,7 @@ make_dummy_texture:
 #if 0
     // Enable to print memory usage
     I_SoftError("R_GenerateTexture: %8s allocated %i, used %i bytes\n",
-	    texture->name, txcblocksize, destpixels - texgen );
+            texture->name, txcblocksize, destpixels - texgen );
 #endif
     goto done;
    
@@ -953,12 +953,12 @@ make_dummy_texture:
    
  exceed_topdelta:
     I_SoftError("R_GenerateTexture: %8s topdelta= %i exceeds 254, make picture\n",
-	    texture->name, segnxt_y );
+            texture->name, segnxt_y );
     goto error_redo_as_picture;
    
  exceed_post_length:
     I_SoftError("R_GenerateTexture: %8s post length= %i exceeds 255, make picture\n",
-	    texture->name, postlength );
+            texture->name, postlength );
 
  error_redo_as_picture:
     Z_Free( txcblock );
@@ -1000,8 +1000,8 @@ make_dummy_texture:
     for (i=0; i<texture->patchcount; i++, texpatch++)
     {
         // [WDJ] patch only used in this loop, without any other Z_Malloc
-	// [WDJ] Must use common patch read to preserve endian consistency.
-	// otherwise it will be in cache without endian changes.
+        // [WDJ] Must use common patch read to preserve endian consistency.
+        // otherwise it will be in cache without endian changes.
         realpatch = W_CachePatchNum (texpatch->patchnum, PU_CACHE);  // patch temp
         x1 = texpatch->originx;
         x2 = x1 + realpatch->width;
@@ -1013,9 +1013,9 @@ make_dummy_texture:
 
         for ( ; x<x2 ; x++)
         {
-	    // source patch column from wad, to be copied
-	    column_t* patchcol =
-	     (column_t *)( (byte *)realpatch + realpatch->columnofs[x-x1] );
+            // source patch column from wad, to be copied
+            column_t* patchcol =
+             (column_t *)( (byte *)realpatch + realpatch->columnofs[x-x1] );
 
             R_DrawColumnInCache (patchcol,		// source
                                  txcblock + colofs[x],	// dest
@@ -1236,11 +1236,11 @@ void R_LoadTextures (void)
     // [smite] separate allocations, fewer horrible bugs
     if (textures)
     {
-	Z_Free(textures);
-	Z_Free(texturecolumnofs);
-	Z_Free(texturecache);
-	Z_Free(texturewidthmask);
-	Z_Free(textureheight);
+        Z_Free(textures);
+        Z_Free(texturecolumnofs);
+        Z_Free(texturecache);
+        Z_Free(texturewidthmask);
+        Z_Free(textureheight);
     }
 
     textures         = Z_Malloc(numtextures * sizeof(*textures),         PU_STATIC, 0);
@@ -1275,7 +1275,7 @@ void R_LoadTextures (void)
 
         // maptexture describes texture name, size, and
         // used patches in z order from bottom to top
-	// Ptr to texture header in lump
+        // Ptr to texture header in lump
         mtexture = (maptexture_t *) ( (byte *)maptex + offset);
 
         texture = textures[i] =
@@ -1289,8 +1289,8 @@ void R_LoadTextures (void)
         texture->patchcount = LE_SWAP16(mtexture->patchcount);
         texture->texture_model = (mtexture->masked)? TM_masked : TM_none; // hint
 
-	// Sparc requires memmove, becuz gcc doesn't know mtexture is not aligned.
-	// gcc will replace memcpy with two 4-byte read/writes, which will bus error.
+        // Sparc requires memmove, becuz gcc doesn't know mtexture is not aligned.
+        // gcc will replace memcpy with two 4-byte read/writes, which will bus error.
         memmove(texture->name, mtexture->name, sizeof(texture->name));	
 #if 0
         // [WDJ] DEBUG TRACE, watch where the textures go
@@ -1301,7 +1301,7 @@ void R_LoadTextures (void)
 
         for (j=0 ; j<texture->patchcount ; j++, mpatch++, texpatch++)
         {
-	    // get texture patch info from texture lump
+            // get texture patch info from texture lump
             texpatch->originx = LE_SWAP16(mpatch->originx);
             texpatch->originy = LE_SWAP16(mpatch->originy);
             texpatch->patchnum = patch_to_num[LE_SWAP16(mpatch->patchnum)];
@@ -1346,7 +1346,7 @@ void R_LoadTextures (void)
 
     // texturetranslation is 1 larger than texture tables, for some unknown reason
     texturetranslation = Z_Malloc ((numtextures+1)*sizeof(*texturetranslation),
-				   PU_STATIC, 0);
+                                   PU_STATIC, 0);
 
     for (i=0 ; i<numtextures ; i++)
         texturetranslation[i] = i;
@@ -1400,13 +1400,13 @@ static void R_Init_ExtraColormaps()
         {
             I_SoftError("R_Init_Colormaps: C_START without C_END\n");
             continue;
-	}
+        }
 
         if(WADFILENUM(start_ln) != WADFILENUM(end_ln))
         {
             I_SoftError("R_Init_Colormaps: C_START and C_END in different wad files!\n");
             continue;
-	}
+        }
 
         colormaplumps = (lumplist_t *)realloc(colormaplumps, sizeof(lumplist_t) * (numcolormaplumps + 1));
         colormaplumps[numcolormaplumps].wadfile = WADFILENUM(start_ln);
@@ -1466,7 +1466,7 @@ void R_Init_Flats ()
       end_ln = W_CheckNumForNamePwad("FF_END", cfile, ln1);
 #ifdef DEBUG_FLAT
       if( ! VALID_LUMP(end_ln) ) {
-	 debug_Printf( "FF_END not found, file %i\n", cfile );
+         debug_Printf( "FF_END not found, file %i\n", cfile );
       }
 #endif
     }
@@ -1718,55 +1718,55 @@ void  R_Colormap_Analyze( int mapnum )
         // for all combinations of tstcolor
         for( k1=0; k1<NUM_ANALYZE_COLORS-1; k1++ )
         {
-	    byte i1 = tstcolor[k1];
-	    byte cm1 = cm[ LIGHTTABLE(mapindex) + i1 ];
-	    for( k2=k1+1; k2<NUM_ANALYZE_COLORS; k2++ )
-	    {
-	        byte i2 = tstcolor[k2];
-	        byte cm2 = cm[ LIGHTTABLE(mapindex) + i2 ];
-	        // for each color
-	        int krgb;
-	        for( krgb=0; krgb<3; krgb++ )  // red, green, blue
-	        { 
-		    //  (1-h) = (cm[b].r - cm[r].r) / (p[b].r -  p[r].r)
-		    switch( krgb )
-		    {
-		     case 0: // red
-		        dd4 = pLocalPalette[i1].s.red -  pLocalPalette[i2].s.red;
-		        dn4 = pLocalPalette[cm1].s.red - pLocalPalette[cm2].s.red;
-		        break;
-		     case 1: // green
-		        dd4 = pLocalPalette[i1].s.green -  pLocalPalette[i2].s.green;
-		        dn4 = pLocalPalette[cm1].s.green - pLocalPalette[cm2].s.green;
-		        break;
-		     default: // blue
-		        dd4 = pLocalPalette[i1].s.blue -  pLocalPalette[i2].s.blue;
-		        dn4 = pLocalPalette[cm1].s.blue - pLocalPalette[cm2].s.blue;
-		        break;
-		    }
-		    if( dn4 && (dd4 > 0.01f || dd4 < -0.01f))
-		    {
-		        float h3 = (float)dn4 / (float)dd4;
-		        if( h3 > 1.0f )   h3 = 1.0;
-		        if( h3 < 0.01f )  h3 = 0.01f;
-		        h4r += h3;  // total for avg
-		        cnt ++;
-		    }
-		    try_cnt ++;  // for fog
-		}
-	    }
-	}
+            byte i1 = tstcolor[k1];
+            byte cm1 = cm[ LIGHTTABLE(mapindex) + i1 ];
+            for( k2=k1+1; k2<NUM_ANALYZE_COLORS; k2++ )
+            {
+                byte i2 = tstcolor[k2];
+                byte cm2 = cm[ LIGHTTABLE(mapindex) + i2 ];
+                // for each color
+                int krgb;
+                for( krgb=0; krgb<3; krgb++ )  // red, green, blue
+                {
+                    //  (1-h) = (cm[b].r - cm[r].r) / (p[b].r -  p[r].r)
+                    switch( krgb )
+                    {
+                     case 0: // red
+                        dd4 = pLocalPalette[i1].s.red -  pLocalPalette[i2].s.red;
+                        dn4 = pLocalPalette[cm1].s.red - pLocalPalette[cm2].s.red;
+                        break;
+                     case 1: // green
+                        dd4 = pLocalPalette[i1].s.green -  pLocalPalette[i2].s.green;
+                        dn4 = pLocalPalette[cm1].s.green - pLocalPalette[cm2].s.green;
+                        break;
+                     default: // blue
+                        dd4 = pLocalPalette[i1].s.blue -  pLocalPalette[i2].s.blue;
+                        dn4 = pLocalPalette[cm1].s.blue - pLocalPalette[cm2].s.blue;
+                        break;
+                    }
+                    if( dn4 && (dd4 > 0.01f || dd4 < -0.01f))
+                    {
+                        float h3 = (float)dn4 / (float)dd4;
+                        if( h3 > 1.0f )   h3 = 1.0;
+                        if( h3 < 0.01f )  h3 = 0.01f;
+                        h4r += h3;  // total for avg
+                        cnt ++;
+                    }
+                    try_cnt ++;  // for fog
+                }
+            }
+        }
         h4r /= cnt;
         int m4_fog = 0;
         // h = 0.0 is a useless table
         if( h4r > 0.99 ) {
-	    h4r = 0.99f;
-	    m4_fog = 1;
-	}
+            h4r = 0.99f;
+            m4_fog = 1;
+        }
         if( h4r < 0.00 ) {
-	    h4r = 0.00;
-	    m4_fog = 1;
-	}
+            h4r = 0.00;
+            m4_fog = 1;
+        }
         if( cnt * 2 < try_cnt )
             m4_fog = 1;
         h4r = h4r * (0.66f / 1.732f);  // correction for testing at 1/3 max brightness
@@ -1808,8 +1808,8 @@ void  R_Colormap_Analyze( int mapnum )
 #ifdef VIEW_COLORMAP_GEN
         // Enable to see results of analysis.
         GenPrintf(EMSG_info,
-	       "Analyze4: alpha=%i  red=%i  green=%i  blue=%i  fog=%i\n",
-	       (int)(255.0f*h4), m4_red, m4_green, m4_blue, m4_fog );
+               "Analyze4: alpha=%i  red=%i  green=%i  blue=%i  fog=%i\n",
+               (int)(255.0f*h4), m4_red, m4_green, m4_blue, m4_fog );
 #endif      
         // Not great, get some tints wrong, and sometimes too light.
         // Give m4_fog some treatment, to stop compiler messages.
@@ -1823,9 +1823,9 @@ void  R_Colormap_Analyze( int mapnum )
 #ifdef VIEW_COLORMAP_GEN
         // Enable to view settings of RGBA for hardware renderer.
         GenPrintf(EMSG_info,"RGBA[%i]: %8x   (alpha=%i, R=%i, G=%i, B=%i)\n",
-	      i, colormapp->rgba[i],
-	      (int)work_rgba.s.alpha,
-	      (int)work_rgba.s.red, (int)work_rgba.s.green, (int)work_rgba.s.blue );
+              i, colormapp->rgba[i],
+              (int)work_rgba.s.alpha,
+              (int)work_rgba.s.red, (int)work_rgba.s.green, (int)work_rgba.s.blue );
 #endif
     }
     // They had plans, but these are still unused in hardware renderer.
@@ -2020,8 +2020,8 @@ int R_Create_Colormap(char *colorstr, char *ctrlstr, char *fadestr)
 #ifdef VIEW_COLORMAP_GEN
   GenPrintf(EMSG_info, "\nGenerate Colormap: num=%i\n", num_extra_colormaps );
   GenPrintf(EMSG_info, " alpha=%2x, color=(%2x,%2x,%2x), fade=(%2x,%2x,%2x), fog=%i\n",
-	  c_alpha, (int)color_r, (int)color_g, (int)color_b,
-	  	     (int)cfade_r, (int)cfade_g, (int)cfade_b, fog );
+          c_alpha, (int)color_r, (int)color_g, (int)color_b,
+                     (int)cfade_r, (int)cfade_g, (int)cfade_b, fog );
 #endif
 
   if(num_extra_colormaps == MAXCOLORMAPS)
@@ -2119,43 +2119,43 @@ int R_Create_Colormap(char *colorstr, char *ctrlstr, char *fadestr)
       // hardware needs color_r, color_g, color_b, before they get *maskalpha.
       for( i=0; i<NUM_RGBA_LEVELS; i++ )
       {
-	  // rgba[0]=darkest, rgba[NUM_RGBA_LEVELS-1] is the brightest
+          // rgba[0]=darkest, rgba[NUM_RGBA_LEVELS-1] is the brightest
           int mapindex = ((NUM_RGBA_LEVELS-1-i) * 34) / NUM_RGBA_LEVELS;
           double colorper, fadeper;
           if( mapindex <= fadestart )
           {
-	      colorper = 1.0; // rgba = color
+              colorper = 1.0; // rgba = color
               fadeper = 0.0;
           }
           else if( mapindex < fadeend )
           {
               // mapindex != fadeend, fadeend != fadestart
-	      // proportional ramp from color to fade color
-	      colorper = ((double)(fadeend-mapindex))/(fadeend-fadestart);
-	      fadeper = 1.0 - colorper;
-	  }
-	  else
-	  {
-	      // fadeend and after
-	      colorper = 0.0;
-	      fadeper = 1.0; // rgba = fade
-	  }
-	  cr = (int)( colorper*color_r + fadeper*cfade_r );
-	  cg = (int)( colorper*color_g + fadeper*cfade_g );
-	  cb = (int)( colorper*color_b + fadeper*cfade_b );
-	  extra_colormap_p->rgba[i] = (c_alpha<<24)|(cb<<16)|(cg<<8)|(cr);
+              // proportional ramp from color to fade color
+              colorper = ((double)(fadeend-mapindex))/(fadeend-fadestart);
+              fadeper = 1.0 - colorper;
+          }
+          else
+          {
+              // fadeend and after
+              colorper = 0.0;
+              fadeper = 1.0; // rgba = fade
+          }
+          cr = (int)( colorper*color_r + fadeper*cfade_r );
+          cg = (int)( colorper*color_g + fadeper*cfade_g );
+          cb = (int)( colorper*color_b + fadeper*cfade_b );
+          extra_colormap_p->rgba[i] = (c_alpha<<24)|(cb<<16)|(cg<<8)|(cr);
 #ifdef VIEW_COLORMAP_GEN
-	  GenPrintf(EMSG_info,"RGBA[%i]: %x\n", i, extra_colormap_p->rgba[i]);
+          GenPrintf(EMSG_info,"RGBA[%i]: %x\n", i, extra_colormap_p->rgba[i]);
 #endif
       }
 #if 0
 #ifdef VIEW_COLORMAP_GEN
     // [WDJ] DEBUG, TEST AGAINST OLD HDW CODE
     unsigned rgba_oldhw = 
-	  (HEX_TO_INT(colorstr[1]) << 4) + (HEX_TO_INT(colorstr[2]) << 0) +
-	  (HEX_TO_INT(colorstr[3]) << 12) + (HEX_TO_INT(colorstr[4]) << 8) +
-	  (HEX_TO_INT(colorstr[5]) << 20) + (HEX_TO_INT(colorstr[6]) << 16) + 
-	  (ALPHA_TO_INT(colorstr[7]) << 24);
+          (HEX_TO_INT(colorstr[1]) << 4) + (HEX_TO_INT(colorstr[2]) << 0) +
+          (HEX_TO_INT(colorstr[3]) << 12) + (HEX_TO_INT(colorstr[4]) << 8) +
+          (HEX_TO_INT(colorstr[5]) << 20) + (HEX_TO_INT(colorstr[6]) << 16) +
+          (ALPHA_TO_INT(colorstr[7]) << 24);
    if( rgba_oldhw != extra_colormap_p->rgba[0] )
       GenPrintf(EMSG_info,"RGBA: old=%X, new=%x\n", rgba_oldhw, extra_colormap_p->rgba[i-1]);
 #endif
@@ -2248,50 +2248,50 @@ void R_Init_color8_translate ( RGBA_t * palette )
     {
         for (i=0;i<256;i++)
         {
-	    // use palette after gamma modified
-	    register byte r = palette[i].s.red;
-	    register byte g = palette[i].s.green;
-	    register byte b = palette[i].s.blue;
-	    switch( vid.drawmode )
-	    {
+            // use palette after gamma modified
+            register byte r = palette[i].s.red;
+            register byte g = palette[i].s.green;
+            register byte b = palette[i].s.blue;
+            switch( vid.drawmode )
+            {
 #ifdef ENABLE_DRAW15	       
-	     case DRAW15: // 15 bpp (5,5,5)
-	       color8.to16[i] = (((r >> 3) << 10) | ((g >> 3) << 5) | ((b >> 3)));
-	       break;
+             case DRAW15: // 15 bpp (5,5,5)
+               color8.to16[i] = (((r >> 3) << 10) | ((g >> 3) << 5) | ((b >> 3)));
+               break;
 #endif
 #ifdef ENABLE_DRAW16
-	     case DRAW16: // 16 bpp (5,6,5)
-	       color8.to16[i] = (((r >> 3) << 11) | ((g >> 2) << 5) | ((b >> 3)));
-	       break;
+             case DRAW16: // 16 bpp (5,6,5)
+               color8.to16[i] = (((r >> 3) << 11) | ((g >> 2) << 5) | ((b >> 3)));
+               break;
 #endif
 #ifdef ENABLE_DRAW24
-	     case DRAW24:
-	       {
-		   // different alignment from DRAW32, for speed
-		   pixelunion32_t c32;
-		   c32.pix24.r = r;
-		   c32.pix24.g = g;
-		   c32.pix24.b = b;
-		   color8.to32[i] = c32.ui32;
-	       }
-	       break;
+             case DRAW24:
+               {
+                   // different alignment from DRAW32, for speed
+                   pixelunion32_t c32;
+                   c32.pix24.r = r;
+                   c32.pix24.g = g;
+                   c32.pix24.b = b;
+                   color8.to32[i] = c32.ui32;
+               }
+               break;
 #endif
 #ifdef ENABLE_DRAW32
-	     case DRAW32:
-	       {
-		   pixelunion32_t c32;
-		   c32.pix32.r = r;
-		   c32.pix32.g = g;
-		   c32.pix32.b = b;
-		   c32.pix32.alpha = 0xFF;
-		   color8.to32[i] = c32.ui32;
-	       }
-	       break;
+             case DRAW32:
+               {
+                   pixelunion32_t c32;
+                   c32.pix32.r = r;
+                   c32.pix32.g = g;
+                   c32.pix32.b = b;
+                   c32.pix32.alpha = 0xFF;
+                   color8.to32[i] = c32.ui32;
+               }
+               break;
 #endif
-	     default:
-	       break;  // should not be calling
-	    } 
-	}
+             default:
+               break;  // should not be calling
+            }
+        }
     }
 
 #ifdef HIGHCOLORMAPS
@@ -2301,7 +2301,7 @@ void R_Init_color8_translate ( RGBA_t * palette )
         // test a big colormap
         hicolormaps = Z_Malloc (32768 /**34*/, PU_STATIC, 0);
         for (i=0;i<16384;i++)
-	    hicolormaps[i] = color8.to16[ dc_colormap[ i ] ];
+            hicolormaps[i] = color8.to16[ dc_colormap[ i ] ];
      }
 #endif
 #endif
@@ -2352,11 +2352,11 @@ void  R_TranslucentMap_Analyze( translucent_map_t * transp, byte * tmap )
         byte i1 = tstcolor[k1];  // background
         for( k2=0; k2<NUM_ANALYZE_COLORS; k2++ )
         {
-	    if( k1 == k2 ) continue;
-	    byte i2 = tstcolor[k2];  // translucent
-	    byte tm3 = tmap[ (i2<<8) + i1 ];
-	    // for each color
-	    int krgb;
+            if( k1 == k2 ) continue;
+            byte i2 = tstcolor[k2];  // translucent
+            byte tm3 = tmap[ (i2<<8) + i1 ];
+            // for each color
+            int krgb;
 #ifdef  VIEW_TRANSLUMAP_GEN_DETAIL
 GenPrintf(EMSG_info, "bg(%i,%i,%i):fb(%i,%i,%i):>(%i,%i,%i) ",
   pLocalPalette[i1].s.red,pLocalPalette[i1].s.green,pLocalPalette[i1].s.blue,
@@ -2364,51 +2364,51 @@ GenPrintf(EMSG_info, "bg(%i,%i,%i):fb(%i,%i,%i):>(%i,%i,%i) ",
   pLocalPalette[tm3].s.red,pLocalPalette[tm3].s.green,pLocalPalette[tm3].s.blue
 );
 #endif	       
-	    for( krgb=0; krgb<3; krgb++ )  // red, green, blue
-	    { 
-	        // alpha = (i1-tm3) / (i1-i2)
-	        switch( krgb )
-	        {
-		 case 0: // red
-		   dd4 = (int)pLocalPalette[i1].s.red -  (int)pLocalPalette[i2].s.red;
-		   dn4 = (int)pLocalPalette[i1].s.red - (int)pLocalPalette[tm3].s.red;
-		   break;
-		 case 1: // green
-		   dd4 = (int)pLocalPalette[i1].s.green -  (int)pLocalPalette[i2].s.green;
-		   dn4 = (int)pLocalPalette[i1].s.green - (int)pLocalPalette[tm3].s.green;
-		   break;
-		 default: // blue
-		   dd4 = (int)pLocalPalette[i1].s.blue -  (int)pLocalPalette[i2].s.blue;
-		   dn4 = (int)pLocalPalette[i1].s.blue - (int)pLocalPalette[tm3].s.blue;
-		   break;
-		}
-	        // eliminate cases where equation is least accurate
-	        if( dn4 && (dd4 > 10.0 || dd4 < -10.0))
-	        {
-		    float h3 = (float)dn4 / (float)dd4;
+            for( krgb=0; krgb<3; krgb++ )  // red, green, blue
+            {
+                // alpha = (i1-tm3) / (i1-i2)
+                switch( krgb )
+                {
+                 case 0: // red
+                   dd4 = (int)pLocalPalette[i1].s.red -  (int)pLocalPalette[i2].s.red;
+                   dn4 = (int)pLocalPalette[i1].s.red - (int)pLocalPalette[tm3].s.red;
+                   break;
+                 case 1: // green
+                   dd4 = (int)pLocalPalette[i1].s.green -  (int)pLocalPalette[i2].s.green;
+                   dn4 = (int)pLocalPalette[i1].s.green - (int)pLocalPalette[tm3].s.green;
+                   break;
+                 default: // blue
+                   dd4 = (int)pLocalPalette[i1].s.blue -  (int)pLocalPalette[i2].s.blue;
+                   dn4 = (int)pLocalPalette[i1].s.blue - (int)pLocalPalette[tm3].s.blue;
+                   break;
+                }
+                // eliminate cases where equation is least accurate
+                if( dn4 && (dd4 > 10.0 || dd4 < -10.0))
+                {
+                    float h3 = (float)dn4 / (float)dd4;
 #ifdef VIEW_TRANSLUMAP_GEN_DETAIL
-		    GenPrintf(EMSG_info, " %i", (int)(h3*255) );
+                    GenPrintf(EMSG_info, " %i", (int)(h3*255) );
 #endif
-		    // eliminate wierd alpha (due to color quantization in making the transmap)
-		    if( h3 > 0.0 && h3 < 1.1 )
-		    {
-		        h4 += h3;  // total for avg
-		        tot_cnt ++;
-		        if( h3 > 0.9 )   opaque_cnt++;
-		        if( h3 < 0.1 )   clear_cnt++;
-		    }
-		}
+                    // eliminate wierd alpha (due to color quantization in making the transmap)
+                    if( h3 > 0.0 && h3 < 1.1 )
+                    {
+                        h4 += h3;  // total for avg
+                        tot_cnt ++;
+                        if( h3 > 0.9 )   opaque_cnt++;
+                        if( h3 < 0.1 )   clear_cnt++;
+                    }
+                }
 #ifdef VIEW_TRANSLUMAP_GEN_DETAIL
-	        else
-	        {
-		    GenPrintf(EMSG_info, " -" );
-		}
+                else
+                {
+                    GenPrintf(EMSG_info, " -" );
+                }
 #endif	       
-	    }
+            }
 #ifdef VIEW_TRANSLUMAP_GEN_DETAIL
-	    GenPrintf(EMSG_info,"\n");
+            GenPrintf(EMSG_info,"\n");
 #endif	       
-	}
+        }
     }
     alpha = (int) (255.0 * h4 / tot_cnt);
     if( alpha > 255 )  alpha = 255;
@@ -2423,27 +2423,27 @@ GenPrintf(EMSG_info, "bg(%i,%i,%i):fb(%i,%i,%i):>(%i,%i,%i) ",
         float bestdist = 1E20;
         for(ti=1; ti<TRANSLU_75; ti++)
         {
-	    translucent_subst_info_t * tinfop = & translucent_subst[ti-1];
-	    float dista = tinfop->alpha - alpha;  // 0..255
-	    float distop = tinfop->opaque - transp->opaque;  // 0..100
-	    float distcl = tinfop->clear - transp->clear;  // 0..100
-	    float dist = (dista*dista) + (distop*distop) + (distcl*distcl);
-	    if( dist < bestdist )
-	    {
-	        bestdist = dist;
-	        dist *= (255.0/(40.0*40.0 + 20.0*20.0  + 10.0*10.0));
-	        if( dist > 255 )  dist = 255;
-	        transp->substitute_error = dist;
-	        transp->substitute_std_translucent = ti;
-	    }
-	}
+            translucent_subst_info_t * tinfop = & translucent_subst[ti-1];
+            float dista = tinfop->alpha - alpha;  // 0..255
+            float distop = tinfop->opaque - transp->opaque;  // 0..100
+            float distcl = tinfop->clear - transp->clear;  // 0..100
+            float dist = (dista*dista) + (distop*distop) + (distcl*distcl);
+            if( dist < bestdist )
+            {
+                bestdist = dist;
+                dist *= (255.0/(40.0*40.0 + 20.0*20.0  + 10.0*10.0));
+                if( dist > 255 )  dist = 255;
+                transp->substitute_error = dist;
+                transp->substitute_std_translucent = ti;
+            }
+        }
     }
 #ifdef VIEW_TRANSLUMAP_GEN
     // Enable to see results of analysis.
     GenPrintf(EMSG_info,
-	     "Analyze Trans: alpha=%i  opaque=%i%%  clear=%i%%  subst=%i  subst_err=%i\n",
-	      alpha, transp->opaque, transp->clear,
-	      transp->substitute_std_translucent, transp->substitute_error);
+             "Analyze Trans: alpha=%i  opaque=%i%%  clear=%i%%  subst=%i  subst_err=%i\n",
+              alpha, transp->opaque, transp->clear,
+              transp->substitute_std_translucent, transp->substitute_error);
 #endif      
 }
 
@@ -2461,7 +2461,7 @@ int  R_setup_translu_store( int lump_num )
    for(ti=0; ti< translu_store_num; ti++ )
    {
        if( translu_store[ti].translu_lump_num == lump_num )
-	  goto done;
+          goto done;
    }
    // check for expand store
    if( translu_store_num >= translu_store_len )
@@ -2469,7 +2469,7 @@ int  R_setup_translu_store( int lump_num )
        translu_store_len += TRANSLU_STORE_INC;
        translu_store = realloc( translu_store, translu_store_len );
        if( translu_store == NULL )
-	  I_Error( "Translucent Store: cannot alloc\n" );
+          I_Error( "Translucent Store: cannot alloc\n" );
    }
    // create new store and fill it in
    ti = translu_store_num++;
@@ -2509,16 +2509,16 @@ void Analyze_gamemap( void )
         int cb = pLocalPalette[i].s.blue;
         for(k=0; k<NUMTESTCOLOR; k++ )
         {
-	    float dr = cr - ideal[k].red;
-	    float dg = cg - ideal[k].green;
-	    float db = cb - ideal[k].blue;
-	    float d = dr*dr + dg*dg + db*db;
-	    if( d < bestdist[k] )
-	    {
-	        bestdist[k] = d;
- 	        bestcolor[k] = i;
-	    }
-	}
+            float dr = cr - ideal[k].red;
+            float dg = cg - ideal[k].green;
+            float db = cb - ideal[k].blue;
+            float d = dr*dr + dg*dg + db*db;
+            if( d < bestdist[k] )
+            {
+                bestdist[k] = d;
+                bestcolor[k] = i;
+            }
+        }
     }
     for(k=0; k<NUMTESTCOLOR; k++ )
     {
@@ -2542,9 +2542,9 @@ void Analyze_translucent_maps( void )
         byte * tmap = & translucenttables[ TRANSLU_TABLE_INDEX(k) ];
         if( tmap )
         {
-	    GenPrintf(EMSG_info, "  Analyze translucent map %i:\n", k );
-	    R_TranslucentMap_Analyze( &trans, tmap);
-	}
+            GenPrintf(EMSG_info, "  Analyze translucent map %i:\n", k );
+            R_TranslucentMap_Analyze( &trans, tmap);
+        }
     }
 }
 #endif
@@ -2592,7 +2592,7 @@ int  R_get_fweff( void )
        fweff_len += FWE_STORE_INC;
        fweff = (fogwater_t*) realloc( fweff, fweff_len * sizeof(fogwater_t) );
        if( fweff == NULL )
-	  I_Error( "Fog Store: cannot alloc\n" );
+          I_Error( "Fog Store: cannot alloc\n" );
    }
    memset( &fweff[fweff_num], 0, sizeof( fogwater_t ) );
    return fweff_num++;
@@ -2618,12 +2618,12 @@ void R_FW_config_update( void )
        fogwater_t * def = & fweff[ fwf & FWF_index ];
        if( fwf & FWF_default_effect )
        {
-	   fweff[i].effect = def->effect;
+           fweff[i].effect = def->effect;
        }
        if( fwf & FWF_default_alpha )
        {
-	   fweff[i].alpha = def->alpha;
-	   fweff[i].fsh_alpha = def->fsh_alpha;
+           fweff[i].alpha = def->alpha;
+           fweff[i].fsh_alpha = def->fsh_alpha;
        }
    }
    // Must also change the affected FakeFloor flags
@@ -2661,7 +2661,7 @@ void R_Clear_FW_effect( void )
         fweff[4].alpha = 128;  // default solid translucent floor
         fweff[4].fsh_alpha = 128;
         fweff[4].flags = FWF_solid_floor;  // not settable defaults
-	R_FW_config_update();  // config settings
+        R_FW_config_update();  // config settings
     }
     fweff_num = 5;  // only save the defaults
 }
@@ -2717,9 +2717,9 @@ int R_Create_FW_effect( int special_linedef, char * tstr )
         char chf = tstr[4];
         if( chf >= 'A' && chf <= ('A'+FW_num) )
         {
-	    fwp->effect = fwe_code_table[ chf - 'A' ];
-	    wflags &= ~ FWF_default_effect;
-	}
+            fwp->effect = fwe_code_table[ chf - 'A' ];
+            wflags &= ~ FWF_default_effect;
+        }
     }
     if( special_linedef == 300 )  // FWF_solid_floor
     {
@@ -2962,7 +2962,7 @@ void R_PrecacheLevel (void)
     if (devparm)
     {
         GenPrintf(EMSG_dev,
-		    "Precache level done:\n"
+                    "Precache level done:\n"
                     "flatmemory:    %ld k\n"
                     "texturememory: %ld k\n"
                     "spritememory:  %ld k\n", flatmemory>>10, texturememory>>10, spritememory>>10 );

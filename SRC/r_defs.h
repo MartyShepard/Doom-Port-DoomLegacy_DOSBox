@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: r_defs.h 1424 2019-01-29 08:07:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -957,7 +957,7 @@ typedef struct
 
 spriteframe_t *  get_spriteframe( const spritedef_t * spritedef, int frame_num );
 sprite_frot_t *  get_framerotation( const spritedef_t * spritedef,
-				    int frame_num, byte rotation );
+                                    int frame_num, byte rotation );
 
 extern const byte srp_to_num_rot[4];
 

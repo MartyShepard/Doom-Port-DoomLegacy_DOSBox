@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw16.c 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: r_draw16.c 1424 2019-01-29 08:07:27Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -190,7 +190,7 @@ void R_DrawFuzzColumn_16 (void)
         // Lookup framebuffer, and retrieve a pixel that is either one column
         //  left or right of the current one.
         // Add index from colormap to index.
-	// Remap existing dest, modify position, dim through LIGHTTABLE[6].
+        // Remap existing dest, modify position, dim through LIGHTTABLE[6].
 //        *dest = color8.to16[reg_colormaps[6*256+dest[fuzzoffset[fuzzpos]]]];
 // FIXME, reads dest as palette
         *(uint16_t*)dest = color8.to16[ reg_colormaps[ LIGHTTABLE(6) + dest[fuzzoffset[fuzzpos]]] ];
@@ -247,19 +247,19 @@ void R_DrawShadeColumn_16(void)
 //        *dest = reg_colormaps[ LIGHTTABLE(dc_source[frac >> FRACBITS]) + (*dest) ];
         register byte sc = reg_colormaps[ LIGHTTABLE(dc_source[frac >> FRACBITS]) + 4 ]; // white
 #if 1
-	// 50/50 translucent
-	register uint16_t dc = *(uint16_t*)dest;
-	register uint16_t nc = color8.to16[sc];
+        // 50/50 translucent
+        register uint16_t dc = *(uint16_t*)dest;
+        register uint16_t nc = color8.to16[sc];
         *(uint16_t*)dest=
-	    ((nc & mask_11110)>>1)  // 50%
-	    + ((dc & mask_11110)>>1);  // 50%
+            ((nc & mask_11110)>>1)  // 50%
+            + ((dc & mask_11110)>>1);  // 50%
 #endif
 #if 0
-	// 25/75 translucent
-	register uint16_t dc = (*(uint16_t*)dest & mask_11110)>>1;
-	register uint16_t nc = color8.to16[sc];
+        // 25/75 translucent
+        register uint16_t dc = (*(uint16_t*)dest & mask_11110)>>1;
+        register uint16_t nc = color8.to16[sc];
         *(uint16_t*)dest=
-	    ((nc & mask_11100)>>2) // 25%
+            ((nc & mask_11100)>>2) // 25%
             + (dc + ((dc & mask_11110)>>1)); // 75%
 #endif
 
@@ -312,182 +312,182 @@ void R_DrawTranslucentColumn_16 (void)
 
     // Here we do an additional index re-mapping.
         // Remap the existing dest color, dimming it through something?.
-	// color is in 5,5,5 format
-	// (c>>1 & mask_01110) ==> multiply R,G,B by 0.5 and mask lsb
-	// perhaps meant: (c>>1 & mask_01111) ==> multiply R,G,B by 0.5
-	// It takes an extra bit to add two values and divide by 2, so
-	// need to prevent overflow into the adjacent field.
-	// This divides by 2 first, and masks off the least bit.
-	// An OR of selected bits, dependent upon a translucent mask, would be more stable.
+        // color is in 5,5,5 format
+        // (c>>1 & mask_01110) ==> multiply R,G,B by 0.5 and mask lsb
+        // perhaps meant: (c>>1 & mask_01111) ==> multiply R,G,B by 0.5
+        // It takes an extra bit to add two values and divide by 2, so
+        // need to prevent overflow into the adjacent field.
+        // This divides by 2 first, and masks off the least bit.
+        // An OR of selected bits, dependent upon a translucent mask, would be more stable.
         // *dest = dc_colormap[ dc_translucentmap[ (dc_source[frac >> FRACBITS] << 8) + (*dest) ]];
     switch( dc_translucent_index )
     {
      case 0:
        {
-	   unsigned int alpha_d = dr_alpha >> 3; // 5 bit alpha
-	   unsigned int alpha_r = 31 - alpha_d;
-	   do
-	   {
-	       // alpha translucent
-	       register uint16_t nc = color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]];
-	       register uint32_t dc0 = *(uint16_t*)dest & mask_rb;  // for overlapped execution
-	       register uint32_t dc1 = *(uint16_t*)dest & mask_g;
-	       dc0 = (((dc0 * alpha_r) + ((nc & mask_rb) * alpha_d)) >> 5) & mask_rb;
-	       dc1 = (((dc1 * alpha_r) + ((nc & mask_g) * alpha_d)) >> 5) & mask_g;
-	       *(uint16_t*)dest = dc0 | dc1;
-	       dest += vid.ybytes;
-	       frac += fracstep;
-	   } while (count--);
-	}
+           unsigned int alpha_d = dr_alpha >> 3; // 5 bit alpha
+           unsigned int alpha_r = 31 - alpha_d;
+           do
+           {
+               // alpha translucent
+               register uint16_t nc = color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]];
+               register uint32_t dc0 = *(uint16_t*)dest & mask_rb;  // for overlapped execution
+               register uint32_t dc1 = *(uint16_t*)dest & mask_g;
+               dc0 = (((dc0 * alpha_r) + ((nc & mask_rb) * alpha_d)) >> 5) & mask_rb;
+               dc1 = (((dc1 * alpha_r) + ((nc & mask_g) * alpha_d)) >> 5) & mask_g;
+               *(uint16_t*)dest = dc0 | dc1;
+               dest += vid.ybytes;
+               frac += fracstep;
+           } while (count--);
+        }
         break;
      case TRANSLU_more: // 20 80  puffs
         do
         {
-	    // 25/75 translucent
-	    register uint16_t dc = (*(uint16_t*)dest & mask_11110)>>1;
+            // 25/75 translucent
+            register uint16_t dc = (*(uint16_t*)dest & mask_11110)>>1;
 //	    register uint16_t nc = color8.to16[dc_source[frac>>FRACBITS]];
-	    register uint16_t nc = color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]];
-	    *(uint16_t*)dest=
-	     ((nc & mask_11100)>>2) // 25%
-	     + (dc + ((dc & mask_11110)>>1)); // 75%
-	    dest += vid.ybytes;
-	    frac += fracstep;
-	} while (count--);
+            register uint16_t nc = color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]];
+            *(uint16_t*)dest=
+             ((nc & mask_11100)>>2) // 25%
+             + (dc + ((dc & mask_11110)>>1)); // 75%
+            dest += vid.ybytes;
+            frac += fracstep;
+        } while (count--);
         break;
      case TRANSLU_hi:   // 10 90  blur effect
         do
         {
-	    // 15/85 translucent
-	    register uint16_t dc = *(uint16_t*)dest;
-	    register uint16_t dc85 = dc - ((dc & mask_11000)>>3);
-	    register uint16_t nc = color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]];
+            // 15/85 translucent
+            register uint16_t dc = *(uint16_t*)dest;
+            register uint16_t dc85 = dc - ((dc & mask_11000)>>3);
+            register uint16_t nc = color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]];
 //	    register uint16_t nc = color8.to16[dc_source[frac>>FRACBITS]];
-	    *(uint16_t*)dest=
-	     ((nc & mask_11000)>>3) // 15%
-	     + dc85; // 85%
-	    dest += vid.ybytes;
-	    frac += fracstep;
-	} while (count--);
+            *(uint16_t*)dest=
+             ((nc & mask_11000)>>3) // 15%
+             + dc85; // 85%
+            dest += vid.ybytes;
+            frac += fracstep;
+        } while (count--);
         break;
      case TRANSLU_med:  // sprite 50 backg 50
      default:
         do
         {
-	    // 50/50 translucent
-	    register uint16_t dc = *(uint16_t*)dest;
+            // 50/50 translucent
+            register uint16_t dc = *(uint16_t*)dest;
 //	    register uint16_t nc = color8.to16[dc_source[frac>>FRACBITS]];
-	    register uint16_t nc = color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]];
-	    *(uint16_t*)dest=
-	     ((nc & mask_11110)>>1)  // 50%
-	     + ((dc & mask_11110)>>1);  // 50%
-	    dest += vid.ybytes;
-	    frac += fracstep;
-	} while (count--);
+            register uint16_t nc = color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]];
+            *(uint16_t*)dest=
+             ((nc & mask_11110)>>1)  // 50%
+             + ((dc & mask_11110)>>1);  // 50%
+            dest += vid.ybytes;
+            frac += fracstep;
+        } while (count--);
         break;
      case TRANSLU_fire: // 50 50 but brighter for fireballs, shots..
         do
         {
-	    // 50/50 translucent
-	    // *dest = dc_colormap[ dc_translucentmap[ (dc_source[frac >> FRACBITS] << 8) + (*dest) ]];
-	    register uint16_t dc = *(uint16_t*)dest;
+            // 50/50 translucent
+            // *dest = dc_colormap[ dc_translucentmap[ (dc_source[frac >> FRACBITS] << 8) + (*dest) ]];
+            register uint16_t dc = *(uint16_t*)dest;
 //	    register uint16_t nc = color8.to16[dc_source[frac>>FRACBITS]];
-	    register uint16_t nc = color8.to16[dc_colormap[dc_translucentmap[dc_source[frac>>FRACBITS]<<8]]];
-	    *(uint16_t*)dest=
-	     ((nc & mask_11110)>>1)  // 50%
-	     + ((dc & mask_11110)>>1);  // 50%
-	    dest += vid.ybytes;
-	    frac += fracstep;
-	} while (count--);
+            register uint16_t nc = color8.to16[dc_colormap[dc_translucentmap[dc_source[frac>>FRACBITS]<<8]]];
+            *(uint16_t*)dest=
+             ((nc & mask_11110)>>1)  // 50%
+             + ((dc & mask_11110)>>1);  // 50%
+            dest += vid.ybytes;
+            frac += fracstep;
+        } while (count--);
         break;
      case TRANSLU_fx1:  // Linedef 288
         // 50 50 brighter some colors, else opaque for torches
 #define FX1_OPTION 1
         do
         {
-	    // 50/50 translucent with modifications
-	    register int sb = dc_source[frac>>FRACBITS];
+            // 50/50 translucent with modifications
+            register int sb = dc_source[frac>>FRACBITS];
 #ifdef HIGHCOLORMAPS
-	    register uin16_t nc = hicolormaps[ sb  ];
+            register uin16_t nc = hicolormaps[ sb  ];
 #else
-	    register uint16_t nc = color8.to16[dc_colormap[sb]];
+            register uint16_t nc = color8.to16[dc_colormap[sb]];
 //	    register uint16_t nc = color8.to16[sb];
 #endif
 #if FX1_OPTION==1
-	    // check translucent map for opaque, sprite vrs white bkg
-	    register byte twht = dc_translucentmap[ (sb << 8) + 4 ];
-	    register int  tdiff = sb - twht;  // any change
+            // check translucent map for opaque, sprite vrs white bkg
+            register byte twht = dc_translucentmap[ (sb << 8) + 4 ];
+            register int  tdiff = sb - twht;  // any change
 #else
-	    // check translucent map for opaque, blk bkg vrs white bkg
-	    register byte tblk = dc_translucentmap[ (sb << 8) ];
-	    register byte twht = dc_translucentmap[ (sb << 8) + 4 ];
-	    register int  tdiff = tblk - twht;
+            // check translucent map for opaque, blk bkg vrs white bkg
+            register byte tblk = dc_translucentmap[ (sb << 8) ];
+            register byte twht = dc_translucentmap[ (sb << 8) + 4 ];
+            register int  tdiff = tblk - twht;
 #endif
 
-	    if( tdiff > 2 || tdiff < -2 )
-	    {
-	        // 50/50
-	        register uint16_t dc = *(uint16_t*)dest;
-	        *(uint16_t*)dest=
-		 ((nc & mask_11110)>>1)  // 50%
-		 + ((dc & mask_11110)>>1);  // 50%
-	    }
-	    else
-	    {
-	        *(uint16_t*)dest= nc; // opaque
-	    }
-	    dest += vid.ybytes;
-	    frac += fracstep;
-	} while (count--);
+            if( tdiff > 2 || tdiff < -2 )
+            {
+                // 50/50
+                register uint16_t dc = *(uint16_t*)dest;
+                *(uint16_t*)dest=
+                 ((nc & mask_11110)>>1)  // 50%
+                 + ((dc & mask_11110)>>1);  // 50%
+            }
+            else
+            {
+                *(uint16_t*)dest= nc; // opaque
+            }
+            dest += vid.ybytes;
+            frac += fracstep;
+        } while (count--);
         break;
      case TRANSLU_75: // 75 25
         do
         {
-	    // 75/25 translucent
-	    register uint16_t dc = *(uint16_t*)dest;
-	    register uint16_t nc = (color8.to16[dc_source[frac>>FRACBITS]] & mask_11110)>>1;
-	    *(uint16_t*)dest=
-	     (nc + ((nc & mask_11110)>>1)) // 75%
-	     + ((dc & mask_11100)>>2); // 25%
-	    dest += vid.ybytes;
-	    frac += fracstep;
-	} while (count--);
+            // 75/25 translucent
+            register uint16_t dc = *(uint16_t*)dest;
+            register uint16_t nc = (color8.to16[dc_source[frac>>FRACBITS]] & mask_11110)>>1;
+            *(uint16_t*)dest=
+             (nc + ((nc & mask_11110)>>1)) // 75%
+             + ((dc & mask_11100)>>2); // 25%
+            dest += vid.ybytes;
+            frac += fracstep;
+        } while (count--);
         break;
     }
 #if 0
-	// original
+        // original
         // [WDJ] The original is not a balanced translucent, and there are 5 different
-	// translucent effects in the 8 bit code.
+        // translucent effects in the 8 bit code.
         *(uint16_t*)dest=
-	    ( ((color8.to16[dc_source[frac>>FRACBITS]]>>1) & mask_01110)
-	    + (*(uint16_t*)dest & mask_11110) ) /*>> 1*/ & 0x7fff;
+            ( ((color8.to16[dc_source[frac>>FRACBITS]]>>1) & mask_01110)
+            + (*(uint16_t*)dest & mask_11110) ) /*>> 1*/ & 0x7fff;
 #endif
 #if 0
-	// 75/25 translucent
-	register uint16_t dc = *(uint16_t*)dest;
+        // 75/25 translucent
+        register uint16_t dc = *(uint16_t*)dest;
 //	register uint16_t nc = (color8.to16[dc_source[frac>>FRACBITS]] & mask_11110)>>1;
-	register uint16_t nc = (color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]] & mask_11110)>>1;
+        register uint16_t nc = (color8.to16[dc_colormap[dc_source[frac>>FRACBITS]]] & mask_11110)>>1;
         *(uint16_t*)dest=
             (nc + ((nc & mask_11110)>>1))  // 75%
             + ((dc & mask_11100)>>2); // 25%
 #endif
 #if 0
         // by 256 entry translucent table (16x16) of uint16_t
-	register unsigned int nc = color8.to16[dc_source[frac>>FRACBITS]];
-	register unsigned int dc = *(uint16_t*)dest;
+        register unsigned int nc = color8.to16[dc_source[frac>>FRACBITS]];
+        register unsigned int dc = *(uint16_t*)dest;
         nc <<=3; // must be 32 bit register or will lose high bits
         dc >>=1;
         *(uint16_t*)dest= dc16_translucent[(nc&0xF0)|(dc&0x0F)];
         nc >>=5;
         dc >>=5;
-	*(uint16_t*)dest|= dc16_translucent[(nc&0xF0)|(dc&0x0F)];
+        *(uint16_t*)dest|= dc16_translucent[(nc&0xF0)|(dc&0x0F)];
         nc >>=5;
         dc >>=5;
-	*(uint16_t*)dest|= dc16_translucent[(nc&0xF0)|(dc&0x0F)];
+        *(uint16_t*)dest|= dc16_translucent[(nc&0xF0)|(dc&0x0F)];
 #endif
 #if 0
         // by 1024 entry translucent table (32x32) of uint16_t
-	register unsigned int nc = color8.to16[dc_source[frac>>FRACBITS]];
-	register unsigned int dc = *(uint16_t*)dest;
+        register unsigned int nc = color8.to16[dc_source[frac>>FRACBITS]];
+        register unsigned int dc = *(uint16_t*)dest;
         nc <<=4; // must be 32 bit register or will lose high bits
         *(uint16_t*)dest = dc16_translucent[(nc&0x02E0)|(dc&0x001F)];
         nc >>=5;
@@ -532,36 +532,36 @@ void R_DrawTranslatedTranslucentColumn_16(void)
      case TRANSLU_hi:   // 10 90  blur effect
         do
         {
-	    // Makes player visible in dark rooms, but so does draw8 version
-	    // *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]] << 8) + (*dest) ]];
+            // Makes player visible in dark rooms, but so does draw8 version
+            // *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]] << 8) + (*dest) ]];
 
-	    // 15/85 translucent
-	    register uint16_t dc = *(uint16_t*)dest;
-	    register uint16_t dc85 = dc - ((dc & mask_11000)>>3);
+            // 15/85 translucent
+            register uint16_t dc = *(uint16_t*)dest;
+            register uint16_t dc85 = dc - ((dc & mask_11000)>>3);
 //	    register uint16_t nc = color8.to16[dc_skintran[dc_source[frac>>FRACBITS]]];
-	    register uint16_t nc = color8.to16[dc_colormap[dc_skintran[dc_source[frac>>FRACBITS]]]];
-	    *(uint16_t*)dest=
-	     ((nc & mask_11000)>>3) // 15%
-	     + dc85; // 85%
-	    dest += vid.ybytes;
-	    frac += fracstep;
-	} while (count--);
+            register uint16_t nc = color8.to16[dc_colormap[dc_skintran[dc_source[frac>>FRACBITS]]]];
+            *(uint16_t*)dest=
+             ((nc & mask_11000)>>3) // 15%
+             + dc85; // 85%
+            dest += vid.ybytes;
+            frac += fracstep;
+        } while (count--);
         break;
      case TRANSLU_med:  // sprite 50 backg 50
      default:
         // Seems to be unused
         do
         {
-	    // 50/50 translucent
-	    register uint16_t dc = *(uint16_t*)dest;
+            // 50/50 translucent
+            register uint16_t dc = *(uint16_t*)dest;
 //	    register uint16_t nc = color8.to16[dc_skintran[dc_source[frac>>FRACBITS]]];
-	    register uint16_t nc = color8.to16[dc_colormap[dc_skintran[dc_source[frac>>FRACBITS]]]];
-	    *(uint16_t*)dest=
-	     ((nc & mask_11110)>>1)  // 50%
-	     + ((dc & mask_11110)>>1);  // 50%
-	    dest += vid.ybytes;
-	    frac += fracstep;
-	} while (count--);
+            register uint16_t nc = color8.to16[dc_colormap[dc_skintran[dc_source[frac>>FRACBITS]]]];
+            *(uint16_t*)dest=
+             ((nc & mask_11110)>>1)  // 50%
+             + ((dc & mask_11110)>>1);  // 50%
+            dest += vid.ybytes;
+            frac += fracstep;
+        } while (count--);
         break;
     }
 #endif
@@ -713,14 +713,14 @@ void R_DrawTranslucentSpan_16(void)
         register uint16_t nc = hicolormaps[ ((uint16_t *)ds_source)[spot]>>1 ];
 
 #else
-	register uint16_t nc = color8.to16[ ds_colormap[ds_source[((yfrac >> flatfracbits) & flat_ymask) | (xfrac >> FRACBITS)]] ];
+        register uint16_t nc = color8.to16[ ds_colormap[ds_source[((yfrac >> flatfracbits) & flat_ymask) | (xfrac >> FRACBITS)]] ];
 #endif
         // alpha translucent
-	register uint32_t dc0 = *(uint16_t*)dest & mask_rb;  // for overlapped execution
-	register uint32_t dc1 = *(uint16_t*)dest & mask_g;
-	dc0 = (((dc0 * alpha_r) + ((nc & mask_rb) * alpha_d)) >> 5) & mask_rb;
-	dc1 = (((dc1 * alpha_r) + ((nc & mask_g) * alpha_d)) >> 5) & mask_g;
-	*(uint16_t*)dest = dc0 | dc1;
+        register uint32_t dc0 = *(uint16_t*)dest & mask_rb;  // for overlapped execution
+        register uint32_t dc1 = *(uint16_t*)dest & mask_g;
+        dc0 = (((dc0 * alpha_r) + ((nc & mask_rb) * alpha_d)) >> 5) & mask_rb;
+        dc1 = (((dc1 * alpha_r) + ((nc & mask_g) * alpha_d)) >> 5) & mask_g;
+        *(uint16_t*)dest = dc0 | dc1;
         dest+=2;
 
         // Next step in u,v.
@@ -752,11 +752,11 @@ void R_DrawFogSpan_16(void)
     {
         // alpha translucent fog
         register uint16_t d16 = *(uint16_t*)dest;
-	register uint32_t dc0 = d16 & mask_rb;  // for overlapped execution
-	register uint32_t dc1 = d16 & mask_g;
-	dc0 = (((dc0 * alpha_r) + fogcolor_rb) >> 5) & mask_rb;
-	dc1 = (((dc1 * alpha_r) + fogcolor_g) >> 5) & mask_g;
-	*(uint16_t*)dest = dc0 | dc1;
+        register uint32_t dc0 = d16 & mask_rb;  // for overlapped execution
+        register uint32_t dc1 = d16 & mask_g;
+        dc0 = (((dc0 * alpha_r) + fogcolor_rb) >> 5) & mask_rb;
+        dc1 = (((dc1 * alpha_r) + fogcolor_g) >> 5) & mask_g;
+        *(uint16_t*)dest = dc0 | dc1;
         dest+=2;
     }
 }
@@ -804,7 +804,7 @@ static uint16_t fogcolor_b8 = 0x0002<<3;
         // blur
         fogcolor_r8 = ((((unsigned int)fogcolor_r8)*31) + fr1) >> 5;
         fogcolor_g8 = ((((unsigned int)fogcolor_g8)*31) + fg1) >> 5;
-	fogcolor_b8 = ((((unsigned int)fogcolor_b8)*31) + fb1) >> 5;
+        fogcolor_b8 = ((((unsigned int)fogcolor_b8)*31) + fb1) >> 5;
     }
     count = dc_yh - dc_yl;
 
@@ -834,11 +834,11 @@ static uint16_t fogcolor_b8 = 0x0002<<3;
     do
     {
         register uint16_t d16 = *(uint16_t*)dest;
-	register uint32_t dc0 = d16 & mask_rb;  // for overlapped execution
-	register uint32_t dc1 = d16 & mask_g;
-	dc0 = (((dc0 * alpha_r) + fogcolor_rb) >> 5) & mask_rb;
-	dc1 = (((dc1 * alpha_r) + fogcolor_g) >> 5) & mask_g;
-	*(uint16_t*)dest = dc0 | dc1;
+        register uint32_t dc0 = d16 & mask_rb;  // for overlapped execution
+        register uint32_t dc1 = d16 & mask_g;
+        dc0 = (((dc0 * alpha_r) + fogcolor_rb) >> 5) & mask_rb;
+        dc1 = (((dc1 * alpha_r) + fogcolor_g) >> 5) & mask_g;
+        *(uint16_t*)dest = dc0 | dc1;
         dest += vid.ybytes;
     }
     while (count--);

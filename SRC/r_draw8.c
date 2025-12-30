@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw8.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: r_draw8.c 1424 2019-01-29 08:07:27Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 // Portions Copyright (C) 2000-2016 by DooM Legacy Team.
@@ -408,7 +408,7 @@ void R_DrawFuzzColumn_8(void)
         // Lookup framebuffer, and retrieve a pixel that is either one column
         //  left or right of the current one.
         // Add index from colormap to index.
-	// Remap existing dest, modify position, dim through LIGHTTABLE[6].
+        // Remap existing dest, modify position, dim through LIGHTTABLE[6].
 //        *dest = reg_colormaps[6 * 256 + dest[fuzzoffset[fuzzpos]]];
         *dest = reg_colormaps[LIGHTTABLE(6) + dest[fuzzoffset[fuzzpos]]];
 
@@ -535,7 +535,7 @@ void R_DrawTranslucentColumn_8(void)
     {
       do
       {
-	// alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
+        // alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
         *dest = dc_colormap[ dc_translucentmap[ (dc_source[frac >> FRACBITS]) + ((*dest) << 8) ]];
         dest += vid.ybytes;
         frac += fracstep;
@@ -595,10 +595,10 @@ void R_DrawTranslucentColumn_8(void)
                 while (frac >= heightmask)
                     frac -= heightmask;
 
-	    if( dr_alpha < TRANSLU_REV_ALPHA )
-	    {
+            if( dr_alpha < TRANSLU_REV_ALPHA )
+            {
               do
-	      {
+              {
                 // Re-map color indices from wall texture column
                 //  using a lighting/special effects LUT.
                 // heightmask is the Tutti-Frutti fix -- killough
@@ -609,24 +609,24 @@ void R_DrawTranslucentColumn_8(void)
                     frac -= heightmask;
               }
               while (--count);
-	    }
-	    else
-	    {
+            }
+            else
+            {
               do
-	      {
-		// alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
+              {
+                // alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
                 *dest = dc_colormap[ dc_translucentmap[ (source[frac >> FRACBITS]) + ((*dest)<<8) ]];
                 dest += vid.ybytes;
                 if ((frac += fracstep) >= heightmask)
                     frac -= heightmask;
               }
               while (--count);
-	    }
+            }
         }
         else
         {
-	  if( dr_alpha < TRANSLU_REV_ALPHA )
-	  {
+          if( dr_alpha < TRANSLU_REV_ALPHA )
+          {
             while ((count -= 2) >= 0)   // texture height is a power of 2 -- killough
             {
                 *dest = dc_colormap[ dc_translucentmap[ (source[frac >> FRACBITS] << 8) + (*dest) ]];
@@ -638,12 +638,12 @@ void R_DrawTranslucentColumn_8(void)
             }
             if (count & 1)
                 *dest = dc_colormap[ dc_translucentmap[ (source[frac >> FRACBITS] << 8) + (*dest) ]];
-	  }
-	  else
-	  {
+          }
+          else
+          {
             while ((count -= 2) >= 0)   // texture height is a power of 2 -- killough
             {
-	        // alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
+                // alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
                 *dest = dc_colormap[ dc_translucentmap[ (source[frac >> FRACBITS]) + ((*dest)<<8) ]];
                 dest += vid.ybytes;
                 frac += fracstep;
@@ -653,7 +653,7 @@ void R_DrawTranslucentColumn_8(void)
             }
             if (count & 1)
                 *dest = dc_colormap[ dc_translucentmap[ (source[frac >> FRACBITS]) + ((*dest)<<8) ]];
-	  }
+          }
         }
     }
 }
@@ -692,7 +692,7 @@ void R_DrawTranslatedTranslucentColumn_8(void)
     // This is as fast as it gets.
 
     {
-	//register const byte *source = dc_source;
+        //register const byte *source = dc_source;
         register int heightmask = dc_texheight - 1;
         if (dc_texheight & heightmask)
         {
@@ -702,14 +702,14 @@ void R_DrawTranslatedTranslucentColumn_8(void)
             if (frac < 0)
                 while ((frac += heightmask) < 0);
             else
-	    { 
+            {
                 while (frac >= heightmask)
                     frac -= heightmask;
-	    }
+            }
 
-	    if( dr_alpha < TRANSLU_REV_ALPHA )
-	    {
-	      do
+            if( dr_alpha < TRANSLU_REV_ALPHA )
+            {
+              do
               {
                 // Re-map color indices from wall texture column
                 //  using a lighting/special effects LUT.
@@ -720,24 +720,24 @@ void R_DrawTranslatedTranslucentColumn_8(void)
                     frac -= heightmask;
               }
               while (--count);
-	    }
-	    else
-	    {
-	      do
+            }
+            else
+            {
+              do
               {
-		// alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
+                // alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
                 *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]]) + ((*dest)<<8) ]];
                 dest += vid.ybytes;
                 if ((frac += fracstep) >= heightmask)
                     frac -= heightmask;
               }
               while (--count);
-	    }
+            }
         }
         else
         {
-	  if( dr_alpha < TRANSLU_REV_ALPHA )
-	  {
+          if( dr_alpha < TRANSLU_REV_ALPHA )
+          {
             while ((count -= 2) >= 0)   // texture height is a power of 2 -- killough
             {
                 *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]] << 8) + (*dest) ]];
@@ -751,12 +751,12 @@ void R_DrawTranslatedTranslucentColumn_8(void)
             {
                 *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]] << 8) + (*dest) ]];
             }
-	  }
-	  else
-	  {
+          }
+          else
+          {
             while ((count -= 2) >= 0)   // texture height is a power of 2 -- killough
             {
-		// alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
+                // alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
                 *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]]) + ((*dest)<<8) ]];
                 dest += vid.ybytes;
                 frac += fracstep;
@@ -768,7 +768,7 @@ void R_DrawTranslatedTranslucentColumn_8(void)
             {
                 *dest = dc_colormap[ dc_translucentmap[ (dc_colormap[dc_skintran[dc_source[frac >> FRACBITS]]]) + ((*dest)<<8) ]];
             }
-	  }
+          }
         }
     }
 }
@@ -926,7 +926,7 @@ void R_DrawTranslucentSpan_8(void)
     {
       do
       {
-	// alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
+        // alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
         *dest = ds_colormap[ ds_translucentmap[ (ds_source[((yfrac >> flatfracbits) & (flat_ymask)) | (xfrac >> FRACBITS)]) + ((*dest)<<8) ]];
         dest++;	// [WDJ] warning: undetermined order when combined with above
         // Next step in u,v.
@@ -1049,7 +1049,7 @@ void R_DrawFogSpan_8(void)
         byte fogtran = fog_tran_table[ alpha16 ][ (count+fogstir) & 0x03 ];
         dc_translucentmap = & translucenttables[ TRANSLU_TABLE_INDEX(fogtran) ];
         ftranslucent[count] =   // normal table, or rev table
-	 & dc_translucentmap[ (dr_alpha<128) ? (fogcolor<<8) : fogcolor ];
+         & dc_translucentmap[ (dr_alpha<128) ? (fogcolor<<8) : fogcolor ];
     }
 
     count = ds_x2 - ds_x1 + 1;
@@ -1062,40 +1062,40 @@ void R_DrawFogSpan_8(void)
         // low alpha, use four translucent tables
         while (count4--)
         {
-	    *dest = ds_colormap[ ftranslucent[3][ (*dest) ]];
-	    dest ++;
-	    *dest = ds_colormap[ ftranslucent[2][ (*dest) ]];
-	    dest ++;
-	    *dest = ds_colormap[ ftranslucent[1][ (*dest) ]];
-	    dest ++;
-	    *dest = ds_colormap[ ftranslucent[0][ (*dest) ]];
-	    dest ++;
-	}
+            *dest = ds_colormap[ ftranslucent[3][ (*dest) ]];
+            dest ++;
+            *dest = ds_colormap[ ftranslucent[2][ (*dest) ]];
+            dest ++;
+            *dest = ds_colormap[ ftranslucent[1][ (*dest) ]];
+            dest ++;
+            *dest = ds_colormap[ ftranslucent[0][ (*dest) ]];
+            dest ++;
+        }
         while( count-- )
         {
-	    *dest = ds_colormap[ ftranslucent[count&0x03][ (*dest) ]];
-	    dest ++;
-	}
+            *dest = ds_colormap[ ftranslucent[count&0x03][ (*dest) ]];
+            dest ++;
+        }
     }
     else
     {
         // high alpha, reversed use of four translucent tables
         while (count4--)
         {
-	    *dest = ds_colormap[ ftranslucent[3][ (*dest) << 8 ]];
-	    dest += vid.ybytes;
-	    *dest = ds_colormap[ ftranslucent[2][ (*dest) << 8 ]];
-	    dest += vid.ybytes;
-	    *dest = ds_colormap[ ftranslucent[1][ (*dest) << 8 ]];
-	    dest += vid.ybytes;
-	    *dest = ds_colormap[ ftranslucent[0][ (*dest) << 8 ]];
-	    dest += vid.ybytes;
-	}
+            *dest = ds_colormap[ ftranslucent[3][ (*dest) << 8 ]];
+            dest += vid.ybytes;
+            *dest = ds_colormap[ ftranslucent[2][ (*dest) << 8 ]];
+            dest += vid.ybytes;
+            *dest = ds_colormap[ ftranslucent[1][ (*dest) << 8 ]];
+            dest += vid.ybytes;
+            *dest = ds_colormap[ ftranslucent[0][ (*dest) << 8 ]];
+            dest += vid.ybytes;
+        }
         while( count-- )
         {
-	    *dest = ds_colormap[ ftranslucent[count&0x03][ (*dest) << 8 ]];
-	    dest += vid.ybytes;
-	}
+            *dest = ds_colormap[ ftranslucent[count&0x03][ (*dest) << 8 ]];
+            dest += vid.ybytes;
+        }
     }
 }
 
@@ -1122,7 +1122,7 @@ static byte  fogcolor_c;
     if( fog_init )
     {
         // init blur
-	fogcolor_c = fc;
+        fogcolor_c = fc;
         fog_init = 0;
     }
     else
@@ -1143,9 +1143,9 @@ static byte  fogcolor_c;
         byte fogtran = fog_tran_table[ alpha16 ][ (count+fogstir) & 0x03 ];
         dc_translucentmap = & translucenttables[ TRANSLU_TABLE_INDEX(fogtran) ];
         if( dr_alpha < 128 )
-	   ftranslucent[count] = & dc_translucentmap[ fogcolor << 8 ];
+           ftranslucent[count] = & dc_translucentmap[ fogcolor << 8 ];
         else
-	   ftranslucent[count] = & dc_translucentmap[ fogcolor ];  // rev table
+           ftranslucent[count] = & dc_translucentmap[ fogcolor ];  // rev table
     }
 
     count = dc_yh - dc_yl + 1;
@@ -1175,40 +1175,40 @@ static byte  fogcolor_c;
         // low alpha, use four translucent tables
         while (count4--)
         {
-	    *dest = dc_colormap[ ftranslucent[3][ (*dest) ]];
-	    dest += vid.ybytes;
-	    *dest = dc_colormap[ ftranslucent[2][ (*dest) ]];
-	    dest += vid.ybytes;
-	    *dest = dc_colormap[ ftranslucent[1][ (*dest) ]];
-	    dest += vid.ybytes;
-	    *dest = dc_colormap[ ftranslucent[0][ (*dest) ]];
-	    dest += vid.ybytes;
-	}
+            *dest = dc_colormap[ ftranslucent[3][ (*dest) ]];
+            dest += vid.ybytes;
+            *dest = dc_colormap[ ftranslucent[2][ (*dest) ]];
+            dest += vid.ybytes;
+            *dest = dc_colormap[ ftranslucent[1][ (*dest) ]];
+            dest += vid.ybytes;
+            *dest = dc_colormap[ ftranslucent[0][ (*dest) ]];
+            dest += vid.ybytes;
+        }
         while( count-- )
         {
-	    *dest = dc_colormap[ ftranslucent[count&0x03][ (*dest) ]];
-	    dest += vid.ybytes;
-	}
+            *dest = dc_colormap[ ftranslucent[count&0x03][ (*dest) ]];
+            dest += vid.ybytes;
+        }
     }
     else
     {
         // high alpha, reversed use of four translucent tables
         while (count4--)
         {
-	    *dest = dc_colormap[ ftranslucent[3][ (*dest) << 8 ]];
-	    dest += vid.ybytes;
-	    *dest = dc_colormap[ ftranslucent[2][ (*dest) << 8 ]];
-	    dest += vid.ybytes;
-	    *dest = dc_colormap[ ftranslucent[1][ (*dest) << 8 ]];
-	    dest += vid.ybytes;
-	    *dest = dc_colormap[ ftranslucent[0][ (*dest) << 8 ]];
-	    dest += vid.ybytes;
-	}
+            *dest = dc_colormap[ ftranslucent[3][ (*dest) << 8 ]];
+            dest += vid.ybytes;
+            *dest = dc_colormap[ ftranslucent[2][ (*dest) << 8 ]];
+            dest += vid.ybytes;
+            *dest = dc_colormap[ ftranslucent[1][ (*dest) << 8 ]];
+            dest += vid.ybytes;
+            *dest = dc_colormap[ ftranslucent[0][ (*dest) << 8 ]];
+            dest += vid.ybytes;
+        }
         while( count-- )
         {
-	    *dest = dc_colormap[ ftranslucent[count&0x03][ (*dest) << 8 ]];
-	    dest += vid.ybytes;
-	}
+            *dest = dc_colormap[ ftranslucent[count&0x03][ (*dest) << 8 ]];
+            dest += vid.ybytes;
+        }
     }
 }
 
