@@ -6907,7 +6907,7 @@ Corrected the span fog draw for 8bit, which had the
 wrong stepping for dark fog.
 
 *** w108_colormap
-patchfile = w108_16_colormap.patch
+patchfile = w108_17_colormap.patch
 - commit revision 1429
 Reviewed and optimized much of the software draw colormap handling.
 The colormap selection has been moved outside of the draw loops.
@@ -6924,4 +6924,35 @@ Found some code that could not have worked, and it was repaired.
 This may have fixed some bugs.
 The issue of precedence when there are multiple colormaps and multiple
 sources of FOG information, still remains.
+
+*** w108_chex_deh
+patchfile = w108_18_chex_deh.patch
+- commit revision 1430
+Patch w107_43 to add MBF DEH capability, broke the chex newmaps DEH.
+Must bypass frame number translation and allow new states
+when the frame number is not recognized.
+
+*** w108_clipping
+patchfile = w108_19_clipping.patch
+- commit revision 1431
+Cleanup and improvement in the sprite clipping.  The orignal Doom
+clipping code was repetitive, and inefficient.
+Renamed some clipping vars to better reflect their usage.
+
+There are several CLIP3 improvements that are optioned until regression
+testing is completed.
+CLIP3_TOP and CLIP3_BOT use better initialization values, that also
+work with the normal clipping tests.  This eliminates one special test
+for each clipping test.
+The CLIP3_COMBINED_CLIP eliminates the separate clipping loops, by testing the
+clipping values against each other first, and then applying the most severe
+clipping value using only one pass through the sprite clipping arrays.
+
+This change also ensures that the normal clipping also limits the sprite draw
+to (0, rdraw_viewheight).  Then the additional clipping tests in the
+draw functions can be eliminated too.
+There is some RANGECHECK code there now, during regression testing.
+
+Found some usage of a fixed point type with 12 bits of fraction.
+Gave it a name (HEIGHTFRAC), and some conversion functions.
 

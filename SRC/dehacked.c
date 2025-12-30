@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: dehacked.c 1430 2019-03-16 06:27:19Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -707,6 +707,10 @@ statenum_t  deh_frame_to_state( int deh_frame )
      if( deh_frame == STS_MUSHROOM )
        return S_MUSHROOM;
   }
+
+  // Necessary for DEH that add new states, like chex newmaps.wad.
+  if( deh_frame >= 0 && deh_frame < NUMSTATES )
+       return  deh_frame;  // emulate old behavior, without translation
 
 null_frame:
   return S_NULL;
