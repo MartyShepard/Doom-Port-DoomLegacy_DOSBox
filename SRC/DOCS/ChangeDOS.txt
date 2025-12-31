@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01448 ]: w108 34 NETBSD
 [01447 ]: w108 33 texgen options
 [01446*]: w108 32 modelist
           SDL Only
