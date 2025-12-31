@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 1431 2019-03-16 06:28:43Z wesleyjohnson $
+// $Id: r_segs.c 1435 2019-04-26 10:36:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -209,7 +209,6 @@ static short last_floorclip[MAXVIDWIDTH];
 static void R_DrawSplatColumn (column_t* column)
 {
     fixed_t     top_post_sc, bottom_post_sc;  // fixed_t screen coord.
-    fixed_t     basetexturemid = dc_texturemid;  // save to restore later
 
     // dc_x is limited to 0..rdraw_viewwidth by caller x1,x2
 //    if ( (unsigned) dc_x >= rdraw_viewwidth )   return;
@@ -280,7 +279,7 @@ static void R_DrawSplatColumn (column_t* column)
         if (dc_yl <= dc_yh && dc_yh >= 0 )
         {
             dc_source = (byte *)column + 3;
-            dc_texturemid = basetexturemid - (column->topdelta<<FRACBITS);
+            dc_texturemid = dm_texturemid - (column->topdelta<<FRACBITS);
             
             //debug_Printf("l %d h %d %d\n",dc_yl,dc_yh, column->length);
             // Drawn by either R_DrawColumn
@@ -289,8 +288,6 @@ static void R_DrawSplatColumn (column_t* column)
         }
         column = (column_t *)(  (byte *)column + column->length + 4);
     }
-
-    dc_texturemid = basetexturemid;
 }
 
 
@@ -394,33 +391,34 @@ static void R_DrawWallSplats (void)
         // [WDJ] FIXME: ?? top of texture, plus 1/2 height ?, relative to viewer
         // So, either splat->top is not top, or something else weird.
         // This is world coord.
-        dc_texturemid = splat->top + (patch->height<<(FRACBITS-1)) - viewz;
+        dm_texturemid = splat->top + (patch->height<<(FRACBITS-1)) - viewz;
         if( splat->yoffset )
-            dc_texturemid += *splat->yoffset;
+            dm_texturemid += *splat->yoffset;
+        // R_DrawSplatColumn uses dm_texturemid, and generates dc_texturemid
 
         // top of splat, screen coord.
-        dm_top_patch = centeryfrac - FixedMul(dc_texturemid,dm_yscale);
+        dm_top_patch = centeryfrac - FixedMul(dm_texturemid, dm_yscale);
 
         // set drawing mode for single sided textures
         switch (splat->flags & SPLATDRAWMODE_MASK)
         {
             case SPLATDRAWMODE_OPAQUE:
-                colfunc = basecolfunc;
+                colfunc = basecolfunc;  // R_DrawColumn_x
                 break;
             case SPLATDRAWMODE_TRANS:
                 if( cv_translucency.value == 0 )
-                    colfunc = basecolfunc;
+                    colfunc = basecolfunc;  // R_DrawColumn_x
                 else
                 {
                     dr_alpha = 128;  // use normal dc_translucent_index
                     dc_translucent_index = TRANSLU_med;
                     dc_translucentmap = & translucenttables[ TRANSLU_TABLE_med ];
-                    colfunc = transcolfunc;
+                    colfunc = transcolfunc;  // R_DrawTranslucentColumn_x
                 }
     
                 break;
             case SPLATDRAWMODE_SHADE:
-                colfunc = shadecolfunc;
+                colfunc = shadecolfunc;  // R_DrawShadeColumn_x
                 break;
         }
 
@@ -446,7 +444,7 @@ static void R_DrawWallSplats (void)
                 }
             }
 
-            dm_top_patch = centeryfrac - FixedMul(dc_texturemid, dm_yscale);
+            dm_top_patch = centeryfrac - FixedMul(dm_texturemid, dm_yscale);
             dc_iscale = 0xffffffffu / (unsigned)dm_yscale;
 
             // find column of patch, from perspective
@@ -860,23 +858,25 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
     if (curline->linedef->flags & ML_DONTPEGBOTTOM)
     {
         // highest floor
-        dc_texturemid =
+        dm_texturemid =
          (frontsector->floorheight > backsector->floorheight) ?
             frontsector->floorheight : backsector->floorheight;
         // top of texture, relative to viewer
-        dc_texturemid = dc_texturemid + textureheight[texnum] - viewz;
+        dm_texturemid = dm_texturemid + textureheight[texnum] - viewz;
     }
     else
     {
         // lowest ceiling
-        dc_texturemid =
+        dm_texturemid =
          (frontsector->ceilingheight < backsector->ceilingheight) ?
            frontsector->ceilingheight : backsector->ceilingheight;
         // top of texture, relative to viewer
-        dc_texturemid = dc_texturemid - viewz;
+        dm_texturemid = dm_texturemid - viewz;
     }
     // top of texture, relative to viewer, with rowoffset, world coord.
-    dc_texturemid += curline->sidedef->rowoffset;
+    dm_texturemid += curline->sidedef->rowoffset;
+    dc_texturemid = dm_texturemid; // for using R_Render2sidedMultiPatchColumn
+     // R_DrawMaskedColumn uses dm_texturemid to make dc_texturemid
 
     dc_texheight = textureheight[texnum] >> FRACBITS;
 
@@ -903,7 +903,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
             // Where there are 3dfloors ...
             dm_bottom_patch = FIXED_MAX;
             // top/bottom of texture, relative to viewer, screen coord.
-            dm_top_patch = dm_windowtop = (centeryfrac - FixedMul(dc_texturemid, dm_yscale));
+            dm_top_patch = dm_windowtop = (centeryfrac - FixedMul(dm_texturemid, dm_yscale));
             realbot = dm_windowbottom = FixedMul(textureheight[texnum], dm_yscale) + dm_top_patch;
             dc_iscale = 0xffffffffu / (unsigned)dm_yscale;
             
@@ -1010,7 +1010,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
           }
 
           // top of texture, screen coord.
-          dm_top_patch = centeryfrac - FixedMul(dc_texturemid, dm_yscale);
+          dm_top_patch = centeryfrac - FixedMul(dm_texturemid, dm_yscale);
           dc_iscale = 0xffffffffu / (unsigned)dm_yscale;
 
           // draw texture, as clipped
@@ -1235,13 +1235,14 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
 
     dc_texheight = textureheight[texnum] >> FRACBITS;
 
-    dc_texturemid = *ffloor->topheight - viewz;
+    dm_texturemid = *ffloor->topheight - viewz;
 
     offsetvalue = sides[ffloor->master->sidenum[0]].rowoffset;
     if(curline->linedef->flags & ML_DONTPEGBOTTOM)
       offsetvalue -= *ffloor->topheight - *ffloor->bottomheight;
 
-    dc_texturemid += offsetvalue;
+    dm_texturemid += offsetvalue;  // R_DrawMaskedColumn sets dc_texturemid
+    dc_texturemid = dm_texturemid; // For column drawers other than R_DrawMaskedColumn
 
     // [WDJ] Initialize dc_colormap.
     // If fixedcolormap == NULL, then the loop will scale the light and colormap.
@@ -1284,7 +1285,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     {
       if(maskedtexturecol[dc_x] != MAXSHORT)
       {
-        dm_top_patch = dm_windowtop = (centeryfrac - FixedMul((dc_texturemid - offsetvalue), dm_yscale));
+        dm_top_patch = dm_windowtop = (centeryfrac - FixedMul((dm_texturemid - offsetvalue), dm_yscale));
         dm_bottom_patch = dm_windowbottom = FixedMul(*ffloor->topheight - *ffloor->bottomheight, dm_yscale) + dm_top_patch;
 
         // SoM: New code does not rely on r_drawColumnShadowed_8 which
@@ -1563,7 +1564,8 @@ void R_RenderFog( ffloor_t* fff, sector_t * intosec, lightlev_t foglight,
     dm_ceilingclip = clip_screen_top_min;  // noclip
 
     // top of texture, relative to viewer, with rowoffset, world coord.
-    dc_texturemid = modelsec->ceilingheight + fogside->rowoffset - viewz;
+    dm_texturemid = modelsec->ceilingheight + fogside->rowoffset - viewz;
+    dc_texturemid = dm_texturemid; // For column drawers other than R_DrawMaskedColumn
     dc_texheight = texheight >> FRACBITS;
 
     // [WDJ] Initialize dc_colormap.
@@ -1592,7 +1594,7 @@ void R_RenderFog( ffloor_t* fff, sector_t * intosec, lightlev_t foglight,
     for (dc_x = x1 ; dc_x <= x2 ; dc_x++)
     {
         // top/bottom of texture, relative to viewer, screen coord.
-        dm_top_patch = (centeryfrac - FixedMul(dc_texturemid, dm_yscale));
+        dm_top_patch = (centeryfrac - FixedMul(dm_texturemid, dm_yscale));
         bot_patch = FixedMul(texheight, dm_yscale) + dm_top_patch;
         // fog sheet clipping to ceiling and floor
         dm_windowtop = centeryfrac - FixedMul(windowclip_top, dm_yscale);
@@ -1683,7 +1685,6 @@ void R_RenderSegLoop (void)
     lighttable_t  * ro_colormap = NULL;  // override colormap
     extracolormap_t  * ro_extracolormap = NULL;  // override colormap
     
-
     // line orientation light, out of the loop
     if (curline->v1->y == curline->v2->y)
         orient_light = -ORIENT_LIGHT;
@@ -2012,8 +2013,8 @@ void R_RenderSegLoop (void)
             ceilingclip[rw_x] = rdraw_viewheight;  // block all
             floorclip[rw_x] = 0;  // block all
 #else
-            ceilingclip[rw_x] = rdraw_viewheight;
-            floorclip[rw_x] = -1;
+            ceilingclip[rw_x] = rdraw_viewheight;  // block all
+            floorclip[rw_x] = -1;  // block all
 #endif
         }
         else

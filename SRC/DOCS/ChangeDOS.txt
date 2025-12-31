@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01435 ]: w108_22 draw misc
 [01434 ]: w108_22 config files
           DOS: Oh boy.. Conig file not saved. Taken fix from future Commit.
 					

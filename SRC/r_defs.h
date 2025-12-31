@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1431 2019-03-16 06:28:43Z wesleyjohnson $
+// $Id: r_defs.h 1435 2019-04-26 10:36:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -186,7 +186,7 @@ typedef struct
 } extracolormap_t;
 
 
-//
+//=========
 // INTERNAL MAP TYPES
 //  used by play and refresh
 //
@@ -302,9 +302,6 @@ typedef struct r_lightlist_s {
 } r_lightlist_t;
 
 
-
-
-
 typedef enum {
    FLOOR_SOLID,
    FLOOR_WATER,  
@@ -313,6 +310,7 @@ typedef enum {
    FLOOR_ICE,
 } floortype_e;
 
+//=========
 // ----- for special tricks with HW renderer -----
 
 //
@@ -325,6 +323,9 @@ typedef struct linechain_s
 } linechain_t;
 // ----- end special tricks -----
 
+//=========
+// Sectors
+
 // sector model	[WDJ] 11/14/2009
 typedef enum{
    SM_normal,		// normal sector
@@ -335,10 +336,8 @@ typedef enum{
      // Legacy 3D floors are handled through FFloor list
 } sector_model_e;
 
-//
 // The SECTORS record, at runtime.
 // Stores things/mobjs.
-//
 typedef struct sector_s
 {
     fixed_t     floorheight;
@@ -458,9 +457,8 @@ typedef struct sector_s
 
 
 
-//
-// The SideDef.
-//
+//=========
+// SideDef.
 
 typedef struct
 {
@@ -499,6 +497,8 @@ typedef enum
 } slopetype_t;
 
 
+//=========
+// LineDef
 
 typedef struct line_s
 {
@@ -556,6 +556,9 @@ typedef struct line_s
 
 
 
+
+//=========
+// SubSector
 
 //
 // A SubSector.
@@ -653,9 +656,14 @@ typedef struct lightmap_s
     struct lightmap_s   *next;
 } lightmap_t;
 
+//=========
+
 #ifdef HWRENDER
 # include "hardware/hw_poly.h"
 #endif
+
+//=========
+// BSP traverse
 
 //
 // The LineSeg.
@@ -750,11 +758,9 @@ typedef post_t  column_t;
 
 
 
-//
+//=========
 // OTHER TYPES
 //
-
-
 
 
 #ifndef MAXFFLOORS
@@ -794,6 +800,9 @@ typedef struct drawseg_s
 } drawseg_t;
 
 
+//=========
+// Patch and Picture formats
+
 // Patches.
 // A patch holds one or more columns.
 // Patches are used for sprites and all masked pictures.
@@ -819,6 +828,7 @@ typedef struct
     // This would not work if the [8] was actually enforced.
 } patch_t;
 
+// This is the Doom PIC format (not the Pictor PIC format).
 typedef enum {
     PALETTE         = 0,  // 1 byte is the index in the doom palette (as usual)
     INTENSITY       = 1,  // 1 byte intensity
@@ -839,6 +849,8 @@ typedef struct
     byte      data[0];
 } pic_t;
 
+//=========
+// Sprite
 
 typedef enum
 {
@@ -856,29 +868,22 @@ typedef struct vissprite_s
     struct vissprite_s* prev;
     struct vissprite_s* next;
 
+    // Screen x range.
     int                 x1, x2;
-
-    // for line side calculation
-    fixed_t             gx, gy;
 
     // global bottom / top for silhouette clipping, world coordinates
     fixed_t             gz_bot;
     fixed_t             gz_top;
 
-    // Physical bottom / top for sorting with 3D floors, world coordinates.
-    fixed_t		pz_bot;
-    fixed_t		pz_top;
-
-    // horizontal position of x1
-    fixed_t             startfrac;
-
     fixed_t             scale;
 
-    // negative if flipped
-    fixed_t             xiscale;
+    // texture
+    fixed_t             tex_x1;   // texture x at vis x1, fractional
+    fixed_t             tex_x_iscale;  // x texture step per pixel
+        // negative if flipped
 
     fixed_t             texturemid;
-    int                 patch;
+    lumpnum_t           patch_lumpnum;
 
     // for color translation and shadow draw,
     //  maxbright frames as well
@@ -890,17 +895,24 @@ typedef struct vissprite_s
    
     byte                dist_priority;  // 0..255, when too many sprites   
 
-    uint32_t            mobjflags;  // mobjflag_e, MF_
-
-    // SoM: 3/6/2000: height sector for underwater/fake ceiling support
-    int                 heightsec;
+    // SoM: 3/6/2000: sector for underwater/fake ceiling support
+    int                 modelsec;   // -1 none
 
     //SoM: 4/3/2000: Global colormaps!
     extracolormap_t*    extra_colormap;
     fixed_t             xscale;
 
-    fixed_t             thingheight; //The actual height of the thing (for 3D floors)
-    sector_t*           sector; //The sector containing the thing.
+    sector_t          * sector; // The sector containing the thing.
+    mobj_t            * mobj;   // The thing
+
+    // From mobj
+    uint32_t            mobj_flags;  // mobjflag_e, MF_, modified
+    // for line side calculation
+    fixed_t             mobj_x, mobj_y;
+    // Physical bottom / top for sorting with 3D floors, world coordinates.
+    fixed_t             mobj_top_z, mobj_bot_z;  // modified by cuts
+    //The actual height of the thing (for 3D floors)
+//    fixed_t             mobj_height;   // unused
 
     //SoM: Precalculated top and bottom screen coords for the sprite.
     // [WDJ] sz_ only used in r_things.c, as cut, used for clip tests.

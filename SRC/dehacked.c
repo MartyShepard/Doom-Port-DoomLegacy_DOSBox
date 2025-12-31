@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1430 2019-03-16 06:27:19Z wesleyjohnson $
+// $Id: dehacked.c 1435 2019-04-26 10:36:07Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -676,23 +676,23 @@ statenum_t  deh_frame_to_state( int deh_frame )
        return deh_frame + (S_FREETARGMOBJ - STH_FREETARGMOBJ);
      // STH_BLOOD Mapped to the doom blood
      if( deh_frame >= STH_BLOOD1
-	 && deh_frame <= STH_BLOOD3 )
+         && deh_frame <= STH_BLOOD3 )
        return deh_frame + (S_BLOOD1 - STH_BLOOD1);
      if( deh_frame >= STH_BLOODSPLATTER1
-	 && deh_frame <= STH_BLOODSPLATTERX )
+         && deh_frame <= STH_BLOODSPLATTERX )
        return deh_frame + (S_BLOODSPLATTER1 - STH_BLOODSPLATTER1);
      // STH_PLAY Mapped to the doom player, except for STH_PLAY_FDTH.
      if( deh_frame >= STH_PLAY
-	 && deh_frame <= STH_PLAY_XDIE9 )
+         && deh_frame <= STH_PLAY_XDIE9 )
        return deh_frame + (S_PLAY - STH_PLAY);
 #if 0
      // TODO
      if( deh_frame >= STH_PLAY_FDTH1
-	 && deh_frame <= STH_PLAY_FDTH20 )
+         && deh_frame <= STH_PLAY_FDTH20 )
        return deh_frame + (S_PLAY_FDTH1 - STH_PLAY_FDTH1);
 #endif
      if( deh_frame >= STH_BLOODYSKULL1
-	 && deh_frame <= STH_SND_WATERFALL )
+         && deh_frame <= STH_SND_WATERFALL )
        return deh_frame + (S_BLOODYSKULL1 - STH_BLOODYSKULL1);
   }
   else
@@ -702,7 +702,7 @@ statenum_t  deh_frame_to_state( int deh_frame )
      if( deh_frame == STS_TNT1 )
        return S_TNT1;
      if( deh_frame >= STS_GRENADE
-	 && deh_frame <= STS_DOGS_RAISE6 )
+         && deh_frame <= STS_DOGS_RAISE6 )
        return deh_frame + (S_GRENADE - STS_GRENADE);
      if( deh_frame == STS_MUSHROOM )
        return S_MUSHROOM;
@@ -2239,7 +2239,7 @@ static void readweapon(myfile_t *f, int deh_weapon_id)
       else if(!strcasecmp(word,"Select"))     set_state( &wip->downstate, value );
       else if(!strcasecmp(word,"Bobbing"))    set_state( &wip->readystate, value );
       else if(!strcasecmp(word,"Shooting")) { set_state( &wip->atkstate, value );
-					      wip->holdatkstate = wip->atkstate; }
+                                              wip->holdatkstate = wip->atkstate; }
       else if(!strcasecmp(word,"Firing"))     set_state( &wip->flashstate, value );
       else deh_error("Weapon %d : unknown word '%s'\n", deh_weapon_id,word);
     }

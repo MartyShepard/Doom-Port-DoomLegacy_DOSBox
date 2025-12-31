@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1434 2019-04-26 10:35:00Z wesleyjohnson $
+// $Id: r_things.c 1435 2019-04-26 10:36:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -374,8 +374,8 @@ void  transfer_from_spritetmp( spritedef_t * spritedef,
 //
 //
 static
-void R_InstallSpriteLump ( lumpnum_t     lumppat,     // graphics patch
-                           uint16_t      spritelump_id, // spritelump_t
+void R_InstallSpriteLump ( lumpnum_t     pat_lumpnum,   // graphics patch
+                           uint16_t      spritelump_id, // spritelump_t index
                            byte          frame,
                            char          rotation_char,
                            boolean       flipped )
@@ -451,7 +451,7 @@ void R_InstallSpriteLump ( lumpnum_t     lumppat,     // graphics patch
         fmp->rotation_pattern = SRP_1;
 #if 0
         // Only rotation 0.
-        rtp->pat_lumpnum = lumppat;
+        rtp->pat_lumpnum = pat_lumpnum;
         rtp->spritelump_id  = spritelump_id;
         rtp->flip = (byte)flipped;
 #else
@@ -459,7 +459,7 @@ void R_InstallSpriteLump ( lumpnum_t     lumppat,     // graphics patch
         // SRP_8 will keep the single rotation as the default.
         for (r=0 ; r<NUM_SPRITETMP_ROT ; r++)
         {
-            rtp->pat_lumpnum = lumppat;
+            rtp->pat_lumpnum = pat_lumpnum;
             rtp->spritelump_id  = spritelump_id;
             rtp->flip = (byte)flipped;
             rtp++;
@@ -491,11 +491,11 @@ void R_InstallSpriteLump ( lumpnum_t     lumppat,     // graphics patch
            spritename, 'A'+frame, rotation_char );
     }
 
-    // lumppat & spritelump_id are the same for original Doom, but different
-    // when using sprites in pwad : the lumppat points the new graphics
-    // [WDJ] Nope, lump patch and size data both come from the lump.
+    // [WDJ] The pat_lumpnum is the (file,lump) used to load the lump from the file.
+    // The spritelump_id is the index into the spritelumps table, as maintained in r_data.
+    // Any similarity within the original Doom is accidental.
     // This is the only func that changes them, and they are always both updated.
-    rtp->pat_lumpnum = lumppat;
+    rtp->pat_lumpnum = pat_lumpnum;
     rtp->spritelump_id = spritelump_id;
     rtp->flip = (byte)flipped;
 }
@@ -524,7 +524,7 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
     lumpnum_t   fnd_lumpnum = 0;
     int         l;
     int         frame;
-    int         spritelump_id;
+    int         spritelump_id;  // spritelump table index
     patch_t     patch;	// temp for read header
     byte        array_srp = SRP_NULL;
     byte        rotation, frame_rot;
@@ -568,10 +568,10 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
             //FIXME:numspritelumps do not duplicate sprite replacements
             W_ReadLumpHeader (lumpnum, &patch, sizeof(patch_t)); // to temp
             // [WDJ] Do endian while translate temp to internal.
-            spritelump_id = R_Get_spritelump();
-            spritelump_t * sl = &spritelumps[spritelump_id];
+            spritelump_id = R_Get_spritelump();  // get next index, may expand and move the table
+            spritelump_t * sl = &spritelumps[spritelump_id];  // sprite patch header
             sl->width = LE_SWAP16(patch.width)<<FRACBITS;
-            sl->offset = LE_SWAP16(patch.leftoffset)<<FRACBITS;
+            sl->leftoffset = LE_SWAP16(patch.leftoffset)<<FRACBITS;
             sl->topoffset = LE_SWAP16(patch.topoffset)<<FRACBITS;
             sl->height = LE_SWAP16(patch.height)<<FRACBITS;
 
@@ -596,7 +596,7 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
             fnd_lumpnum = lumpnum;
             R_InstallSpriteLump (lumpnum, spritelump_id, frame, rotation_char, false);
 
-            if (lumpinfo[l].name[6])
+            if (lumpinfo[l].name[6])  // if flipped
             {
                 frame = lumpinfo[l].name[6] - 'A';
                 rotation_char = lumpinfo[l].name[7];
@@ -975,9 +975,10 @@ static vissprite_t     overflowsprite;
 // Sorted list is farthest to nearest (circular).
 //   scale : the draw scale, representing distance from viewer
 //   dist_pri : distance priority, 0..255, dead are low, monsters are high
+//   copysprite : copy this sprite
 static
 vissprite_t* R_NewVisSprite ( fixed_t scale, byte dist_pri,
-                             /*OUT*/ vissprite_t * oldsprite )
+                              vissprite_t * copysprite )
 {
     vissprite_t * vs;
     register vissprite_t * ns;
@@ -1052,8 +1053,8 @@ vissprite_t* R_NewVisSprite ( fixed_t scale, byte dist_pri,
     }
     // ns is farther than new
     // Copy before linking, is easier.
-    if( oldsprite )
-        memcpy( vs, oldsprite, sizeof(vissprite_t));
+    if( copysprite )
+        memcpy( vs, copysprite, sizeof(vissprite_t));
     // link new vs after ns (nearer than ns)
     vs->next = ns->next;
     vs->next->prev = vs;
@@ -1084,12 +1085,13 @@ fixed_t         dm_top_patch, dm_bottom_patch;
 // window clipping in fixed_t screen coord., set to FIXED_MAX to disable
 // to draw, require dm_windowtop < dm_windowbottom
 fixed_t         dm_windowtop, dm_windowbottom;
+// for masked draw of patch, to form dc_texturemid
+fixed_t         dm_texturemid;
 
 
 void R_DrawMaskedColumn (column_t* column)
 {
     fixed_t     top_post_sc, bottom_post_sc;  // fixed_t screen coord.
-    fixed_t     basetexturemid = dc_texturemid; // save to restore after
 
     // over all column posts for this column
     for ( ; column->topdelta != 0xff ; )
@@ -1154,32 +1156,16 @@ void R_DrawMaskedColumn (column_t* column)
 #endif
 
             dc_source = (byte *)column + 3;
-            dc_texturemid = basetexturemid - (column->topdelta<<FRACBITS);
+            dc_texturemid = dm_texturemid - (column->topdelta<<FRACBITS);
             // dc_source = (byte *)column + 3 - column->topdelta;
             fog_col_length = column->length;
 
             // Drawn by either R_DrawColumn
             //  or (SHADOW) R_DrawFuzzColumn.
-#ifdef PARANOIA 
-            //Hurdler: quick fix... something more proper should be done!!!
-            // [WDJ] Fixed by using rdraw_viewheight instead of vid.height
-            // in limit test above.
-            if (!ylookup[dc_yl] && colfunc==basecolfunc) // R_DrawColumn_8
-            {
-                I_SoftError("WARNING: avoiding a crash in %s %d\n", __FILE__, __LINE__);
-            }
-            else
-            {
-                colfunc ();
-            }
-#else
             colfunc ();
-#endif
         }
         column = (column_t *)(  (byte *)column + column->length + 4);
     }
-
-    dc_texturemid = basetexturemid;
 }
 
 
@@ -1188,30 +1174,29 @@ void R_DrawMaskedColumn (column_t* column)
 // R_DrawVisSprite
 //  dm_floorclip and dm_ceilingclip should also be set.
 //
-static void R_DrawVisSprite ( vissprite_t*          vis,
-                              int                   x1,
-                              int                   x2 )
+static void R_DrawVisSprite ( vissprite_t *  vis,
+                              int  x1,  int  x2 )
 {
-    column_t*           column;
-    int                 texturecolumn;
-    fixed_t             texcol_frac;
-    patch_t*            patch;
+    column_t * column;
+    int        texturecolumn;
+    fixed_t    texcol_frac;
+    patch_t  * patch;
 
 
     //Fab:R_Init_Sprites now sets a wad lump number
     // Use common patch read so do not have patch in cache without endian fixed.
-    patch = W_CachePatchNum (vis->patch, PU_CACHE);
+    patch = W_CachePatchNum (vis->patch_lumpnum, PU_CACHE);
 
     dc_colormap = vis->colormap;
 
     // Support for translated and translucent sprites. SSNTails 11-11-2002
     dr_alpha = 0;  // ensure use of translucent normally for all drawers
-    if((vis->mobjflags & MFT_TRANSLATION6) && vis->translucentmap)
+    if((vis->mobj_flags & MFT_TRANSLATION6) && vis->translucentmap)
     {
         colfunc = skintranscolfunc;
         dc_translucent_index = vis->translucent_index;
         dc_translucentmap = vis->translucentmap;
-        dc_skintran = MFT_TO_SKINMAP( vis->mobjflags ); // skins 1..
+        dc_skintran = MFT_TO_SKINMAP( vis->mobj_flags ); // skins 1..
     }
     else if (vis->translucentmap==VIS_SMOKESHADE)
     {
@@ -1222,15 +1207,15 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
     else if (vis->translucentmap)
     {
 //        colfunc = fuzzcolfunc;
-        colfunc = (vis->mobjflags & MF_SHADOW)? fuzzcolfunc : transcolfunc;
+        colfunc = (vis->mobj_flags & MF_SHADOW)? fuzzcolfunc : transcolfunc;
         dc_translucent_index = vis->translucent_index;
         dc_translucentmap = vis->translucentmap;    //Fab:29-04-98: translucency table
     }
-    else if (vis->mobjflags & MFT_TRANSLATION6)
+    else if (vis->mobj_flags & MFT_TRANSLATION6)
     {
         // translate green skin to another color
         colfunc = skincolfunc;
-        dc_skintran = MFT_TO_SKINMAP( vis->mobjflags ); // skins 1..
+        dc_skintran = MFT_TO_SKINMAP( vis->mobj_flags ); // skins 1..
     }
 
     if((vis->extra_colormap || view_colormap) && !fixedcolormap)
@@ -1243,17 +1228,18 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
     if(!dc_colormap)
       dc_colormap = & reg_colormaps[0];
 
-    //dc_iscale = abs(vis->xiscale)>>detailshift;  ???
+    // dc_iscale: fixed_t texture step per pixel, for draw function
+    //dc_iscale = abs(vis->tex_x_iscale)>>detailshift;  ???
     dc_iscale = FixedDiv (FRACUNIT, vis->scale);
-    dc_texturemid = vis->texturemid;
-    dc_texheight = 0;
+    dm_texturemid = vis->texturemid;
+    dc_texheight = 0;  // no wrap repeat
 
-    texcol_frac = vis->startfrac;
     dm_yscale = vis->scale;
-    dm_top_patch = centeryfrac - FixedMul(dc_texturemid,dm_yscale);
+    dm_top_patch = centeryfrac - FixedMul(dm_texturemid, dm_yscale);
     dm_windowtop = dm_windowbottom = dm_bottom_patch = FIXED_MAX; // disable
 
-    for (dc_x=vis->x1 ; dc_x<=vis->x2 ; dc_x++, texcol_frac += vis->xiscale)
+    texcol_frac = vis->tex_x1;  // texture x at vis->x1
+    for (dc_x=vis->x1 ; dc_x<=vis->x2 ; dc_x++, texcol_frac += vis->tex_x_iscale)
     {
         texturecolumn = texcol_frac>>FRACBITS;
 #ifdef RANGECHECK
@@ -1274,9 +1260,12 @@ static void R_DrawVisSprite ( vissprite_t*          vis,
 
 
 //
-// R_SplitSprite
-// runs through a sector's lightlist and
-static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
+// R_Split_Sprite_over_FFloor
+// Makes a separate sprite for each floor in a sector lightlist that it touches.
+// These must be drawn interspersed with the ffloor floors and ceilings.
+// Called by R_ProjectSprite
+static
+void R_Split_Sprite_over_FFloor (vissprite_t* sprite, mobj_t* thing)
 {
   int           i;
   int		sz_cut;		// where lightheight cuts on screen
@@ -1306,7 +1295,7 @@ static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
             return;
         
     // Found a split! Make a new sprite, copy the old sprite to it, and
-    // adjust the heights.
+    // adjust the heights.  Below the cut is the newsprite.
     newsprite = R_NewVisSprite( sprite->scale, sprite->dist_priority, sprite );
 
     sprite->cut |= SC_BOTTOM;
@@ -1318,15 +1307,15 @@ static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
     sprite->sz_bot = (sz_cut < rdraw_viewheight)? sz_cut : rdraw_viewheight;
     newsprite->sz_top = sz_cut - 1;
 
-    if(lightheight < sprite->pz_top
-           && lightheight > sprite->pz_bot)
+    if(lightheight < sprite->mobj_top_z
+           && lightheight > sprite->mobj_bot_z)
     {
-        sprite->pz_bot = newsprite->pz_top = lightheight;
+        sprite->mobj_bot_z = newsprite->mobj_top_z = lightheight;
     }
     else
     {
-        newsprite->pz_bot = newsprite->gz_bot; 
-        newsprite->pz_top = newsprite->gz_top;
+        newsprite->mobj_bot_z = newsprite->gz_bot; 
+        newsprite->mobj_top_z = newsprite->gz_top;
     }
 
     newsprite->cut |= SC_TOP;
@@ -1378,7 +1367,6 @@ static void R_SplitSprite (vissprite_t* sprite, mobj_t* thing)
 static void R_ProjectSprite (mobj_t* thing)
 {
     fixed_t             tr_x, tr_y;
-    fixed_t             gxt, gyt;
     fixed_t             tx, tz;
 
     fixed_t             xscale;
@@ -1391,7 +1379,7 @@ static void R_ProjectSprite (mobj_t* thing)
     spritedef_t*        sprdef;
     spriteframe_t *     sprframe;
     sprite_frot_t *     sprfrot;
-    spritelump_t *      sprlump;
+    spritelump_t *      sprlump;  // sprite patch header (no pixels)
 
     unsigned int        rot;
     byte                flip;
@@ -1414,10 +1402,7 @@ static void R_ProjectSprite (mobj_t* thing)
     tr_x = thing->x - viewx;
     tr_y = thing->y - viewy;
 
-    gxt = FixedMul(tr_x,viewcos);
-    gyt = -FixedMul(tr_y,viewsin);
-
-    tz = gxt-gyt;
+    tz = FixedMul(tr_x,viewcos) + FixedMul(tr_y,viewsin);
 
     // thing is behind view plane?
     if (tz < MINZ)
@@ -1427,9 +1412,7 @@ static void R_ProjectSprite (mobj_t* thing)
     xscale = FixedDiv(projection, tz);
     yscale = FixedDiv(projectiony, tz);
 
-    gxt = -FixedMul(tr_x,viewsin);
-    gyt = FixedMul(tr_y,viewcos);
-    tx = -(gyt+gxt);
+    tx = FixedMul(tr_x,viewsin) - FixedMul(tr_y,viewcos);
 
     // too far off the side?
     if (abs(tx)>(tz<<2))
@@ -1473,7 +1456,7 @@ static void R_ProjectSprite (mobj_t* thing)
     if( sprframe->rotation_pattern == SRP_1 )
     {
         // use single rotation for all views
-        rot = 0;  //Fab: for vis->patch below
+        rot = 0;  //Fab: for vis->patch_lumpnum below
     }
     else
     {
@@ -1497,19 +1480,19 @@ static void R_ProjectSprite (mobj_t* thing)
    
     sprfrot = get_framerotation( sprdef, fr, rot );
     //Fab: [WDJ] spritelump_id is the index
-    sprlump = &spritelumps[sprfrot->spritelump_id];
+    sprlump = &spritelumps[sprfrot->spritelump_id];  // sprite patch header
     flip = sprfrot->flip;
 
     // calculate edges of the shape
     if( flip )
     {
         // [WDJ] Flip offset, as suggested by Fraggle (seen in prboom 2003)
-        tx -= sprlump->width - sprlump->offset;
+        tx -= sprlump->width - sprlump->leftoffset;
     }
     else
     {
         // apply offset from sprite lump normally
-        tx -= sprlump->offset;
+        tx -= sprlump->leftoffset;
     }
     x1 = (centerxfrac + FixedMul (tx,xscale) ) >>FRACBITS;
 
@@ -1517,14 +1500,20 @@ static void R_ProjectSprite (mobj_t* thing)
     if (x1 > rdraw_viewwidth)
         return;
 
+#if 1
+    x2 = ((centerxfrac + FixedMul (tx + sprlump->width, xscale) ) >>FRACBITS) - 1;
+#else
     tx += sprlump->width;
     x2 = ((centerxfrac + FixedMul (tx,xscale) ) >>FRACBITS) - 1;
+#endif
 
     // off the left side
     if (x2 < 0)
         return;
 
     //SoM: 3/17/2000: Disregard sprites that are out of view..
+
+    // Sprite scale is same as physical scale.
     gz_top = thing->z + sprlump->topoffset;
 
     thingsector = thing->subsector->sector;	 // [WDJ] 11/14/2009
@@ -1597,16 +1586,16 @@ static void R_ProjectSprite (mobj_t* thing)
         return;
 
     // [WDJ] Only pass water models, not colormap model sectors
-    vis->heightsec = thing_has_model ? thingmodelsec : -1 ; //SoM: 3/17/2000
-    vis->mobjflags = (thing->flags & MF_SHADOW) | (thing->tflags & MFT_TRANSLATION6);
-    vis->scale = yscale;           //<<detailshift;
-    vis->gx = thing->x;
-    vis->gy = thing->y;
-    vis->gz_bot = gz_top - sprlump->height;
+    vis->modelsec = thing_has_model ? thingmodelsec : -1 ; //SoM: 3/17/2000
+    vis->mobj_flags = (thing->flags & MF_SHADOW) | (thing->tflags & MFT_TRANSLATION6);
+    vis->mobj = thing;
+    vis->mobj_x = thing->x;
+    vis->mobj_y = thing->y;
+ //   vis->mobj_height = thing->height;  // unused
+    vis->mobj_bot_z = thing->z;
+    vis->mobj_top_z = thing->z + thing->height;
     vis->gz_top = gz_top;
-    vis->thingheight = thing->height;
-    vis->pz_bot = thing->z;
-    vis->pz_top = vis->pz_bot + vis->thingheight;
+    vis->gz_bot = gz_top - sprlump->height;
     vis->texturemid = vis->gz_top - viewz;
     // foot clipping
     if(thing->flags2&MF2_FEETARECLIPPED
@@ -1617,36 +1606,36 @@ static void R_ProjectSprite (mobj_t* thing)
 
     vis->x1 = (x1 < 0) ? 0 : x1;
     vis->x2 = (x2 >= rdraw_viewwidth) ? rdraw_viewwidth-1 : x2;
-    vis->xscale = xscale; //SoM: 4/17/2000
-    vis->sector = thingsector;
+    vis->xscale = xscale; // SoM: 4/17/2000
+    vis->scale = yscale;  // <<detailshift;
     vis->sz_top = (centeryfrac - FixedMul(vis->gz_top - viewz, yscale)) >> FRACBITS;
     vis->sz_bot = (centeryfrac - FixedMul(vis->gz_bot - viewz, yscale)) >> FRACBITS;
     vis->cut = SC_NONE;	// none, false
-    vis->extra_colormap = (ff_light)?
-        ff_light->extra_colormap
-        : thingsector->extra_colormap;
 
     iscale = FixedDiv (FRACUNIT, xscale);
 
     if (flip)
     {
-        vis->startfrac = sprlump->width - 1;
-        vis->xiscale = -iscale;
+        vis->tex_x1 = sprlump->width - 1;
+        vis->tex_x_iscale = -iscale;
     }
     else
     {
-        vis->startfrac = 0;
-        vis->xiscale = iscale;
+        vis->tex_x1 = 0;
+        vis->tex_x_iscale = iscale;
     }
 
     if (vis->x1 > x1)
-        vis->startfrac += vis->xiscale*(vis->x1-x1);
+        vis->tex_x1 += vis->tex_x_iscale * (vis->x1 - x1);
 
-    //Fab: lumppat is the lump number of the patch to use, this is different
-    //     than spritelump_id for sprites-in-pwad : the graphics are patched
-    // [WDJ] Nope, both are updated from the lump together.
-    vis->patch = sprfrot->pat_lumpnum;
+    // [WDJ] The patch_lumpnum is the (file,lump) used to load the lump from the file.
+    // The spritelump_id is the index to the sprite lump table.
+    vis->patch_lumpnum = sprfrot->pat_lumpnum;
 
+    vis->sector = thingsector;
+    vis->extra_colormap = (ff_light)?
+        ff_light->extra_colormap
+        : thingsector->extra_colormap;
 
 //
 // determine the colormap (lightlevel & special effects)
@@ -1706,7 +1695,7 @@ static void R_ProjectSprite (mobj_t* thing)
     }
 
     if(thingsector->numlights)
-        R_SplitSprite(vis, thing);
+        R_Split_Sprite_over_FFloor(vis, thing);
 }
 
 
@@ -1818,8 +1807,8 @@ void R_DrawPSprite (pspdef_t* psp)
     // use single rotation for all views
     sprfrot = get_framerotation( sprdef, fr, 0 );
    
-    //Fab: see the notes in R_ProjectSprite about spritelump_id,lumppat
-    sprlump = &spritelumps[sprfrot->spritelump_id];
+    //Fab: see the notes in R_ProjectSprite about spritelump_id, pat_lumpnum
+    sprlump = &spritelumps[sprfrot->spritelump_id];  // sprite patch header
 
     // calculate edges of the shape
 
@@ -1835,15 +1824,15 @@ void R_DrawPSprite (pspdef_t* psp)
     if( sprfrot->flip )
     {
         // debug_Printf("Player weapon flip detected!\n" );
-        tx -= sprlump->width - sprlump->offset;  // Fraggle's flip offset
+        tx -= sprlump->width - sprlump->leftoffset;  // Fraggle's flip offset
     }
     else
     {
         // apply offset from sprite lump normally
-        tx -= sprlump->offset;
+        tx -= sprlump->leftoffset;
     }
 #else
-    tx -= sprlump->offset;
+    tx -= sprlump->leftoffset;
 #endif
     x1 = (centerxfrac + FixedMul (tx,pspritescale) ) >>FRACBITS;
 
@@ -1860,7 +1849,7 @@ void R_DrawPSprite (pspdef_t* psp)
 
     // store information in a vissprite
     vis = &avis;
-    vis->mobjflags = 0;
+    vis->mobj_flags = 0;
     vis->texturemid = (cv_splitscreen.EV) ?
         (120<<(FRACBITS)) + FRACUNIT/2 - (psp->sy - sprlump->topoffset)
         : (BASEYCENTER<<FRACBITS) + FRACUNIT/2 - (psp->sy - sprlump->topoffset);
@@ -1880,20 +1869,20 @@ void R_DrawPSprite (pspdef_t* psp)
 
     if( sprfrot->flip )
     {
-        vis->xiscale = -pspriteiscale;
-        vis->startfrac = sprlump->width - 1;
+        vis->tex_x_iscale = -pspriteiscale;
+        vis->tex_x1 = sprlump->width - 1;
     }
     else
     {
-        vis->xiscale = pspriteiscale;
-        vis->startfrac = 0;
+        vis->tex_x_iscale = pspriteiscale;
+        vis->tex_x1 = 0;
     }
 
     if (vis->x1 > x1)
-        vis->startfrac += vis->xiscale*(vis->x1-x1);
+        vis->tex_x1 += vis->tex_x_iscale * (vis->x1 - x1);
 
     //Fab: see above for more about spritelump_id,lumppat
-    vis->patch = sprfrot->pat_lumpnum;
+    vis->patch_lumpnum = sprfrot->pat_lumpnum;
     vis->translucentmap = NULL;
     vis->translucent_index = 0;
     if (viewplayer->mo->flags & MF_SHADOW)      // invisibility effect
@@ -2028,7 +2017,7 @@ static void R_Create_DrawNodes( void )
   fixed_t       delta;
   int           sintersect;
 //  fixed_t       gzm;
-  fixed_t       pz_mid; // mid of sprite
+  fixed_t       mobj_mid_z; // mid of sprite
   fixed_t       scale;
 
     // Add the 3D floors, thicksides, and masked textures...
@@ -2106,7 +2095,7 @@ static void R_Create_DrawNodes( void )
 
       sintersect = (vsp->x1 + vsp->x2) / 2;
 //      gzm = (vsp->gz_bot + vsp->gz_top) / 2;
-      pz_mid = (vsp->pz_bot + vsp->pz_top) / 2;
+      mobj_mid_z = (vsp->mobj_bot_z + vsp->mobj_top_z) / 2;
 
       // search drawnodes
       // drawnodes are in bsp order, partially sorted
@@ -2126,13 +2115,14 @@ static void R_Create_DrawNodes( void )
           if( dnp->plane->height < viewz )
           {
               // floor
-              if( dnp->plane->height < pz_mid )  continue;  // sprite over floor
+              if( dnp->plane->height < mobj_mid_z )  continue;  // sprite over floor
           }
           else
           {
               // ceiling
-              if( dnp->plane->height > pz_mid )  continue;  // sprite under ceiling
+              if( dnp->plane->height > mobj_mid_z )  continue;  // sprite under ceiling
           }
+
           {
             // SoM: NOTE: Because a visplane's shape and scale is not directly
             // bound to any single linedef, a simple poll of it's scale is
@@ -2213,6 +2203,7 @@ static void R_Create_DrawNodes( void )
         continue;  // next dnp
       }
       // end of dnp
+
       if(dnp == &nodehead)
       {
         // end of list, draw in front of everything else
@@ -2229,7 +2220,6 @@ static void R_Create_DrawNodes( void )
       entry->sprite = vsp;
     }  // for vsp
 }
-
 
 
 // called by R_Create_DrawNodes
@@ -2332,8 +2322,9 @@ void R_DrawSprite (vissprite_t* spr)
     short               cliptop[MAXVIDWIDTH];
     int                 x;
     int                 r1, r2;
-    fixed_t             scale;
-    fixed_t             lowscale;
+    int                 cx1, cx2; // clipping bounds
+    fixed_t             c_scale;  // clipping scale
+    fixed_t             ds_highscale, ds_lowscale;
     int                 silhouette;
 #ifdef CLIP3_COMBINED_CLIP
     // clip the unclipped columns between console and status bar
@@ -2349,7 +2340,11 @@ void R_DrawSprite (vissprite_t* spr)
 #endif
 #endif
 
-    for (x = spr->x1 ; x<=spr->x2 ; x++)
+    c_scale = spr->scale;
+    cx1 = spr->x1;
+    cx2 = spr->x2;
+
+    for (x = cx1 ; x <= cx2 ; x++)
     {
 #if defined( CLIP3_TOP ) || defined( CLIP3_BOT )
         cliptop[x] = CLIPTOP_MIN;
@@ -2368,36 +2363,38 @@ void R_DrawSprite (vissprite_t* spr)
     //    for (ds=ds_p-1 ; ds >= drawsegs ; ds--)    old buggy code
     for (ds=ds_p ; ds-- > drawsegs ; )
     {
+        if( (ds->silhouette == 0) && !ds->maskedtexturecol )
+	     continue;  // cannot clip sprite
 
         // determine if the drawseg obscures the sprite
-        if (ds->x1 > spr->x2
-         || ds->x2 < spr->x1
-         || (!ds->silhouette
-             && !ds->maskedtexturecol) )
+        if(   ds->x1 > cx2
+           || ds->x2 < cx1 )
         {
             // does not cover sprite
             continue;
         }
 
         // r1..r2 where drawseg overlaps sprite (intersect)
-        r1 = ds->x1 < spr->x1 ? spr->x1 : ds->x1;  // max x1
-        r2 = ds->x2 > spr->x2 ? spr->x2 : ds->x2;  // min x2
+        r1 = ds->x1 < cx1 ? cx1 : ds->x1;  // max x1
+        r2 = ds->x2 > cx2 ? cx2 : ds->x2;  // min x2
 
+        // if( c_scale < ds->scale1 && c_scale < ds->scale2 )  continue; // ds is behind sprite
+        // if( c_scale > ds->scale1 && c_scale > ds->scale2 )  clip; // ds is in front of sprite
         // (lowscale,scale) = minmax( ds->scale1, ds->scale2 )
         if (ds->scale1 > ds->scale2)
         {
-            lowscale = ds->scale2;
-            scale = ds->scale1;
+            ds_lowscale = ds->scale2;
+            ds_highscale = ds->scale1;
         }
         else
         {
-            lowscale = ds->scale1;
-            scale = ds->scale2;
+            ds_lowscale = ds->scale1;
+            ds_highscale = ds->scale2;
         }
 
-        if (scale < spr->scale
-            || ( lowscale < spr->scale
-                 && !R_PointOnSegSide (spr->gx, spr->gy, ds->curline) ) )
+        if (ds_highscale < c_scale
+            || ( ds_lowscale < c_scale
+                 && !R_PointOnSegSide (spr->mobj_x, spr->mobj_y, ds->curline) ) )
         {
             // masked mid texture?
             /*if (ds->maskedtexturecol)
@@ -2462,11 +2459,11 @@ void R_DrawSprite (vissprite_t* spr)
 
     //SoM: 3/17/2000: Clip sprites in water.
     // [WDJ] vissprite uses a heightsec, which is only used for selected modelsec.
-    if (spr->heightsec != -1)  // only things in specially marked sectors
+    if( spr->modelsec >= 0 )  // only things in specially marked sectors, not colormaps
     {
         fixed_t h,mh;
         // model sector for special sector clipping
-        sector_t * spr_heightsecp = & sectors[spr->heightsec];
+        sector_t * spr_heightsecp = & sectors[spr->modelsec];
 
         // beware, this test does two assigns to mh, and an assign to h
         if ((mh = spr_heightsecp->floorheight) > spr->gz_bot
@@ -2481,7 +2478,7 @@ void R_DrawSprite (vissprite_t* spr)
                 if( h < hb )
                     hb = h;
 #else
-              for (x=spr->x1 ; x<=spr->x2 ; x++)
+              for (x = cx1; x <= cx2; x++)
 #ifdef CLIP3_BOT
                 if (h < clipbot[x])  // OR CLIPBOT_MAX
 #else
@@ -2497,7 +2494,7 @@ void R_DrawSprite (vissprite_t* spr)
                 if( h > ht )
                     ht = h;
 #else
-              for (x=spr->x1 ; x<=spr->x2 ; x++)
+              for (x = cx1; x <= cx2; x++)
 #ifdef CLIP3_TOP
                 if (h > cliptop[x])  // OR CLIPTOP_MIN
 #else
@@ -2521,7 +2518,7 @@ void R_DrawSprite (vissprite_t* spr)
                 if( h < hb )
                     hb = h;
 #else
-              for (x=spr->x1 ; x<=spr->x2 ; x++)
+              for (x=cx1 ; x<=cx2 ; x++)
 #ifdef CLIP3_BOT
                 if (h < clipbot[x])  // OR CLIPBOT_MAX
 #else
@@ -2537,7 +2534,7 @@ void R_DrawSprite (vissprite_t* spr)
                 if( h > ht )
                     ht = h;
 #else
-              for (x=spr->x1 ; x<=spr->x2 ; x++)
+              for (x=cx1 ; x<=cx2 ; x++)
 #ifdef CLIP3_TOP
                 if (h > cliptop[x])  // OR CLIPTOP_MIN
 #else
@@ -2563,7 +2560,7 @@ void R_DrawSprite (vissprite_t* spr)
     {
       fixed_t  ht = spr->sz_top;
       fixed_t  hb = spr->sz_bot;
-      for(x = spr->x1; x <= spr->x2; x++)
+      for(x = cx1; x <= cx2; x++)
       {
 #ifdef CLIP3_TOP
           if (ht > cliptop[x])  // OR CLIPTOP_MIN
@@ -2583,7 +2580,7 @@ void R_DrawSprite (vissprite_t* spr)
     else if(spr->cut & SC_TOP)
     {
       fixed_t  ht = spr->sz_top;
-      for(x = spr->x1; x <= spr->x2; x++)
+      for(x = cx1; x <= cx2; x++)
       {
 #ifdef CLIP3_TOP
           if (ht > cliptop[x])  // OR CLIPTOP_MIN
@@ -2596,7 +2593,7 @@ void R_DrawSprite (vissprite_t* spr)
     else if(spr->cut & SC_BOTTOM)
     {
       fixed_t  hb = spr->sz_bot;
-      for(x = spr->x1; x <= spr->x2; x++)
+      for(x = cx1; x <= cx2; x++)
       {
 #ifdef CLIP3_BOT
           if (hb < clipbot[x])  // OR CLIPBOT_MAX
@@ -2611,7 +2608,7 @@ void R_DrawSprite (vissprite_t* spr)
 #ifdef CLIP3_COMBINED_CLIP
     // [WDJ] Act on most severe combined cut clips that cover x1..x2.
     // This now always clips to (0, rdraw_viewheight-1) or better.
-    for (x = spr->x1 ; x<=spr->x2 ; x++)
+      for(x = cx1; x <= cx2; x++)
     {
 #ifdef CLIP3_BOT
         if (hb < clipbot[x])  // OR CLIPBOT_MAX
@@ -2635,7 +2632,7 @@ void R_DrawSprite (vissprite_t* spr)
     // [WDJ] No longer any need to check for unclipped columns.
 #else
     // check for unclipped columns
-    for (x = spr->x1 ; x<=spr->x2 ; x++)
+    for(x = cx1; x <= cx2; x++)
     {
 #ifdef CLIP3_BOT
         if (clipbot[x] == CLIPBOT_MAX)

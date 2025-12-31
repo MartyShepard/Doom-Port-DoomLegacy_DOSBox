@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: hw_main.h 1435 2019-04-26 10:36:07Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -123,7 +123,7 @@ void HWR_DrawPic(int x, int y, lumpnum_t lumpnum);
 
 void HWR_Register_Gr1Commands (void);
 void HWR_CorrectSWTricks(void);
-void transform_world_to_gr(float *cx, float *cy, float *cz);
+void transform_world_to_gr(float wx, float wy, float wz, /*OUT*/ float *gx, float *gy, float *gz );
 int HWR_TranstableToAlpha(int transtablenum, FSurfaceInfo_t *pSurf);
 
 extern consvar_t cv_grmlook_extends_fov;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.c 1425 2019-01-29 08:07:59Z wesleyjohnson $
+// $Id: hw_main.c 1435 2019-04-26 10:36:07Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -3477,6 +3477,7 @@ static void HWR_ProjectSprite(mobj_t * thing)
     unsigned int rot, fr;
     angle_t ang;
 
+    // Calculate view of sprite, relative to player, in world dimensions.
     // transform the origin point
     tr_x = FIXED_TO_FLOAT( thing->x ) - gr_viewx;  // relative position
     tr_y = FIXED_TO_FLOAT( thing->y ) - gr_viewy;
@@ -3547,8 +3548,9 @@ static void HWR_ProjectSprite(mobj_t * thing)
     //Fab: [WDJ] spritelump_id is the index
     sprlump = &spritelumps[sprfrot->spritelump_id];
 
+    // The sprite patch is in world dimensions, offsets in world dimensions.
     // calculate edges of the shape
-    tx1 = tx - FIXED_TO_FLOAT( sprlump->offset );
+    tx1 = tx - FIXED_TO_FLOAT( sprlump->leftoffset );
 
     // project x
     px1 = gr_windowcenterx + (tx1 * gr_centerx / tz);
@@ -3635,7 +3637,7 @@ static void HWR_ProjectSprite(mobj_t * thing)
 #if 0
     // gr vis does not have a heightsec (yet ??)
     // [WDJ] Only pass water models, not colormap model sectors
-    vis->heightsec = thing_has_model ? thingmodelsec : -1 ; //SoM: 3/17/2000
+    vis->modelsec = thing_has_model ? thingmodelsec : -1 ; //SoM: 3/17/2000
 #endif
    
     //
@@ -3729,7 +3731,7 @@ void HWR_DrawPSprite(pspdef_t * psp,  byte lightlum)
     // calculate edges of the shape
 
     tx = FIXED_TO_FLOAT( (psp->sx - ((BASEVIDWIDTH / 2) << FRACBITS)) );
-    tx -= FIXED_TO_FLOAT( sprlump->offset );
+    tx -= FIXED_TO_FLOAT( sprlump->leftoffset );
 //    x1 = gr_windowcenterx + (tx * gr_pspritexscale);
 
     vxtx[3].x = vxtx[0].x = tx;
@@ -4436,19 +4438,19 @@ void HWR_Shutdown_Render(void)
 
 
 // temporary, to supply old call
-void transform_world_to_gr(float *cx, float *cy, float *cz)
+void transform_world_to_gr(float wx, float wy, float wz, /*OUT*/ float *gx, float *gy, float *gz )
 {
     // translation
     // Combined transforms for position, direction, look up/down, and scaling
-    float tr_x = *cx - gr_viewx;  // wx is passed in *cx
-    float tr_y = *cz - gr_viewy;  // wy is passed in *cz
-    float tr_z = *cy - gr_viewz;  // wz is passed in *cy
-    *cx = (tr_x * world_trans_x_to_x)
+    float tr_x = wx - gr_viewx;
+    float tr_y = wz - gr_viewy;
+    float tr_z = wy - gr_viewz;
+    *gx = (tr_x * world_trans_x_to_x)
        + (tr_y * world_trans_y_to_x);
-    *cy = (tr_x * world_trans_x_to_y )
+    *gy = (tr_x * world_trans_x_to_y )
        + (tr_y * world_trans_y_to_y )
        + (tr_z * world_trans_z_to_y );
-    *cz = (tr_x * world_trans_x_to_z )
+    *gz = (tr_x * world_trans_x_to_z )
        + (tr_y * world_trans_y_to_z )
        + (tr_z * world_trans_z_to_z );
 }
@@ -4781,7 +4783,7 @@ void HWR_RenderSorted( void )
     if( corona_draw_choice == 2 )
 #endif     
     //Hurdler: they must be drawn before translucent planes, what about gl fog?
-    HWR_DrawCoronas();
+    HWR_DL_Draw_Coronas();
 #endif
     if (numplanes)
     {

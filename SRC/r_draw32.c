@@ -106,7 +106,7 @@ void R_DrawColumn_32 (void)
             // Re-map color indices from wall texture column
             //  using a lighting/special effects LUT.
 #ifdef HIGHCOLORMAPS
-            c32.ui32 = hicolormaps[ dc_source)[(frac>>FRACBITS)&heightmask] ];
+            c32.ui32 = hicolormaps[ dc_source[(frac>>FRACBITS)&heightmask] ];
 #else
             c32.ui32 = color8.to32[ dc_colormap[ dc_source[(frac>>FRACBITS)&heightmask] ] ];
 #endif

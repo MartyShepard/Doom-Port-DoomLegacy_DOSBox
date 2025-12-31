@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1431 2019-03-16 06:28:43Z wesleyjohnson $
+// $Id: r_main.c 1435 2019-04-26 10:36:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -704,10 +704,10 @@ fixed_t R_ScaleFromGlobalAngle (angle_t visangle)
 
 
 
+#if 0
 void R_Init_Tables (void)
 {
     // UNUSED: now getting from tables.c
-#if 0
     int         i;
     float       a;
     float       fv;
@@ -730,9 +730,8 @@ void R_Init_Tables (void)
         t = FRACUNIT*sin (a);
         finesine[i] = t;
     }
-#endif
-
 }
+#endif
 
 // consvar_t cv_fov = {"fov","2048", CV_CALL | CV_NOINIT, NULL, R_ExecuteSetViewSize};
 
@@ -812,6 +811,7 @@ void R_Init_TextureMapping (void)
 //
 #define DISTMAP         2
 
+static
 void R_Init_LightTables (void)
 {
     int         i;
@@ -1066,9 +1066,11 @@ void R_Init (void)
         GenPrintf(EMSG_dev, "\nR_Init_PointToAngle");
     R_Init_PointToAngle ();
 
+#if 0
     if(devparm)
         GenPrintf(EMSG_dev, "\nR_Init_Tables");
     R_Init_Tables ();
+#endif
 
     R_Init_ViewBorder ();
 

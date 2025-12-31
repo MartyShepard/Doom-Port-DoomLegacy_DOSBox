@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.h 1432 2019-04-26 10:32:42Z wesleyjohnson $
+// $Id: r_things.h 1435 2019-04-26 10:36:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -91,6 +91,7 @@ extern fixed_t          dm_yscale;  // world to fixed_t screen coord
 extern fixed_t          dm_top_patch, dm_bottom_patch;
 // draw window clipping, in fixed_t screen coord
 extern fixed_t          dm_windowtop, dm_windowbottom;
+extern fixed_t          dm_texturemid;
 
 extern fixed_t          pspritescale;
 extern fixed_t          pspriteiscale;

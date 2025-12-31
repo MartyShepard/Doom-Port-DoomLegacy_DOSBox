@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_state.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: r_state.h 1435 2019-04-26 10:36:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -82,10 +82,11 @@ extern fixed_t*         textureheight;
 
 // needed for pre rendering (fracs)
 // [WDJ] Made into one record, sprite lump values, endian swapped.
+// Patch header stored as fixed_t.
 typedef struct {
     fixed_t  width;
     fixed_t  height;
-    fixed_t  offset;
+    fixed_t  leftoffset;
     fixed_t  topoffset;
 } spritelump_t;
 
