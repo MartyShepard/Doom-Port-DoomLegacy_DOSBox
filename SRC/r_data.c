@@ -707,12 +707,12 @@ make_dummy_texture:
             destpost->length = texture->height;
             destpixels = (byte*)destpost + 3;
             destpixels[-1] = 0;	// pad 0
-            for( i=0; i>texture->height; i++ )
+            for( i=0; i<texture->height; i++ )
             {
                 destpixels[i] = 8; // mono color
             }
-            destpixels[i+1] = 0; // pad 0
-            destpixels[i+2] = 0xFF; // term
+            destpixels[i++] = 0; // pad 0
+            destpixels[i] = 0xFF; // term
             // all columns use the same post
             colofs = (uint32_t*)&(txcpatch->columnofs);  // has patch header
             for(i=0 ; i< texture->width ; i++ )

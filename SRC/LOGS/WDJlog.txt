@@ -7032,3 +7032,114 @@ This is the initial code, without changing the hardware draw effects.
 The common tables are moved to p_lights.
 The menu controls are moved to a new submenu, under effects.
 
+*** w108_pic_dummy
+patchfile = w108_25_pic_dummy.patch
+- commit revision 1437
+Fix error in generation of a dummy pic, which is only
+used during a failure in pic generation.
+
+*** w108_printfloat
+patchfile = w108_26_printfloat.patch
+- commit revision 1438
+Limit printing of floats to 4 fraction positions.
+The first attempt at this put spaces in the config file.
+Fix the cvar reading to handle leading spaces on numbers.
+
+*** w108_corona
+patchfile = w108_27_corona.patch
+- commit revision 1439
+Upgrade the HW corona generation to use the new routines
+in the SW corona draw.
+This provides a corona type field.
+
+Corona bit enables:
+  SPLGT_corona = 0x01  // enable corona draw
+  SPLGT_dynamic = 0x02 // enable dynamic light
+  
+Corona type field:
+  SPLT_type_field = 0xF0
+  SPLT_unk = 0x00     // plain corona
+                      // near and far fadeout
+  SPLT_rocket = 0x10  // rocket corona with random flicker
+                      // near and far fadeout
+  SPLT_lamp = 0x20    // lamp and corona
+                      // brighter than plain corona, different size
+                      // near and far fadeout
+  SPLT_fire = 0x30    // fire and torches, slow flicker
+                      // near and far fadeout
+                      // 64 generators
+  SPLT_light = 0xC0   // a light source without an object
+                      // far fadeout
+  SPLT_firefly = 0xD0 // blinking firefly
+                      // far fadeout
+                      // 64 generator phases
+  SPLT_random = 0xE0  // random LED
+                      // no fadeout
+                      // 32 generators
+  SPLT_pulse = 0xF0   // slow pulsation
+                      // no fadeout
+                      // 256 generator phases
+
+
+The fire, firefly, random, and pulse, support multiple generator states,
+so they can draw multiple independent lights, without them being synchronized.
+The generator instance is selected using the lower bits of the mobj ptr.
+
+The built-in tables are upgraded to use the new SPLT_fire, and SPLT_lamp.
+
+Added a corona menu control:
+  Off: corona off
+  Special: draws special coronas.
+     Intended for those who don't want the common coronas, but don't
+     want to miss out on the wad special effects.
+  Most: draws most coronas, selected by distance, specialness, and alpha.
+     Intended for those with CPU limitations, who need to limit draws,
+     or with wads with an extreme number of lamps.
+  Dim: dims some of the coronas
+  All: draw all the coronas
+  Bright: brighten some of the coronas
+  Old: draw the coronas using the old alpha, and no type field.
+  
+
+*** w108_draw_alpha
+patchfile = w108_29_draw_alpha.patch
+- commit revision 1440
+Improve the R_DrawAlphaColumn software draw routines with more options,
+and ones that are better suited to drawing coronas and fog.
+Includes all the software draw modes, including 8 bit palette draw.
+
+Some of the new draw alpha options will be used for things such as fog
+draw.
+
+The R_DrawAlphaColumn routines draw a patch that consists of alpha values,
+using the dr_color.
+The new alpha draw options only have effect with R_DrawAlphaColumn.
+
+dr_color: the color to be drawn
+dr_alpha: the overall alpha due to distance, and effects.
+dr_alpha_background: a separate alpha for the background.
+  This produces a darkening around the draw.
+  Fades the background, for simulating fog or light scattering effects
+  of a physical medium.
+
+dr_alpha_mode:
+  0: Alpha blend.
+    Draw dr_color with alpha of (patch_alpha * dr_alpha)
+    Background alpha of (255 - (patch_alpha * dr_alpha))
+  1: Alpha blend with constant background alpha
+    Draw dr_color with alpha of (patch_alpha * dr_alpha)
+    Background alpha is  dr_alpha_background.
+  2: Additive Alpha
+    Adds to the current pixel.
+    Draw dr_color with alpha of (patch_alpha * dr_alpha * (255 - current_pixel))
+    The fast compromise, but has reduced effect over bright backgrounds.
+  3. Additive Alpha with background alpha
+    Background is first faded using background alpha.
+    Draw dr_color with alpha of (patch_alpha * dr_alpha * (255 - faded_pixel))
+  4. Additive Alpha, Limit math
+    Adds to the current pixel, limiting each color to 255.
+    Draw dr_color with alpha of (patch_alpha * dr_alpha)
+    The brightest alpha draw effect, not affected by the background.
+
+Menu control, cv_corona_draw, added, that selects between the
+dr_alpha_modes for corona draw.
