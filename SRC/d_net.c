@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1378 2017-12-18 17:31:35Z wesleyjohnson $
+// $Id: d_net.c 1441 2019-06-12 03:36:36Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1048,109 +1048,103 @@ static char *packettypename[NUMPACKETTYPE]={
 
 static void DebugPrintpacket(char *header)
 {
-    fprintf (debugfile,"%-12s (node %d,ackreq %d,ackret %d,size %d) type(%d) : %s\n"
-                      ,header
-                      ,doomcom->remotenode
-                      ,netbuffer->ack_req, netbuffer->ack_return
-                      ,doomcom->datalength
-                      ,netbuffer->packettype,packettypename[netbuffer->packettype]);
+  fprintf(debugfile, "%-12s (node %d,ackreq %d,ackret %d,size %d) type(%d) : %s\n",
+    header,
+    doomcom->remotenode,
+    netbuffer->ack_req, netbuffer->ack_return,
+    doomcom->datalength,
+    netbuffer->packettype,packettypename[netbuffer->packettype]  );
 
-    switch(netbuffer->packettype)
-    {
-       case PT_ASKINFO:
-           fprintf(debugfile
-                  ,"    send_time %u\n"
-                  ,(unsigned int)netbuffer->u.askinfo.send_time);
-           break;
-       case PT_CLIENTJOIN:
-           fprintf(debugfile
-                  ,"    number %d mode %d\n"
-                  ,netbuffer->u.clientcfg.localplayers
-                  ,netbuffer->u.clientcfg.mode);
-           break;
-       case PT_SERVERTICS:
-           fprintf(debugfile
-                  ,"    firsttic %d ply %d tics %d ntxtcmd %d\n    "
-                  ,ExpandTics (netbuffer->u.serverpak.starttic)
-                  ,netbuffer->u.serverpak.numplayers
-                  ,netbuffer->u.serverpak.numtics
-                  ,(int)(&((char *)netbuffer)[doomcom->datalength] - (char *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numplayers*netbuffer->u.serverpak.numtics]));
-           fprintfstring(                                            (byte *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numplayers*netbuffer->u.serverpak.numtics]
-                        ,&((char *)netbuffer)[doomcom->datalength] - (char *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numplayers*netbuffer->u.serverpak.numtics]);
-           break;
-       case PT_CLIENTCMD:
-       case PT_CLIENT2CMD:
-       case PT_CLIENTMIS:
-       case PT_CLIENT2MIS:
-       case PT_NODEKEEPALIVE:
-       case PT_NODEKEEPALIVEMIS:
-           fprintf(debugfile
-                  ,"    tic %4d resendfrom %d localtic %d\n"
-                  ,ExpandTics (netbuffer->u.clientpak.client_tic)
-                  ,ExpandTics (netbuffer->u.clientpak.resendfrom)
-                  ,0 /*netbuffer->u.clientpak.cmd.localtic*/);
-           break;
-       case PT_TEXTCMD:
-       case PT_TEXTCMD2:
-           fprintf(debugfile
-                  ,"    length %d\n    "
-                  ,*(unsigned char*)netbuffer->u.textcmdpak.len);
-           fprintfstring(netbuffer->u.textcmdpak.text,netbuffer->u.textcmdpak.len);
-           break;
-       case PT_SERVERCFG:
-           fprintf(debugfile
-                  ,"    playermask %x players %d clientnode %d serverplayer %d gametic %lu gamestate %d\n"
-                  ,(unsigned int)netbuffer->u.servercfg.playerdetected
-                  ,netbuffer->u.servercfg.totalplayernum
-                  ,netbuffer->u.servercfg.clientnode
-                  ,netbuffer->u.servercfg.serverplayer
-                  ,(unsigned long)netbuffer->u.servercfg.gametic
-                  ,netbuffer->u.servercfg.gamestate);
-           break;
-       case PT_SERVERINFO :
-           fprintf(debugfile
-                  ,"    '%s' player %i/%i, map %s, filenum %d, time %u \n"
-                  ,netbuffer->u.serverinfo.servername
-                  ,netbuffer->u.serverinfo.numberofplayer
-                  ,netbuffer->u.serverinfo.maxplayer
-                  ,netbuffer->u.serverinfo.mapname
-                  ,netbuffer->u.serverinfo.num_fileneed
-                  ,(unsigned int)netbuffer->u.serverinfo.trip_time);
-           fprintfstring(netbuffer->u.serverinfo.fileneed,(char *)netbuffer+doomcom->datalength-(char *)netbuffer->u.serverinfo.fileneed);
-           break;
-       case PT_SERVERREFUSE :
-           fprintf(debugfile
-                  ,"    reason %s\n"
-                  ,netbuffer->u.serverrefuse.reason);
-           break;
-       case PT_REPAIR :
-           fprintf(debugfile,
-                   "    repairtype %d, P_Random index %d, tic %i,\n (id_num %d, angle %x, x %i.%i, y %i.%i, z %i.%i, momx %i.%i, momy %i.%i, momz %i,%i\n",
-                   u.repair.repair_type, u.repair.p_rand_index, u.repair.gametic,
-                   u.repair.pos.id_num, u.repair.pos.angle,
-                   u.repair.pos.x >> 16, u.repair.pos.x & 0xFFFF, u.repair.pos.y >> 16, u.repair.pos.y & 0xFFFF, u.repair.pos.z >> 16, u.repair.pos.z & 0xFFFF,
-                   u.repair.pos.momx >> 16, u.repair.pos.momx & 0xFFFF, u.repair.pos.momy >> 16, u.repair.pos.momy & 0xFFFF, u.repair.pos.momz >> 16, u.repair.pos.momz & 0xFFFF );
-           break;
-       case PT_STATE :
-           fprintf(debugfile,
-                   "    tic %i, P_Random index %d, sever_pause %d\n",
-                    u.state.gametic, u.state.p_rand_index, u.state.server_pause );
-           break;
-       case PT_FILEFRAGMENT :
-           fprintf(debugfile
-                  ,"    fileid %d datasize %d position %lu\n"
-                  ,netbuffer->u.filetxpak.fileid
-                  ,netbuffer->u.filetxpak.size
-                  ,(unsigned long)netbuffer->u.filetxpak.position);
-           break;
-       case PT_REQUESTFILE :
-       case PT_NODE_TIMEOUT :
-       case PT_ACKS :
-       default : // write as a raw packet
-         fprintfstring(netbuffer->u.bytepak.b, (char *)netbuffer + doomcom->datalength - (char *)netbuffer->u.bytepak.b);
-           break;
+  switch(netbuffer->packettype)
+  {
+   case PT_ASKINFO:
+    fprintf(debugfile, "    send_time %u\n",
+      (unsigned int)netbuffer->u.askinfo.send_time );
+    break;
+   case PT_CLIENTJOIN:
+    fprintf(debugfile, "    number %d mode %d\n",
+      netbuffer->u.clientcfg.localplayers,
+      netbuffer->u.clientcfg.mode  );
+    break;
+   case PT_SERVERTICS:
+    fprintf(debugfile, "    firsttic %d ply %d tics %d ntxtcmd %d\n    ",
+      ExpandTics (netbuffer->u.serverpak.starttic),
+      netbuffer->u.serverpak.numplayers,
+      netbuffer->u.serverpak.numtics,
+      (int)(&((char *)netbuffer)[doomcom->datalength] - (char *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numplayers*netbuffer->u.serverpak.numtics]) );
+    fprintfstring(
+      (byte *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numplayers*netbuffer->u.serverpak.numtics],
+      &((char *)netbuffer)[doomcom->datalength] - (char *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numplayers*netbuffer->u.serverpak.numtics] );
+    break;
+   case PT_CLIENTCMD:
+   case PT_CLIENT2CMD:
+   case PT_CLIENTMIS:
+   case PT_CLIENT2MIS:
+   case PT_NODEKEEPALIVE:
+   case PT_NODEKEEPALIVEMIS:
+    fprintf(debugfile, "    tic %4d resendfrom %d localtic %d\n",
+      ExpandTics (netbuffer->u.clientpak.client_tic),
+      ExpandTics (netbuffer->u.clientpak.resendfrom),
+      0 /*netbuffer->u.clientpak.cmd.localtic*/ );
+    break;
+   case PT_TEXTCMD:
+   case PT_TEXTCMD2:
+    fprintf(debugfile, "    length %d\n    ",
+      netbuffer->u.textcmdpak.len );
+    fprintfstring(netbuffer->u.textcmdpak.text,netbuffer->u.textcmdpak.len);
+    break;
+   case PT_SERVERCFG:
+    fprintf(debugfile, "    playermask %x players %d clientnode %d serverplayer %d gametic %lu gamestate %d\n",
+      (unsigned int)netbuffer->u.servercfg.playerdetected,
+      netbuffer->u.servercfg.totalplayernum,
+      netbuffer->u.servercfg.clientnode,
+      netbuffer->u.servercfg.serverplayer,
+      (unsigned long)netbuffer->u.servercfg.gametic,
+      netbuffer->u.servercfg.gamestate );
+    break;
+   case PT_SERVERINFO :
+    fprintf(debugfile, "    '%s' player %i/%i, map %s, filenum %d, time %u \n",
+      netbuffer->u.serverinfo.servername,
+      netbuffer->u.serverinfo.numberofplayer,
+      netbuffer->u.serverinfo.maxplayer,
+      netbuffer->u.serverinfo.mapname,
+      netbuffer->u.serverinfo.num_fileneed,
+      (unsigned int)netbuffer->u.serverinfo.trip_time );
+    fprintfstring(netbuffer->u.serverinfo.fileneed,(char *)netbuffer+doomcom->datalength-(char *)netbuffer->u.serverinfo.fileneed);
+    break;
+   case PT_SERVERREFUSE :
+    fprintf(debugfile, "    reason %s\n",
+      netbuffer->u.stringpak.str );
+    break;
+   case PT_REPAIR :
+    fprintf(debugfile, "    repairtype %d, P_Random index %d, tic %i,\n (id_num %d, angle %x, x %i.%i, y %i.%i, z %i.%i, momx %i.%i, momy %i.%i, momz %i,%i\n",
+      netbuffer->u.repair.repair_type, netbuffer->u.repair.p_rand_index, netbuffer->u.repair.gametic,
+      netbuffer->u.repair.pos.id_num, netbuffer->u.repair.pos.angle,
+      netbuffer->u.repair.pos.x >> 16, netbuffer->u.repair.pos.x & 0xFFFF,
+      netbuffer->u.repair.pos.y >> 16, netbuffer->u.repair.pos.y & 0xFFFF,
+      netbuffer->u.repair.pos.z >> 16, netbuffer->u.repair.pos.z & 0xFFFF,
+      netbuffer->u.repair.pos.momx >> 16, netbuffer->u.repair.pos.momx & 0xFFFF,
+      netbuffer->u.repair.pos.momy >> 16, netbuffer->u.repair.pos.momy & 0xFFFF,
+      netbuffer->u.repair.pos.momz >> 16, netbuffer->u.repair.pos.momz & 0xFFFF );
+    break;
+   case PT_STATE :
+    fprintf(debugfile, "    tic %i, P_Random index %d, sever_pause %d\n",
+      netbuffer->u.state.gametic, netbuffer->u.state.p_rand_index, netbuffer->u.state.server_pause );
+    break;
+   case PT_FILEFRAGMENT :
+    fprintf(debugfile, "    fileid %d datasize %d position %lu\n",
+      netbuffer->u.filetxpak.fileid,
+      netbuffer->u.filetxpak.size,
+      (unsigned long)netbuffer->u.filetxpak.position );
+    break;
+   case PT_REQUESTFILE :
+   case PT_NODE_TIMEOUT :
+   case PT_ACKS :
+   default : // write as a raw packet
+    fprintfstring(netbuffer->u.bytepak.b, (char *)netbuffer + doomcom->datalength - (char *)netbuffer->u.bytepak.b);
+    break;
 
-    }
+  }
 }
 #endif
 
@@ -1429,8 +1423,8 @@ boolean D_Startup_NetGame(void)
         {
             // Command_connect is invoked by Init_TCP_Network.
             server = false;
-	    // Init_TCP_Network tests -connect, and tests netgame,
-	    // then issues connect command that sets netgame, and multiplayer.
+            // Init_TCP_Network tests -connect, and tests netgame,
+            // then issues connect command that sets netgame, and multiplayer.
 //            netgame = true;  
         }
     }

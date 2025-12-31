@@ -7143,3 +7143,36 @@ dr_alpha_mode:
 
 Menu control, cv_corona_draw, added, that selects between the
 dr_alpha_modes for corona draw.
+
+
+*** w108_debugfile
+patchfile = w108_30_debugfile.patch
+- commit revision 1441
+DEBUGFILE conditional code has not been compiled for a long while.
+Fix some compile errors.
+This was found by Adam Stylinski.
+Fixes bug #0650.
+
+
+*** w108_drawsegs
+patchfile = w108_31_drawsegs.patch
+- commit revision 1442
+Remove the backscale array from the drawsegs and give it a dynamic
+allocation.  This reduces the memory usage because most times that
+array was not used, and it had to be allocated at MAXVIDWIDTH.
+It is now allocated at the actual vid.width.
+This will allow the MAXVIDWIDTH to be increased, as requested.
+
+
+*** w108_modelist
+patchfile = w108_32_modelist.patch
+- commit revision 1443
+Adam Stylinski found that calls to SDL_VideoModeOK were causing
+the modelist to be released, causing error messages on the MAC.
+The SDL modelist is released by other SDL calls, as some of them
+call SDL_ListModes themselves.
+Changed the sdl port code to create our vid_modelist as a copy of the
+SDL mode information.
+This should fix problems that Adam Stylinski was having with
+the MAC SDL port.
+
