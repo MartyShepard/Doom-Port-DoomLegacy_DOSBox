@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw8.c 1428 2019-02-11 21:40:51Z wesleyjohnson $
+// $Id: r_draw8.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 // Portions Copyright (C) 2000-2016 by DooM Legacy Team.
@@ -472,6 +472,76 @@ void R_DrawShadeColumn_8(void)
         // Remap the existing dest color, dimming it through source LIGHTTABLE.
 //        *dest = *(reg_colormaps + (dc_source[frac >> FRACBITS] << 8) + (*dest));
         *dest = reg_colormaps[ LIGHTTABLE(dc_source[frac >> FRACBITS]) + (*dest) ];
+
+        dest += vid.ybytes;
+        frac += fracstep;
+    }
+    while (count--);
+}
+#endif
+
+#ifdef ENABLE_DRAW_ALPHA
+# ifndef ENABLE_DRAW8_USING_12
+// switch at TRANSLU_REV_ALPHA
+byte  dr8_src_shift[16]  = { 8, 8, 8, 8, 8, 8, 8, 8, 8, 0, 0, 0, 0, 0, 0, 0 };
+byte  dr8_dest_shift[16] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 8, 8, 8, 8, 8, 8, 8 };
+# endif
+
+void R_DrawAlphaColumn_8(void)
+{
+    register int count;
+    register byte *dest;
+    register fixed_t frac;
+    register fixed_t fracstep;
+    register unsigned int  alpha;
+
+    // [WDJ] Source check has been added to all the callers of colfunc().
+
+    count = dc_yh - dc_yl;
+    if (count < 0)
+        return;
+
+#ifdef RANGECHECK
+    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight)
+    {
+        I_SoftError("R_DrawColumn: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
+        return;
+    }
+#endif
+
+    dest = ylookup[dc_yl] + columnofs[dc_x];
+
+    // Looks familiar.
+    fracstep = dc_iscale;
+    frac = dc_texturemid + (dc_yl - centery) * fracstep;
+
+    do
+    {
+        // Apply the dr_color, using the patch as alpha.
+        // Colormap the dr_color at the source.
+#ifdef ENABLE_DRAW8_USING_12
+        alpha = ((dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) + 0x0010) >> 8;  // alpha 0..255
+        if( alpha > 14 )
+        {
+            unsigned int alpha_r = 255 - alpha;
+
+            // Calculate transparency using RGBA
+            register RGBA_t p = pLocalPalette[*dest];
+            register unsigned int p12 = // 12 bit r,g,b color
+              (((((unsigned int)p.s.blue * alpha_r) + ((unsigned int)dr_color.s.blue * alpha)  ) >> (8+4-0)) & 0x000F)
+            | (((((unsigned int)p.s.green * alpha_r) + ((unsigned int)dr_color.s.green * alpha)) >> (8+4-4)) & 0x00F0)
+            | (((((unsigned int)p.s.red * alpha_r) + ((unsigned int)dr_color.s.red * alpha)    ) >> (8+4-8)) & 0x0F00);
+           *dest = color12_to_8[p12];  // lookup palette
+        }
+#else
+        // Not very good.  Keep as alternative if someone needs smaller code.
+        alpha = ((dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha)) >> 12;  // alpha 0..16
+
+        // Select a transparent table to do alpha
+        dc_translucentmap = & translucenttables[ translucent_alpha_table[ alpha ] ];
+//        *dest = reg_colormaps[ dc_translucentmap[ (dr_color8 << dr8_src_shift[alpha]) + ((*dest) << dr8_src_shift[alpha]) ]];
+        *dest = dc_translucentmap[ (dr_color8 << dr8_src_shift[alpha]) + ((*dest) << dr8_src_shift[alpha]) ];
+#endif
 
         dest += vid.ybytes;
         frac += fracstep;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_chex.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: p_chex.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 2003-2015 by DooM Legacy Team.
 //
@@ -161,23 +161,32 @@ void Chex1_PatchEngine(void)
         mobjinfo[MT_BRUISER].radius = 48*FRACUNIT; //let's try 48
 
         //coronas
-#ifdef HWRENDER
         // Alter Doom sprite light tables.
-        lspr[1].dynamic_color = 0xff000050;
-        lspr[2].dynamic_color = 0xff000050;
-        lspr[3].dynamic_color = 0xff4040f7;
-        lspr[4].dynamic_color = 0xff4040f7;
-        lspr[5].dynamic_color = 0xff4040f7;
-        lspr[6].dynamic_color = 0xff4040a0;
-        lspr[7].splgt_flags = 0;
-        lspr[8].splgt_flags = 0;
-        lspr[9].splgt_flags = 0;
-        lspr[10].splgt_flags = 0;
-        lspr[11].splgt_flags = 0;
-        lspr[12].splgt_flags = 0;
-        lspr[15].light_yoffset = 3.0f;	//light
-        lspr[16].splgt_flags = 0;
-        lspr[17].splgt_flags = 0;
+//        sprite_light[1].dynamic_color = 0xff000050;
+        sprite_light[1].dynamic_color.rgba = RGBA(0x50,0x0,0x0,0xff);
+//        sprite_light[2].dynamic_color = 0xff000050;
+        sprite_light[2].dynamic_color.rgba = RGBA(0x50,0x0,0x0,0xff);
+//        sprite_light[3].dynamic_color = 0xff4040f7;
+        sprite_light[3].dynamic_color.rgba = RGBA(0xf7,0x40,0x40,0xff);
+//        sprite_light[4].dynamic_color = 0xff4040f7;
+        sprite_light[4].dynamic_color.rgba = RGBA(0xf7,0x40,0x40,0xff);
+//        sprite_light[5].dynamic_color = 0xff4040f7;
+        sprite_light[5].dynamic_color.rgba = RGBA(0xf7,0x40,0x40,0xff);
+//        sprite_light[6].dynamic_color = 0xff4040a0;
+        sprite_light[6].dynamic_color.rgba = RGBA(0xa0,0x40,0x40,0xff);
+        sprite_light[7].splgt_flags = 0;
+        sprite_light[8].splgt_flags = 0;
+        sprite_light[9].splgt_flags = 0;
+        sprite_light[10].splgt_flags = 0;
+        sprite_light[11].splgt_flags = 0;
+        sprite_light[12].splgt_flags = 0;
+        sprite_light[15].light_yoffset = 3.0f;	//light
+        sprite_light[16].splgt_flags = 0;
+        sprite_light[17].splgt_flags = 0;
+
+#ifdef HWRENDER
+        // These changes were executed after HWR_StartupEngine(), so reinit.
+        HWR_Init_Light();
 #endif
 
         //cheat codes

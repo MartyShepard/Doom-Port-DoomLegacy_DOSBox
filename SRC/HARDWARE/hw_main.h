@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.h 1435 2019-04-26 10:36:07Z wesleyjohnson $
+// $Id: hw_main.h 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -129,9 +129,7 @@ int HWR_TranstableToAlpha(int transtablenum, FSurfaceInfo_t *pSurf);
 extern consvar_t cv_grmlook_extends_fov;
 extern consvar_t cv_grdynamiclighting;
 extern consvar_t cv_grstaticlighting;
-extern consvar_t cv_grmblighting;
-extern consvar_t cv_grcoronas;
-extern consvar_t cv_grcoronasize;
+extern consvar_t cv_grcorona_draw;
 extern consvar_t cv_grfov;
 extern consvar_t cv_grpolygonsmooth;
 extern consvar_t cv_grmd2;

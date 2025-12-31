@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1435 2019-04-26 10:36:07Z wesleyjohnson $
+// $Id: r_defs.h 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -611,6 +611,39 @@ typedef struct msecnode_s
 } msecnode_t;
 
 
+//=========
+// Corona and Dynamic lights
+
+// Defined constants for altering corona and dynamic lights from Fragglescript.
+typedef enum {
+    LT_NOLIGHT = 0,
+
+    LT_PLASMA, LT_PLASMAEXP,
+    LT_ROCKET, LT_ROCKETEXP,
+    LT_BFG, LT_BFGEXP,
+    LT_BLUETALL, LT_GREENTALL, LT_REDTALL,
+    LT_BLUESMALL, LT_GREENSMALL, LT_REDSMALL,
+    LT_TECHLAMP, LT_TECHLAMP2,
+    LT_COLUMN,
+    LT_CANDLE,
+    LT_CANDLEABRE,
+    LT_REDBALL, LT_GREENBALL,
+    LT_ROCKET2,
+  // Heretic
+    LT_FX03,
+    LT_FX17,
+    LT_FX00,
+    LT_FX08,
+    LT_FX04,
+    LT_FX02,
+    LT_WTRH,
+    LT_SRTC,
+    LT_CHDL,
+    LT_KFR1,
+
+    NUMLIGHTS
+} sprite_light_ind_e;
+
 // [WDJ] Sprite light sources bit defines.
 // The _SPR names are defined in legacy.wad for use in fragglescript scripts.
 typedef enum {
@@ -627,7 +660,7 @@ typedef enum {
 //SPLGT_monster  = 0x04,
 //SPLGT_ammo     = 0x08,
 //SPLGT_bonus    = 0x20,
-} sprite_light_e;
+} sprite_light_flags_e;
 
   
 //Hurdler: 04/12/2000: for now, only used in hardware mode
@@ -637,23 +670,23 @@ typedef struct light_s
 {
     uint16_t  splgt_flags;   // sprite_light_e, used in hwr_light.c
 
-    float   light_xoffset;
+    float   light_xoffset;  // unused
     float   light_yoffset;  // y offset to adjust corona's height
 
-    uint32_t  corona_color;   // color of the light for static lighting
+    RGBA_t  corona_color;   // color of the light for static lighting
     float   corona_radius;  // radius of the coronas
 
-    uint32_t  dynamic_color;  // color of the light for dynamic lighting
+    RGBA_t  dynamic_color;  // color of the light for dynamic lighting
     float   dynamic_radius; // radius of the light ball
     float   dynamic_sqrradius; // radius^2 of the light ball
-} light_t;
+} spr_light_t;
 
 
 typedef struct lightmap_s 
 {
     float               s[2], t[2];
-    light_t             *light;
-    struct lightmap_s   *next;
+    spr_light_t       * light;
+    struct lightmap_s * next;
 } lightmap_t;
 
 //=========

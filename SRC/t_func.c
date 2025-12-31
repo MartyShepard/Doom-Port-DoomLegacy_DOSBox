@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1419 2019-01-29 08:01:42Z wesleyjohnson $
+// $Id: t_func.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -2720,7 +2720,7 @@ void SF_MoveCamera(void)
         if (xydist && !anglespeed)
         {
 #if 1
-	    // [WDJ] Without using ANGLE_1, which has a significant round-off error.
+            // [WDJ] Without using ANGLE_1, which has a significant round-off error.
             fangledist = ((double) angledist * 45.0f / ANG45);
             fmovestep = ((double) FixedDiv(xydist, movespeed) / FRACUNIT);
             if (fmovestep)
@@ -2732,7 +2732,7 @@ void SF_MoveCamera(void)
 
             anglestep = (fanglestep * ANG45 / 45.0f);
 #else
-	    // [WDJ] ANGLE_1 (from Heretic) has a significant round-off error.
+            // [WDJ] ANGLE_1 (from Heretic) has a significant round-off error.
             fangledist = ((double) angledist / ANGLE_1);
             fmovestep = ((double) FixedDiv(xydist, movespeed) / FRACUNIT);
             if (fmovestep)
@@ -4214,14 +4214,10 @@ err_handle:
 
 // Hurdler: I'm enjoying FS capability :)
 
-#ifdef HWRENDER
 
 // Debug color setting.
 //#define SHOW_COLOR_SETTING
-// [WDJ] Use the new String_to_RGBA function.
-#define USE_STRING_TO_RGBA
 
-#ifdef USE_STRING_TO_RGBA
 // [WDJ] Rewritten to process Hex ARGB and RGB string, any length, any machine.
 uint32_t String_to_RGBA( const char *s)
 {
@@ -4256,18 +4252,7 @@ uint32_t String_to_RGBA( const char *s)
     valrgb.s.alpha = valhex>>24;
     return valrgb.rgba;
 }
-#else
-// [WDJ] Not hex, has mangled byte order.
-// If string is short, will read random color.
-// Not BIG_ENDIAN compatible.
-int String2Hex(char *s)
-{
-   // [WDJ] Strange shifting is to get the RGB into the Intel byte order.
-#define HEX2INT(x) (x >= '0' && x <= '9' ? x - '0' : x >= 'a' && x <= 'f' ? x - 'a' + 10 : x >= 'A' && x <= 'F' ? x - 'A' + 10 : 0)
-    return (HEX2INT(s[0]) << 4) + (HEX2INT(s[1]) << 0) + (HEX2INT(s[2]) << 12) + (HEX2INT(s[3]) << 8) + (HEX2INT(s[4]) << 20) + (HEX2INT(s[5]) << 16) + (HEX2INT(s[6]) << 28) + (HEX2INT(s[7]) << 24);
-#undef HEX2INT
-}
-#endif
+
 
 // SetCorona( id, attribute, value )
 // id: corona id number
@@ -4288,97 +4273,123 @@ int String2Hex(char *s)
 void SF_SetCorona(void)
 {
     int num;
-
-    if (rendermode == render_soft)
-        return; // do nothing in software mode
+    spr_light_t * sl;
 
     if (t_argc != 3 && t_argc != 7)   goto err_numarg;
 
     num = t_argv[0].value.i;    // which corona we want to modify
     if( num >= NUMLIGHTS )
         return;
+   
+    sl = & sprite_light[num];
 
     //this function accept 2 kinds of parameters
     if (t_argc == 3)
     {
         int what = t_argv[1].value.i;   // what we want to modify (type, color, offset,...)
         int ival = t_argv[2].value.i;   // new value
-        double fval = ((double) t_argv[2].value.f / FRACUNIT);
+        double fval = FIXED_TO_FLOAT( t_argv[2].value.f );  // fixed param
        
         // The fragglescript corona sets.
         switch (what)
         {
             case 0:  // CORONA_TYPE is int
                 // Set sprite light corona lights.
-                lspr[num].splgt_flags = ival;
+#ifdef SPLGT_fragglescript
+                // To identify fragglescript set coronas as special.	   
+                sl->splgt_flags = ival | SPLGT_fragglescript;
+#else
+                sl->splgt_flags = ival;
+#endif
                 break;
             case 1:  // CORONA_OFFX is fixed
-                lspr[num].light_xoffset = fval;
+                sl->light_xoffset = fval;  // unused
                 break;
             case 2:  // CORONA_OFFY is fixed
-                lspr[num].light_yoffset = fval;
+                sl->light_yoffset = fval;
                 break;
             case 3:  // CORONA_COLOR is (string or int)
-#ifdef USE_STRING_TO_RGBA
-                lspr[num].corona_color = (t_argv[2].type == FSVT_string)?
+                sl->corona_color.rgba = (t_argv[2].type == FSVT_string)?
                     String_to_RGBA(t_argv[2].value.s)
                     : ival;
-#else
-                if (t_argv[2].type == FSVT_string)
-                    lspr[num].corona_color = String2Hex(t_argv[2].value.s);
-                else
-                    memcpy(&lspr[num].corona_color, &ival, sizeof(int));
-#endif
+
 #ifdef SHOW_COLOR_SETTING
                 // Show the corona color setting.
                 if( devparm && verbose )
                 {
                     if(t_argv[2].type == FSVT_string)
                        debug_Printf( "CORONA_COLOR = %s, rgba=%x\n",
-                                  t_argv[2].value.s, lspr[num].corona_color );
+                                  t_argv[2].value.s, sl->corona_color.rgba );
                     else
                        debug_Printf( "CORONA_COLOR = %x, rgba=%x\n",
-                                  ival, lspr[num].corona_color );
+                                  ival, sl->corona_color.rgba );
                 }
 #endif
-#ifdef USE_STRING_TO_RGBA
+                // Phobiata fix. Color with no alpha, uses default of 0xff.
+                if( sl->corona_color.s.alpha == 0 )
+                {
+#if 0
+                    sl->corona_color.s.alpha = 0xff;  // previous default
+#ifdef SPLGT_fragglescript
+                    // To identify fragglescript set coronas as special.	   
+                    sl->splgt_flags |= SPLGT_fragglescript;  // set by fragglescript
+#endif
+#else
+                    GenPrintf(EMSG_info, "FS set corona color: has no alpha.\n" );
+#endif
+                }
+
                 // Chex newmaps fix. The flags are set 0 for Chex1.
                 // If CORONA_COLOR is set, then corona should be enabled.
-                if( lspr[num].splgt_flags == 0 )
-                    lspr[num].splgt_flags = SPLGT_corona;
+                if( sl->splgt_flags == 0 )
+                {
+                    sl->splgt_flags = SPLGT_light;  // firefly light
+#ifdef SPLGT_fragglescript
+                    sl->splgt_flags = SPLGT_light | SPLGT_fragglescript;  // firefly light
 #endif
+                }
                 break;
             case 4:  // CORONA_SIZE is fixed
-                lspr[num].corona_radius = fval;
+                sl->corona_radius = fval;
                 break;
             case 5:  // LIGHT_COLOR is (string or int)
-#ifdef USE_STRING_TO_RGBA
-                lspr[num].dynamic_color = (t_argv[2].type == FSVT_string)?
+                sl->dynamic_color.rgba = (t_argv[2].type == FSVT_string)?
                     String_to_RGBA(t_argv[2].value.s)
                     : ival;
-#else
-                // [WDJ] Mangles the RGB colors.
-                if (t_argv[2].type == FSVT_string)
-                    lspr[num].dynamic_color = String2Hex(t_argv[2].value.s);
-                else
-                    memcpy(&lspr[num].dynamic_color, &ival, sizeof(int));
-#endif
+
 #ifdef SHOW_COLOR_SETTING
                 // Show the dynamic color setting.
                 if( devparm && verbose )
                 {
                     if(t_argv[2].type == FSVT_string)
                        debug_Printf( "LIGHT_COLOR = %s, rgba=%x\n",
-                                  t_argv[2].value.s, lspr[num].dynamic_color );
+                                  t_argv[2].value.s, sl->dynamic_color.rgba );
                     else
                        debug_Printf( "LIGHT_COLOR = %x, rgba=%x\n",
-                                  ival, lspr[num].dynamic_color );
+                                  ival, sl->dynamic_color.rgba );
                 }
 #endif
+
+                // Phobiata fix. Color with no alpha, uses default of 0xff.
+                if( sl->dynamic_color.s.alpha == 0 )
+                {
+#if 0
+                    // Causes bright wall light on map 1
+                    sl->dynamic_color.s.alpha = 0xff;  // previous default
+#else
+                    GenPrintf(EMSG_info, "FS set dynamic color: has no alpha.\n" );
+#endif
+                }
                 break;
             case 6:  // LIGHT_SIZE is fixed
-                lspr[num].dynamic_radius = fval;
-                lspr[num].dynamic_sqrradius = sqrt(lspr[num].dynamic_radius);
+                sl->dynamic_radius = fval;
+#if 0
+                // According to usage and init this is squared-radius.
+                sl->dynamic_sqrradius = fval * fval;
+#else
+                // from previous versions
+                sl->dynamic_sqrradius = sqrt(sl->dynamic_radius);
+#endif
                 break;
             default:
                 I_SoftError("SetCorona: what %i\n", what);
@@ -4388,53 +4399,74 @@ void SF_SetCorona(void)
     else
     {
         // Set all fields of sprite corona light.
-        lspr[num].splgt_flags = t_argv[1].value.i;
-        lspr[num].light_xoffset = t_argv[2].value.f;
-        lspr[num].light_yoffset = t_argv[3].value.f;
-#ifdef USE_STRING_TO_RGBA
-        lspr[num].corona_color = (t_argv[4].type == FSVT_string)?
+        sl->splgt_flags = t_argv[1].value.i;
+        sl->light_xoffset = FIXED_TO_FLOAT(t_argv[2].value.f);  // unused
+        sl->light_yoffset = FIXED_TO_FLOAT(t_argv[3].value.f);
+        sl->corona_color.rgba = (t_argv[4].type == FSVT_string)?
             String_to_RGBA(t_argv[4].value.s)
             : t_argv[4].value.i;
+
+        sl->corona_radius = FIXED_TO_FLOAT(t_argv[5].value.f);
+
+       
+        // Phobiata fix. Color with no alpha, uses default of 0xff.
+        if( sl->corona_color.s.alpha == 0 )
+        {
+#if 0
+            sl->corona_color.s.alpha = 0xff;  // previous default
 #else
-        // [WDJ] Mangles the RGB colors.
-        if (t_argv[4].type == FSVT_string)
-            lspr[num].corona_color = String2Hex(t_argv[4].value.s);
-        else
-            memcpy(&lspr[num].corona_color, &t_argv[4].value.i, sizeof(int));
+            GenPrintf(EMSG_info, "FS set all : corona color has no alpha.\n" );
 #endif
-        lspr[num].corona_radius = t_argv[5].value.f;
-#ifdef USE_STRING_TO_RGBA
-        lspr[num].dynamic_color = (t_argv[6].type == FSVT_string)?
+        }
+
+        sl->dynamic_color.rgba = (t_argv[6].type == FSVT_string)?
             String_to_RGBA(t_argv[6].value.s)
             : t_argv[6].value.i;
+
+        // Phobiata fix. Color with no alpha, uses default of 0xff.
+        if( sl->dynamic_color.s.alpha == 0 )
+        {
+#if 0
+            sl->dynamic_color.s.alpha = 0xff;  // previous default
 #else
-        // [WDJ] Mangles the RGB colors.
-        if (t_argv[6].type == FSVT_string)
-            lspr[num].dynamic_color = String2Hex(t_argv[6].value.s);
-        else
-            memcpy(&lspr[num].dynamic_color, &t_argv[6].value.i, sizeof(int));
+            GenPrintf(EMSG_info, "FS set all : dynamic color has no alpha.\n" );
 #endif
-        lspr[num].dynamic_radius = t_argv[7].value.f;
-        lspr[num].dynamic_sqrradius = sqrt(lspr[num].dynamic_radius);
+        }
+
+        sl->dynamic_radius = FIXED_TO_FLOAT(t_argv[7].value.f);
+#if 0
+        // According to usage and init this is squared-radius.
+        sl->dynamic_sqrradius = sl->dynamic_radius * sl->dynamic_radius;
+#else
+        // from previous versions
+        sl->dynamic_sqrradius = sqrt(sl->dynamic_radius);
+#endif
+
+#ifdef SPLGT_fragglescript
+        // To identify fragglescript set coronas as special.	   
+        sl->splgt_flags |= SPLGT_fragglescript;  // set by fragglescript
+#endif
+
 #ifdef SHOW_COLOR_SETTING
         // Show the corona color setting.
         if( devparm && verbose )
         {
             if(t_argv[4].type == FSVT_string)
                debug_Printf( "CORONA_COLOR = %s, rgba=%x\n",
-                          t_argv[4].value.s, lspr[num].corona_color );
+                          t_argv[4].value.s, sl->corona_color.rgba );
             else
                debug_Printf( "CORONA_COLOR = %x, rgba=%x\n",
-                          t_argv[4].value.i, lspr[num].corona_color );
+                          t_argv[4].value.i, sl->corona_color.rgba );
             if(t_argv[2].type == FSVT_string)
                debug_Printf( "LIGHT_COLOR = %s, rgba=%x\n",
-                          t_argv[6].value.s, lspr[num].dynamic_color );
+                          t_argv[6].value.s, sl->dynamic_color.rgba );
             else
                debug_Printf( "LIGHT_COLOR = %x, rgba=%x\n",
-                          t_argv[6].value.i, lspr[num].dynamic_color );
+                          t_argv[6].value.i, sl->dynamic_color.rgba );
         }
 #endif
     }
+
 done:
     return;
 
@@ -4447,7 +4479,6 @@ err_numarg:
 // Background color fades for FS
 uint32_t  fs_fadecolor;
 int       fs_fadealpha;
-
 
 
 // Background color fades
@@ -4469,7 +4500,6 @@ err_numarg:
     goto done;
 }
 
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 //

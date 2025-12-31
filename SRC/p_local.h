@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1397 2018-07-02 03:39:47Z wesleyjohnson $
+// $Id: p_local.h 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -513,5 +513,15 @@ void P_Massacre(void);
 void P_AddBossSpot(fixed_t x, fixed_t y, angle_t angle);
 
 statenum_t  deh_frame_to_state( int deh_frame );
+
+extern spr_light_t  sprite_light[NUMLIGHTS];
+extern byte  sprite_light_ind[NUMSPRITES];
+void  Setup_sprite_light( byte  mons_ball_light );
+
+//extern consvar_t cv_dynamiclight;
+//extern consvar_t cv_staticlight;
+extern consvar_t cv_corona;
+extern consvar_t cv_coronasize;
+extern consvar_t cv_monball_light;
 
 #endif  // P_LOCAL_H

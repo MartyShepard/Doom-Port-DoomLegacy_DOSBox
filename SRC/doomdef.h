@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1434 2019-04-26 10:35:00Z wesleyjohnson $
+// $Id: doomdef.h 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -118,6 +118,11 @@
 # define ENABLE_DRAW32
 #endif
 
+#define ENABLE_DRAW_ALPHA
+
+// Used for palette draw fade operations
+#define ENABLE_DRAW8_USING_12
+
 // [WDJ] 6/5/2012 Boom global colormap
 // Boom global colormap is selectable, now a standard feature, 12/15/2015.
 
@@ -156,6 +161,15 @@
 
 // If surround sound is desired
 #define SURROUND_SOUND
+
+// Coronas in dynlights
+#define DYLT_CORONAS
+// Coronas drawn with sprite draw
+#define SPDR_CORONAS
+
+#if ( defined(DYLT_CORONAS) && defined(SPDR_CORONAS) )
+#define CORONA_CHOICE
+#endif
 
 
 // Player morph canceling invisibility and MF_SHADOW, is inconsistent.

@@ -264,6 +264,70 @@ void R_DrawShadeColumn_24(void)
 }
 
 
+#ifdef ENABLE_DRAW_ALPHA
+void R_DrawAlphaColumn_24(void)
+{
+#if 0
+    fixed_t texheight = dc_texheight << FRACBITS;  // any texture size
+#endif
+    int count;
+    register byte *dest;
+    register fixed_t frac;
+    register fixed_t fracstep;
+    unsigned int  alpha, alpha_r;
+
+    // [WDJ] Source check has been added to all the callers of colfunc().
+
+    count = dc_yh - dc_yl;
+    if (count < 0)
+        return;
+
+#ifdef RANGECHECK
+    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight)
+    {
+        I_SoftError("R_DrawColumn: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
+        return;
+    }
+#endif
+
+    dest = ylookup[dc_yl] + columnofs[dc_x];
+    fracstep = dc_iscale;
+    frac = dc_texturemid + (dc_yl - centery) * fracstep;
+
+#if 0
+    // [WDJ] Only draws sprite for now.
+    if (texheight > 0)  // hangs when texheight==0
+    {
+        // From Boom, to fix the odd frac
+        if (frac < 0)
+            while ((frac += texheight) < 0);
+        else
+            while (frac >= texheight)  frac -= texheight;
+    }
+#endif   
+
+    do
+    {
+        // [WDJ] The source determines light level.
+        // source alpha values are 0..255
+        alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
+        alpha_r = 255 - alpha;
+        register pixel24_t * p24 = (pixel24_t*)dest;
+        p24->b = ((p24->b * alpha_r) + (dr_color.s.blue * alpha))  >> 8;
+        p24->g = ((p24->g * alpha_r) + (dr_color.s.green * alpha)) >> 8;
+        p24->r = ((p24->r * alpha_r) + (dr_color.s.red * alpha))   >> 8;
+
+        dest += vid.ybytes;
+        frac += fracstep;
+#if 0
+        if( frac >= texheight )
+            frac -= texheight;  // wrap texture
+#endif
+    }
+    while (count--);
+}
+#endif
+
 void R_DrawTranslucentColumn_24 (void)
 {
     fixed_t texheight = dc_texheight << FRACBITS;  // any texture size

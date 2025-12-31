@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1434 2019-04-26 10:35:00Z wesleyjohnson $
+// $Id: v_video.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -527,7 +527,8 @@ static void put_gammatable( int i, float fv )
     // roundf is ISOC99
     int gv = (int) roundf( fv );
 #else
-    int gv = (int) rint( fv );
+    //int gv = (int) rint( fv );
+    int gv = (int) roundf( fv );  
 #endif
     if( gv < 0 )
         gv = 0; 
@@ -841,7 +842,12 @@ void V_SetPalette(int palettenum)
             R_Init_color8_translate(&pLocalPalette[palettenum * 256]);  // palette change
         else
 #endif
+        {
+#ifdef ENABLE_DRAW8_USING_12
+            R_Init_color12_translate( &pLocalPalette[palettenum * 256] );
+#endif
             I_SetPalette(&pLocalPalette[palettenum * 256]);
+        }
     }
 }
 
@@ -862,7 +868,12 @@ void V_SetPaletteLump(const char *pal)
             R_Init_color8_translate(pLocalPalette);  // palette change
         else
 #endif
+        {
+#ifdef ENABLE_DRAW8_USING_12
+            R_Init_color12_translate( pLocalPalette );
+#endif
             I_SetPalette(pLocalPalette);
+        }
     }
 }
 

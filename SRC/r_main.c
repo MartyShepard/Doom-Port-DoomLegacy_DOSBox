@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1435 2019-04-26 10:36:07Z wesleyjohnson $
+// $Id: r_main.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1061,6 +1061,7 @@ void R_Init (void)
     if(devparm)
         GenPrintf(EMSG_dev, "\nR_Load_Data");
     R_Load_Data ();
+    R_Load_Corona();
 
     if(devparm)
         GenPrintf(EMSG_dev, "\nR_Init_PointToAngle");

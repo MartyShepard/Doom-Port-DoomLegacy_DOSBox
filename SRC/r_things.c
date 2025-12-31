@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1435 2019-04-26 10:36:07Z wesleyjohnson $
+// $Id: r_things.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -133,9 +133,15 @@
 #include "st_stuff.h"
 #include "w_wad.h"
 #include "z_zone.h"
+#include "p_local.h"
+  // spr_light_t
+#include "v_video.h"
+  // pLocalPalette
 
 #include "i_video.h"            //rendermode
 #include "m_swap.h"
+#include "m_random.h"
+
 
 
 static void R_Init_Skins (void);
@@ -2286,6 +2292,450 @@ void R_Init_DrawNodes()
 }
 
 
+// =======
+//  Corona
+
+static patch_t *  corona_patch = NULL;
+static spritelump_t  corona_sprlump;
+
+// One or the other.
+#ifdef ENABLE_DRAW_ALPHA
+#else
+#define ENABLE_COLORED_PATCH
+// [WDJ] Wad patches usable as corona.
+// It is easier to recolor during drawing than to pick one of each.
+// Only use patches that are likely to be round in every instance (teleport fog is often not round).
+// Corona alternatives list.
+const char * corona_name[] = {
+  "CORONAP",  // patch version of corona, from legacy.wad
+  "PLSEA0", "PLSSA0", "APBXA0",  // Doom1, Doom2
+//  "AMB2A0", "PUF2A0", "FX01A0",  // Heretic
+  "PUF2A0", "FX01A0",  // Heretic
+  NULL
+};
+#endif
+
+
+#ifdef ENABLE_COLORED_PATCH
+static int corona_patch_size = 0;
+
+typedef struct {
+    RGBA_t  corona_color;
+    patch_t * colored_patch;  // Z_Malloc
+} corona_image_t;
+
+static corona_image_t  corona_image[NUMLIGHTS];
+#endif
+   
+// Also does release, after corona_patch_size is set.
+static
+void init_corona_data( void )
+{
+#ifdef ENABLE_DRAW_ALPHA
+#endif
+
+#ifdef ENABLE_COLORED_PATCH
+    int i;
+    for( i = 0; i< NUMLIGHTS; i++ )
+    {
+        if( corona_patch_size )
+        {
+            if( corona_image[i].colored_patch )
+                Z_Free( corona_image[i].colored_patch );
+        }
+        corona_image[i].corona_color.rgba = 0;
+        corona_image[i].colored_patch = NULL;
+    }
+#endif
+}
+   
+#ifdef ENABLE_COLORED_PATCH
+static
+void setup_colored_corona( corona_image_t * ccp, RGBA_t corona_color )
+{
+    byte  colormap[256];
+    patch_t * pp;
+
+    // when draw alpha is intense cannot have faint color in corona image
+    int alpha = (255 + corona_color.s.alpha) >> 1;
+    int za = (255 - alpha);
+    int c;
+
+    // A temporary colormap
+    for( c = 0; c<256; c++ )
+    {
+        // make a colormap that is mostly of the corona color
+        RGBA_t rc = pLocalPalette[ reg_colormaps[c] ];
+        int r = (corona_color.s.red * alpha + rc.s.red * za) >> 8;
+        int g = (corona_color.s.green * alpha + rc.s.green * za) >> 8;
+        int b = (corona_color.s.blue * alpha + rc.s.blue * za) >> 8;
+        colormap[c] = NearestColor( r, g, b );
+    }
+    
+    // Allocate a copy of the corona patch.
+    ccp->corona_color = corona_color;
+    if( ccp->colored_patch )
+        Z_Free( ccp->colored_patch );
+    pp = Z_Malloc( corona_patch_size, PU_STATIC, NULL );
+    ccp->colored_patch = pp;
+    memcpy( pp, corona_patch, corona_patch_size );
+
+    // Change the corona copy to the corona color.
+    for( c=0; c < corona_patch->width; c++ )
+    {
+        column_t * cp = (column_t*)((byte*)pp + pp->columnofs[c]);
+        while( cp->topdelta != 0xff )  // end of posts
+        {
+            byte * s = (byte*)cp + 3;
+            int count = cp->length;
+            while( count-- )
+            {
+                *s = colormap[*s];
+                s++;
+            }
+            // next source post, adv by (length + 2 byte header + 2 extra bytes)
+            cp = (column_t *)((byte *)cp + cp->length + 4);
+        }
+    }
+}
+
+static
+patch_t * get_colored_corona( int sprite_light_num )
+{
+    corona_image_t * cc = & corona_image[ sprite_light_num ];
+    RGBA_t corona_color = sprite_light[ sprite_light_num ].corona_color;
+
+    if( cc->corona_color.rgba != corona_color.rgba || cc->colored_patch == NULL )
+    {
+        setup_colored_corona( cc, corona_color );
+    }
+
+    return  cc->colored_patch;
+}
+#endif
+   
+
+
+// Called by SCR_SetMode
+void R_Load_Corona( void )
+{
+#ifdef ENABLE_COLORED_PATCH
+    lumpnum_t  lumpid;
+#endif
+
+    Setup_sprite_light( cv_monball_light.EV );
+   
+    // must call at least once, before setting corona_patch_size
+    init_corona_data();
+   
+#ifdef HWRENDER   
+    if( rendermode != render_soft )
+    {
+        return;
+    }
+#endif
+
+#ifdef ENABLE_DRAW_ALPHA
+    if( ! corona_patch )
+    {
+        pic_t * corona_pic = (pic_t*) W_CachePicName( "corona", PU_STATIC );
+        if( corona_pic )
+        {
+            // Z_Malloc
+            // The corona pic is INTENSITY_ALPHA, bytepp=2
+            corona_patch = R_Create_Patch( corona_pic->width, corona_pic->height, & corona_pic->data[0], 2, 1, 0 );
+            Z_ChangeTag( corona_patch, PU_STATIC );
+            corona_patch->leftoffset += corona_pic->width/2;
+            corona_patch->topoffset += corona_pic->height/2;
+            // Do not need the corona pic_t anymore
+            Z_Free( corona_pic );
+            goto setup_corona;
+        }
+    }
+#endif
+
+#ifdef ENABLE_COLORED_PATCH
+    if( ! corona_patch )
+    {
+        // Find first valid patch in corona_name list
+        const char ** namep = &corona_name[0];
+        while( *namep )
+        {
+            lumpid = W_Check_Namespace( *namep, LNS_patch );
+            if( VALID_LUMP(lumpid) )  goto setup_corona;
+            namep++;
+        }
+    }
+#endif
+    return; // fail
+   
+setup_corona :
+#ifdef ENABLE_COLORED_PATCH
+    // setup the corona support
+    corona_patch_size = W_LumpLength( lumpid );
+    corona_patch = W_CachePatchNum( lumpid, PU_STATIC );
+#endif
+
+    // The patch endian conversion is already done.
+    corona_sprlump.width = corona_patch->width << FRACBITS;
+    corona_sprlump.height = corona_patch->height << FRACBITS;
+    corona_sprlump.leftoffset = corona_patch->leftoffset << FRACBITS;
+    corona_sprlump.topoffset = corona_patch->topoffset << FRACBITS;
+    return;
+}
+
+
+void R_Release_Corona( void )
+{
+    init_corona_data( );  // does release too
+
+    if( corona_patch )
+    {
+        Z_Free( corona_patch );
+        corona_patch = NULL;
+    }
+}
+
+// Propotional fade of corona from Z1 to Z2
+#define  Z1  (250.0f)
+#define  Z2  ((255.0f*8) + 250.0f)
+
+#ifdef SPDR_CORONAS
+// --------------------------------------------------------------------------
+// coronas lighting with the sprite
+// --------------------------------------------------------------------------
+
+// corona state
+spr_light_t  * corona_lsp = NULL;
+fixed_t   corona_x0, corona_x1, corona_x2;
+fixed_t   corona_xscale, corona_yscale;
+float     corona_size;
+byte      corona_alpha;
+byte      corona_index;  // corona_lsp index
+byte      corona_draw = 0;  // 1 = before sprite, 2 = after sprite
+
+// Alpha value to not trigger no_corona.
+byte  corona_alpha_test[] =
+{
+   255, // none
+   140, // Special
+   100, // Most
+   32,  // Special, set by fragglescript
+   50,  // Most, set by fragglescript
+};
+   
+static
+void Sprite_Corona_Light_setup( vissprite_t * vis )
+{
+    mobj_t       * vismobj = vis->mobj;
+    spr_light_t  * lsp;
+    float  size;
+    byte  li;
+
+    li = sprite_light_ind[vismobj->sprite];
+    if( (vismobj->state >= &states[S_EXPLODE1]
+         && vismobj->state <= &states[S_EXPLODE3])
+     || (vismobj->state >= &states[S_FATSHOTX1]
+         && vismobj->state <= &states[S_FATSHOTX3]))
+    {
+        li = LT_ROCKETEXP;
+    }
+
+    if( li == LT_NOLIGHT )  goto no_corona;
+
+    corona_index = li;
+    lsp = &sprite_light[li];
+    corona_lsp = lsp;
+
+    // Objects which emit light.
+    if( (lsp->splgt_flags & SPLGT_corona) == 0  )  goto no_corona;
+
+    fixed_t tz = FixedDiv( projectiony, vis->scale );
+    float cz = FIXED_TO_FLOAT( tz );
+    // more realistique corona !
+    if( cz >= Z2 )  goto no_corona;
+
+#if 0
+    corona_alpha = lsp->corona_color.s.alpha;
+#else
+    corona_alpha = 0xFF;  // from hardware
+#endif
+    size = lsp->corona_radius;
+
+    // Each of these types (flag combinations) has a corona.
+    switch (lsp->splgt_flags & (SPLGT_light|SPLGT_corona|SPLGT_rocket))
+    {
+        case SPLGT_light:
+                // newmaps and phobiata firefly
+                // torches
+                // dimming with distance
+                size *= ((cz+120.0f)/950.0f);
+#if 1
+                if( cz < Z1 )
+                {
+                    // Fade corona partial to 0 when get too close
+                    corona_alpha = (int)(( (float)corona_alpha * corona_alpha + (255 - corona_alpha) * (corona_alpha * cz / Z1)) / 255.0f);
+                }
+#endif
+                break;
+        case SPLGT_rocket:
+                // vary the alpha
+                corona_alpha = 7 + (M_Random()>>1);
+                size *= ((cz+60.0f)/100.0f);
+                break;       
+        case SPLGT_corona:
+                // object corona
+                size *= ((cz+60.0f)/100.0f);
+#if 1
+                if( cz < Z1 )
+                {
+                    // Fade to 0 when get too close
+                    corona_alpha = (int)( corona_alpha *  cz /  Z1 );
+                }
+#endif
+                break;
+        default:
+                I_SoftError("Draw_Sprite_Corona_Light: unknown light type %x", lsp->splgt_flags);
+                return;
+    }
+   
+    if( cz > Z1 )
+    {
+        // Proportional fade from Z1 to Z2
+        corona_alpha = (int)( corona_alpha * ( cz - Z2 ) / ( Z1 - Z2 ));
+    }
+
+    if( cv_corona.EV <= 2 ) // Special and Most
+    {
+        int i = cv_corona.EV;  // 1, 2
+#ifdef SPLGT_fragglescript       
+        if( (lsp->splgt_flags & SPLGT_fragglescript) == 0  )  i += 2;  // 3, 4
+#endif
+        if( corona_alpha < corona_alpha_test[i] )  goto no_corona;
+    }
+
+    if (size > lsp->corona_radius) 
+        size = lsp->corona_radius;
+//    size *= FIXED_TO_FLOAT( cv_coronasize.value ) * 0.032f;
+//    size *= FIXED_TO_FLOAT( cv_coronasize.value ) * 6.4f * FRACUNIT / corona_sprlump.width;
+    size *= FIXED_TO_FLOAT( cv_coronasize.value ) * 1.0f / FIXED_TO_FLOAT(corona_sprlump.width);
+
+    corona_size = size;
+    corona_xscale = (int)( (double)vis->xscale * size );
+    corona_yscale = (int)( (double)vis->scale * size );
+
+    // Corona specific.
+    // Corona offsets are from center of drawn sprite.
+    // no flip on corona
+
+    // Position of the corona
+# if 1
+    fixed_t  midx = (vis->x1 + vis->x2) << (FRACBITS-1);  // screen
+# else
+    // same as spr, but not stored in vissprite so must recalculate it
+//    fixed_t tr_x = vismobj->x - viewx;
+//    fixed_t tr_y = vismobj->y - viewy;
+    fixed_t tr_x = vis->mobj_x - viewx;
+    fixed_t tr_y = vis->mobj_y - viewy;
+    fixed_t  tx = (FixedMul(tr_x,viewsin) - FixedMul(tr_y,viewcos));
+    fixed_t  midx = centerxfrac + FixedMul(tx, vis->xscale);
+# endif
+    corona_x0 = corona_x1 = (midx - FixedMul(corona_sprlump.leftoffset, corona_xscale)) >>FRACBITS;
+    corona_x2 = ((midx + FixedMul(corona_sprlump.width - corona_sprlump.leftoffset, corona_xscale)) >>FRACBITS) - 1;
+    if( corona_x1 < 0 )  corona_x1 = 0;
+    if( corona_x1 > rdraw_viewwidth )  goto no_corona;  // off the right side
+    if( corona_x2 >= rdraw_viewwidth )  corona_x2 = rdraw_viewwidth - 1;
+    if( corona_x2 < 0 )  goto no_corona;  //  off the left side
+
+    corona_draw = 2;
+    return;
+
+no_corona:
+    corona_draw = 0;
+    return;
+}
+
+
+
+static
+void Draw_Sprite_Corona_Light( vissprite_t * vis )
+{
+    column_t     * column;
+    int            texturecolumn;
+   
+    // Sprite has a corona, and coronas are enabled.
+    dr_alpha = (((int)corona_alpha * 7) + (2 * (16-7))) >> 4; // compensate for different HWR alpha 
+
+#ifdef ENABLE_DRAW_ALPHA
+    colfunc = alpha_colfunc;  // R_DrawAlphaColumn
+    patch_t * corona_cc_patch = corona_patch;
+    dr_color = corona_lsp->corona_color;
+# ifndef ENABLE_DRAW8_USING_12
+    if( vid.drawmode == DRAW8PAL )
+    {
+        dr_color8 = NearestColor( dr_color.s.red, dr_color.s.green, dr_color.s.blue);
+    }
+# endif
+#else
+    colfunc = transcolfunc;  // R_DrawTranslucentColumn
+    // Get the corona patch specifically colored for this light.
+    patch_t * corona_cc_patch = get_colored_corona( corona_index );
+//    dc_colormap = & reg_colormaps[0];
+    dc_translucent_index = 0;  // translucent dr_alpha
+    dc_translucentmap = & translucenttables[ translucent_alpha_table[dr_alpha >> 4] ];  // for draw8
+#endif
+   
+    fixed_t light_yoffset = (int)(corona_lsp->light_yoffset * FRACUNIT); // float to fixed
+   
+#if 1   
+    // [WDJ] This is the one that puts the center closest to where OpenGL puts it.
+    fixed_t g_midy = (vis->gz_bot + vis->gz_top)>>1;  // mid of sprite
+#else
+    // Too high
+    mobj_t * vismobj = vis->mobj;
+#if 0
+    fixed_t g_midy = vismobj->z + ((vis->gz_top - vis->gz_bot)>>1);
+#else
+    fixed_t g_midy = (vismobj->z + vis->gz_top)>>1;  // mid of sprite
+#endif
+#endif
+    fixed_t g_cp = g_midy + light_yoffset - viewz;  // corona center point in vissprite scale
+    fixed_t tp_cp = FixedMul(g_cp, vis->scale) + FixedMul(corona_sprlump.topoffset, corona_yscale);
+    dm_top_patch = centeryfrac - tp_cp;
+    dm_texturemid = FixedDiv( tp_cp, corona_yscale );
+    dm_yscale = corona_yscale;
+    dc_iscale = FixedDiv (FRACUNIT, dm_yscale);  // y texture step
+    dc_texheight = 0;  // no wrap repeat
+//    dc_texheight = corona_patch->height;
+
+   
+// not flipped so
+//  tex_x1 = 0
+//  tex_x_iscale = iscale
+//    fixed_t tex_x_iscale = (int)( (double)vis->iscale * size );
+    fixed_t tex_x_iscale = FixedDiv (FRACUNIT, corona_xscale);
+    fixed_t texcol_frac = 0;  // tex_x1, not flipped
+    if( (corona_x1 - corona_x0) > 0 )  // it was clipped
+        texcol_frac = tex_x_iscale * (corona_x1 - corona_x0);
+ 
+    for (dc_x=corona_x1 ; dc_x<=corona_x2 ; dc_x++, texcol_frac += tex_x_iscale)
+    {
+        texturecolumn = texcol_frac>>FRACBITS;
+#ifdef RANGECHECK
+        if (texturecolumn < 0 || texturecolumn >= corona_patch->width) {
+            // [WDJ] Give msg and don't draw it
+            I_SoftError ("Sprite_Corona: bad texturecolumn\n");
+            return;
+        }
+#endif
+        column = (column_t *) ((byte *)corona_cc_patch + corona_cc_patch->columnofs[texturecolumn]);
+        R_DrawMaskedColumn (column);
+    }
+
+    colfunc = basecolfunc;
+}
+#endif
+
 
 // [WDJ] 2019 These three improvements are working now.
 // These CLIP3 enables is here temporarily during regression testing.
@@ -2344,6 +2794,29 @@ void R_DrawSprite (vissprite_t* spr)
     cx1 = spr->x1;
     cx2 = spr->x2;
 
+#ifdef SPDR_CORONAS
+    corona_draw = 0;
+#if 0
+    // Exclude Split sprites that are cut on the bottom, so there
+    // is only one corona per object.
+    // Their position would be off too.
+    if( cv_corona.EV
+        && ( (spr->cut & SC_BOTTOM) == 0 ) )
+#else
+    if( cv_corona.EV )
+#endif
+    {
+        // setup corona state
+        Sprite_Corona_Light_setup( spr );  // set corona_draw
+        if( corona_draw )
+        {
+            // Expand clipping to include corona draw
+            if( corona_x1 < cx1 )   cx1 = corona_x1;
+            if( corona_x2 > cx2 )   cx2 = corona_x2;
+        }
+    }
+#endif
+
     for (x = cx1 ; x <= cx2 ; x++)
     {
 #if defined( CLIP3_TOP ) || defined( CLIP3_BOT )
@@ -2364,7 +2837,7 @@ void R_DrawSprite (vissprite_t* spr)
     for (ds=ds_p ; ds-- > drawsegs ; )
     {
         if( (ds->silhouette == 0) && !ds->maskedtexturecol )
-	     continue;  // cannot clip sprite
+             continue;  // cannot clip sprite
 
         // determine if the drawseg obscures the sprite
         if(   ds->x1 > cx2
@@ -2655,7 +3128,27 @@ void R_DrawSprite (vissprite_t* spr)
 
     dm_floorclip = clipbot;
     dm_ceilingclip = cliptop;
+
+#if 0   
+#ifdef SPDR_CORONAS
+    if( corona_draw == 1 )
+    {
+        // Draw corona before sprite, occlude
+        Draw_Sprite_Corona_Light( spr );
+    }
+#endif
+#endif
+
     R_DrawVisSprite (spr, spr->x1, spr->x2);
+
+#ifdef SPDR_CORONAS
+//    if( corona_draw == 2 )
+    if( corona_draw == 2  && ((spr->cut & 0x80) == 0) )
+    {
+        Draw_Sprite_Corona_Light( spr );
+        spr->cut |= 0x80;
+    }
+#endif
 }
 
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.h 1426 2019-01-29 08:09:01Z wesleyjohnson $
+// $Id: r_draw.h 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -70,6 +70,10 @@ extern int              hcolumnofs[MAXVIDHEIGHT];
 #endif
 
 extern byte             dr_alpha;  // translucent and fog alpha, 0..255
+#ifdef ENABLE_DRAW_ALPHA
+extern byte             dr_color8;
+extern RGBA_t           dr_color;  // draw alpha
+#endif
 
 
 // -------------------------
@@ -202,6 +206,7 @@ void    ASMCALL R_DrawColumn_8 (void);
 void    ASMCALL R_DrawSkyColumn_8 (void);
 void    ASMCALL R_DrawShadeColumn_8 (void);             //smokie test..
 void    ASMCALL R_DrawFuzzColumn_8 (void);
+void    ASMCALL R_DrawAlphaColumn_8 (void);
 void    ASMCALL R_DrawTranslucentColumn_8 (void);
 void    ASMCALL R_DrawTranslatedColumn_8 (void);  // skin
 void    ASMCALL R_DrawSpan_8 (void);
@@ -228,6 +233,7 @@ void    ASMCALL R_DrawSpan_16 (void);
 
 void    R_DrawTranslatedTranslucentColumn_16 (void);  // skin translucent
 void    R_DrawShadeColumn_16(void);
+void    R_DrawAlphaColumn_16(void);
 void    R_DrawTranslucentSpan_16(void);
 void    R_DrawFogSpan_16(void);
 void    R_DrawFogColumn_16(void);
@@ -246,6 +252,7 @@ void    R_DrawSpan_24 (void);
 
 void    R_DrawTranslatedTranslucentColumn_24 (void);  // skin translucent
 void    R_DrawShadeColumn_24(void);
+void    R_DrawAlphaColumn_24(void);
 void    R_DrawTranslucentSpan_24(void);
 void    R_DrawFogSpan_24(void);
 void    R_DrawFogColumn_24(void);
@@ -263,6 +270,7 @@ void    R_DrawSpan_32 (void);
 
 void    R_DrawTranslatedTranslucentColumn_32 (void);  // skin translucent
 void    R_DrawShadeColumn_32(void);
+void    R_DrawAlphaColumn_32(void);
 void    R_DrawTranslucentSpan_32(void);
 void    R_DrawFogSpan_32(void);
 void    R_DrawFogColumn_32(void);

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1434 2019-04-26 10:35:00Z wesleyjohnson $
+// $Id: m_menu.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -556,6 +556,7 @@ menu_t MainDef, SoundDef, EpiDef, NewDef,
   ReadDef2, ReadDef1, SaveDef, LoadDef, 
   ControlDef, ControlDef2, ControlDef3, MControlDef,
   OptionsDef, EffectsOptionsDef, GameOptionDef, AdvOption1Def, AdvOption2Def,
+  LightingDef,
   NetOptionDef, ConnectOptionDef, ServerOptionsDef,
   MPOptionDef;
 
@@ -2018,6 +2019,7 @@ menuitem_t EffectsOptionsMenu[]=
     {IT_STRING | IT_CVAR,0, "Fog Effect"      , &cv_fog_effect    , 0},
     {IT_STRING | IT_CVAR,0, "Menu Sounds"     , &cv_menusound     , 0},
     {IT_STRING | IT_CVAR,0, "Screens Link"    , &cv_screenslink   , 0},
+    {IT_SUBMENU | IT_WHITESTRING, 0, "Light Options >>"  , &LightingDef  , 'l'},
 };
 
 menu_t  EffectsOptionsDef =
@@ -5858,6 +5860,31 @@ void M_Configure (void)
 
 
 //======================================================================
+// Lighting
+
+menuitem_t LightingMenu[]=
+{
+    {IT_STRING | IT_CVAR ,0, "Corona"             , &cv_corona          , 0},
+    {IT_STRING | IT_CVAR, 0, "Corona size"        , &cv_coronasize      , 0},
+//    {IT_STRING | IT_CVAR, 0, "Dynamic lighting"   , &cv_dynamiclighting , 0},
+//    {IT_STRING | IT_CVAR, 0, "Static lighting"    , &cv_staticlighting  , 0},
+//    {IT_STRING | IT_CVAR, 0, "Monster ball light" , &cv_monball_light    , 0},
+};
+
+menu_t  LightingDef =
+{
+    "M_OPTTTL",
+    "OPTIONS",
+    LightingMenu,
+    M_DrawGenericMenu,
+    NULL,
+    sizeof(LightingMenu)/sizeof(menuitem_t),
+    60,40,
+    0,
+};
+
+
+//======================================================================
 // OpenGL specifics options
 //======================================================================
 
@@ -5887,11 +5914,10 @@ menuitem_t OpenGLOptionsMenu[]=
 
 menuitem_t OGL_LightingMenu[]=
 {
-    {IT_STRING | IT_CVAR,0, "Coronas"                 , &cv_grcoronas         ,  0},
-    {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Coronas size"            , &cv_grcoronasize      , 10},
-    {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Dynamic lighting"        , &cv_grdynamiclighting , 20},
-    {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Static lighting"         , &cv_grstaticlighting  , 30},
-    {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Monsters' balls lighting", &cv_grmblighting      , 40},
+    {IT_STRING | IT_CVAR, 0, "Corona Draw"         , &cv_grcorona_draw ,  0},
+    {IT_STRING | IT_CVAR, 0, "Dynamic lighting"    , &cv_grdynamiclighting,  0},
+    {IT_STRING | IT_CVAR, 0, "Static lighting"     , &cv_grstaticlighting,  0},
+    {IT_STRING | IT_CVAR, 0, "Monster ball light"  , &cv_monball_light,  0},
 };
 
 #define FOG_COLOR_ITEM  1
@@ -6204,6 +6230,12 @@ void M_Register_Menu_Controls( void )
     CV_RegisterVar(&cdUpdate);
 #endif
 #endif
+    // p_lights.c
+    CV_RegisterVar(&cv_corona);
+    CV_RegisterVar(&cv_coronasize);
+//  CV_RegisterVar(&cv_dynamiclighting);
+//  CV_RegisterVar(&cv_staticlighting);
+    CV_RegisterVar(&cv_monball_light);
 }
 
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1434 2019-04-26 10:35:00Z wesleyjohnson $
+// $Id: screen.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -91,6 +91,9 @@ void (*skincolfunc) (void);      // skin translation
 void (*transcolfunc) (void);     // translucent column drawer
 void (*shadecolfunc) (void);     // smokie test..
 void (*fogcolfunc) (void);       // fog effects
+#ifdef ENABLE_DRAW_ALPHA
+void (*alpha_colfunc) (void);       // fog effects
+#endif
 void (*spanfunc) (void);         // span drawer, use a 64x64 tile
 void (*basespanfunc) (void);     // default span func for color mode
 void (*fogspanfunc) (void);      // Legacy Fog sheet
@@ -145,6 +148,7 @@ byte*  scr_borderflat; // flat used to fill the reduced view borders
 // hicolor masks  15 bit / 16 bit
 uint16_t mask_01111 = 0, mask_01110 = 0, mask_11110 = 0, mask_11100 = 0, mask_11000 = 0;
 uint16_t mask_r = 0, mask_g = 0, mask_b = 0, mask_rb = 0;
+byte     shift_r, shift_g, shift_b;
 #endif
 #endif
 
@@ -192,6 +196,7 @@ void SCR_SetMode (void)
         ST_Release_Graphics();
         ST_Release_FaceGraphics();
         WI_Release_Data();
+        R_Release_Corona();
 
         if( HWR_patchstore )
         {
@@ -270,6 +275,9 @@ void SCR_SetMode (void)
         transcolfunc = R_DrawTranslucentColumn_8;
         shadecolfunc = R_DrawShadeColumn_8;  //R_DrawColumn_8;
         fogcolfunc = R_DrawFogColumn_8;
+#ifdef ENABLE_DRAW_ALPHA
+        alpha_colfunc = R_DrawAlphaColumn_8;
+#endif
 
         spanfunc = basespanfunc = R_DrawSpan_8;
         fogspanfunc = R_DrawFogSpan_8;
@@ -294,6 +302,9 @@ void SCR_SetMode (void)
         mask_g = 0x03E0;  // 0 00000 11111 00000 mask of G
         mask_b = 0x001F;  // 0 00000 00000 11111 mask of B
         mask_rb = 0x7C1F;  // 0 11111 00000 11111 mask of R and B
+        shift_r = 10;
+        shift_g = 5;
+        shift_b = 0;
         goto highcolor_common;
 #endif
 #ifdef ENABLE_DRAW16
@@ -322,6 +333,9 @@ void SCR_SetMode (void)
         mask_b = 0x001F;  // 00000 000000 11111 mask of B
         mask_rb = 0xF81F;  // 11111 000000 11111 mask of R and B
 #endif
+        shift_r = 11;
+        shift_g = 5;
+        shift_b = 0;
         goto highcolor_common;
 #endif
 
@@ -334,6 +348,9 @@ void SCR_SetMode (void)
         transcolfunc = R_DrawTranslucentColumn_16;
         shadecolfunc = R_DrawShadeColumn_16;
         fogcolfunc = R_DrawFogColumn_16;
+#ifdef ENABLE_DRAW_ALPHA       
+        alpha_colfunc = R_DrawAlphaColumn_16;
+#endif
 
         spanfunc = basespanfunc = R_DrawSpan_16;
         fogspanfunc = R_DrawFogSpan_16;
@@ -354,6 +371,9 @@ void SCR_SetMode (void)
         transcolfunc = R_DrawTranslucentColumn_24;
         shadecolfunc = R_DrawShadeColumn_24;
         fogcolfunc = R_DrawFogColumn_24;
+#ifdef ENABLE_DRAW_ALPHA       
+        alpha_colfunc = R_DrawAlphaColumn_24;
+#endif
 
         spanfunc = basespanfunc = R_DrawSpan_24;
         fogspanfunc = R_DrawFogSpan_24;
@@ -374,6 +394,9 @@ void SCR_SetMode (void)
         transcolfunc = R_DrawTranslucentColumn_32;
         shadecolfunc = R_DrawShadeColumn_32;
         fogcolfunc = R_DrawFogColumn_32;
+#ifdef ENABLE_DRAW_ALPHA       
+        alpha_colfunc = R_DrawAlphaColumn_32;
+#endif
 
         spanfunc = basespanfunc = R_DrawSpan_32;
         fogspanfunc = R_DrawFogSpan_32;
@@ -412,7 +435,8 @@ void SCR_SetMode (void)
         {
             HWR_Preload_Graphics();
         }
-#endif       
+#endif
+        R_Load_Corona();
         R_Setup_SkyDraw();
      }
 

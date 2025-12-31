@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 1425 2019-01-29 08:07:59Z wesleyjohnson $
+// $Id: r_data.h 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -159,6 +159,14 @@ extern CV_PossibleValue_t Color_cons_t[];
 void  R_Load_Textures (void);
 void  R_FlushTextureCache (void);
 
+#ifdef ENABLE_DRAW_ALPHA
+//  data : source data of width x height
+//  bytepp : source pixel size in bytes
+//  sel_offset  : offset into pixel, 0..3
+//  blank_value : pixel value that is blank space
+patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte * data, byte bytepp, byte sel_offset, byte blank_value );
+#endif
+
 // Generate a texture from texture desc. and patches.
 byte* R_GenerateTexture (int texnum);
 
@@ -214,6 +222,10 @@ union color8_u {
 extern union color8_u  color8;
 extern uint16_t*  hicolormaps;
 void R_Init_color8_translate ( RGBA_t * palette );
+#ifdef ENABLE_DRAW8_USING_12
+extern byte  color12_to_8[ 0x0FFF ];
+void R_Init_color12_translate( RGBA_t * palette );
+#endif
 
 byte NearestColor(byte r, byte g, byte b);
 

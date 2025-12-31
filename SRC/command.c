@@ -1159,7 +1159,11 @@ void  CV_Set_cv_str_value( consvar_t * cvar, const char * valstr, byte call_enab
     }
 #endif
 
+#if !defined( __DJGPP__ )
     is_a_number = (valstr[0] >= '0' && valstr[0] <= '9');
+#else  
+    is_a_number = ((valstr[0] >= '0' && valstr[0] <= '9') || (valstr[0] == '-' && valstr[1] >= '0' && valstr[1] <= '9')); // Fixed -1..
+#endif  
     // [WDJ] If the value is a float, then all comparisons must be fixed_t.
     // Any PossibleValues would be fixed_t too.
     if( cvar->flags & CV_FLOAT )

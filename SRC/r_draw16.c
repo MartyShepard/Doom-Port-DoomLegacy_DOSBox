@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw16.c 1424 2019-01-29 08:07:27Z wesleyjohnson $
+// $Id: r_draw16.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -268,6 +268,60 @@ void R_DrawShadeColumn_16(void)
     }
     while (count--);
 }
+
+
+#ifdef ENABLE_DRAW_ALPHA
+void R_DrawAlphaColumn_16(void)
+{
+    register int count;
+    register byte *dest;
+    register fixed_t frac;
+    register fixed_t fracstep;
+    unsigned int  alpha, alpha_r;
+    unsigned int  dr16_red, dr16_green, dr16_blue;
+
+    // [WDJ] Source check has been added to all the callers of colfunc().
+
+    count = dc_yh - dc_yl;
+    if (count < 0)
+        return;
+
+#ifdef RANGECHECK
+    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight)
+    {
+        I_SoftError("R_DrawColumn: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
+        return;
+    }
+#endif
+
+    dest = ylookup[dc_yl] + columnofs[dc_x];
+
+    // Looks familiar.
+    fracstep = dc_iscale;
+    frac = dc_texturemid + (dc_yl - centery) * fracstep;
+
+    dr16_red =   ((uint16_t)dr_color.s.red    << shift_r) & mask_r;
+    dr16_green = ((uint16_t)dr_color.s.green  << shift_g) & mask_g;
+    dr16_blue =  ((uint16_t)dr_color.s.blue   << shift_b) & mask_b;
+
+    do
+    {
+        // Apply the dr_color, using the patch as alpha.
+        alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
+        alpha_r = 255 - alpha;
+
+        register uint16_t dc = *(uint16_t*)dest;
+        *(uint16_t*)dest= (
+              (((((dc & mask_r) * alpha_r) + (dr16_red * alpha)  ) >> 8) & mask_r)
+            | (((((dc & mask_g) * alpha_r) + (dr16_green * alpha)) >> 8) & mask_g)
+            | (((((dc & mask_b) * alpha_r) + (dr16_blue * alpha) ) >> 8) & mask_b) );
+
+        dest += vid.ybytes;
+        frac += fracstep;
+    }
+    while (count--);
+}
+#endif
 
 
 //

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.c 1435 2019-04-26 10:36:07Z wesleyjohnson $
+// $Id: hw_main.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -4201,7 +4201,7 @@ void HWR_RenderPlayerView(byte viewnumber, player_t * player)
     HWR_DrawMD2S();
 #ifdef CORONA_CHOICE
     // mirror corona choice, with auto -> sprite draw
-    corona_draw_choice = (cv_grcoronas.value == 3)?  1 : cv_grcoronas.value;
+    corona_draw_choice = (cv_corona.EV==0)? 0 : ((cv_grcorona_draw.value == 3)?  1 : cv_grcorona_draw.value);
 #endif     
     HWR_RenderSorted();
     HWD.pfnSetTransform(NULL);
@@ -4322,11 +4322,9 @@ void HWR_Register_Gr1Commands(void)
     //CV_RegisterVar (&cv_grcontrast);
     //CV_RegisterVar (&cv_grpolygonsmooth); // moved below
     CV_RegisterVar(&cv_grmd2);
-    CV_RegisterVar(&cv_grmblighting);
     CV_RegisterVar(&cv_grstaticlighting);
     CV_RegisterVar(&cv_grdynamiclighting);
-    CV_RegisterVar(&cv_grcoronas);
-    CV_RegisterVar(&cv_grcoronasize);
+    CV_RegisterVar(&cv_grcorona_draw);
     CV_RegisterVar(&cv_grfov);
     CV_RegisterVar(&cv_grfogdensity);
     CV_RegisterVar(&cv_grfogcolor);
@@ -4781,10 +4779,15 @@ void HWR_RenderSorted( void )
     HWD.pfnSetTransform(NULL);
 #ifdef CORONA_CHOICE
     if( corona_draw_choice == 2 )
-#endif     
-    //Hurdler: they must be drawn before translucent planes, what about gl fog?
-    HWR_DL_Draw_Coronas();
+#else
+    if( cv_corona.EV )
 #endif
+    {
+        //Hurdler: they must be drawn before translucent planes, what about gl fog?
+        HWR_DL_Draw_Coronas();
+    }
+#endif
+
     if (numplanes)
     {
         HWD.pfnSetTransform(&atransform);

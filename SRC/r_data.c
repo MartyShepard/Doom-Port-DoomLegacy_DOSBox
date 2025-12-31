@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1425 2019-01-29 08:07:59Z wesleyjohnson $
+// $Id: r_data.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -190,6 +190,292 @@ int             texturememory;	// all textures
 // [WDJ] 2012-02-06 shared for DRAW15, DRAW16, DRAW24, DRAW32
 union color8_u   color8;  // remap color index to rgb value
 uint16_t*  hicolormaps = NULL;  // test a 32k colormap remaps high -> high
+#ifdef ENABLE_DRAW8_USING_12
+byte  color12_to_8[ 0x0FFF ];
+#endif
+
+#ifdef ENABLE_DRAW_ALPHA
+//  data : source data of width x height
+//  bytepp : source pixel size in bytes
+//  sel_offset  : offset into pixel, 0..3
+//  blank_value : pixel value that is blank space
+patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte * data, byte bytepp, byte sel_offset, byte blank_value )
+{
+    byte  postbuf[ 256 ];
+    unsigned int  head_empty_columns = 0;  // left
+    unsigned int  tail_empty_columns = 0;  // right
+    unsigned int  mid_empty_columns = 0;
+    unsigned int  count_good_columns = 0;
+    unsigned int  row_size = width * bytepp;
+    unsigned int  colofs_size = width * sizeof( uint32_t );  // width * 4
+    unsigned int  head_size = colofs_size + 8;
+    unsigned int  wb_blocksize = head_size + 4 + (width * height);  // guess
+    unsigned int  col, length, topdelta, dest_used;
+    uint32_t   *  colofs;
+    post_t     *  destpost;
+    byte       *  dest_term = NULL;
+    byte       *  pb;
+    byte       * src0, * src_end, * src ;
+
+    patch_t * wb_patch = (patch_t*) Z_Malloc( wb_blocksize, PU_IN_USE, NULL );
+   
+    wb_patch->width = width;
+    wb_patch->height = height;
+    wb_patch->leftoffset = 0;
+    wb_patch->topoffset = 0;
+    dest_used = 0;
+   
+    src_end = data + (height * row_size);  // past last byte
+    destpost = (post_t*) ((byte*)wb_patch + head_size);  // posting area
+    for( col=0; col<width; col++ )
+    {
+        colofs = & wb_patch->columnofs[ col ];  // header entry for this column
+        *colofs = 0;  // flag column with no-posts value
+        src = src0 = & data[ col * bytepp ];
+        while( src < src_end )
+        {
+            // traverse column
+            for( ; src < src_end ; src += row_size )
+            {
+                if( src[sel_offset] != blank_value )  goto start_post; // find first non blank pixel
+            }
+            // only blanks found
+            if( *colofs == 0 )  // if no posts, then will need to fix later
+            {
+                if( count_good_columns )
+                    tail_empty_columns++;
+                else
+                    head_empty_columns++;
+            }
+            break;
+
+        start_post:
+            topdelta = (src - src0) / row_size;
+            if( topdelta > 254 )  // topdelta would be too large
+                break;  // skip rest of height
+
+            // traverse column
+            pb = postbuf;  // put into postbuf
+            for( ; src < src_end ; src += row_size )
+            {
+                if(src[sel_offset] == blank_value)  break;  // find first blank pixel
+                if( pb >= & postbuf[254] )  break;  // max post length
+                *(pb++) = src[sel_offset];
+            }
+            // src must point to next, not included in this post
+            length = pb - postbuf;  // must be at least 1
+
+            dest_used = (byte*)(destpost + length + 4 + 1 ) - (byte*)wb_patch;
+            if( dest_used + 8 > wb_blocksize )
+            {
+                // will not fit in the allocation
+                // Copy to new allocation.
+                unsigned int  wb2_len = dest_used + 1024;  // allocation increment
+                patch_t * wb2 = (patch_t*) Z_Malloc( wb2_len, PU_IN_USE, NULL );
+                memcpy( wb2, wb_patch, wb_blocksize );
+                // Move ptrs to new allocation
+                uintptr_t  adjustdiff = (void*) wb2 - (void*) wb_patch;  // byte difference in locations
+                src += adjustdiff;
+                destpost += adjustdiff;
+                colofs += adjustdiff;
+                // Release old allocation
+                Z_Free( wb_patch );
+                wb_patch = wb2;
+                wb_blocksize = wb2_len;
+            }
+
+            // copy upto, not including src
+            // Must be at least one pixel, because blank span found a non-blank.
+            destpost->topdelta = topdelta;
+            destpost->length = length;
+            byte * destpixels = (byte*)destpost + 3;
+            destpixels[-1] = 0;	// pad 0
+            memcpy( destpixels, postbuf, length );
+            destpixels[length] = 0; // pad 0
+            destpixels[length+1] = 0xFF; // term, may get overwritten by next post
+            dest_term = & destpixels[length+1];
+            // Enter into header
+            if( *colofs == 0 )
+            {
+                *colofs = (byte*)destpost - (byte*)wb_patch; // offset within patch
+                // maintain empty column count
+                count_good_columns ++;
+                mid_empty_columns += tail_empty_columns;
+                tail_empty_columns = 0;
+            }
+            // next source colpost, adv by (length + 2 byte header + 2 extra bytes)
+            destpost = (column_t *)(  (byte *)destpost + length + 4);
+        }
+        destpost = (column_t*) ((byte*)destpost + 1);  // 0xFF column termination
+        dest_used++;
+    }
+
+    if( mid_empty_columns )
+    {
+        // Must fix colofs that are still 0.
+        // Point column at last 0xFF written.
+        unsigned int term_offset = dest_term - (byte*)wb_patch;  // offset of last 0xFF
+        colofs = & wb_patch->columnofs[0];  // columnofs array
+        for( col=0; col<width; col++ )
+        {
+            if( colofs[col] == 0 )
+                colofs[col] = term_offset;
+        }
+    }
+
+    if( head_empty_columns + tail_empty_columns > 0 )
+    {
+        // trim off the empty columns
+        unsigned int  trim_width = head_empty_columns + tail_empty_columns;;
+        width = width - trim_width;
+
+        unsigned int  new_colofs_size = width * sizeof( uint32_t );  // width * 4
+        if( head_empty_columns )
+        {
+            // move colofs table
+            memmove( & wb_patch->columnofs[0], & wb_patch->columnofs[head_empty_columns], new_colofs_size );
+        }
+
+        // Move ptrs to new allocation
+        unsigned int  adjustcol = colofs_size - new_colofs_size;  // byte difference in locations
+        colofs = & wb_patch->columnofs[0];  // columnofs array
+        for( col=0; col<width; col++ )  // new width
+        {
+            colofs[col] -= adjustcol;
+        }
+
+        // move column data
+        unsigned int  new_head_size = new_colofs_size + 8;
+        memmove( wb_patch + new_head_size, wb_patch + head_size, dest_used - head_size );
+        // update
+        wb_patch->leftoffset = - head_empty_columns;
+        wb_patch->width = width;
+        dest_used = dest_used - head_size + new_head_size;
+    }
+
+    // Resize if necessary
+    if( dest_used + 32 < wb_blocksize )
+    {
+        // excessive allocation
+        // Copy to new allocation.
+        patch_t * wb2 = (patch_t*) Z_Malloc( dest_used, PU_IN_USE, NULL );
+        memcpy( wb2, wb_patch, dest_used );
+        // Release old allocation
+        Z_Free( wb_patch );
+        wb_patch = wb2;
+    }
+    return wb_patch;
+}
+#endif
+
+
+#if 0
+// indexed by pic_selection_e
+byte pic_pixel_offset_table[ 3 ] = { 0, 0, 1 };
+
+// indexed by pic_mode_t
+// byte per pixel
+byte pic_bytepp_table[ 5 ] = { 1, 1, 2, 3, 4 };
+
+typedef enum {
+    PM_PALETTE,
+    PM_INTENSITY,
+    PM_ALPHA,
+} patch_mode_e;
+
+byte pic_operation_table[5][3] =
+{
+  // 255 cannot be done.
+  { // Have PALETTE
+    // Want PM_PALETTE, PM_INTENSITY, PM_ALPHA
+    0, 40, 40
+  },
+  { // Have INTENSITY
+    // Want PM_PALETTE, PM_INTENSITY, PM_ALPHA
+    255, 0, 0
+  },
+  { // Have INTENSITY_ALPHA
+    // Want PM_PALETTE, PM_INTENSITY, PM_ALPHA
+    255, 0, 1
+  },
+  { // Have RGBA24
+    // Want PM_PALETTE, PM_INTENSITY, PM_ALPHA
+    49, 48, 255
+  },
+  { // Have RGBA32
+    // Want PM_PALETTE, PM_INTENSITY, PM_ALPHA
+    49, 48, 3
+  }
+}
+
+//  mode : patch_mode_e
+patch_t * R_Pic_to_Patch( pic_t * pic, byte patch_mode )
+{
+    byte picmode = pic->mode;
+    byte sel_offset = 0;
+    byte blank_value = 0;
+    byte operation = pic_operation_table[picmode][patch_mode];
+    byte bytepp = pic_bytepp_table[ picmode ];
+   
+    if( operation == 255 )
+        return NULL;
+
+    if( operation <= 4 )
+    {
+        sel_offset = operation;
+    }
+    else
+    {
+        // destructive operation, put into 0 byte
+        byte * w;
+        byte * w_end = &pic->data[pic->width * pic->height]
+        for( w= &pic->data[0]; w < w_end; w += bytepp )
+        {
+            RGBA_t p;
+            switch( picmode )
+            {
+             case PALETTE:
+               p = pLocalPalette[w[0]];
+               p.s.alpha = 0;
+               break;
+             case INTENSITY:
+               p.s.red = p.s.green = p.s.blue = w[0];
+               p.s.alpha = 0;
+               break;
+             case INTENSITY_ALPHA:
+               p.s.red = p.s.green = p.s.blue = w[0];
+               p.s.alpha = w[1];
+               break;
+             case RGBA24:
+               p.s.red   = w[0];
+               p.s.green = w[1];
+               p.s.blue  = w[2];
+               p.s.alpha = 0;
+               break;
+             case RGBA32:
+               p = ((RGBA32_t*)w)[0];
+               break;
+            }
+            switch( patch_mode )
+            {
+             case PM_PALETTE:
+               w[0] = NearestColor(p.s.red, p.s.green, p.s.blue);
+               break;
+             case PM_INTENSITY:
+               w[0] = (p.s.red + p.s.green + p.s.blue) / 3;
+               break;
+             case PM_ALPHA:
+               w[0] = p.s.alpha;
+               break;
+            }
+        }
+    }
+
+    return  R_Create_Patch( pic->width, pic->height, & pic->data[0],
+                            bytepp, sel_offset, blank_value );
+}
+#endif
+
 
 #if 0
 // [WDJ] This description applied to previous code. It is kept for historical
@@ -206,6 +492,8 @@ uint16_t*  hicolormaps = NULL;  // test a 32k colormap remaps high -> high
 //  but any columns with multiple patches
 //  will have new column_t generated.
 //
+
+
 #endif
 
 // [WDJ] 2/5/2010
@@ -2332,6 +2620,26 @@ void R_Init_color8_translate ( RGBA_t * palette )
 #endif
 }
 #endif
+
+#ifdef ENABLE_DRAW8_USING_12
+// covert 8 bit colors
+void R_Init_color12_translate ( RGBA_t * palette )
+{
+    unsigned int i;
+
+    // Fill table
+    for( i=0; i<0x0FFF; i++ )
+    {
+        // 12 bit color is  R,G,B  4 bits each.
+        // Must shift 4 bit color up to be 8 bit color;
+        register byte r = ((i & 0x0F00) >> 4) + 0x0008;
+        register byte g = ((i & 0x00F0)     ) + 0x0008;
+        register byte b = ((i & 0x000F) << 4) + 0x0008;
+        color12_to_8[i] = NearestColor( r, g, b );
+    }
+}
+#endif
+
 
 typedef struct
 {
