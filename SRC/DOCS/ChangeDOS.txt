@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01447 ]: w108 33 texgen options
+[01446*]: w108 32 modelist
+          SDL Only
+					
 [01445 ]: w108 31 drawsegs
 [01444 ]: w108 29 clipfinal
 [01443 ]: w108 30c CLIP3 option fixed

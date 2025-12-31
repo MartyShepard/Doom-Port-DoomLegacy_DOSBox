@@ -7144,13 +7144,11 @@ dr_alpha_mode:
 Menu control, cv_corona_draw, added, that selects between the
 dr_alpha_modes for corona draw.
 
-
 *** w108_clipfinal
 patchfile = w108_29_clipfinal.patch
 - commit revision 1444
 Keep the CLIP3 conditional code, removing the alternative.
 Missed being committed.
-
 
 *** w108_debugfile
 patchfile = w108_30_debugfile.patch
@@ -7160,7 +7158,6 @@ Fix some compile errors.
 This was found by Adam Stylinski.
 Fixes bug #0650.
 
-
 *** w108_drawsegs
 patchfile = w108_31_drawsegs.patch
 - commit revision 1445
@@ -7169,7 +7166,6 @@ allocation.  This reduces the memory usage because most times that
 array was not used, and it had to be allocated at MAXVIDWIDTH.
 It is now allocated at the actual vid.width.
 This will allow the MAXVIDWIDTH to be increased, as requested.
-
 
 *** w108_modelist
 patchfile = w108_32_modelist.patch
@@ -7182,4 +7178,40 @@ Changed the sdl port code to create our vid_modelist as a copy of the
 SDL mode information.
 This should fix problems that Adam Stylinski was having with
 the MAC SDL port.
+
+*** w108_texgen_options
+patchfile = w108_33_texgen_options.patch
+- commit revision 1447
+Keep the GENTEXT conditional code, removing the alternatives.
+GENTEXT_REALLOC
+GENTEXT_REUSECOL
+GENTEXT_BADPATCH_DETECT
+Rearrange some of the GenerateTexture code.
+Changed a safety test to print a SoftError.
+
+*** w108_NETBSD
+patchfile = w108_34_netbsd.patch,
+  w108_34_netbsd_make_options_nix.patch,
+  w108_34_netbsd_makefile.patch
+- commit revision 1448
+NETBSD port fixes to the Makefile and network code.
+Optioned as NETBSD.
+
+*** w108_textureformat
+patchfile = w108_35_textureformat.patch
+- commit revision 1449
+Update the texture format and support functions.
+Fix the creation of picture format.
+Allow forcing creation of picture format.
+Remove +3 modification of colofs array settings.
+Create a run-time texture render structure to hold texture attributes.
+Change getcolumn functions to take texren parameter instead of texture
+number parameter.
+
+*** w108_deathmatch_skill
+patchfile = w108_36_deathmatch_skill.patch
+- commit revision 1450
+Deathmatch setup issues a text command, that is missing a switch "-",
+making the skill setting ignored.
+This was discovered by Leonardo Montenegro, support request 26.
 

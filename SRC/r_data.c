@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: r_data.c 1447 2019-07-21 01:27:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -112,14 +112,6 @@
 #include "v_video.h" //pLocalPalette
 #include "m_swap.h"
 
-// Enable Generate_Texture to realloc a texture when estimate was too small
-#define GENTEXT_REALLOC
-// Enable Generate_Texture to reuse columns
-#define GENTEXT_REUSECOL
-//#define DEBUG_REUSECOL  (verbose > 1)
-//#define DEBUG_REUSECOL  verbose
-// Enable bad patch detection
-#define GENTEXT_BADPATCH_DETECT
 
 // [WDJ] debug flat
 //#define DEBUG_FLAT
@@ -582,12 +574,10 @@ typedef struct {
     int   originx, originy;	// add to patch to get texture
     post_t *  postptr;		// post within that patch
     patch_t * patch;     	// patch source
-#ifdef GENTEXT_REUSECOL
+    // [WDJ] Generate_Texture can now reuse columns (as done in Requiem compacted patches).
     uint32_t  usedpatchdata;    // to detect reuse, compaction
-#endif
-#ifdef GENTEXT_BADPATCH_DETECT
+    // [WDJ] Bad patch detection
     int   patchsize;
-#endif
 } compat_t;
    
 
@@ -658,24 +648,23 @@ byte* R_GenerateTexture (int texnum)
         // otherwise it will be in cache without endian changes.
         realpatch = W_CachePatchNum (texpatch->patchnum, PU_IN_USE);  // texture lump temp
 
-#ifdef GENTEXT_BADPATCH_DETECT
         // [WDJ] W_CachePatchNum should only get lumps from PATCH section,
         // but it will return a colormap of the same name.
-        // Validity checks.
+        // Here are some validity checks, to ensure we are working with a patch.
         // colormap size = 0x2200 to 0x2248
         {
             int patch_colofs_size = realpatch->width * sizeof( uint32_t );  // width * 4
             uint32_t* pat_colofs = (uint32_t*)&(realpatch->columnofs); // to match size in wad
             if( patch_colofs_size + 8 > patchsize )  // column list exceeds patch size
                 goto make_dummy_texture;
+
             for( i=0; i< realpatch->width; i++)
             {
                if( *(pat_colofs++) > patchsize )
-                   goto make_dummy_texture;
+                   goto make_dummy_texture;  // invalid column offset
             }
         }
-#endif
-#if 1
+
         // [WDJ] Detect PNG patches.
         if(    ((byte*)realpatch)[0]==137
             && ((byte*)realpatch)[1]=='P'
@@ -689,39 +678,10 @@ byte* R_GenerateTexture (int texnum)
             // Enable when want to know which textures are triggering this.
             GenPrintf(EMSG_info,"R_GenerateTexture: Texture %8s has PNG patch, using dummy texture.\n", texture->name );
 #endif
-make_dummy_texture:
-          {
-            // make a dummy texture
-            int head_size = colofs_size + 8;
-            txcblocksize = head_size + 4 + texture->height + 4;
-            txcblock = Z_Malloc (txcblocksize,
-                          PU_IN_USE,         // will change tag at end of this function
-                          (void**)&texturecache[texnum]);
-            patch_t * txcpatch = (patch_t*) txcblock;
-            txcpatch->width = texture->width;
-            txcpatch->height = texture->height;
-            txcpatch->leftoffset = 0;
-            txcpatch->topoffset = 0;
-            destpost = (post_t*) ((byte*)txcblock + head_size);  // posting area;
-            destpost->topdelta = 0;
-            destpost->length = texture->height;
-            destpixels = (byte*)destpost + 3;
-            destpixels[-1] = 0;	// pad 0
-            for( i=0; i<texture->height; i++ )
-            {
-                destpixels[i] = 8; // mono color
-            }
-            destpixels[i++] = 0; // pad 0
-            destpixels[i] = 0xFF; // term
-            // all columns use the same post
-            colofs = (uint32_t*)&(txcpatch->columnofs);  // has patch header
-            for(i=0 ; i< texture->width ; i++ )
-                 colofs[i] = head_size;
-            goto single_patch_finish;
-          }
+            goto make_dummy_texture;
         }
-#endif
-#if 1
+
+        // [WDJ] Detect shifted origin, cannot use the simple copy.
         if( texpatch->originx != 0 || texpatch->originy != 0 )
         {
             // [WDJ] Cannot copy patch to texture.
@@ -730,8 +690,8 @@ make_dummy_texture:
 //	    debug_Printf("GenerateTexture %s: offset forced multipatch\n", texture->name );
             goto multipatch_combine;
         }
-#endif
-#if 1
+
+        // [WDJ] Detect mismatch of patch width, too large.
         if( realpatch->width > texture->width )
         {
             // [WDJ] Texture is a portion of a large patch.
@@ -750,8 +710,8 @@ make_dummy_texture:
             }
         }
         else
-#endif
-#if 1
+
+        // [WDJ] Detect mismatch of patch width, too small.
         if( realpatch->width < texture->width )
         {
             // [WDJ] Messy situation. Single patch texture where the patch
@@ -796,10 +756,10 @@ make_dummy_texture:
             }
             goto single_patch_finish;
         }
-#endif   
+       
+
         {
             // Normal: Most often use patch as it is.
-#if 1
             // texturecache gets copy so that PU_CACHE deallocate clears the
             // texturecache automatically
             txcblock = Z_Malloc (patchsize,
@@ -807,16 +767,6 @@ make_dummy_texture:
                           (void**)&texturecache[texnum]);
             memcpy (txcblock, realpatch, patchsize);
             txcblocksize = patchsize;
-#else
-        // FIXME: this version puts the z_block user as lumpcache,
-        // instead of as texturecache, so deallocate by PU_CACHE leaves
-        // texturecache with a bad ptr.
-//        texturecache[texnum] = txcblock = W_CachePatchNum (texpatch->patchnum, PU_IN_USE);
-        texturecache[texnum] = txcblock = realpatch;
-        Z_ChangeOwner (realpatch, (void**)&texturecache[texnum]);
-        Z_ChangeTag (realpatch, PU_IN_USE);
-        txcblocksize = patchsize;
-#endif
         }
 
   single_patch_finish:
@@ -836,6 +786,38 @@ make_dummy_texture:
         //debug_Printf ("R_GenTex SINGLE %.8s size: %d\n",texture->name,patchsize);
         texgen = txcblock;
         goto done;
+       
+        // [WDJ] Dummy texture generation.
+  make_dummy_texture:
+        {
+            // make a dummy texture
+            int head_size = colofs_size + 8;
+            txcblocksize = head_size + 4 + texture->height + 4;
+            txcblock = Z_Malloc (txcblocksize,
+                          PU_IN_USE,         // will change tag at end of this function
+                          (void**)&texturecache[texnum]);
+            patch_t * txcpatch = (patch_t*) txcblock;
+            txcpatch->width = texture->width;
+            txcpatch->height = texture->height;
+            txcpatch->leftoffset = 0;
+            txcpatch->topoffset = 0;
+            destpost = (post_t*) ((byte*)txcblock + head_size);  // posting area;
+            destpost->topdelta = 0;
+            destpost->length = texture->height;
+            destpixels = (byte*)destpost + 3;
+            destpixels[-1] = 0;	// pad 0
+            for( i=0; i<texture->height; i++ )
+            {
+                destpixels[i] = 8; // mono color
+            }
+            destpixels[i++] = 0; // pad 0
+            destpixels[i] = 0xFF; // term
+            // all columns use the same post
+            colofs = (uint32_t*)&(txcpatch->columnofs);  // has patch header
+            for(i=0 ; i< texture->width ; i++ )
+                 colofs[i] = head_size;
+            goto single_patch_finish;
+        }
     }
     // End of Single-patch texture
 
@@ -855,9 +837,10 @@ make_dummy_texture:
         compat_t * cp = &compat[p];
         cp->postptr = NULL;	// disable until reach starting column
         cp->nxt_y = MAXINT;	// disable
-#ifdef GENTEXT_REUSECOL
+
+        // Track patch memory usage to detect reused columns.
         cp->usedpatchdata = 0;
-#endif
+
         cp->originx = texpatch->originx;
         cp->originy = texpatch->originy;
         realpatch = W_CachePatchNum(texpatch->patchnum, PU_IN_USE);  // patch temp
@@ -865,14 +848,12 @@ make_dummy_texture:
         cp->width = realpatch->width;
         int patch_colofs_size = realpatch->width * sizeof( uint32_t );  // width * 4
         // add posts, without columnofs table and 8 byte patch header
-#ifdef GENTEXT_BADPATCH_DETECT
+        // Need patchsize to detect invalid patches.
         patchsize = W_LumpLength(texpatch->patchnum);
         cp->patchsize = patchsize;
         compostsize += patchsize - patch_colofs_size - 8;
-#else
-        compostsize += W_LumpLength(texpatch->patchnum) - patch_colofs_size - 8;
-#endif
     }
+
     // Decide TGC_ format
     // Combined patches + table + header
     compostsize += colofs_size + 8;	// combined patch size
@@ -912,15 +893,17 @@ make_dummy_texture:
     // Compacted patches, like SW1COMM in Requiem MAP08, usually get expanded,
     // and they expand in the texture when they combine with other patches.
 
-#ifndef GENTEXT_REALLOC
+    // [WDJ] Generate_Texture will now realloc a texture when estimate was too small.
+#if 0
+    // Old code for texture size.
     // Combined patches + table + header + 2 byte per empty column
     txcblocksize = compostsize + (2 * texture->width);
      // this stops failure in caesar.wad
      // No longer needed with expanding texture size
-#else
+#endif
     // Combined patches + table + header + 1 byte per empty column
     txcblocksize = compostsize + texture->width;
-#endif
+
     txcblock = Z_Malloc (txcblocksize, PU_IN_USE,
                       (void**)&texturecache[texnum]);
     txcpatch = (patch_t*) txcblock;
@@ -941,10 +924,9 @@ make_dummy_texture:
     {
         int nxtpat;	// patch number with next post
         int seglen, offset;
-#ifdef GENTEXT_REUSECOL
+        // [WDJ] Detect column reuse (Requiem compacted patches).
         int livepatchcount = 0;
         int reuse_column = -1;
-#endif
        
         // offset to pixels instead of post header
         // Many callers will use colofs-3 to get back to header, but
@@ -965,14 +947,16 @@ make_dummy_texture:
             {
                 realpatch = cp->patch;
                 uint32_t* pat_colofs = (uint32_t*)&(realpatch->columnofs); // to match size in wad
-#ifdef GENTEXT_BADPATCH_DETECT
+
+                // [WDJ] Detect bad column offset.
                 if( pat_colofs[patch_x] > cp->patchsize )  // detect bad patch
                     goto patch_off;  // post is not within patch memory
-#endif
+
                 cp->postptr = (post_t*)( (byte*)realpatch + pat_colofs[patch_x] );  // patch column
                 if ( cp->postptr->topdelta == 0xFF )
                     goto patch_off;
-#ifdef GENTEXT_REUSECOL
+
+                // To handle Requiem compacted patches, where column data is reused.
                 // Empty columns may be shared too, but they are very small,
                 // and it really adds to logic complexity, so only look at non-empty.
                 if ( pat_colofs[patch_x] > cp->usedpatchdata )
@@ -1049,7 +1033,7 @@ make_dummy_texture:
                     }
                 }
                 livepatchcount++;
-#endif	       
+
                 cp->nxt_y = cp->originy + cp->postptr->topdelta;
                 cp->bot_y = cp->nxt_y + cp->postptr->length;
             }else{
@@ -1061,7 +1045,7 @@ make_dummy_texture:
             }
         }  // for all patches
 
-#ifdef GENTEXT_REUSECOL
+        // [WDJ] Reuse shared column data instead of creating multiple copies.
         if( livepatchcount == 1 )
         {
             if( reuse_column >= 0 )
@@ -1076,8 +1060,8 @@ make_dummy_texture:
                  continue;  // next x
             }
         }
-#endif
-       
+
+        // Assemble the patch column data from multiple patches to the composite.
         for(;;) // all posts in column
         {
             // Find next post y in this column.
@@ -1104,6 +1088,7 @@ make_dummy_texture:
                     cp->nxt_y = cp->originy + cp->postptr->topdelta;
                     cp->bot_y = cp->nxt_y + cp->postptr->length;
                 }
+
                 if( cp->nxt_y <= segnxt_y )
                 {
                     // Found an active post
@@ -1169,7 +1154,7 @@ make_dummy_texture:
             }
 
             seglen = segbot_y - segnxt_y;
-            if( destpixels + seglen >= texture_end )  goto exceed_alloc_error;
+            if( destpixels + seglen + 3 >= texture_end )  goto exceed_alloc_error;
 
             // append to existing post
             memcpy( destpixels, ((byte*)srcpost + offset + 3), seglen );
@@ -1185,7 +1170,8 @@ make_dummy_texture:
         *destpixels++ = 0xFF;	// mark end of column
         // may be empty column so do not reference destpost
         continue; // next x
-#ifdef GENTEXT_REALLOC
+       
+       // [WDJ] Realloc texture memory, when estimate was too small.
  exceed_alloc_error:
        {
         // Re-alloc the texture
@@ -1213,9 +1199,15 @@ make_dummy_texture:
         Z_Free(old_txcblock);  // also nulls texturecache ptr
         texturecache[texnum] = txcblock; // replace ptr undone by Z_Free
        }
-#endif
+
     } // for x
-    if( destpixels >= texture_end )  goto exceed_alloc_error;
+
+    if( destpixels >= texture_end )
+    {
+        I_SoftError("R_GenerateTexture: %8s final exceeds allocation %i, used %i bytes\n",
+                     texture->name, txcblocksize, destpixels - txcblock );
+    }
+
     // unlock all the patches, no longer needed, but may be in another texture
     for (p=0; p<patchcount; p++)
     {
@@ -1232,12 +1224,6 @@ make_dummy_texture:
             texture->name, txcblocksize, destpixels - texgen );
 #endif
     goto done;
-   
-#ifndef GENTEXT_REALLOC
- exceed_alloc_error:   
-    I_SoftError("R_GenerateTexture: %8s exceeds allocated block, make picture\n", texture->name );
-    goto error_redo_as_picture;
-#endif
    
  exceed_topdelta:
     I_SoftError("R_GenerateTexture: %8s topdelta= %i exceeds 254, make picture\n",
