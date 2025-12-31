@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 1444 2019-06-12 04:08:18Z wesleyjohnson $
+// $Id: r_segs.c 1445 2019-06-12 04:10:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -193,6 +193,159 @@ void* portable_realloc(void* mem, size_t siz)
     return realloc(mem, siz);
 }
 #endif
+
+// ==========================================================================
+// DrawSegs
+//faB:  very ugly realloc() of drawsegs at run-time, I upped it to 512
+//      instead of 256.. and someone managed to send me a level with 896 drawsegs!
+//      So too bad here's a limit removal …-la-Boom
+//Hurdler: with Legacy 1.43, drawseg_t is 6780 bytes and thus if having 512 segs, it will take 3.3 Mb of memory
+//         default is 128 segs, so it means nearly 1Mb allocated
+// Drawsegs set by R_StoreWallRange, used by R_Create_DrawNodes
+// [WDJ] DrawSeg no longer includes backscale array, so got smaller.
+uint16_t     max_drawsegs;    // number allocated
+drawseg_t  * drawsegs = NULL;  // allocated drawsegs
+drawseg_t  * ds_p = NULL;    // last drawseg used (tail)
+// drawseg_t  * firstnewseg = NULL;  // unused
+
+// Backscale memory for sprites.
+// BSR: BACKSCALE_REF
+// This saves cache space, especially as most of the backscale arrays in the drawsegs were unused.
+// On average, there is 1/2 block left over allocation,
+// but there is 1/2 vid.width wastage on each block (for odd size vidwidths).
+// Starts at 64 firstsegs, and increases only when there are more firstsegs.
+#define  BSR_ALLOC  (MAXVIDWIDTH*64)
+
+typedef struct  bsr_mem_s {
+    struct bsr_mem_s *  next;
+    fixed_t  mem_block[ BSR_ALLOC ];
+} bsr_mem_t;
+
+bsr_mem_t *  bsr_mem_head = NULL;
+bsr_mem_t *  bsr_mem_freelist = NULL;
+fixed_t * bsr_free_array = NULL;
+int       bsr_free_count = 0;
+
+// Get ptr to array of backscale, covering the range.
+static
+fixed_t * R_get_backscale_ref( int num )
+{
+    fixed_t * bsr;
+
+    if( num > bsr_free_count )
+    {
+        // Try next block
+        if( bsr_mem_freelist && bsr_mem_freelist->next )
+        {
+            // Already have memory block link.
+            bsr_mem_freelist = bsr_mem_freelist->next;
+        }
+        else
+        {
+            // Allocate some more bsr memory.
+            bsr_mem_t * bm = (bsr_mem_t*) malloc( sizeof(bsr_mem_t) );
+            if( bm == NULL )  goto memory_fail;
+            bm->next = NULL;
+            // link
+            if( bsr_mem_head == NULL )
+            {
+                bsr_mem_head = bm;
+            }
+            else if( bsr_mem_freelist )
+            {
+                bsr_mem_freelist->next = bm;
+            }
+            bsr_mem_freelist = bm;
+        }
+        // Use the new bsr memory block.
+        bsr_free_array = & bsr_mem_freelist->mem_block[0];
+        bsr_free_count = BSR_ALLOC;
+    }
+    // Allocate num, from the bsr_free_array.
+    bsr = bsr_free_array;
+    bsr_free_count -= num;
+    bsr_free_array += num;
+    return  bsr;
+
+memory_fail:
+    // Fail so that player can still save game.
+    I_SoftError( "Backscale out of memory\n" );
+    return  bsr_mem_head->mem_block;  // reuse
+}
+
+void R_Clear_backscale_ref( void )
+{
+    // If there are unused allocations, then release one.
+    if( bsr_mem_freelist )
+    {
+        // But never release first one, as that was being used.
+        bsr_mem_t * lmf = bsr_mem_freelist->next;  // first unused
+        if( lmf )
+        {
+            // Free one unused bsr memory allocation.
+            bsr_mem_freelist->next = lmf->next;
+            free( lmf );
+        }
+    }
+
+    // Keep rest of allocations, just put them on free list.
+    bsr_mem_freelist = bsr_mem_head;
+    if( bsr_mem_freelist )
+    {
+        bsr_free_count = BSR_ALLOC;
+        bsr_free_array = & bsr_mem_freelist->mem_block[0];
+    }
+    else
+    {
+        // Have empty freelist
+        bsr_free_count = 0;
+        bsr_free_array = NULL;
+    }
+}
+
+
+//
+// R_Clear_DrawSegs
+//
+// Called by R_RenderPlayerView
+void R_Clear_DrawSegs (void)
+{
+    ds_p = drawsegs;
+    R_Clear_backscale_ref();
+}
+
+void expand_drawsegs( void )
+{
+    // drawsegs is NULL on first execution
+    // Realloc larger drawseg memory, and adjust old drawseg ptrs
+    drawseg_t * old_drawsegs = drawsegs;
+    unsigned newmax = max_drawsegs ? max_drawsegs*2 : 128;
+#if !defined( __DJGPP__ )
+    drawseg_t * new_drawsegs = realloc(drawsegs, newmax*sizeof(*drawsegs));
+#else
+    drawseg_t * new_drawsegs = portable_realloc(drawsegs, newmax*sizeof(*drawsegs));
+#endif
+    if( new_drawsegs == 0 )
+    {
+#if !defined( __DJGPP__ )
+        I_Error( "Failed realloc for (new_)drawsegs (Need %dkb)\n",newmax* sizeof(drawseg_t)/1024);
+#else
+        I_Error( "Failed realloc for drawsegs\n" );
+#endif
+    }
+    drawsegs = new_drawsegs;
+    max_drawsegs = newmax;
+    // Adjust ptrs by adding the difference in drawseg area position
+    // [WDJ] Avoid divide and mult by sizeof(drawsegs) by using void* difference
+    // If NULL, then point to drawsegs after first alloc.
+    ptrdiff_t  drawsegs_diff = (void*)drawsegs - (void*)old_drawsegs;
+    ds_p = (drawseg_t*)((void*)ds_p + drawsegs_diff);
+//    firstnewseg = (drawseg_t*)((void*)firstnewseg + drawsegs_diff);
+    if (firstseg)  // if NULL then keep it NULL
+        firstseg = (drawseg_t*)((void*)firstseg + drawsegs_diff);
+}
+
+
 
 // ==========================================================================
 // R_Splats Wall Splats Drawer
@@ -460,6 +613,7 @@ static void R_DrawWallSplats (void)
 #endif //WALLSPLATS
 
 
+
 // ==========================================================================
 // Lightlist and Openings
 // [WDJ] separate functions for expand of lists, with error handling
@@ -519,38 +673,6 @@ void  expand_openings( size_t  need )
 #undef ADJUST
     openings = newopenings;
     lastopening = & openings[ lastindex ];
-}
-
-
-void expand_drawsegs( void )
-{
-    // drawsegs is NULL on first execution
-    // Realloc larger drawseg memory, and adjust old drawseg ptrs
-    drawseg_t * old_drawsegs = drawsegs;
-    unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128;
-#if !defined( __DJGPP__ )
-    drawseg_t * new_drawsegs = realloc(drawsegs, newmax*sizeof(*drawsegs));
-#else
-    drawseg_t * new_drawsegs = portable_realloc(drawsegs, newmax*sizeof(*drawsegs));
-#endif
-    if( new_drawsegs == 0 )
-    {
-#if !defined( __DJGPP__ )
-        I_Error( "Failed realloc for (new_)drawsegs (Need %dkb)\n",newmax* sizeof(drawseg_t)/1024);
-#else
-        I_Error( "Failed realloc for drawsegs\n" );
-#endif
-    }
-    drawsegs = new_drawsegs;
-    maxdrawsegs = newmax;
-    // Adjust ptrs by adding the difference in drawseg area position
-    // [WDJ] Avoid divide and mult by sizeof(drawsegs) by using void* difference
-    // If NULL, then point to drawsegs after first alloc.
-    ptrdiff_t  drawsegs_diff = (void*)drawsegs - (void*)old_drawsegs;
-    ds_p = (drawseg_t*)((void*)ds_p + drawsegs_diff);
-    firstnewseg = (drawseg_t*)((void*)firstnewseg + drawsegs_diff);
-    if (firstseg)  // if NULL then keep it NULL
-        firstseg = (drawseg_t*)((void*)firstseg + drawsegs_diff);
 }
 
 
@@ -1766,9 +1888,10 @@ void R_RenderSegLoop (void)
 
         if (numffplane)
         {
-          // Over all ffloor planes.
-          firstseg->backscale[rw_x] = backscale[rw_x];
+          firstseg->backscale_r[rw_x] = backscale[rw_x];
 //	  firstseg->frontscale[rw_x] = rw_scale;
+
+          // Over all ffloor planes.
           for(i = 0; i < numffplane; i++)
           {
             if(ffplane[i].height < viewz)
@@ -2141,7 +2264,8 @@ void R_StoreWallRange( int   start, int   stop)
     ffloor_t          * bff, * fff;  // backsector fake floor, frontsector fake floor
 //    fixed_t             lheight;  // unused
 
-    if (ds_p == &drawsegs[maxdrawsegs])   expand_drawsegs();
+    if (ds_p == &drawsegs[max_drawsegs])   expand_drawsegs();
+    // Transfer wall attributes to next drawseg ( ds_p ).
     
 #ifdef RANGECHECK
     if (start >=rdraw_viewwidth || start > stop)
@@ -2225,6 +2349,7 @@ void R_StoreWallRange( int   start, int   stop)
     ds_p->maskedtexturecol = NULL;
     ds_p->numthicksides = numthicksides = 0;
     ds_p->thicksidecol = NULL;
+    ds_p->backscale_r = NULL;
 
     for(i = 0; i < MAXFFLOORS; i++)
     {
@@ -2909,16 +3034,24 @@ void R_StoreWallRange( int   start, int   stop)
     {
       if(firstseg == NULL)
       {
+        firstseg = ds_p;
+        // Fill-in firstseg information.
         for(i = 0; i < numffplane; i++)
           ds_p->ffloorplanes[i] = ffplane[i].plane = R_CheckPlane(ffplane[i].plane, rw_x, rw_stopx - 1);
 
         ds_p->numffloorplanes = numffplane;
-        firstseg = ds_p;
       }
       else
       {
         for(i = 0; i < numffplane; i++)
           R_ExpandPlane(ffplane[i].plane, rw_x, rw_stopx - 1);
+      }
+
+      // [WDJ] The only place that calls R_RenderSegLoop where backscale if filled in.
+      if( firstseg && (firstseg->backscale_r == NULL) )
+      {
+          // For now, get the entire vid width.
+          firstseg->backscale_r = R_get_backscale_ref( vid.width );
       }
     }
 

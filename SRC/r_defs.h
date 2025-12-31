@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1439 2019-05-19 02:25:09Z wesleyjohnson $
+// $Id: r_defs.h 1445 2019-06-12 04:10:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -858,7 +858,10 @@ typedef struct drawseg_s
     struct ffloor_s*    thicksides[MAXFFLOORS];
     short*              thicksidecol;
     int                 numthicksides;
-    fixed_t             backscale[MAXVIDWIDTH]; // z check for sprite clipping
+
+    // z check for sprite clipping
+    fixed_t          *  backscale_r;  // ref to array [0..vid.width]
+//    fixed_t             backscale[MAXVIDWIDTH]; // z check for sprite clipping
 //    fixed_t             frontscale[MAXVIDWIDTH]; // z check for sprite clipping
 } drawseg_t;
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1443 2019-06-12 03:58:49Z wesleyjohnson $
+// $Id: r_things.c 1445 2019-06-12 04:10:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2114,10 +2114,11 @@ static void R_Create_DrawNodes( void )
             if(x1 < dnp->plane->minx) x1 = dnp->plane->minx;
             if(x2 > dnp->plane->maxx) x2 = dnp->plane->maxx;
 
-            for(i = x1; i <= x2; i++)
+            fixed_t * bsr = & dnp->seg->backscale_r[ x1 ];
+            for(  ; bsr <= & dnp->seg->backscale_r[ x2 ]; bsr++)
             {
               // keeps sprite from being seen through floors
-              if(dnp->seg->backscale[i] > vsp->scale)
+              if(*(bsr++) > vsp->scale)
               {
                   // this plane needs to be drawn after sprite
                   goto  dnp_closer_break;

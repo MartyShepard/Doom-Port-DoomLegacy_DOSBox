@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1429 2019-02-11 21:41:27Z wesleyjohnson $
+// $Id: r_bsp.c 1445 2019-06-12 04:10:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -101,29 +101,6 @@ side_t*         sidedef;
 line_t*         linedef;
 sector_t*       frontsector;
 sector_t*       backsector;
-
-
-//faB:  very ugly realloc() of drawsegs at run-time, I upped it to 512
-//      instead of 256.. and someone managed to send me a level with
-//      896 drawsegs! So too bad here's a limit removal …-la-Boom
-//Hurdler: with Legacy 1.43, drawseg_t is 6780 bytes and thus if having 512 segs, it will take 3.3 Mb of memory
-//         default is 128 segs, so it means nearly 1Mb allocated
-// Drawsegs set by R_StoreWallRange, used by R_Create_DrawNodes
-drawseg_t*      drawsegs=NULL;  // allocated drawsegs
-uint16_t        maxdrawsegs;    // number allocated
-drawseg_t*      ds_p = NULL;    // last drawseg used (tail)
-drawseg_t*      firstnewseg = NULL;  // unused
-
-
-//
-// R_Clear_DrawSegs
-//
-// Called by R_RenderPlayerView
-void R_Clear_DrawSegs (void)
-{
-    ds_p = drawsegs;
-}
-
 
 
 //
@@ -830,15 +807,17 @@ boolean R_CheckBBox (fixed_t*   bspcoord)
 // Draw one or more line segments.
 //
 
+// First seg of subsector. It has the backscale for the plane.
 drawseg_t*   firstseg;
 
 // Called by R_RenderBSPNode
 void R_Subsector (int num)
 {
+    static sector_t     tempsec; //SoM: 3/17/2000: Deep water hack
+
     int                 segcount;
     seg_t*              lineseg;
     subsector_t*        sub;
-    static sector_t     tempsec; //SoM: 3/17/2000: Deep water hack
     lightlev_t          floorlightlevel;
     lightlev_t          ceilinglightlevel;
     extracolormap_t*    floorcolormap;
