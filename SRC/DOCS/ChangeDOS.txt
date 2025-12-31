@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01438 ]: w108 26 print float
+          Has Fixed negatives xx values/slider
+					
 [01437 ]: w108 25 pic dummy fix
 [01436 ]: w108_24 sofware draw corona
           DOS: Fixed -xx values/slider

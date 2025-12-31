@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: m_menu.c 1438 2019-05-19 02:24:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -4849,8 +4849,9 @@ void M_Change_cvar_value(int choice)
     {
         if(cv->flags & CV_FLOAT)
         {
+            // This is the string that gets displayed too.
             char s[20];
-            sprintf(s,"%f",(float)cv->value/FRACUNIT + d * (1.0/16.0));
+            sprintf(s,"%.4f",(float)cv->value/FRACUNIT + d * (1.0/16.0));
             CV_Set(cv,s);
         }
         else
