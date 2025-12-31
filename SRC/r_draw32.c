@@ -253,7 +253,7 @@ void R_DrawShadeColumn_32(void)
     do
     {
         // 8bpp: *dest = reg_colormaps[ LIGHTTABLE(dc_source[frac >> FRACBITS]) + (*dest) ];
-        // [WDJ] The source determines light level.
+        // [WDJ] The source is a patch of alpha values, 0..255.
         // light level values are 0..NUMCOLORMAPS-1, which is 0..32
 //        alpha = dc_source[frac >> FRACBITS] >> 3;  // reduce 0..255 to 0..32
         alpha = dc_source[frac >> FRACBITS];
@@ -313,24 +313,20 @@ void R_DrawAlphaColumn_32(void)
     }
 #endif
 
+  switch( dr_alpha_mode )
+  {
+    
+   case 0: // Alpha blend
     do
     {
-        // [WDJ] The source determines light level.
-        // source alpha values are 0..255
+        // [WDJ] The source is a patch of alpha values, 0..255.
         alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
         alpha_r = 255 - alpha;
-#if 0
-        register pixel32_t * p32 = (pixel32_t*)dest;
-        p32->b = ((p32->b * alpha_r) + (dr_color.s.blue * alpha))  >> 8;
-        p32->g = ((p32->g * alpha_r) + (dr_color.s.green * alpha)) >> 8;
-        p32->r = ((p32->r * alpha_r) + (dr_color.s.red * alpha))   >> 8;
-#else
         register pixel32_t p32 = *(pixel32_t*)dest;
         p32.b = (((unsigned int)p32.b * alpha_r) + ((unsigned int)dr_color.s.blue * alpha))  >> 8;
         p32.g = (((unsigned int)p32.g * alpha_r) + ((unsigned int)dr_color.s.green * alpha)) >> 8;
         p32.r = (((unsigned int)p32.r * alpha_r) + ((unsigned int)dr_color.s.red * alpha))   >> 8;
         *(pixel32_t*)dest = p32;
-#endif
 
         dest += vid.ybytes;
         frac += fracstep;
@@ -340,6 +336,104 @@ void R_DrawAlphaColumn_32(void)
 #endif
     }
     while (count--);
+    break;
+
+   case 1: // Alpha blend with constant background alpha.
+    // Caller must set dr_alpha_background at (255 - dr_alpha) or less.
+    alpha_r = dr_alpha_background;
+    do
+    {
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
+        register pixel32_t p32 = *(pixel32_t*)dest;
+        p32.b = (((unsigned int)p32.b * alpha_r) + ((unsigned int)dr_color.s.blue * alpha))  >> 8;
+        p32.g = (((unsigned int)p32.g * alpha_r) + ((unsigned int)dr_color.s.green * alpha)) >> 8;
+        p32.r = (((unsigned int)p32.r * alpha_r) + ((unsigned int)dr_color.s.red * alpha))   >> 8;
+        *(pixel32_t*)dest = p32;
+
+        dest += vid.ybytes;
+        frac += fracstep;
+#if 0
+        if( frac >= texheight )
+            frac -= texheight;
+#endif
+    }
+    while (count--);
+    break;
+
+   case 2: // Additive alpha
+    do
+    {
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
+        register pixel32_t p32 = *(pixel32_t*)dest;
+        p32.b += (((uint32_t)dr_color.s.blue  * alpha * (255 - p32.b))) >> 16;
+        p32.g += (((uint32_t)dr_color.s.green * alpha * (255 - p32.g))) >> 16;
+        p32.r += (((uint32_t)dr_color.s.red   * alpha * (255 - p32.r))) >> 16;
+        *(pixel32_t*)dest = p32;
+
+        dest += vid.ybytes;
+        frac += fracstep;
+#if 0
+        if( frac >= texheight )
+            frac -= texheight;
+#endif
+    }
+    while (count--);
+    break;
+
+   case 3: // Additive alpha, with background alpha
+    alpha_r = dr_alpha_background;
+    do
+    {
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
+        register pixel32_t p32 = *(pixel32_t*)dest;
+        register unsigned int r,g,b;
+        b = (p32.b * alpha_r)>>8;
+        p32.b = (((uint32_t)dr_color.s.blue  * alpha * (255 - b)) >> 16) + b;
+        g = (p32.g * alpha_r)>>8;
+        p32.g = (((uint32_t)dr_color.s.green * alpha * (255 - g)) >> 16) + g;
+        r = (p32.r * alpha_r)>>8;
+        p32.r = (((uint32_t)dr_color.s.red   * alpha * (255 - r)) >> 16) + r;
+        *(pixel32_t*)dest = p32;
+
+        dest += vid.ybytes;
+        frac += fracstep;
+#if 0
+        if( frac >= texheight )
+            frac -= texheight;
+#endif
+    }
+    while (count--);
+    break;
+
+   case 4: // Additive alpha, limit math
+    do
+    {
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
+        register pixel32_t p32 = *(pixel32_t*)dest;
+        register unsigned int r,g,b;
+        b = (((unsigned int)dr_color.s.blue * alpha) >> 8) + p32.b;
+        p32.b = (b > 255)? 255 : b;
+        g = (((unsigned int)dr_color.s.green * alpha) >> 8) + p32.g;
+        p32.g = (g > 255)? 255 : g;
+        r = (((unsigned int)dr_color.s.red * alpha) >> 8) + p32.r;
+        p32.r = (r > 255)? 255 : r;
+        *(pixel32_t*)dest = p32;
+
+        dest += vid.ybytes;
+        frac += fracstep;
+#if 0
+        if( frac >= texheight )
+            frac -= texheight;
+#endif
+    }
+    while (count--);
+    break;
+  }
+
 }
 #endif
 

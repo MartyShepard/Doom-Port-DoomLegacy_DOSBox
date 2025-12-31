@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw16.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: r_draw16.c 1440 2019-05-19 02:31:03Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -278,7 +278,7 @@ void R_DrawAlphaColumn_16(void)
     register fixed_t frac;
     register fixed_t fracstep;
     unsigned int  alpha, alpha_r;
-    unsigned int  dr16_red, dr16_green, dr16_blue;
+    uint32_t dr16_red, dr16_green, dr16_blue;
 
     // [WDJ] Source check has been added to all the callers of colfunc().
 
@@ -304,9 +304,13 @@ void R_DrawAlphaColumn_16(void)
     dr16_green = ((uint16_t)dr_color.s.green  << shift_g) & mask_g;
     dr16_blue =  ((uint16_t)dr_color.s.blue   << shift_b) & mask_b;
 
+  switch( dr_alpha_mode )
+  {
+    
+   case 0: // Alpha blend
     do
     {
-        // Apply the dr_color, using the patch as alpha.
+        // [WDJ] The source is a patch of alpha values, 0..255.
         alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
         alpha_r = 255 - alpha;
 
@@ -320,6 +324,89 @@ void R_DrawAlphaColumn_16(void)
         frac += fracstep;
     }
     while (count--);
+    break;
+
+   case 1: // Alpha blend with constant background alpha.
+    // Caller must set dr_alpha_background at (255 - dr_alpha) or less.
+    alpha_r = dr_alpha_background;
+    do
+    {
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
+        register uint16_t dc = *(uint16_t*)dest;
+        *(uint16_t*)dest= (
+              (((((dc & mask_r) * alpha_r) + (dr16_red * alpha)  ) >> 8) & mask_r)
+            | (((((dc & mask_g) * alpha_r) + (dr16_green * alpha)) >> 8) & mask_g)
+            | (((((dc & mask_b) * alpha_r) + (dr16_blue * alpha) ) >> 8) & mask_b) );
+
+        dest += vid.ybytes;
+        frac += fracstep;
+    }
+    while (count--);
+    break;
+
+   case 2: // Additive alpha
+    do
+    {
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
+        register uint16_t dc = *(uint16_t*)dest;
+        register uint32_t r = (dc & mask_r);
+        register uint32_t g = (dc & mask_g);
+        register uint32_t b = (dc & mask_b);
+        r += ((dr_color.s.red   * alpha * (mask_r - r))) >> 16;
+        g += ((dr_color.s.green * alpha * (mask_g - g))) >> 16;
+        b += ((dr_color.s.blue  * alpha * (mask_b - b))) >> 16;
+        *(uint16_t*)dest= (r & mask_r) | (g & mask_g) | (b & mask_b);
+
+        dest += vid.ybytes;
+        frac += fracstep;
+    }
+    while (count--);
+    break;
+
+   case 3: // Additive alpha, with background alpha
+    alpha_r = dr_alpha_background;
+    do
+    {
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
+        register uint16_t dc = *(uint16_t*)dest;
+        register uint32_t r = (((dc & mask_r) * alpha_r)>>8) & mask_r;
+        register uint32_t g = (((dc & mask_g) * alpha_r)>>8) & mask_g;
+        register uint32_t b = (((dc & mask_b) * alpha_r)>>8) & mask_b;;
+        r += ((dr_color.s.red   * alpha * (mask_r - r))) >> 16;
+        g += ((dr_color.s.green * alpha * (mask_g - g))) >> 16;
+        b += ((dr_color.s.blue  * alpha * (mask_b - b))) >> 16;
+        *(uint16_t*)dest= (r & mask_r) | (g & mask_g) | (b & mask_b);
+       
+        dest += vid.ybytes;
+        frac += fracstep;
+    }
+    while (count--);
+    break;
+
+   case 4: // Additive alpha, limit math
+    do
+    {
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
+        register uint16_t dc = *(uint16_t*)dest;
+        register uint32_t r = ((dr16_red   * alpha ) >> 8) + (dc & mask_r);
+        if(r > mask_r)   r = mask_r;
+        register uint32_t g = ((dr16_green * alpha ) >> 8) + (dc & mask_g);
+        if(g > mask_g)   g = mask_g;
+        register uint32_t b = ((dr16_blue  * alpha ) >> 8) + (dc & mask_b);
+        if(b > mask_b)   b = mask_b;
+        *(uint16_t*)dest= (r & mask_r) | (g & mask_g) | (b & mask_b);
+
+        dest += vid.ybytes;
+        frac += fracstep;
+    }
+    while (count--);
+    break;
+  }
+
 }
 #endif
 

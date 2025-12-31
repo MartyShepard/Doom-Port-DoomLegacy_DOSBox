@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1438 2019-05-19 02:24:21Z wesleyjohnson $
+// $Id: m_menu.c 1440 2019-05-19 02:31:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -5867,6 +5867,7 @@ menuitem_t LightingMenu[]=
 {
     {IT_STRING | IT_CVAR ,0, "Corona"             , &cv_corona          , 0},
     {IT_STRING | IT_CVAR, 0, "Corona size"        , &cv_coronasize      , 0},
+    {IT_STRING | IT_CVAR ,0, "Corona draw"        , &cv_corona_draw_mode, 0},
 //    {IT_STRING | IT_CVAR, 0, "Dynamic lighting"   , &cv_dynamiclighting , 0},
 //    {IT_STRING | IT_CVAR, 0, "Static lighting"    , &cv_staticlighting  , 0},
 //    {IT_STRING | IT_CVAR, 0, "Monster ball light" , &cv_monball_light    , 0},
@@ -6234,6 +6235,7 @@ void M_Register_Menu_Controls( void )
     // p_lights.c
     CV_RegisterVar(&cv_corona);
     CV_RegisterVar(&cv_coronasize);
+    CV_RegisterVar(&cv_corona_draw_mode);
 //  CV_RegisterVar(&cv_dynamiclighting);
 //  CV_RegisterVar(&cv_staticlighting);
     CV_RegisterVar(&cv_monball_light);

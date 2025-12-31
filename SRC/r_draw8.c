@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw8.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: r_draw8.c 1440 2019-05-19 02:31:03Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 // Portions Copyright (C) 2000-2016 by DooM Legacy Team.
@@ -494,6 +494,9 @@ void R_DrawAlphaColumn_8(void)
     register fixed_t frac;
     register fixed_t fracstep;
     register unsigned int  alpha;
+#ifdef ENABLE_DRAW8_USING_12
+    register unsigned int  alpha_r;
+#endif
 
     // [WDJ] Source check has been added to all the callers of colfunc().
 
@@ -515,12 +518,16 @@ void R_DrawAlphaColumn_8(void)
     fracstep = dc_iscale;
     frac = dc_texturemid + (dc_yl - centery) * fracstep;
 
+    // Colormap the dr_color at the source.
+   
+#ifdef ENABLE_DRAW8_USING_12
+  switch( dr_alpha_mode )
+  {
+   case 0: // Alpha blend
     do
     {
-        // Apply the dr_color, using the patch as alpha.
-        // Colormap the dr_color at the source.
-#ifdef ENABLE_DRAW8_USING_12
-        alpha = ((dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) + 0x0010) >> 8;  // alpha 0..255
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = ((dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) + 0x0080) >> 8;  // alpha 0..255
         if( alpha > 14 )
         {
             unsigned int alpha_r = 255 - alpha;
@@ -528,25 +535,135 @@ void R_DrawAlphaColumn_8(void)
             // Calculate transparency using RGBA
             register RGBA_t p = pLocalPalette[*dest];
             register unsigned int p12 = // 12 bit r,g,b color
-              (((((unsigned int)p.s.blue * alpha_r) + ((unsigned int)dr_color.s.blue * alpha)  ) >> (8+4-0)) & 0x000F)
-            | (((((unsigned int)p.s.green * alpha_r) + ((unsigned int)dr_color.s.green * alpha)) >> (8+4-4)) & 0x00F0)
-            | (((((unsigned int)p.s.red * alpha_r) + ((unsigned int)dr_color.s.red * alpha)    ) >> (8+4-8)) & 0x0F00);
+              (((((unsigned int)p.s.blue * alpha_r) + ((unsigned int)dr_color.s.blue * alpha)   + 0x0080) >> (8+4-0)) & 0x000F)
+            | (((((unsigned int)p.s.green * alpha_r) + ((unsigned int)dr_color.s.green * alpha) + 0x0080) >> (8+4-4)) & 0x00F0)
+            | (((((unsigned int)p.s.red * alpha_r) + ((unsigned int)dr_color.s.red * alpha)     + 0x0080) >> (8+4-8)) & 0x0F00);
            *dest = color12_to_8[p12];  // lookup palette
         }
+        dest += vid.ybytes;
+        frac += fracstep;
+    }
+    while (count--);
+    break;
+
+   case 1: // Alpha blend with constant background alpha.
+    // Caller must set dr_alpha_background at (255 - dr_alpha) or less.
+    alpha_r = dr_alpha_background;
+    do
+    {
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = ((dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) + 0x0080) >> 8;  // alpha 0..255
+        if( alpha > 14 )
+        {
+            // Calculate transparency using RGBA
+            register RGBA_t p = pLocalPalette[*dest];
+            register unsigned int p12 = // 12 bit r,g,b color
+              (((((unsigned int)p.s.blue * alpha_r) + ((unsigned int)dr_color.s.blue * alpha)   + 0x0080) >> (8+4-0)) & 0x000F)
+            | (((((unsigned int)p.s.green * alpha_r) + ((unsigned int)dr_color.s.green * alpha) + 0x0080) >> (8+4-4)) & 0x00F0)
+            | (((((unsigned int)p.s.red * alpha_r) + ((unsigned int)dr_color.s.red * alpha)     + 0x0080) >> (8+4-8)) & 0x0F00);
+           *dest = color12_to_8[p12];  // lookup palette
+        }
+        dest += vid.ybytes;
+        frac += fracstep;
+    }
+    while (count--);
+    break;
+
+   case 2: // Additive alpha
+    do
+    {
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = ((dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) + 0x0080) >> 8;  // alpha 0..255
+        if( alpha > 14 )
+        {
+            // Calculate transparency using RGBA
+            register RGBA_t p = pLocalPalette[*dest];
+            register unsigned int p12 = // 12 bit r,g,b color
+              ((( ((unsigned int)dr_color.s.blue * alpha * (255 - p.s.blue))   + 0x0080) >> (16+4-0)) & 0x000F)
+            | ((( ((unsigned int)dr_color.s.green * alpha * (255 - p.s.green)) + 0x0080) >> (16+4-4)) & 0x00F0)
+            | ((( ((unsigned int)dr_color.s.red * alpha * (255 - p.s.red))     + 0x0080) >> (16+4-8)) & 0x0F00);
+           *dest = color12_to_8[p12];  // lookup palette
+        }
+        dest += vid.ybytes;
+        frac += fracstep;
+    }
+    while (count--);
+    break;
+
+   case 3: // Additive alpha, with background alpha
+    alpha_r = dr_alpha_background;
+    do
+    {
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = ((dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) + 0x0080) >> 8;  // alpha 0..255
+        if( alpha > 14 )
+        {
+            // Calculate transparency using RGBA
+            register RGBA_t p = pLocalPalette[*dest];
+            unsigned int r,g,b;
+            b = (p.s.blue * alpha_r)>>8;
+            b += ((((unsigned int)dr_color.s.blue  * alpha * (255 - b)) + 0x0080) >> 16);
+            g = (p.s.green * alpha_r)>>8;
+            g += ((((unsigned int)dr_color.s.green * alpha * (255 - g)) + 0x0080) >> 16);
+            r = (p.s.red * alpha_r)>>8;
+            r += ((((unsigned int)dr_color.s.red   * alpha * (255 - r)) + 0x0080) >> 16);
+
+            register unsigned int p12 = // 12 bit r,g,b color
+              ((b & 0xF0) >> 4) | (g & 0xF0) | ((r & 0xF0) << 4);
+           *dest = color12_to_8[p12];  // lookup palette
+        }
+        dest += vid.ybytes;
+        frac += fracstep;
+    }
+    while (count--);
+    break;
+
+   case 4: // Additive alpha, limit math
+    do
+    {
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
+        if( alpha > 14 )
+        {
+            // Calculate transparency using RGBA
+            register RGBA_t p = pLocalPalette[*dest];
+            unsigned int r,g,b;
+            b = ((((unsigned int)dr_color.s.blue  * alpha ) + 0x0080) >> 8) + p.s.blue;
+            if(b > 255)  b = 255;
+            g = ((((unsigned int)dr_color.s.green * alpha ) + 0x0080) >> 8) + p.s.green;
+            if(g > 255)  g = 255;
+            r = ((((unsigned int)dr_color.s.red   * alpha ) + 0x0080) >> 8) + p.s.red;
+            if(r > 255)  r = 255;
+
+            register unsigned int p12 = // 12 bit r,g,b color
+              ((b & 0xF0) >> 4) | (g & 0xF0) | ((r & 0xF0) << 4);
+           *dest = color12_to_8[p12];  // lookup palette
+        }
+        dest += vid.ybytes;
+        frac += fracstep;
+    }
+    while (count--);
+    break;
+  }
 #else
-        // Not very good.  Keep as alternative if someone needs smaller code.
+    // Without ENABLE_DRAW8_USING_12 there is only a coarse table lookup.
+    do
+    {
+        // Apply the dr_color, using the patch as alpha.
+        // Colormap the dr_color at the source.
         alpha = ((dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha)) >> 12;  // alpha 0..16
 
         // Select a transparent table to do alpha
         dc_translucentmap = & translucenttables[ translucent_alpha_table[ alpha ] ];
 //        *dest = reg_colormaps[ dc_translucentmap[ (dr_color8 << dr8_src_shift[alpha]) + ((*dest) << dr8_src_shift[alpha]) ]];
         *dest = dc_translucentmap[ (dr_color8 << dr8_src_shift[alpha]) + ((*dest) << dr8_src_shift[alpha]) ];
-#endif
 
         dest += vid.ybytes;
         frac += fracstep;
     }
     while (count--);
+#endif
+
 }
 #endif
 

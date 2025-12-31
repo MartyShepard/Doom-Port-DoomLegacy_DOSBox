@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_lights.c 1439 2019-05-19 02:25:09Z wesleyjohnson $
+// $Id: p_lights.c 1440 2019-05-19 02:31:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -938,9 +938,10 @@ void CV_corona_OnChange( void );
 CV_PossibleValue_t corona_cons_t[] = { {0, "Off"}, {1, "Special"}, {2, "Most"}, {14, "Dim"}, {15, "All"}, {16, "Bright"}, {20, "Old"}, {0, NULL} };
 consvar_t cv_corona         = {"corona",    "All", CV_SAVE|CV_CALL, corona_cons_t, CV_corona_OnChange};
 consvar_t cv_coronasize      = {"coronasize",        "1", CV_SAVE| CV_FLOAT, NULL };
+CV_PossibleValue_t corona_draw_mode_cons_t[] = { {0, "Blend"}, {1, "Blend_BG"}, {2, "Additive"}, {3, "Additive_BG"}, {4, "Add_Limit"}, {0, NULL} };
+consvar_t cv_corona_draw_mode = {"corona_draw_mode", "2", CV_SAVE, corona_draw_mode_cons_t, NULL};
 // Monster ball weapon light
-consvar_t cv_monball_light  = {"monball_light",       "On", CV_SAVE|CV_CALL
-                                  , CV_OnOff, CV_MonBall_OnChange };
+consvar_t cv_monball_light  = {"monball_light", "On", CV_SAVE|CV_CALL, CV_OnOff, CV_MonBall_OnChange };
 
 void CV_MonBall_OnChange( void )
 {

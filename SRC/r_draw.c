@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: r_draw.c 1440 2019-05-19 02:31:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -121,6 +121,8 @@ int             hcolumnofs[MAXVIDHEIGHT];
 
 byte            dr_alpha;  // translucent and fog alpha, 0..255
 #ifdef ENABLE_DRAW_ALPHA
+byte            dr_alpha_mode;  // alpha combine modes
+byte            dr_alpha_background;  // alpha applied to background
 byte            dr_color8;
 RGBA_t          dr_color;  // draw alpha
 #endif

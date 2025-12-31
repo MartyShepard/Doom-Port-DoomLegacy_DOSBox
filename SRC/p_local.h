@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: p_local.h 1440 2019-05-19 02:31:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -522,6 +522,7 @@ void  Setup_sprite_light( byte  mons_ball_light );
 //extern consvar_t cv_staticlight;
 extern consvar_t cv_corona;
 extern consvar_t cv_coronasize;
+extern consvar_t cv_corona_draw_mode;
 extern consvar_t cv_monball_light;
 
 #endif  // P_LOCAL_H

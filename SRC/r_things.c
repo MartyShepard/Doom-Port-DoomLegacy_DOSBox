@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1439 2019-05-19 02:25:09Z wesleyjohnson $
+// $Id: r_things.c 1440 2019-05-19 02:31:03Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2897,6 +2897,9 @@ void Draw_Sprite_Corona_Light( vissprite_t * vis )
         dr_color8 = NearestColor( dr_color.s.red, dr_color.s.green, dr_color.s.blue);
     }
 # endif
+    dr_alpha_mode = cv_corona_draw_mode.EV;
+    // alpha to dim the background through the corona   
+    dr_alpha_background = (cv_corona_draw_mode.EV == 1)? (255 - dr_alpha) : 240;
 #else
     colfunc = transcolfunc;  // R_DrawTranslucentColumn
     // Get the corona patch specifically colored for this light.

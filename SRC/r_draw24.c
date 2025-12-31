@@ -204,7 +204,7 @@ void R_DrawFuzzColumn_24 (void)
 }
 
 
-// To draw FF_SMOKESHADE things, sprite is an alpha channel
+// To draw FF_SMOKESHADE things, sprite is an \alpha channel
 void R_DrawShadeColumn_24(void)
 {
     fixed_t texheight = dc_texheight << FRACBITS;  // any texture size
@@ -246,7 +246,7 @@ void R_DrawShadeColumn_24(void)
     do
     {
         // 8bpp: *dest = reg_colormaps[ LIGHTTABLE(dc_source[frac >> FRACBITS]) + (*dest) ];
-        // [WDJ] The source determines light level.
+        // [WDJ] The source is a patch of alpha values, 0..255..
         // light level values are 0..NUMCOLORMAPS-1, which is 0..32
 //        alpha = dc_source[frac >> FRACBITS] >> 3;  // reduce 0..255 to 0..32
         alpha = dc_source[frac >> FRACBITS];
@@ -306,10 +306,13 @@ void R_DrawAlphaColumn_24(void)
     }
 #endif
 
+  switch( dr_alpha_mode )
+  {
+    
+   case 0: // Alpha blend
     do
     {
-        // [WDJ] The source determines light level.
-        // source alpha values are 0..255
+        // [WDJ] The source is a patch of alpha values, 0..255.
         alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
         alpha_r = 255 - alpha;
         register pixel24_t * p24 = (pixel24_t*)dest;
@@ -321,10 +324,105 @@ void R_DrawAlphaColumn_24(void)
         frac += fracstep;
 #if 0
         if( frac >= texheight )
-            frac -= texheight;  // wrap texture
+            frac -= texheight;
 #endif
     }
     while (count--);
+    break;
+
+   case 1: // Alpha blend with constant background alpha.
+    // Caller must set dr_alpha_background at (255 - dr_alpha) or less.
+    alpha_r = dr_alpha_background;
+    do
+    {
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
+        register pixel24_t * p24 = (pixel24_t*)dest;
+        p24->b = (((unsigned int)p24->b * alpha_r) + ((unsigned int)dr_color.s.blue * alpha))  >> 8;
+        p24->g = (((unsigned int)p24->g * alpha_r) + ((unsigned int)dr_color.s.green * alpha)) >> 8;
+        p24->r = (((unsigned int)p24->r * alpha_r) + ((unsigned int)dr_color.s.red * alpha))   >> 8;
+
+        dest += vid.ybytes;
+        frac += fracstep;
+#if 0
+        if( frac >= texheight )
+            frac -= texheight;
+#endif
+    }
+    while (count--);
+    break;
+
+   case 2: // Additive alpha
+    // Additive alpha
+    do
+    {
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
+        register pixel24_t * p24 = (pixel24_t*)dest;
+        p24->b += (((unsigned int)dr_color.s.blue  * alpha * (255 - p24->b))) >> 16;
+        p24->g += (((unsigned int)dr_color.s.green * alpha * (255 - p24->g))) >> 16;
+        p24->r += (((unsigned int)dr_color.s.red   * alpha * (255 - p24->r))) >> 16;
+
+        dest += vid.ybytes;
+        frac += fracstep;
+#if 0
+        if( frac >= texheight )
+            frac -= texheight;
+#endif
+    }
+    while (count--);
+    break;
+
+   case 3: // Additive alpha, with background alpha
+    alpha_r = dr_alpha_background;
+    do
+    {
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
+        register pixel24_t * p24 = (pixel24_t*)dest;
+        register unsigned int r,g,b;
+        b = (p24->b * alpha_r)>>8;
+        p24->b = (((unsigned int)dr_color.s.blue  * alpha * (255 - b)) >> 16) + b;
+        g = (p24->g * alpha_r)>>8;
+        p24->g = (((unsigned int)dr_color.s.green * alpha * (255 - g)) >> 16) + g;
+        r = (p24->r * alpha_r)>>8;
+        p24->r = (((unsigned int)dr_color.s.red   * alpha * (255 - r)) >> 16) + r;
+
+        dest += vid.ybytes;
+        frac += fracstep;
+#if 0
+        if( frac >= texheight )
+            frac -= texheight;
+#endif
+    }
+    while (count--);
+    break;
+
+   case 4: // Additive alpha, limit math
+    do
+    {
+        // [WDJ] The source is a patch of alpha values, 0..255.
+        alpha = (dc_source[frac >> FRACBITS] * (unsigned int)dr_alpha) >> 8;
+        register pixel24_t * p24 = (pixel24_t*)dest;
+        register unsigned int r,g,b;
+        b = (((unsigned int)dr_color.s.blue * alpha) >> 8) + p24->b;
+        p24->b = (b > 255)? 255 : b;
+        g = (((unsigned int)dr_color.s.green * alpha) >> 8) + p24->g;
+        p24->g = (g > 255)? 255 : g;
+        r = (((unsigned int)dr_color.s.red * alpha) >> 8) + p24->r;
+        p24->r = (r > 255)? 255 : r;
+
+        dest += vid.ybytes;
+        frac += fracstep;
+#if 0
+        if( frac >= texheight )
+            frac -= texheight;
+#endif
+    }
+    while (count--);
+    break;
+  }
+
 }
 #endif
 
