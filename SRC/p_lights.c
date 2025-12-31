@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_lights.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: p_lights.c 1439 2019-05-19 02:25:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -522,41 +522,52 @@ spr_light_t  sprite_light[NUMLIGHTS] = {
     // tall lights
     // LT_BLUETALL
 //    { SPLGT_light,    0,  27, 0x80ff7070,  75, 0x40ff5050, 100 },
-    { SPLGT_light,    0,27, {RGBA(0x70,0x70,0xff,0x80)},  75.0f, {RGBA(0x50,0x50,0xff,0x40)}, 100.0f },
+//    { SPLGT_light,    0,27, {RGBA(0x70,0x70,0xff,0x80)},  75.0f, {RGBA(0x50,0x50,0xff,0x40)}, 100.0f },
+    { SPLGT_dynamic|SPLGT_corona|SPLT_fire,    0,27, {RGBA(0x70,0x70,0xff,0x80)},  75.0f, {RGBA(0x50,0x50,0xff,0x40)}, 100.0f },
     // LT_GREENTALL
 //    { SPLGT_light,    0,  27, 0x5060ff60,  75, 0x4070ff70, 100 },
-    { SPLGT_light,    0,27, {RGBA(0x60,0xff,0x60,0x50)},  75.0f, {RGBA(0x70,0xff,0x70,0x40)}, 100.0f },
+//    { SPLGT_light,    0,27, {RGBA(0x60,0xff,0x60,0x50)},  75.0f, {RGBA(0x70,0xff,0x70,0x40)}, 100.0f },
+    { SPLGT_dynamic|SPLGT_corona|SPLT_fire,    0,27, {RGBA(0x60,0xff,0x60,0x50)},  75.0f, {RGBA(0x70,0xff,0x70,0x40)}, 100.0f },
     // LT_REDTALL
 //    { SPLGT_light,    0,  27, 0x705070ff,  75, 0x405070ff, 100 },
-    { SPLGT_light,    0,27, {RGBA(0xff,0x70,0x50,0x70)},  75.0f, {RGBA(0xff,0x70,0x50,0x40)}, 100.0f },
+//    { SPLGT_light,    0,27, {RGBA(0xff,0x70,0x50,0x70)},  75.0f, {RGBA(0xff,0x70,0x50,0x40)}, 100.0f },
+    { SPLGT_dynamic|SPLGT_corona|SPLT_fire,    0,27, {RGBA(0xff,0x70,0x50,0x70)},  75.0f, {RGBA(0xff,0x70,0x50,0x40)}, 100.0f },
 
     // small lights
     // LT_BLUESMALL
 //    { SPLGT_light,    0,  14, 0x80ff7070,  60, 0x40ff5050, 100 },
-    { SPLGT_light,    0,14, {RGBA(0x70,0x70,0xff,0x80)},  60.0f, {RGBA(0x50,0x50,0xff,0x40)}, 100.0f },
+//    { SPLGT_light,    0,14, {RGBA(0x70,0x70,0xff,0x80)},  60.0f, {RGBA(0x50,0x50,0xff,0x40)}, 100.0f },
+    { SPLGT_dynamic|SPLGT_corona|SPLT_fire,    0,14, {RGBA(0x70,0x70,0xff,0x80)},  60.0f, {RGBA(0x50,0x50,0xff,0x40)}, 100.0f },
     // LT_GREENSMALL
 //    { SPLGT_light,    0,  14, 0x6070ff70,  60, 0x4070ff70, 100 },
-    { SPLGT_light,    0,14, {RGBA(0x70,0xff,0x70,0x60)},  60.0f, {RGBA(0x70,0xff,0x70,0x40)}, 100.0f },
+//    { SPLGT_light,    0,14, {RGBA(0x70,0xff,0x70,0x60)},  60.0f, {RGBA(0x70,0xff,0x70,0x40)}, 100.0f },
+    { SPLGT_dynamic|SPLGT_corona|SPLT_fire,    0,14, {RGBA(0x70,0xff,0x70,0x60)},  60.0f, {RGBA(0x70,0xff,0x70,0x40)}, 100.0f },
     // LT_REDSMALL
 //    { SPLGT_light,    0,  14, 0x705070ff,  60, 0x405070ff, 100 },
-    { SPLGT_light,    0,14, {RGBA(0xff,0x70,0x50,0x70)},  60.0f, {RGBA(0xff,0x70,0x50,0x40)}, 100.0f },
+//    { SPLGT_light,    0,14, {RGBA(0xff,0x70,0x50,0x70)},  60.0f, {RGBA(0xff,0x70,0x50,0x40)}, 100.0f },
+    { SPLGT_dynamic|SPLGT_corona|SPLT_fire,    0,14, {RGBA(0xff,0x70,0x50,0x70)},  60.0f, {RGBA(0xff,0x70,0x50,0x40)}, 100.0f },
 
     // other lights
     // LT_TECHLAMP
 //    { SPLGT_light,    0,  33, 0x80ffb0b0,  75, 0x40ffb0b0, 100 },
-    { SPLGT_light,    0,33, {RGBA(0xb0,0xb0,0xff,0x80)},  75.0f, {RGBA(0xb0,0xb0,0xff,0x40)}, 100.0f },
+//    { SPLGT_light,    0,33, {RGBA(0xb0,0xb0,0xff,0x80)},  75.0f, {RGBA(0xb0,0xb0,0xff,0x40)}, 100.0f },
+    { SPLGT_dynamic|SPLGT_corona|SPLT_lamp,    0,33, {RGBA(0xb0,0xb0,0xff,0x80)},  75.0f, {RGBA(0xb0,0xb0,0xff,0x40)}, 100.0f },
     // LT_TECHLAMP2
 //    { SPLGT_light,    0,  33, 0x80ffb0b0,  75, 0x40ffb0b0, 100 },
-    { SPLGT_light,    0,26, {RGBA(0xb0,0xb0,0xff,0x80)},  60.0f, {RGBA(0xb0,0xb0,0xff,0x40)}, 100.0f },
+//    { SPLGT_light,    0,26, {RGBA(0xb0,0xb0,0xff,0x80)},  60.0f, {RGBA(0xb0,0xb0,0xff,0x40)}, 100.0f },
+    { SPLGT_dynamic|SPLGT_corona|SPLT_lamp,    0,26, {RGBA(0xb0,0xb0,0xff,0x80)},  60.0f, {RGBA(0xb0,0xb0,0xff,0x40)}, 100.0f },
     // LT_COLUMN
 //    { SPLGT_light,    3,  19, 0x80b0f0f0,  60, 0x40b0f0f0, 100 },
-    { SPLGT_light,    3,19, {RGBA(0xf0,0xf0,0xb0,0x80)},  60.0f, {RGBA(0xf0,0xf0,0xb0,0x40)}, 100.0f },
+//    { SPLGT_light,    3,19, {RGBA(0xf0,0xf0,0xb0,0x80)},  60.0f, {RGBA(0xf0,0xf0,0xb0,0x40)}, 100.0f },
+    { SPLGT_dynamic|SPLGT_corona|SPLT_lamp,    3,19, {RGBA(0xf0,0xf0,0xb0,0x80)},  60.0f, {RGBA(0xf0,0xf0,0xb0,0x40)}, 100.0f },
     // LT_CANDLE
 //    { SPLGT_light,    0,   6, 0x60b0f0f0,  20, 0x30b0f0f0,  30 },
-    { SPLGT_light,    0, 6, {RGBA(0xf0,0xf0,0xb0,0x60)},  20.0f, {RGBA(0xf0,0xf0,0xb0,0x30)},  30.0f },
+//    { SPLGT_light,    0, 6, {RGBA(0xf0,0xf0,0xb0,0x60)},  20.0f, {RGBA(0xf0,0xf0,0xb0,0x30)},  30.0f },
+    { SPLGT_dynamic|SPLGT_corona|SPLT_fire,    0, 6, {RGBA(0xf0,0xf0,0xb0,0x60)},  20.0f, {RGBA(0xf0,0xf0,0xb0,0x30)},  30.0f },
     // LT_CANDLEABRE
 //    { SPLGT_light,    0,  30, 0x60b0f0f0,  60, 0x30b0f0f0, 100 },
-    { SPLGT_light,    0,30, {RGBA(0xf0,0xf0,0xb0,0x60)},  60.0f, {RGBA(0xf0,0xf0,0xb0,0x30)}, 100.0f },
+//    { SPLGT_light,    0,30, {RGBA(0xf0,0xf0,0xb0,0x60)},  60.0f, {RGBA(0xf0,0xf0,0xb0,0x30)}, 100.0f },
+    { SPLGT_dynamic|SPLGT_corona|SPLT_fire,    0,30, {RGBA(0xf0,0xf0,0xb0,0x60)},  60.0f, {RGBA(0xf0,0xf0,0xb0,0x30)}, 100.0f },
     
     // monsters
     // LT_REDBALL
@@ -601,7 +612,8 @@ spr_light_t  sprite_light[NUMLIGHTS] = {
     { SPLGT_dynamic,   0,-8, {RGBA(0xf0,0x60,0x60,0x60)},  60.0f, {RGBA(0xf7,0x70,0x20,0x50)}, 100.0f },
     // LT_KFR1
 //    { SPLGT_dynamic,   0,  27, 0x606060f0,  60, 0x4020a0f7, 100 },
-    { SPLGT_dynamic,   0,27, {RGBA(0xf0,0x60,0x60,0x60)},  60.0f, {RGBA(0xf7,0xa0,0x20,0x40)}, 100.0f },
+//    { SPLGT_dynamic,   0,27, {RGBA(0xf0,0x60,0x60,0x60)},  60.0f, {RGBA(0xf7,0xa0,0x20,0x40)}, 100.0f },
+    { SPLGT_dynamic|SPLGT_corona|SPLT_fire,   0,27, {RGBA(0xf0,0x60,0x60,0x60)},  60.0f, {RGBA(0xf7,0xa0,0x20,0x40)}, 100.0f },
 };
 
 
@@ -912,6 +924,7 @@ void  Setup_sprite_light( byte  mons_ball_light )
 
 
 void CV_MonBall_OnChange( void );
+void CV_corona_OnChange( void );
 
 
 //consvar_t cv_dynamiclight = {"dynamiclighting",  "On", CV_SAVE, CV_OnOff };
@@ -922,8 +935,8 @@ void CV_MonBall_OnChange( void );
 //#else
 //consvar_t cv_corona_draw         = {"corona_draw",    "On", CV_SAVE, CV_OnOff };
 //#endif
-CV_PossibleValue_t corona_cons_t[] = { {0, "Off"}, {1, "Special"}, {2, "Most"}, {3, "All"}, {0, NULL} };
-consvar_t cv_corona         = {"corona",    "All", CV_SAVE, corona_cons_t };
+CV_PossibleValue_t corona_cons_t[] = { {0, "Off"}, {1, "Special"}, {2, "Most"}, {14, "Dim"}, {15, "All"}, {16, "Bright"}, {20, "Old"}, {0, NULL} };
+consvar_t cv_corona         = {"corona",    "All", CV_SAVE|CV_CALL, corona_cons_t, CV_corona_OnChange};
 consvar_t cv_coronasize      = {"coronasize",        "1", CV_SAVE| CV_FLOAT, NULL };
 // Monster ball weapon light
 consvar_t cv_monball_light  = {"monball_light",       "On", CV_SAVE|CV_CALL
@@ -933,4 +946,15 @@ void CV_MonBall_OnChange( void )
 {
     Setup_sprite_light( cv_monball_light.EV );
 }
+
+void CV_corona_OnChange( void )
+{
+    int i;
+    // Force light setup, without another test.
+    for( i=0; i<NUMLIGHTS; i++ )
+    {
+        sprite_light[i].impl_flags |= SLI_changed;
+    }
+}
+
 

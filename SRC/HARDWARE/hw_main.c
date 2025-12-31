@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: hw_main.c 1439 2019-05-19 02:25:09Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -3341,6 +3341,8 @@ static void HWR_DrawSprite(gr_vissprite_t * spr)
 #ifdef SPDR_CORONAS
 #ifdef CORONA_CHOICE
     if( corona_draw_choice == 1 )
+#else
+    if( cv_corona.EV )
 #endif
     {
         HWR_DoCoronasLighting(vxtx, spr);

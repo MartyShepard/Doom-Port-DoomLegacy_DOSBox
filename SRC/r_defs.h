@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: r_defs.h 1439 2019-05-19 02:25:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -649,24 +649,45 @@ typedef enum {
 typedef enum {
    // UNDEFINED_SPR = 0
   SPLGT_none     = 0x00, // actually just for testing
-   // CORONOA_SPR = 1
+
+// Effect enables
+   // CORONA_SPR = 1
   SPLGT_corona   = 0x01, // emit a corona
    // DYNLIGHT_SPR = 2
   SPLGT_dynamic  = 0x02, // emit dynamic lighting
+
+// Type field, can create a light source
+  SPLT_type_field = 0xF0,
+  SPLT_unk      = 0x00, // phobiata, newmaps default, plain corona
+  SPLT_rocket   = 0x10, // flicker
+  SPLT_lamp     = 0x20,
+  SPLT_fire     = 0x30, // slow flicker, torch
+//SPLT_monster  = 0x40,
+//SPLT_ammo     = 0x50,
+//SPLT_bonus    = 0x60,
+  SPLT_light    = 0xC0, // no fade
+  SPLT_firefly  = 0xD0, // firefly flicker, un-synch
+  SPLT_random   = 0xE0, // random LED, un-synch
+  SPLT_pulse    = 0xF0, // slow pulsation, un-synch
+
+// Standard Combinations
    // LIGHT_SPR = 3
   SPLGT_light    = (SPLGT_dynamic|SPLGT_corona),
    // ROCKET_SPR = 0x13
-  SPLGT_rocket   = 0x10 | (SPLGT_dynamic|SPLGT_corona),
-//SPLGT_monster  = 0x04,
-//SPLGT_ammo     = 0x08,
-//SPLGT_bonus    = 0x20,
+  SPLGT_rocket   = SPLT_rocket | (SPLGT_dynamic|SPLGT_corona),
 } sprite_light_flags_e;
 
   
-//Hurdler: 04/12/2000: for now, only used in hardware mode
-//                     maybe later for software as well?
-//                     that's why it's moved here
-typedef struct light_s 
+typedef enum {
+//  SPLT_type_field = 0xF0  // working type setting
+   SLI_type_set= 0x02,  // the type was set, probably by fragglescript
+   SLI_corona_set= 0x04,// the corona was set, only by fragglescript
+   SLI_changed = 0x08,  // the data was changed, probably by fragglescript
+} sprite_light_impl_flags_e;
+
+
+// Special sprite lighting. Optimized for Hardware, OpenGL.
+typedef struct
 {
     uint16_t  splgt_flags;   // sprite_light_e, used in hwr_light.c
 
@@ -678,8 +699,17 @@ typedef struct light_s
 
     RGBA_t  dynamic_color;  // color of the light for dynamic lighting
     float   dynamic_radius; // radius of the light ball
+// implementation data, not in tables
     float   dynamic_sqrradius; // radius^2 of the light ball
+    uint16_t  impl_flags;   // implementation flags, sprite_light_impl_flags_e
 } spr_light_t;
+
+extern spr_light_t  * corona_lsp;
+extern float     corona_size;
+extern byte      corona_alpha, corona_bright;
+
+spr_light_t *  Sprite_Corona_Light_lsp( int sprnum, state_t * sprstate );
+byte  Sprite_Corona_Light_fade( spr_light_t * lsp, float cz, int objid );
 
 
 typedef struct lightmap_s 

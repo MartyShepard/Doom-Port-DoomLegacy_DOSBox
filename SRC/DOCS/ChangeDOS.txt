@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01439 ]: w108 27 corona upgrade
+          Nein Google, Apple, M$... Regierung. Es geht nicht um Covid... checkt das mal
+					
 [01438 ]: w108 26 print float
           Has Fixed negatives xx values/slider
 					

@@ -304,7 +304,7 @@ void R_DrawAlphaColumn_24(void)
         else
             while (frac >= texheight)  frac -= texheight;
     }
-#endif   
+#endif
 
     do
     {

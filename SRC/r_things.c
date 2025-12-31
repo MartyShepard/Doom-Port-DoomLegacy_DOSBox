@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: r_things.c 1439 2019-05-19 02:25:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2511,116 +2511,337 @@ fixed_t   corona_x0, corona_x1, corona_x2;
 fixed_t   corona_xscale, corona_yscale;
 float     corona_size;
 byte      corona_alpha;
+byte      corona_bright; // used by software draw to brighten active light sources
 byte      corona_index;  // corona_lsp index
 byte      corona_draw = 0;  // 1 = before sprite, 2 = after sprite
 
-// Alpha value to not trigger no_corona.
-byte  corona_alpha_test[] =
-{
-   255, // none
-   140, // Special
-   100, // Most
-   32,  // Special, set by fragglescript
-   50,  // Most, set by fragglescript
+byte spec_dist[ 16 ] = {
+  10,  // SPLT_unk
+  35,  // SPLT_rocket
+  20,  // SPLT_lamp
+  45,  // SPLT_fire
+   0, 0, 0, 0, 0, 0, 0, 0,
+  60,  // SPLT_light
+  30,  // SPLT_firefly
+  80,  // SPLT_random
+  80,  // SPLT_pulse
 };
+
+typedef enum {
+   FADE_FAR = 0x01,
+   FADE_NEAR = 0x02
+} sprite_corona_fade_e;
+   
+#define  NUM_FIRE_PATTERN  64
+static  int8_t  fire_pattern[ NUM_FIRE_PATTERN ];
+static  byte  fire_pattern_tic[ NUM_FIRE_PATTERN ];
+
+#define  NUM_RAND_PATTERN  32
+static  byte  rand_pattern_cnt[ NUM_RAND_PATTERN ];
+static  byte  rand_pattern_state[ NUM_RAND_PATTERN ];
+static  byte  rand_pattern_tic[ NUM_RAND_PATTERN ];
+
+//  sprnum : sprite number
+//
+//  Return: corona_index, corona_lsp
+//  Return NULL when no draw.
+spr_light_t *  Sprite_Corona_Light_lsp( int sprnum, state_t * sprstate )
+{
+    spr_light_t  * lsp;
+   
+    // Sprite explosion, light substitution
+    byte li = sprite_light_ind[sprnum];
+    if( (sprstate >= &states[S_EXPLODE1]
+         && sprstate <= &states[S_EXPLODE3])
+     || (sprstate >= &states[S_FATSHOTX1]
+         && sprstate <= &states[S_FATSHOTX3]))
+    {
+        li = LT_ROCKETEXP;
+    }
+
+    corona_index = li;
+    if( li == LT_NOLIGHT )  return NULL;
+   
+    lsp = &sprite_light[li];
+    corona_lsp = lsp;
+
+    return lsp;
+}
+
+//  lsp : sprite light
+//  cz : distance to corona
+//
+//  Return: corona_alpha, corona_size
+//  Return 0 when no draw.
+byte  Sprite_Corona_Light_fade( spr_light_t * lsp, float cz, int objid )
+{
+    float  relsize;
+    uint16_t  type, cflags;
+    byte   fade;
+    unsigned int index, v;
+
+    // Objects which emit light.
+    type = lsp->impl_flags & SPLT_type_field;  // working type setting
+    cflags = lsp->splgt_flags;
+    corona_alpha = lsp->corona_color.s.alpha;
+    corona_bright = 0;
+
+    // Update flagged by corona setting change, and fragglescript settings.
+    if( lsp->impl_flags & SLI_changed )
+    {
+        lsp->impl_flags &= ~SLI_changed;
+
+        // [WDJ] Fixes must be determined here because Phobiata and other wads,
+        // do not set all the dependent fields at one time.
+        // They never set some fields, like type, at all.
+
+        type = cflags & SPLT_type_field;  // table or fragglescript setting
+
+        if( cv_corona.EV == 20 )  // Old
+        {
+            // Revert the new tables to use
+            // only that flags that existed in Old.
+            cflags &= (SPLGT_corona|SPLGT_dynamic);
+            if( type != SPLT_rocket )
+            {
+               if( cflags & SPLGT_dynamic )
+                  type = SPLT_lamp;  // closest to old SPLGT_light
+               else
+                  type = SPLT_unk;  // corona only
+            }
+        }
+        else
+       
+        // We have no way of determining the intended version compatibility.  This limits
+        // the characteristics that we can check.
+        // Some older wads just used the existing corona without setting the type.
+        // The default type of some of the existing corona have changed to use the new
+        // corona types for ordinary wads, version 1.47.3.
+        if( (lsp->impl_flags & SLI_corona_set)  // set by fragglescript
+            && ( !(lsp->impl_flags & SLI_type_set) || (type == SPLT_unk) ) )
+        {
+            // Correct corona settings made by older wads, such as Phobiata, and newmaps.
+            // Has the old default type, or type was never set.
+#if 0
+            // In the original code, the alpha from the corona color was ignored,
+            // even though it was set in the tables.  Instead the draw code used 0xff.
+            if( corona_alpha == 0 )
+                corona_alpha = lsp->corona_color.s.alpha = 0xff; // previous default
+#endif
+ 
+            // Refine some of the old wad settings, to use new capabilities correctly.
+            // Check for Phobiata and newmaps problems.
+            if( corona_alpha > 0xDF )
+            {
+                // Default radius is 20 to 120.
+                // Phobiata flies have a radius of 7
+                if( lsp->corona_radius < 10.0f )
+                {
+                    // newmaps and phobiata firefly
+                    type = SPLT_light;
+                }
+                else if( lsp->corona_radius < 80.0f )
+                {
+                    // torches
+                    type = SPLT_lamp;
+                }
+            }
+        }
+        // update the working type
+        lsp->impl_flags = (lsp->impl_flags & ~SPLT_type_field) | type;
+    }
+
+    if( (type == SPLT_unk) && !(cflags & SPLGT_corona) )
+        goto no_corona;  // no corona set
+
+    if( corona_alpha < 3 )
+        goto no_corona;  // too faint to see, effectively off
+
+    if( cv_corona.EV == 20 )  // Old
+    {
+        // alpha settings were ignored
+        corona_alpha = 0xff;
+    }
+    else if( cv_corona.EV == 16 )  // Bright
+    {
+        corona_bright = 20;  // brighten the default cases
+        corona_alpha = (((int)corona_alpha * 3) + 255) >> 2; // +25%
+    }
+    else if( cv_corona.EV == 14 )  // Dim
+    {
+        corona_alpha = ((int)corona_alpha * 3) >> 2; // -25%
+    }
+    else if( cv_corona.EV <= 2 )  // Special, Most
+    {
+        int spec = spec_dist[type>>4];
+       
+        if( lsp->impl_flags & SLI_corona_set )  // set by wad
+            spec <<= 2;
+       
+        if( cv_corona.EV == 2 )  // Most
+        {
+            // Must do this before any flicker modifications, or else they blink.
+            if( corona_alpha < 40 )  // ignore the dim corona
+                goto no_corona;
+            if( corona_alpha + spec + Z1 < cz )
+                goto no_corona;  // not close enough
+        }
+        else
+        {
+            if( (spec < 33) && ( cz > (Z1+Z2)/2 ) )
+                goto no_corona; // not special enough
+            if( corona_alpha < 20 )  // ignore the dim corona
+                goto no_corona;
+        }
+    }
+   
+    relsize = 1.0f;
+    fade = FADE_FAR | FADE_NEAR;
+   
+    // Each of these types has a corona.
+    switch( type )
+    {
+      case SPLT_unk: // corona only
+        // object corona
+        relsize = ((cz+60.0f)/100.0f);
+        break;
+      case SPLT_rocket: // flicker
+        // svary the alpha
+        relsize = ((cz+60.0f)/100.0f);
+        corona_alpha = 7 + (A_Random()>>1);
+        corona_bright = 128;
+        break;
+      case SPLT_lamp:  // lamp with a corona
+        // lamp corona
+        relsize = ((cz+120.0f)/950.0f);
+        corona_bright = 40;
+        break;
+      case SPLT_fire: // slow flicker, torch
+        // torches
+        relsize = ((cz+120.0f)/950.0f);
+        index = objid & (NUM_FIRE_PATTERN - 1);  // obj dependent
+        if( fire_pattern_tic[ index ] != gametic )
+        {
+            fire_pattern_tic[ index ] = gametic;
+            if( A_Random() > 35 )
+            {
+                register int r = A_Random();
+                r = ((r - 128) >> 3) + fire_pattern[index];
+                if( r > 50 )  r = 40;
+                else if( r < -50 )  r = -40;
+                fire_pattern[index] = r;
+            }
+        }
+        v = (int)corona_alpha + (int)fire_pattern[index];
+        if( v > 255 )  v = 255;
+        if( v < 4 )    v = 4;
+        corona_alpha = v;
+        corona_bright = 45;
+        break;
+      case SPLT_light: // no corona fade
+        // newmaps and phobiata firefly
+        // dimming with distance
+        relsize = ((cz+120.0f)/950.0f);
+#if 0
+        if( ( cz < Z1 ) & ((lsp->splgt_flags & SPLGT_source) == 0 ))
+        {
+            // Fade corona partial to 0 when get too close
+            corona_alpha = (int)(( (float)corona_alpha * corona_alpha + (255 - corona_alpha) * (corona_alpha * cz / Z1)) / 255.0f);
+        }
+#endif
+        // Version 1.42 had corona_alpha = 0xff
+        corona_bright = 132;
+        fade = FADE_FAR;
+        break;
+      case SPLT_firefly: // firefly blink, un-synch
+        // lower 6 bits gives a repeat rate of 1.78 seconds
+        if( ((gametic + objid) & 0x003F) < 0x20 )   // obj dependent phase
+          goto no_corona; // blink off
+        fade = FADE_FAR;
+        break;
+      case SPLT_random: // random LED, un-synch
+        index = objid & (NUM_RAND_PATTERN-1);   // obj dependent counter
+        if( rand_pattern_tic[ index ] != gametic )
+        {
+            rand_pattern_tic[ index ] = gametic;
+            if( rand_pattern_cnt[ index ] == 0 )
+            {
+                rand_pattern_cnt[ index ] = A_Random();
+                rand_pattern_state[ index ] ++;
+            }
+            rand_pattern_cnt[ index ] --;
+        }
+        if( (rand_pattern_state[ index ] & 1) == 0 )
+          goto no_corona; // off
+        corona_bright = 128;
+        fade = 0;
+        break;
+      case SPLT_pulse: // slow pulsation, un-synch
+        index = (gametic + objid) & 0xFF;  // obj dependent phase
+        index -= 128; // -128 to +127
+        // Make a positive parabola pulse, min does not quite reach 0.
+        register float f = 1.0f - ((index*index) * 0.000055f);
+        relsize = f;
+        corona_alpha = corona_alpha * f;
+        corona_bright = 80;
+        fade = 0;
+        break;
+      default:
+        I_SoftError("Draw_Sprite_Corona_Light: unknown light type %x", type);
+        goto no_corona;
+    }
+
+    if( cz > Z1 )
+    {
+        if( fade & FADE_FAR )
+        {
+            // Proportional fade from Z1 to Z2
+            corona_alpha = (int)( corona_alpha * ( Z2 - cz ) / ( Z2 - Z1 ));
+        }
+    }
+    else if( fade & FADE_NEAR )
+    {
+        // Fade to 0 when get too close
+        corona_alpha = (int)( corona_alpha *  cz / Z1 );
+    }
+
+    if (relsize > 1.0) 
+        relsize = 1.0;
+    corona_size = lsp->corona_radius * relsize * FIXED_TO_FLOAT( cv_coronasize.value );
+    return corona_alpha;
+ 
+no_corona:
+   corona_alpha = 0;
+   return 0;
+}
+       
    
 static
 void Sprite_Corona_Light_setup( vissprite_t * vis )
 {
     mobj_t       * vismobj = vis->mobj;
     spr_light_t  * lsp;
-    float  size;
-    byte  li;
 
-    li = sprite_light_ind[vismobj->sprite];
-    if( (vismobj->state >= &states[S_EXPLODE1]
-         && vismobj->state <= &states[S_EXPLODE3])
-     || (vismobj->state >= &states[S_FATSHOTX1]
-         && vismobj->state <= &states[S_FATSHOTX3]))
-    {
-        li = LT_ROCKETEXP;
-    }
-
-    if( li == LT_NOLIGHT )  goto no_corona;
-
-    corona_index = li;
-    lsp = &sprite_light[li];
-    corona_lsp = lsp;
-
+    lsp = Sprite_Corona_Light_lsp( vismobj->sprite, vismobj->state );
+    if( lsp == NULL )  goto no_corona;
+   
     // Objects which emit light.
-    if( (lsp->splgt_flags & SPLGT_corona) == 0  )  goto no_corona;
-
+    if( (lsp->splgt_flags & (SPLGT_corona|SPLT_type_field)) == 0  )  goto no_corona;
+   
     fixed_t tz = FixedDiv( projectiony, vis->scale );
     float cz = FIXED_TO_FLOAT( tz );
     // more realistique corona !
     if( cz >= Z2 )  goto no_corona;
 
-#if 0
-    corona_alpha = lsp->corona_color.s.alpha;
-#else
-    corona_alpha = 0xFF;  // from hardware
-#endif
-    size = lsp->corona_radius;
-
-    // Each of these types (flag combinations) has a corona.
-    switch (lsp->splgt_flags & (SPLGT_light|SPLGT_corona|SPLGT_rocket))
+    if( Sprite_Corona_Light_fade( lsp, cz, (int)vismobj ) == 0 )  goto no_corona;
+   
+    if( corona_bright )
     {
-        case SPLGT_light:
-                // newmaps and phobiata firefly
-                // torches
-                // dimming with distance
-                size *= ((cz+120.0f)/950.0f);
-#if 1
-                if( cz < Z1 )
-                {
-                    // Fade corona partial to 0 when get too close
-                    corona_alpha = (int)(( (float)corona_alpha * corona_alpha + (255 - corona_alpha) * (corona_alpha * cz / Z1)) / 255.0f);
-                }
-#endif
-                break;
-        case SPLGT_rocket:
-                // vary the alpha
-                corona_alpha = 7 + (M_Random()>>1);
-                size *= ((cz+60.0f)/100.0f);
-                break;       
-        case SPLGT_corona:
-                // object corona
-                size *= ((cz+60.0f)/100.0f);
-#if 1
-                if( cz < Z1 )
-                {
-                    // Fade to 0 when get too close
-                    corona_alpha = (int)( corona_alpha *  cz /  Z1 );
-                }
-#endif
-                break;
-        default:
-                I_SoftError("Draw_Sprite_Corona_Light: unknown light type %x", lsp->splgt_flags);
-                return;
+        // brighten the corona for software draw
+        corona_alpha = (((int)corona_alpha * (255 - corona_bright)) + (255 * (int)corona_bright)) >> 8;
     }
    
-    if( cz > Z1 )
-    {
-        // Proportional fade from Z1 to Z2
-        corona_alpha = (int)( corona_alpha * ( cz - Z2 ) / ( Z1 - Z2 ));
-    }
-
-    if( cv_corona.EV <= 2 ) // Special and Most
-    {
-        int i = cv_corona.EV;  // 1, 2
-#ifdef SPLGT_fragglescript       
-        if( (lsp->splgt_flags & SPLGT_fragglescript) == 0  )  i += 2;  // 3, 4
-#endif
-        if( corona_alpha < corona_alpha_test[i] )  goto no_corona;
-    }
-
-    if (size > lsp->corona_radius) 
-        size = lsp->corona_radius;
-//    size *= FIXED_TO_FLOAT( cv_coronasize.value ) * 0.032f;
-//    size *= FIXED_TO_FLOAT( cv_coronasize.value ) * 6.4f * FRACUNIT / corona_sprlump.width;
-    size *= FIXED_TO_FLOAT( cv_coronasize.value ) * 1.0f / FIXED_TO_FLOAT(corona_sprlump.width);
-
-    corona_size = size;
+    float size = corona_size / FIXED_TO_FLOAT(corona_sprlump.width);
     corona_xscale = (int)( (double)vis->xscale * size );
     corona_yscale = (int)( (double)vis->scale * size );
 

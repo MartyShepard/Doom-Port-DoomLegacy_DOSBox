@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: t_func.c 1439 2019-05-19 02:25:09Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -4295,12 +4295,8 @@ void SF_SetCorona(void)
         {
             case 0:  // CORONA_TYPE is int
                 // Set sprite light corona lights.
-#ifdef SPLGT_fragglescript
-                // To identify fragglescript set coronas as special.	   
-                sl->splgt_flags = ival | SPLGT_fragglescript;
-#else
                 sl->splgt_flags = ival;
-#endif
+                sl->impl_flags |= SLI_type_set;  // a type was set
                 break;
             case 1:  // CORONA_OFFX is fixed
                 sl->light_xoffset = fval;  // unused
@@ -4328,25 +4324,14 @@ void SF_SetCorona(void)
                 // Phobiata fix. Color with no alpha, uses default of 0xff.
                 if( sl->corona_color.s.alpha == 0 )
                 {
-#if 0
                     sl->corona_color.s.alpha = 0xff;  // previous default
-#ifdef SPLGT_fragglescript
-                    // To identify fragglescript set coronas as special.	   
-                    sl->splgt_flags |= SPLGT_fragglescript;  // set by fragglescript
-#endif
-#else
-                    GenPrintf(EMSG_info, "FS set corona color: has no alpha.\n" );
-#endif
                 }
 
                 // Chex newmaps fix. The flags are set 0 for Chex1.
                 // If CORONA_COLOR is set, then corona should be enabled.
                 if( sl->splgt_flags == 0 )
                 {
-                    sl->splgt_flags = SPLGT_light;  // firefly light
-#ifdef SPLGT_fragglescript
-                    sl->splgt_flags = SPLGT_light | SPLGT_fragglescript;  // firefly light
-#endif
+                    sl->splgt_flags = SPLGT_dynamic|SPLGT_corona|SPLT_light;  // firefly light
                 }
                 break;
             case 4:  // CORONA_SIZE is fixed
@@ -4356,6 +4341,7 @@ void SF_SetCorona(void)
                 sl->dynamic_color.rgba = (t_argv[2].type == FSVT_string)?
                     String_to_RGBA(t_argv[2].value.s)
                     : ival;
+                // 0 means off, dynamic_alpha has not ever been defaulted
 
 #ifdef SHOW_COLOR_SETTING
                 // Show the dynamic color setting.
@@ -4369,27 +4355,11 @@ void SF_SetCorona(void)
                                   ival, sl->dynamic_color.rgba );
                 }
 #endif
-
-                // Phobiata fix. Color with no alpha, uses default of 0xff.
-                if( sl->dynamic_color.s.alpha == 0 )
-                {
-#if 0
-                    // Causes bright wall light on map 1
-                    sl->dynamic_color.s.alpha = 0xff;  // previous default
-#else
-                    GenPrintf(EMSG_info, "FS set dynamic color: has no alpha.\n" );
-#endif
-                }
                 break;
             case 6:  // LIGHT_SIZE is fixed
                 sl->dynamic_radius = fval;
-#if 0
                 // According to usage and init this is squared-radius.
                 sl->dynamic_sqrradius = fval * fval;
-#else
-                // from previous versions
-                sl->dynamic_sqrradius = sqrt(sl->dynamic_radius);
-#endif
                 break;
             default:
                 I_SoftError("SetCorona: what %i\n", what);
@@ -4400,6 +4370,7 @@ void SF_SetCorona(void)
     {
         // Set all fields of sprite corona light.
         sl->splgt_flags = t_argv[1].value.i;
+        sl->impl_flags |= SLI_type_set;  // a type was set
         sl->light_xoffset = FIXED_TO_FLOAT(t_argv[2].value.f);  // unused
         sl->light_yoffset = FIXED_TO_FLOAT(t_argv[3].value.f);
         sl->corona_color.rgba = (t_argv[4].type == FSVT_string)?
@@ -4408,44 +4379,20 @@ void SF_SetCorona(void)
 
         sl->corona_radius = FIXED_TO_FLOAT(t_argv[5].value.f);
 
-       
         // Phobiata fix. Color with no alpha, uses default of 0xff.
         if( sl->corona_color.s.alpha == 0 )
         {
-#if 0
             sl->corona_color.s.alpha = 0xff;  // previous default
-#else
-            GenPrintf(EMSG_info, "FS set all : corona color has no alpha.\n" );
-#endif
         }
 
         sl->dynamic_color.rgba = (t_argv[6].type == FSVT_string)?
             String_to_RGBA(t_argv[6].value.s)
             : t_argv[6].value.i;
-
-        // Phobiata fix. Color with no alpha, uses default of 0xff.
-        if( sl->dynamic_color.s.alpha == 0 )
-        {
-#if 0
-            sl->dynamic_color.s.alpha = 0xff;  // previous default
-#else
-            GenPrintf(EMSG_info, "FS set all : dynamic color has no alpha.\n" );
-#endif
-        }
+        // 0 means off, dynamic_alpha has not ever been defaulted
 
         sl->dynamic_radius = FIXED_TO_FLOAT(t_argv[7].value.f);
-#if 0
         // According to usage and init this is squared-radius.
         sl->dynamic_sqrradius = sl->dynamic_radius * sl->dynamic_radius;
-#else
-        // from previous versions
-        sl->dynamic_sqrradius = sqrt(sl->dynamic_radius);
-#endif
-
-#ifdef SPLGT_fragglescript
-        // To identify fragglescript set coronas as special.	   
-        sl->splgt_flags |= SPLGT_fragglescript;  // set by fragglescript
-#endif
 
 #ifdef SHOW_COLOR_SETTING
         // Show the corona color setting.
@@ -4467,12 +4414,12 @@ void SF_SetCorona(void)
 #endif
     }
 
-done:
+    sl->impl_flags |= (SLI_changed | SLI_corona_set);  // trigger check for missing settings
     return;
 
 err_numarg:
     missing_arg_str("SetCorona", "3 or 7");
-    goto done;
+    return;
 }
 
 
