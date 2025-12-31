@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1440 2019-05-19 02:31:03Z wesleyjohnson $
+// $Id: r_things.c 1443 2019-06-12 03:58:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -195,12 +195,8 @@ lighttable_t**  spritelights;	// selected scalelight for the sprite draw
 
 // constant arrays
 //  used for sprite and psprite clipping
-#ifdef CLIP_IN_BAND
 //  Set to last pixel row inside the drawable screen bounds.
 //  This makes limit tests easier, do not need to do +1 or -1;
-#else
-//  Set to 1 pixel outside the drawable screen bounds.
-#endif
 short           clip_screen_top_min[MAXVIDWIDTH];
 short           clip_screen_bot_max[MAXVIDWIDTH];
 
@@ -902,14 +898,7 @@ void R_Init_Sprites (char** namelist)
     int         i;
     char**      check;
 
-#ifdef CLIP_IN_BAND
     memset( clip_screen_top_min, 0, MAXVIDWIDTH * sizeof(short) );
-#else
-    for (i=0 ; i<MAXVIDWIDTH ; i++)
-    {
-        clip_screen_top_min[i] = -1;
-    }
-#endif
 
     vissprites_tablesize();  // initial allocation
 
@@ -1122,24 +1111,16 @@ void R_DrawMaskedColumn (column_t* column)
             dc_yh = (dm_windowbottom - 1) >> FRACBITS;
         }
 
-#ifdef CLIP_IN_BAND
         if (dc_yh > dm_floorclip[dc_x])
             dc_yh = dm_floorclip[dc_x];
         if (dc_yl < dm_ceilingclip[dc_x])
             dc_yl = dm_ceilingclip[dc_x];
-#else
-        if (dc_yh >= dm_floorclip[dc_x])
-            dc_yh = dm_floorclip[dc_x]-1;
-        if (dc_yl <= dm_ceilingclip[dc_x])
-            dc_yl = dm_ceilingclip[dc_x]+1;
-#endif
 
         // [WDJ] limit to split screen area above status bar,
         // instead of whole screen,
         if (dc_yl <= dc_yh && dc_yl < rdraw_viewheight && dc_yh > 0)  // [WDJ] exclude status bar
         {
 
-#ifdef CLIP_IN_BAND
 #ifdef RANGECHECK
     // Temporary check code.
     // Due to better clipping, this extra clip should no longer be needed.
@@ -1153,7 +1134,6 @@ void R_DrawMaskedColumn (column_t* column)
         printf( "DrawMasked dc_yh  %i > rdraw_viewheight\n", dc_yh );
         dc_yh = rdraw_viewheight - 1;
     }
-#endif
 #endif
 #ifdef CLIP2_LIMIT
             //[WDJ] phobiata.wad has many views that need clipping
@@ -2057,15 +2037,9 @@ static void R_Create_DrawNodes( void )
             ds->ffloorplanes[p] = NULL;  // remove from floorplanes
             R_PlaneBounds(plane);  // set highest_top, lowest_bottom
                  // in screen coord, where 0 is top (hi)
-#ifdef CLIP_IN_BAND
             // Drawable area is con_clipviewtop to (rdraw_viewheight - 1)
             if(plane->lowest_bottom < con_clipviewtop
                || plane->highest_top >= rdraw_viewheight  // [WDJ] rdraw window, not vid.height
-#else
-            // Drawable area is (con_clipviewtop + 1) to (rdraw_viewheight)
-            if(plane->lowest_bottom < con_clipviewtop
-               || plane->highest_top > rdraw_viewheight  // [WDJ] rdraw window, not vid.height
-#endif
                || plane->highest_top > plane->lowest_bottom)
             {
               continue;  // not visible, next plane
@@ -2961,23 +2935,11 @@ void Draw_Sprite_Corona_Light( vissprite_t * vis )
 #endif
 
 
-// [WDJ] 2019 These three improvements are working now.
-// These CLIP3 enables is here temporarily during regression testing.
-#define CLIP3_TOP
-#define CLIP3_BOT
-#define CLIP3_COMBINED_CLIP  1
-
-#ifdef CLIP3_TOP
+// ========
+// [WDJ] 2019 With the CLIP3 improvements.
 #define CLIPTOP_MIN   -2
-#else
-#define CLIPTOP_MIN   -2
-#endif
-#ifdef CLIP3_BOT
 // Larger than any rdraw_viewheight.
 #define CLIPBOT_MAX   0x7FFE
-#else
-#define CLIPBOT_MAX   -2
-#endif
 
 //
 // R_DrawSprite
@@ -2988,10 +2950,8 @@ void Draw_Sprite_Corona_Light( vissprite_t * vis )
 void R_DrawSprite (vissprite_t* spr)
 {
     drawseg_t*          ds;
-#ifdef CLIP_IN_BAND
     // Clip limit is the last drawable row inside the drawable area.
     // This makes limit tests easier, not needing +1 or -1.
-#endif   
     short               clipbot[MAXVIDWIDTH];
     short               cliptop[MAXVIDWIDTH];
     int                 x;
@@ -3000,19 +2960,12 @@ void R_DrawSprite (vissprite_t* spr)
     fixed_t             c_scale;  // clipping scale
     fixed_t             ds_highscale, ds_lowscale;
     int                 silhouette;
-#ifdef CLIP3_COMBINED_CLIP
     // clip the unclipped columns between console and status bar
     //Fab:26-04-98: was -1, now clips against console bottom
     // [WDJ] These clips are all of a constant value across the entire sprite.
     // One traverse of the clip array with the severest clip is sufficient.
-#ifdef CLIP_IN_BAND
-    fixed_t  ht = con_clipviewtop;
-    fixed_t  hb = rdraw_viewheight - 1;
-#else
-    fixed_t  ht = con_clipviewtop;
-    fixed_t  hb = rdraw_viewheight;
-#endif
-#endif
+    short  ht = con_clipviewtop;
+    short  hb = rdraw_viewheight - 1;
 
     c_scale = spr->scale;
     cx1 = spr->x1;
@@ -3043,12 +2996,8 @@ void R_DrawSprite (vissprite_t* spr)
 
     for (x = cx1 ; x <= cx2 ; x++)
     {
-#if defined( CLIP3_TOP ) || defined( CLIP3_BOT )
         cliptop[x] = CLIPTOP_MIN;
         clipbot[x] = CLIPBOT_MAX;
-#else
-        clipbot[x] = cliptop[x] = -2;
-#endif
     }
 
     // Scan drawsegs from end to start for obscuring segs.
@@ -3115,22 +3064,14 @@ void R_DrawSprite (vissprite_t* spr)
         {
             // bottom sil
             for (x=r1 ; x<=r2 ; x++)
-#ifdef CLIP3_BOT
                 if (clipbot[x] == CLIPBOT_MAX)
-#else
-                if (clipbot[x] == -2)
-#endif
                     clipbot[x] = ds->spr_bottomclip[x];
         }
         else if (silhouette == SIL_TOP)
         {
             // top sil
             for (x=r1 ; x<=r2 ; x++)
-#ifdef CLIP3_TOP
                 if (cliptop[x] == CLIPTOP_MIN)
-#else
-                if (cliptop[x] == -2)
-#endif
                     cliptop[x] = ds->spr_topclip[x];
         }
         else if (silhouette == (SIL_BOTTOM|SIL_TOP))
@@ -3138,17 +3079,9 @@ void R_DrawSprite (vissprite_t* spr)
             // both
             for (x=r1 ; x<=r2 ; x++)
             {
-#ifdef CLIP3_BOT
                 if (clipbot[x] == CLIPBOT_MAX)
-#else
-                if (clipbot[x] == -2)
-#endif
                     clipbot[x] = ds->spr_bottomclip[x];
-#ifdef CLIP3_TOP
                 if (cliptop[x] == CLIPTOP_MIN)
-#else
-                if (cliptop[x] == -2)
-#endif
                     cliptop[x] = ds->spr_topclip[x];
             }
         }
@@ -3170,35 +3103,15 @@ void R_DrawSprite (vissprite_t* spr)
             // Assert: 0 <= h < rdraw_viewheight
             if (mh <= 0 || (viewer_has_model && !viewer_underwater))
             {                          // clip bottom
-#ifdef CLIP3_COMBINED_CLIP
                 // water cut clips that cover x1..x2
                 if( h < hb )
                     hb = h;
-#else
-              for (x = cx1; x <= cx2; x++)
-#ifdef CLIP3_BOT
-                if (h < clipbot[x])  // OR CLIPBOT_MAX
-#else
-                if (clipbot[x] == -2 || h < clipbot[x])
-#endif
-                  clipbot[x] = h;
-#endif	       
             }
             else                        // clip top
             {
-#ifdef CLIP3_COMBINED_CLIP
                 // water cut clips that cover x1..x2
                 if( h > ht )
                     ht = h;
-#else
-              for (x = cx1; x <= cx2; x++)
-#ifdef CLIP3_TOP
-                if (h > cliptop[x])  // OR CLIPTOP_MIN
-#else
-                if (cliptop[x] == -2 || h > cliptop[x])
-#endif
-                  cliptop[x] = h;
-#endif
             }
         }
 
@@ -3210,40 +3123,19 @@ void R_DrawSprite (vissprite_t* spr)
             // Assert: 0 <= h < rdraw_viewheight
             if (viewer_overceiling)
             {                         // clip bottom
-#ifdef CLIP3_COMBINED_CLIP
                 // overceiling cut clips that cover x1..x2
                 if( h < hb )
                     hb = h;
-#else
-              for (x=cx1 ; x<=cx2 ; x++)
-#ifdef CLIP3_BOT
-                if (h < clipbot[x])  // OR CLIPBOT_MAX
-#else
-                if (clipbot[x] == -2 || h < clipbot[x])
-#endif
-                  clipbot[x] = h;
-#endif
             }
             else                       // clip top
             {
-#ifdef CLIP3_COMBINED_CLIP
                 // water cut clips that cover x1..x2
                 if( h > ht )
                     ht = h;
-#else
-              for (x=cx1 ; x<=cx2 ; x++)
-#ifdef CLIP3_TOP
-                if (h > cliptop[x])  // OR CLIPTOP_MIN
-#else
-                if (cliptop[x] == -2 || h > cliptop[x])
-#endif
-                  cliptop[x] = h;
-#endif
             }
         }
     }
 
-#ifdef CLIP3_COMBINED_CLIP
     // Sprite cut clips that cover x1..x2
     // This would work just as well without the SC_TOP and SC_BOTTOM tests.
     if( (spr->cut & SC_TOP)
@@ -3252,103 +3144,20 @@ void R_DrawSprite (vissprite_t* spr)
     if( (spr->cut & SC_BOTTOM)
        && spr->sz_bot < hb )
             hb = spr->sz_bot;  // a higher clip
-#else
-    if(spr->cut & SC_TOP && spr->cut & SC_BOTTOM)
-    {
-      fixed_t  ht = spr->sz_top;
-      fixed_t  hb = spr->sz_bot;
-      for(x = cx1; x <= cx2; x++)
-      {
-#ifdef CLIP3_TOP
-          if (ht > cliptop[x])  // OR CLIPTOP_MIN
-#else
-          if(cliptop[x] == -2 || ht > cliptop[x])
-#endif
-              cliptop[x] = ht;
-
-#ifdef CLIP3_BOT
-          if (hb < clipbot[x])  // OR CLIPBOT_MAX
-#else
-          if(clipbot[x] == -2 || hb < clipbot[x])
-#endif
-              clipbot[x] = hb;
-      }
-    }
-    else if(spr->cut & SC_TOP)
-    {
-      fixed_t  ht = spr->sz_top;
-      for(x = cx1; x <= cx2; x++)
-      {
-#ifdef CLIP3_TOP
-          if (ht > cliptop[x])  // OR CLIPTOP_MIN
-#else
-          if(cliptop[x] == -2 || ht > cliptop[x])
-#endif
-              cliptop[x] = ht;
-      }
-    }
-    else if(spr->cut & SC_BOTTOM)
-    {
-      fixed_t  hb = spr->sz_bot;
-      for(x = cx1; x <= cx2; x++)
-      {
-#ifdef CLIP3_BOT
-          if (hb < clipbot[x])  // OR CLIPBOT_MAX
-#else
-          if(clipbot[x] == -2 || hb < clipbot[x])
-#endif
-              clipbot[x] = hb;
-      }
-    }
-#endif
     
-#ifdef CLIP3_COMBINED_CLIP
     // [WDJ] Act on most severe combined cut clips that cover x1..x2.
     // This now always clips to (0, rdraw_viewheight-1) or better.
-      for(x = cx1; x <= cx2; x++)
-    {
-#ifdef CLIP3_BOT
-        if (hb < clipbot[x])  // OR CLIPBOT_MAX
-#else
-        if(clipbot[x] == -2 || hb < clipbot[x])
-#endif
-            clipbot[x] = hb;
-
-#ifdef CLIP3_TOP
-        if (ht > cliptop[x])  // OR CLIPTOP_MIN
-#else
-        if(cliptop[x] == -2 || ht > cliptop[x])
-#endif
-            cliptop[x] = ht;
-    }
-#endif
-
-    // all clipping has been performed, so draw the sprite
-
-#ifdef CLIP3_COMBINED_CLIP
-    // [WDJ] No longer any need to check for unclipped columns.
-#else
-    // check for unclipped columns
     for(x = cx1; x <= cx2; x++)
     {
-#ifdef CLIP3_BOT
-        if (clipbot[x] == CLIPBOT_MAX)
-#else
-        if (clipbot[x] == -2)
-#endif
-            clipbot[x] = rdraw_viewheight;
+        if (hb < clipbot[x])  // OR CLIPBOT_MAX
+            clipbot[x] = hb;
 
-#ifdef CLIP3_TOP
-        if (cliptop[x] == CLIPTOP_MIN)
-#else
-        if (cliptop[x] == -2)
-#endif
-        {
-            //Fab:26-04-98: was -1, now clips against console bottom
-            cliptop[x] = con_clipviewtop;
-        }
+        if (ht > cliptop[x])  // OR CLIPTOP_MIN
+            cliptop[x] = ht;
     }
-#endif
+
+    // All clipping has been performed, so draw the sprite.
+    // [WDJ] No longer any need to check for unclipped columns.
 
     dm_floorclip = clipbot;
     dm_ceilingclip = cliptop;

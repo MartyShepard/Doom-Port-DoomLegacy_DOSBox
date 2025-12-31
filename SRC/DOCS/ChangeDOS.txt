@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01443 ]: w108 30c CLIP3 option fixed
+[01442 ]: d108 29b CLIP3 options fixed again
 [01441 ]: w108 30 debugfile
 [01440 ]: w108 28 drawalpha modes
 [01439 ]: w108 27 corona upgrade
