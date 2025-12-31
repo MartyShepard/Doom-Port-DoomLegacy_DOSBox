@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.h 1371 2017-12-18 17:17:13Z wesleyjohnson $
+// $Id: command.h 1434 2019-04-26 10:35:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -42,8 +42,6 @@
 #ifndef COMMAND_H
 #define COMMAND_H
 
-#include <stdio.h>
-  // FILE
 #include "doomtype.h"
 
 //===================================
@@ -77,7 +75,7 @@ void    COM_BufAddText (const char * text);
 void    COM_BufInsertText (const char * text);
 
 // Execute commands in buffer, flush them
-void    COM_BufExecute (void);
+void    COM_BufExecute( byte cs_config );
 
 // setup command buffer, at game tartup
 void    COM_Init (void);
@@ -132,18 +130,36 @@ typedef enum
     CV_HIDEN   = 0x200,   // variable is not part of the cvar list so cannot be accessed by the console
                           // can only be set when we have the pointer to hit 
                           // used on the menu
-    CV_EV_PARAM = 0x1000, // A command line param is in EV.
-    CV_MODIFIED = 0x2000, // this bit is set when cvar is modified
+    CV_CFG1   = 0x2000,  // Restricted to main config file.
     CV_SHOWMODIF = 0x4000,  // say something when modified
     CV_SHOWMODIF_ONCE = 0x8000,  // same, but resets this flag to 0 after showing, set in toggle
-} cvflags_t;
+} cv_flags_e;
 
-struct CV_PossibleValue_s {
+typedef enum
+{
+    CS_CONFIG   = 0x03, // the config file source, 2 bits
+    CS_PUSHED   = 0x08, // a value from another config has been pushed
+    CS_EV_PARAM = 0x40, // A command line param is in EV.
+    CS_MODIFIED = 0x80, // this bit is set when cvar is modified
+} cv_state_e;
+
+typedef enum
+{
+// Configfile Value sources.
+    CFG_none,     // not loaded
+    CFG_main,     // the main config file
+    CFG_drawmode, // the drawmode config file
+    CFG_other,    // some other config value
+// Searches
+//    CFG_all = 0x40,  // match all
+    CFG_null = 0x4f, // match none
+} cv_config_e;
+
+typedef struct {
     int   value;
     const char * strvalue;
-};
+} CV_PossibleValue_t;
 
-typedef struct CV_PossibleValue_s CV_PossibleValue_t;
 // [WDJ] CV_PossibleValue supports the following structures.
 // MIN .. MAX : First element has label MIN.  Last element is maximum value.
 // MIN INC .. MAX : Label INC is the increment.
@@ -152,14 +168,17 @@ typedef struct CV_PossibleValue_s CV_PossibleValue_t;
 // [WDJ] Ptrs together for better packing. Beware many consts of this type.
 typedef struct consvar_s
 {
+// Declare in consvar_t instance.  If this order is altered, about 60 instances have to be fixed.
     const char * name;
     const char * defaultvalue;
-    uint32_t flags;            // flags see cvflags_t above
-    CV_PossibleValue_t *PossibleValue;  // table of possible values
-    void    (*func) (void);    // called on change, if CV_CALL set
+    uint32_t flags;            // flags see cv_flags_e above
+    CV_PossibleValue_t * PossibleValue;  // table of possible values
+    void    (*func) (void);    // called on change, if CV_CALL set, optional
+// Undeclared
     int32_t  value;            // for int and fixed_t
     uint16_t netid;            // hashed netid for net send and receive
                                // used only with CV_NETVAR
+    byte     state;  // cv_state_e
     byte     EV;  // [WDJ] byte value, set from value changes, set from demos.
        // This saves user settings from being changed by demos.
        // Do not make it anything except byte.  Byte is efficient for most
@@ -171,7 +190,7 @@ typedef struct consvar_s
        // Saved user config is in string.
        // When pointing to a PossibleValue, it will need to be a const char *.
        // Otherwise, it is allocated with Z_Alloc, Z_Free.
-    struct  consvar_s *next;
+    struct  consvar_s * next;
 
 } consvar_t;
 
@@ -197,19 +216,51 @@ void  CV_SetValue (consvar_t *var, int value);
 void  CV_SetParam (consvar_t *var, int value);
 extern byte command_EV_param;
 
+// Makes a copy of the string, and handles PossibleValue string values.
+//   str : a reference to a string, it will by copied.
+void  CV_Set_cvar_string( consvar_t * cvar, const char * str );
+void  CV_Free_cvar_string( consvar_t * cvar );
+void  CV_Set_cv_str_value( consvar_t * cvar, const char * valstr, byte call_enable, byte user_enable );
+
 // If a OnChange func tries to change other values,
 // this function should be used.
 void CV_Set_by_OnChange (consvar_t *cvar, int value);
 
 // it a setvalue but with a modulo at the maximum
-void  CV_AddValue (consvar_t *var, int increment);
+void  CV_ValueIncDec (consvar_t *var, int increment);
 
 // Called after demo to restore the user settings.
 void  CV_Restore_User_Settings( void );
 
-// write all CV_SAVE variables to config file
-void  CV_SaveVariables (FILE *f);
+// Iterator for saving variables
+consvar_t *  CV_IteratorFirst( void );
+consvar_t *  CV_Iterator( consvar_t * cv );
 
-consvar_t *CV_FindVar (const char * name);
+consvar_t * CV_FindVar (const char * name);
+
+// Return the string value of the config var, current or pushed.
+// Return NULL if not found.
+const char *  CV_Get_Config_string( consvar_t * cvar, byte c_config );
+
+// Get the values of a pushed cvar, into the temp cvar.
+boolean  CV_Get_Pushed_cvar( consvar_t * cvar, byte c_config, /*OUT*/ consvar_t * temp_cvar );
+
+// Put the values in the temp cvar, into the pushed or current cvar.
+void  CV_Put_Config_cvar( consvar_t * cvar, byte c_config, /*IN*/ consvar_t * temp_cvar );
+
+// Put the string value to the pushed or current cvar.
+// This will create or push, as needed.
+//   str : str value, will be copied.  Will set numeric value too.
+void  CV_Put_Config_string( consvar_t * cvar, byte cfg, const char * str );
+
+// Remove the cvar value for the config.
+void  CV_Delete_Config_cvar( consvar_t * cvar, byte c_config );
+
+// Clear all values from the config file.
+void  CV_Clear_Config( byte cs_config );
+
+// Return true if any value of the config is current, or pushed.
+boolean CV_Config_check( byte cfg );
+
 
 #endif // COMMAND_H

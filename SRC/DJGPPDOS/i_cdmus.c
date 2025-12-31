@@ -66,7 +66,7 @@ int highest_track = 0;
 struct Track tracks[99];
 
 // 0-31 like Music & Sfx, though CD hardware volume is 0-255.
-consvar_t   cd_volume = {"cd_volume","31",CV_SAVE,soundvolume_cons_t};
+consvar_t   cd_volume = {"cd_volume","0",CV_SAVE,soundvolume_cons_t};
 
 // allow Update for next/loop track
 // some crap cd drivers take up to

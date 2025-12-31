@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1426 2019-01-29 08:09:01Z wesleyjohnson $
+// $Id: m_menu.c 1434 2019-04-26 10:35:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -377,8 +377,10 @@ static inline boolean is_printable(char c) { return c >= ' ' && c <= '~'; }
 
 typedef union
 {
-    struct menu_s     *submenu;               // IT_SUBMENU
-    consvar_t         *cvar;                  // IT_CVAR
+    // [WDJ] can only init to the first union item.
+    void             * init_void;
+    struct menu_s    * submenu;               // IT_SUBMENU
+    consvar_t        * cvar;                  // IT_CVAR
     menufunc_t         routine;  // IT_CALL, IT_KEYHANDLER, IT_ARROWS
 } itemaction_t;
 
@@ -390,11 +392,14 @@ typedef struct menuitem_s
     // show IT_xxx
     uint16_t  status;
 
-    char      *patch;
-    char      *text;  // used when FONTBxx lump is found
+    char     * patch;
+    char     * text;  // used when FONTBxx lump is found
 
     // FIXME: should be itemaction_t !!!
-    void      *itemaction;
+    // [WDJ]  Cannot fix it, all those init will not work.
+    // Can only init to the first union item, when it is anon embedded union,
+    // and then the init union item must be in { }.
+    void     * itemaction;
 
     // hotkey in menu
     // or y of the item when IT_YOFFSET (uses M_DrawGenericMenu)
@@ -426,6 +431,13 @@ static byte    itemOn;             // 0..40, menu item skull is on
 static int8_t  skullAnimCounter;   // 0..10, skull animation counter
 static byte    whichSkull;         // 0,1 which skull to draw, >128 off
 static int     SkullBaseLump;
+
+
+#ifdef CONFIG_MENU_PAGE
+static byte   menu_cfg = 0; // when non-zero, only those config are shown
+static byte   menu_cfg_editing = 0;  // to disable live changes
+static const char *  menu_cfg_string[4] = { "", "MAIN", "DRAWMODE", "OTHER" };
+#endif
 
 // graphic name of skulls
 static char    skullName[2][9] = {"M_SKULL1","M_SKULL2"};
@@ -539,7 +551,7 @@ static void M_NetOption(int choice);
 static void M_OpenGLOption(int choice);
 
 menu_t MainDef, SoundDef, EpiDef, NewDef,
-  VidModeDef, VideoOptionsDef, DrawmodeDef, MouseOptionsDef,
+  VideoModeDef, VideoOptionsDef, DrawmodeDef, MouseOptionsDef,
   SingleMultiDef, TwoPlayerDef, MultiPlayerDef, SetupMultiPlayerDef,
   ReadDef2, ReadDef1, SaveDef, LoadDef, 
   ControlDef, ControlDef2, ControlDef3, MControlDef,
@@ -586,6 +598,7 @@ void M_DrawMenuTitle(void)
 }
 
 
+
 static
 void M_DrawGenericMenu(void)
 {
@@ -603,6 +616,14 @@ void M_DrawGenericMenu(void)
     // draw title (or big pic)
     M_DrawMenuTitle();
 
+#ifdef CONFIG_MENU_PAGE
+    if( menu_cfg )
+    {
+        V_DrawString( 2, 1, V_WHITEMAP, menu_cfg_string[menu_cfg]);
+        V_DrawString( BASEVIDWIDTH - (14*8), 1, V_WHITEMAP, "Insert Delete");
+    }
+#endif
+   
     for (i=0; i<currentMenu->numitems; i++)
     {
         mip = & currentMenu->menuitems[i];
@@ -614,7 +635,8 @@ void M_DrawGenericMenu(void)
         if (i==itemOn)
             cursory=y;
 
-        switch (mip->status & IT_DISPLAY) {
+        switch (mip->status & IT_DISPLAY)
+        {
            case IT_PATCH  :
                if( FontBBaseLump && mip->text )
                {
@@ -626,6 +648,7 @@ void M_DrawGenericMenu(void)
                {
                    V_DrawScaledPatch_Name (x,y, mip->patch );
                }
+               // add lineheight	   
            case IT_NOTHING:
            case IT_EXTERNAL:
            case IT_DYBIGSPACE:
@@ -637,6 +660,14 @@ void M_DrawGenericMenu(void)
                break;
            case IT_STRING :
            case IT_WHITESTRING :
+#ifdef CONFIG_MENU_PAGE
+               if( menu_cfg && (mip->status & IT_TYPE) == IT_CVAR )
+               {	   
+                   consvar_t * cv = (consvar_t *) mip->itemaction;
+                   if( ! (cv->flags & CV_SAVE) )
+                       goto finish_string_line;  // not configurable
+               }
+#endif
                if( (mip->status & IT_DISPLAY)==IT_STRING ) 
                    V_DrawString(x,y,0,mip->text);
                else
@@ -644,31 +675,39 @@ void M_DrawGenericMenu(void)
 
                // Cvar specific handling
                switch (mip->status & IT_TYPE)
-                   case IT_CVAR:
+               {
+                 case IT_CVAR:
+                 {
+                   consvar_t * cv = (consvar_t *) mip->itemaction;
+                   const char * cvsp = cv->string;
+#ifdef CONFIG_MENU_PAGE
+                   if( menu_cfg && ((cv->state & CS_CONFIG) != menu_cfg ) )
                    {
-                    consvar_t *cv=(consvar_t *)mip->itemaction;
-                    switch (mip->status & IT_CVARTYPE)
-                    {
+                       cvsp = CV_Get_Config_string( cv, menu_cfg );
+                       if( ! cvsp )  goto finish_string_line;  // not present
+                   }
+#endif
+                   switch (mip->status & IT_CVARTYPE)
+                   {
                        case IT_CV_SLIDER :
-                           M_DrawSlider (BASEVIDWIDTH-x-SLIDER_WIDTH,
-                                         y,
+                           M_DrawSlider (BASEVIDWIDTH - x - SLIDER_WIDTH, y,
                                          ( (cv->value - cv->PossibleValue[0].value) * 100 /
                                          (cv->PossibleValue[1].value - cv->PossibleValue[0].value)));
                        case IT_CV_NOPRINT: // color use this 
                            break;
                        case IT_CV_STRING:
-                           w = V_StringWidth(cv->string);
+                           w = V_StringWidth( cvsp );
                            if( use_font1 )
                            {
-                               const char * sp = cv->string;
                                // Setup is centered, but this needs left justify.
                                M_DrawTextBox(-BASEVIDWIDTH/2,y+12,BASEVIDWIDTH/7,1);
-                               while( *sp && w > BASEVIDWIDTH - 8 )
+                               const char * s = cvsp;
+                               while( *s && (w > BASEVIDWIDTH - 8) )
                                {
                                    w -= fip->xinc;
-                                   sp++;
+                                   s++;
                                }
-                               V_DrawString (x+8,y+12,0, sp);
+                               V_DrawString (x+8,y+12,0, cvsp);
 //                             if( skullAnimCounter<4 && i==itemOn )
                                if( i==itemOn )
                                   V_DrawCharacter( x+8+w, y+12,  '_' | 0x80);  // white
@@ -676,25 +715,29 @@ void M_DrawGenericMenu(void)
                            else
                            {
                                M_DrawTextBox(x,y+4,MAXSTRINGLENGTH,1);
-                               V_DrawString (x+8,y+12,0,cv->string);
+                               V_DrawString (x+8,y+12,0, cvsp);
                                if( skullAnimCounter<4 && i==itemOn )
                                   V_DrawCharacter( x+8+w, y+12,  '_' | 0x80);  // white
                            }
                            y+=16;
                            break;
                        default:
-                           if( ! cv->string )
+                           if( ! cvsp )
                            {
-                               I_SoftError("GenMenu: cv_var NULL string %s\n", cv->name );
+                               I_SoftError("GenMenu: cvar NULL string %s\n", cv->name );
                                break;
                            }
-                           V_DrawString(BASEVIDWIDTH-x-V_StringWidth (cv->string),
+                           V_DrawString(BASEVIDWIDTH - x - V_StringWidth( cvsp ),
                                         y, V_WHITEMAP, 
-                                        cv->string);
+                                        cvsp );
                            break;
                    }
                    break;
-               }
+                 }
+               } // switch IT_TYPE
+#ifdef CONFIG_MENU_PAGE
+          finish_string_line:
+#endif
                y+=STRINGHEIGHT;
                break;
            case IT_STRING2:
@@ -717,8 +760,8 @@ void M_DrawGenericMenu(void)
                y += LINEHEIGHT;
                break;
 
-        }
-    }
+        } // switch IT_DISPLAY
+    }  // for menu lines
 
     if( whichSkull > 1 )  return;
 
@@ -737,6 +780,196 @@ void M_DrawGenericMenu(void)
     }
 
 }
+
+
+#ifdef CONFIG_MENU_PAGE
+//===========================================================================
+// Edit configfile values using menu_cfg.
+
+static byte  temp_cvar_active = 0;
+static consvar_t  temp_cvar;
+static consvar_t * temp_cvar_parent;
+
+// Handle editing cvar that are not the current cvar.
+// May return ptr to a temp cvar, so must save_cv after editing.
+// May return NULL, which means nothing to edit.
+static
+consvar_t *  config_cvar_edit_open( consvar_t * cv )
+{
+    temp_cvar_active = 0;
+
+    if( menu_cfg && ((cv->state & CS_CONFIG) != menu_cfg) )
+    {
+        // Use a temp, to avoid having to modify so many command CV_Set functions.
+        temp_cvar_parent = cv;
+        // Make sure the temp is empty.
+        if( temp_cvar.string )  // it should be NULL, but may not have been saved previously.
+            CV_Free_cvar_string( &temp_cvar );
+        // Get the hidden cvar value.
+        temp_cvar_active = CV_Get_Pushed_cvar( temp_cvar_parent, menu_cfg, /*OUT*/ & temp_cvar );
+        if( temp_cvar_active == 0 )
+            return NULL;  // nothing to change
+
+        // kill any effects that the current cvar would perform.
+        temp_cvar.flags &= ~( CV_CALL | CV_NETVAR | CV_SHOWMODIF | CV_SHOWMODIF_ONCE );
+        return &temp_cvar;
+    }
+    return cv;  // normal edit of current cvar
+}
+
+// If a temp cvar was used, then it will be saved.
+static
+void  config_cvar_edit_save( void )
+{
+    if( temp_cvar_active )
+    {
+        // Put value back into pushed cvar.
+        // The string value of temp_cvar will be stolen.  Do not need to Z_Free it.
+        CV_Put_Config_cvar( temp_cvar_parent, menu_cfg, /*IN*/ & temp_cvar );
+        temp_cvar_active = 0;
+        menu_cfg_editing = 0;
+    }
+}
+
+// Edit a configfile cvar value, using menu_cfg.
+static
+void  config_cvar_edit_setvalue( consvar_t * cv_parent, int value )
+{
+    consvar_t * cv = config_cvar_edit_open( cv_parent );  // to temp_cvar
+    if( cv )
+    {
+        // Here, cv may be current cvar, or temp_cvar,
+        // either way it is safe to call CV_Set.
+        CV_SetValue( cv, value );
+        config_cvar_edit_save();  // saves temp_cvar
+    }
+}
+
+// Create a new configfile cvar entry, using menu_cfg.
+static
+void  config_cvar_edit_insert( consvar_t * cv_parent )
+{
+    if( ! (cv_parent->flags & CV_SAVE) )
+        goto done;  // not in config file
+
+    if( (cv_parent->state & CS_CONFIG) == menu_cfg )
+        goto done;  // already exists as current cvar
+
+    if( CV_Get_Pushed_cvar( cv_parent, menu_cfg, NULL ) )  // test of existance
+        goto done;  // already exists as pushed cvar
+
+    // Create the cvar value, even if it is pushed and not current.
+#if 0
+    // Copy existing value.
+    CV_Put_Config_string( cv_parent, menu_cfg, cv_parent->string );
+#else
+    // Get default value.
+    CV_Put_Config_string( cv_parent, menu_cfg, cv_parent->defaultvalue );
+#endif
+
+done:
+    return;
+}
+
+// Delete the configfile cvar entry, using menu_cfg.
+static
+void  config_cvar_edit_delete( consvar_t * cv_parent )
+{
+    // This can delete a current cvar or pushed cvar value.
+    CV_Delete_Config_cvar( cv_parent, menu_cfg );
+}
+
+// Edit configfile entries for most common menus.
+static
+byte  config_cvar_edit_key_handler( int key )
+{
+    menuitem_t * mip = & currentMenu->menuitems[itemOn];
+    consvar_t * cv_parent;
+   
+    if( (mip->status & IT_TYPE) != IT_CVAR )
+        goto fail;  // not a cvar menu entry
+
+    cv_parent = (consvar_t *)mip->itemaction;
+   
+    switch( key )
+    {
+     case KEY_INS :  // insert config
+        config_cvar_edit_insert( cv_parent );  // using menu_cfg
+        goto done;
+
+     case KEY_DELETE :  // delete config
+        config_cvar_edit_delete( cv_parent );  // using menu_cfg
+        goto done;
+
+     default:
+        goto fail;
+    }
+   
+fail:
+    return false; // did not use the key
+
+done:
+    return true;  // used the key
+}
+
+// Enter and leave menu_cfg mode.
+static
+byte  config_cvar_key_handler( int key )
+{
+    switch( key )
+    {
+#if 1
+      case KEY_F2:
+#else
+      case 'M':
+      case 'm':
+#endif
+        if( menu_cfg == CFG_main )  // toggle
+            goto turn_menu_cfg_off;
+        // Only show the values from the Main config file.
+        menu_cfg = CFG_main;
+        
+        goto done;
+#if 1
+      case KEY_F3:
+#else
+      case 'D':
+      case 'd':
+#endif
+        if( menu_cfg == CFG_drawmode )  // toggle
+            goto turn_menu_cfg_off;
+        // Only show the values from the Drawmode config file.
+        menu_cfg = CFG_drawmode;
+        goto done;
+#if 1
+      case KEY_F1:
+      case KEY_F4:
+#else
+      case 'N':
+      case 'n':
+#endif
+      turn_menu_cfg_off:
+        // Normal menu values.
+        menu_cfg = CFG_none;
+        menu_cfg_editing = 0;
+        goto done;
+
+     default:
+        break;
+    }
+
+    if( menu_cfg )
+    {
+        if( config_cvar_edit_key_handler( key ) )
+            goto done;
+    }
+
+    return false; // did not use the key
+
+done:
+    return true;  // used the key
+}
+#endif
 
 //===========================================================================
 // All ready playing, quit current game
@@ -769,7 +1002,7 @@ void M_Choose_to_quit_Response(int ch)
         int i;
         for( i=100; i>0; i-- )
         {
-            COM_BufExecute(); // subject to com_wait and other delays
+            COM_BufExecute( CFG_none ); // subject to com_wait and other delays
             if( ! Game_Playing()  ) break;
             // It must be not-playing before re-invoking the menu.
         }
@@ -1816,7 +2049,7 @@ enum
 menuitem_t VideoOptionsMenu[]=
 {
     {IT_STRING | IT_WHITESTRING | IT_SUBMENU,0, "Drawing Options >>"   , &DrawmodeDef, 0},
-    {IT_STRING | IT_WHITESTRING | IT_SUBMENU,0, "Video Modes >>"   , &VidModeDef       , 0},
+    {IT_STRING | IT_WHITESTRING | IT_SUBMENU,0, "Video Modes >>"   , &VideoModeDef       , 0},
 #ifndef __DJGPP__
     {IT_STRING | IT_CVAR,0,    "Fullscreen"       , &cv_fullscreen    , 0},
 #endif
@@ -2630,6 +2863,13 @@ void  draw_set_mode_instructions( byte vm_mode, const char * mode_name )
         M_CentreText(MODETXT_Y + 20, temp );
         M_CentreText(MODETXT_Y + 30, "Please wait 5 seconds..." );
     }
+#ifdef CONFIG_MENU_PAGE
+    else if( menu_cfg_editing )
+    {
+        M_CentreText(MODETXT_Y,"Press ENTER to set mode");
+        M_CentreText(MODETXT_Y + 40,"Press ESC to exit");
+    }
+#endif
     else
     {
 //        M_CentreText(MODETXT_Y,"Press ENTER to set mode");
@@ -2665,7 +2905,7 @@ void  draw_set_mode_instructions( byte vm_mode, const char * mode_name )
 #define VIDMODE_COLUMNAR_MOVEMENT
 
 //added:30-01-98: special menuitem key handler for video mode list
-void M_HandleVideoMode (int key)
+void M_VideoMode_key_handler (int key)
 {
 #ifdef VIDMODE_COLUMNAR_MOVEMENT       
     byte old_col, new_col;
@@ -2686,9 +2926,9 @@ void M_HandleVideoMode (int key)
 #ifdef VIDMODE_COLUMNAR_MOVEMENT       
         new_col = vidm_current / vidm_column_size;
         if( ( vidm_current >= vidm_nummodes )
-	    || new_col != old_col )
+            || new_col != old_col )
         {
-	    // Move to top of the column
+            // Move to top of the column
             vidm_current = old_col * vidm_column_size;
         }
 #else
@@ -2706,15 +2946,15 @@ void M_HandleVideoMode (int key)
 #ifdef VIDMODE_COLUMNAR_MOVEMENT       
         new_col = vidm_current / vidm_column_size;
         if( ( vidm_current < 0 )
-	    || new_col != old_col )
+            || new_col != old_col )
         {
-	    // Move to bottom of the column
+            // Move to bottom of the column
             vidm_current = (old_col * vidm_column_size) + vidm_column_size - 1;
         }
 #else
         if( vidm_current < 0 )
         {
-	    // Move to the last item of the mode list.
+            // Move to the last item of the mode list.
             vidm_current = vidm_nummodes-1;
         }
 #endif
@@ -2759,11 +2999,11 @@ byte  video_test_key_handler( int key );
 
 menuitem_t VideoModeMenu[]=
 {
-    {IT_KEYHANDLER | IT_EXTERNAL, 0, "", M_HandleVideoMode, '\0'},     // dummy menuitem for the control func
+    {IT_KEYHANDLER | IT_EXTERNAL, 0, "", M_VideoMode_key_handler, '\0'},     // dummy menuitem for the control func
 };
 
 
-menu_t  VidModeDef =
+menu_t  VideoModeDef =
 {
     "M_VIDEO", // in legacy.wad
     "Video Mode",
@@ -2780,7 +3020,7 @@ menu_t  VidModeDef =
 typedef struct
 {
     modenum_t  modenum; // video mode number in format of setmodeneeded
-    char    *desc;      // XXXxYYY
+    char    *  desc;    // XXXxYYY
 } modedesc_t;
 
 static modedesc_t   modedescs[MAXMODEDESCS];
@@ -2796,9 +3036,12 @@ void M_DrawVideoMode(void)
     byte  base_modetype = (mode_fullscreen) ? MODE_fullscreen : MODE_window;
     range_t moderange;
     modenum_t  dmode;  // draw modenum
+#ifdef CONFIG_MENU_PAGE
+    modenum_t  current_mode;
+#endif
     modedesc_t * mdp;  // modedesc
     modedesc_t * current_modedesc;
-    int     i, dup, row, col;
+    int     i, row, col;
     char    *desc;
 
     // setup key handler for video modes
@@ -2806,6 +3049,40 @@ void M_DrawVideoMode(void)
    
     // draw title
     M_DrawMenuTitle();
+
+#ifdef CONFIG_MENU_PAGE
+    // Current video mode as default.
+    current_mode.modetype = vid.modenum.modetype;
+    current_mode.index = vid.modenum.index;
+    menu_cfg_editing = 0;  // normal
+    if( menu_cfg )
+    {
+        V_DrawString( 2, 1, V_WHITEMAP, menu_cfg_string[menu_cfg]);
+        V_DrawString( BASEVIDWIDTH - (14*8), 1, V_WHITEMAP, "Insert Delete");
+        if( (cv_scr_width.state & CS_CONFIG) != menu_cfg )
+        {
+            consvar_t temp_cvar2;
+            int  temp_height, temp_fullscreen;
+
+            // modify video display and key handlers
+            menu_cfg_editing = 2;  // edit background, not live data
+
+            // Get current video mode, dependent upon menu_cfg.
+            // No display if no values.
+            if( ! config_cvar_edit_open( & cv_scr_width ) )
+                goto draw_instructions;  // cv_scr_width missing, wait for insert
+            if( ! CV_Get_Pushed_cvar( &cv_scr_height, menu_cfg, /*OUT*/ &temp_cvar2 ) )
+                goto draw_instructions;  // cv_scr_height missing, wait for insert
+
+            temp_height = temp_cvar2.value;
+            // use fullscreen from menu_cfg when available, else from current config
+            temp_fullscreen = ( CV_Get_Pushed_cvar( &cv_fullscreen, menu_cfg, /*OUT*/ &temp_cvar2 ))?
+                                temp_cvar2.value : cv_fullscreen.value;
+
+            current_mode = VID_GetModeForSize( temp_cvar.value, temp_height, temp_fullscreen );
+        }
+    }
+#endif
 
     dmode.modetype = base_modetype;
     vidm_nummodes = 0;
@@ -2818,8 +3095,6 @@ void M_DrawVideoMode(void)
         if (desc)
         {
             int j;
-
-            dup = 0;
 
             //when a resolution exists both under VGA and VESA, keep the
             // VESA mode, which is always a higher modenum
@@ -2834,27 +3109,29 @@ void M_DrawVideoMode(void)
                     {
                         // replace previous entry (VGA)
                         mdp->modenum = dmode;
-                        if (dmode.modetype == vid.modenum.modetype
-                            && dmode.index == vid.modenum.index )
-                            current_modedesc = mdp;
                     }
-                    dup = 1;
-                    break;
+                    goto  detect_current_setting;
                 }
             }
 
-            if (!dup)
-            {
-                mdp = & modedescs[vidm_nummodes];
-                mdp->desc = desc;
-                mdp->modenum = dmode;
-                if (dmode.modetype == vid.modenum.modetype
-                    && dmode.index == vid.modenum.index )
-                    current_modedesc = mdp;
+            // Create a new mode descriptor.
+            mdp = & modedescs[vidm_nummodes++];
+            mdp->desc = desc;
+            mdp->modenum = dmode;
 
-                vidm_nummodes++;
-                if( vidm_nummodes >= MAXMODEDESCS )  break;
-            }
+        detect_current_setting:
+            // Detect current setting, for highlight
+#ifdef CONFIG_MENU_PAGE
+            if (dmode.modetype == current_mode.modetype
+                && dmode.index == current_mode.index )
+#else
+            if (dmode.modetype == vid.modenum.modetype
+                && dmode.index == vid.modenum.index )
+#endif
+                current_modedesc = mdp;
+
+            // Must be after the detection.
+            if( vidm_nummodes >= MAXMODEDESCS )  break;
         }
     }
 
@@ -2877,6 +3154,9 @@ void M_DrawVideoMode(void)
         }
     }
 
+#ifdef CONFIG_MENU_PAGE
+draw_instructions:
+#endif
     draw_set_mode_instructions( 1, modedescs[vidm_current].desc );
 }
 
@@ -2899,6 +3179,39 @@ byte  video_test_key_handler( int key )
        return 2;
     }
 
+#ifdef CONFIG_MENU_PAGE
+    // Turn menu_cfg on and off.
+    if( config_cvar_key_handler( key ) )
+        goto used_key;
+
+    if( menu_cfg_editing )
+    {
+        // edit video mode that is not current
+        switch( key )
+        {
+          case KEY_ENTER:
+            {
+                modestat_t ms = VID_GetMode_Stat( modedescs[vidm_current].modenum );
+                config_cvar_edit_setvalue( &cv_scr_width, ms.width );
+                config_cvar_edit_setvalue( &cv_scr_height, ms.height );
+            }
+            goto used_key;
+          case KEY_INS :  // insert config
+            config_cvar_edit_insert( &cv_scr_width );  // using menu_cfg
+            config_cvar_edit_insert( &cv_scr_height );  // using menu_cfg
+            goto used_key;
+         case KEY_DELETE :  // delete config
+            config_cvar_edit_delete( &cv_scr_width );  // using menu_cfg
+            config_cvar_edit_delete( &cv_scr_height );  // using menu_cfg
+            goto used_key;
+         default:
+            break;
+        }
+        // block live video changes
+        return 0;
+    }
+#endif
+   
     switch( key )
     {
       case KEY_ENTER:
@@ -2926,6 +3239,7 @@ byte  video_test_key_handler( int key )
     return 0;
 
  change_mode:
+    // Change the active video mode.
     vidm_previousmode = vid.modenum;
     if( setmodeneeded.modetype == MODE_NOP ) //in case the previous setmode was not finished
         setmodeneeded = modedescs[vidm_current].modenum;
@@ -2947,7 +3261,7 @@ void M_Draw_drawmode(void);
 
 menuitem_t DrawmodeMenu[]=
 {
-    {IT_KEYHANDLER | IT_EXTERNAL, 0, "", M_HandleVideoMode, '\0'},     // dummy menuitem for the control func
+    {IT_KEYHANDLER | IT_EXTERNAL, 0, "", M_VideoMode_key_handler, '\0'},     // dummy menuitem for the control func
 //    {IT_STRING | IT_CVAR, 0, "Draw Mode", &cv_drawmode      , 0},
 };
 
@@ -3028,9 +3342,6 @@ void M_Draw_drawmode(void)
 {
     int  i, row, col;
 
-    // setup key handler for video modes
-    key_handler2 = drawmode_test_key_handler;  // key handler
-   
     // draw title
     M_DrawMenuTitle();
 
@@ -3063,6 +3374,9 @@ void M_Draw_drawmode(void)
 
     byte dm = vidm_drawmode[vidm_current];
     draw_set_mode_instructions( 0, drawmode_sel_t[drawmode_to_drawmode_sel_t[dm]].strvalue );
+
+    // setup key handler for video modes
+    key_handler2 = drawmode_test_key_handler;  // key handler
 }
 
 
@@ -4493,37 +4807,75 @@ void M_CentreText (int y, char* string)
 //
 // CONTROL PANEL
 //
-void M_ChangeCvar(int choice)
-{
-    consvar_t *cv=(consvar_t *)currentMenu->menuitems[itemOn].itemaction;
 
+static
+void  cvar_incdec( consvar_t * cv, int incr )
+{
+#ifdef CONFIG_MENU_PAGE
+    cv = config_cvar_edit_open( cv );
+    if( ! cv )
+        return;  // cannot edit
+#endif
+
+    CV_SetValue( cv, cv->value + incr );
+#ifdef CONFIG_MENU_PAGE
+    config_cvar_edit_save();
+#endif
+
+    S_StartSound(menu_sfx_enter);
+}
+
+static
+void M_Change_cvar_value(int choice)
+{
+    consvar_t * cv = (consvar_t *)currentMenu->menuitems[itemOn].itemaction;
+    int d = choice * 2 - 1;  // -1 or +1
+
+#ifdef CONFIG_MENU_PAGE
+    cv = config_cvar_edit_open( cv );
+    if( ! cv )
+        return;  // cannot edit
+#endif
+
+    // Process cvar modification
     if(((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_SLIDER )
      ||((currentMenu->menuitems[itemOn].status & IT_CVARTYPE) == IT_CV_NOMOD  ))
     {
-        CV_SetValue(cv,cv->value+choice*2-1);
+        CV_SetValue(cv, cv->value + d );
     }
     else
     {
         if(cv->flags & CV_FLOAT)
         {
             char s[20];
-            sprintf(s,"%f",(float)cv->value/FRACUNIT+(choice*2-1)*(1.0/16.0));
+            sprintf(s,"%f",(float)cv->value/FRACUNIT + d * (1.0/16.0));
             CV_Set(cv,s);
         }
         else
-            CV_AddValue(cv,choice*2-1);
+            CV_ValueIncDec( cv, d );
     }
+
+#ifdef CONFIG_MENU_PAGE
+    config_cvar_edit_save();
+#endif
 }
+
 
 #define MAX_CVAR_STRING  512
 
 static
-boolean M_ChangeStringCvar(int key, char ch)
+boolean M_Change_cvar_string(int key, char ch)
 {
-    consvar_t *cv=(consvar_t *)currentMenu->menuitems[itemOn].itemaction;
+    consvar_t * cv = (consvar_t *)currentMenu->menuitems[itemOn].itemaction;
     char buf[ MAX_CVAR_STRING + 1 ];
     int  len;
 
+#ifdef CONFIG_MENU_PAGE
+    cv = config_cvar_edit_open( cv );
+    if( ! cv )
+        return false;  // cannot edit
+#endif
+   
     switch (key)
     {
       case KEY_BACKSPACE :
@@ -4534,6 +4886,9 @@ boolean M_ChangeStringCvar(int key, char ch)
             memcpy(buf,cv->string,len);
             buf[len-1]=0;
             CV_Set(cv, buf);
+#ifdef CONFIG_MENU_PAGE
+            config_cvar_edit_save();
+#endif
         }
         return true;
       default:
@@ -4549,6 +4904,9 @@ boolean M_ChangeStringCvar(int key, char ch)
                 buf[len++] = ch;
                 buf[len] = 0;
                 CV_Set(cv, buf);
+#ifdef CONFIG_MENU_PAGE
+                config_cvar_edit_save();
+#endif
             }
             return true;
         }
@@ -4556,6 +4914,8 @@ boolean M_ChangeStringCvar(int key, char ch)
     }
     return false;
 }
+
+
 
 //
 // M_Responder
@@ -4747,15 +5107,13 @@ boolean M_Responder (event_t* ev)
           case '-':         // Screen size down
             if (automapactive || chat_on || con_destlines)     // DIRTY !!!
                 return false;
-            CV_SetValue (&cv_viewsize, cv_viewsize.value-1);
-            S_StartSound(menu_sfx_enter);
+            cvar_incdec( &cv_viewsize, -1 );
             goto ret_true;
 
           case '=':        // Screen size up
             if (automapactive || chat_on || con_destlines)     // DIRTY !!!
                 return false;
-            CV_SetValue (&cv_viewsize, cv_viewsize.value+1);
-            S_StartSound(menu_sfx_enter);
+            cvar_incdec( &cv_viewsize, +1 );
             goto ret_true;
 
           case KEY_F1:            // Help key
@@ -4793,7 +5151,7 @@ boolean M_Responder (event_t* ev)
           case KEY_F5:
             S_StartSound(menu_sfx_open);
             M_StartControlPanel();
-            Push_Setup_Menu (&VidModeDef);
+            Push_Setup_Menu (&VideoModeDef);
             //M_ChangeDetail(0);
             goto ret_true;
 
@@ -4811,7 +5169,7 @@ boolean M_Responder (event_t* ev)
             goto ret_true;
 
           case KEY_F8:            // Toggle messages
-            CV_AddValue(&cv_showmessages,+1);
+            CV_ValueIncDec(&cv_showmessages,+1);
             S_StartSound(menu_sfx_open);
             goto ret_true;
 
@@ -4889,6 +5247,7 @@ boolean M_Responder (event_t* ev)
             #endif
                 goto ret_true;
 
+            // Call the itemaction routine, with the key.
             void (*cc_action)(event_t *) = r_menuline->itemaction;
             if (cc_action)   cc_action(ev);
         }
@@ -4900,15 +5259,20 @@ boolean M_Responder (event_t* ev)
     {
         if( (r_menuline->status & IT_CVARTYPE) == IT_CV_STRING )
         {
-            if (M_ChangeStringCvar(key, ch))
+            if( M_Change_cvar_string(key, ch) )
                 goto ret_true;
 
             routine = NULL;
         }
         else
-            routine = M_ChangeCvar;
+            routine = M_Change_cvar_value;
     }
 
+#ifdef CONFIG_MENU_PAGE
+    if( config_cvar_key_handler( key ) )
+        goto ret_true;
+#endif
+   
     // Keys usable within menu
     switch (key)
     {
@@ -4931,7 +5295,7 @@ boolean M_Responder (event_t* ev)
         }
 #endif
         break;
-        
+       
       case '[':
       case KEY_PGUP:
         if( scroll_callback && (scroll_index > 0))
@@ -5074,6 +5438,7 @@ boolean M_Responder (event_t* ev)
         }
         goto ret_true;
 
+       
       default:
 #if 1
         // any other key: if a letter, try to find the corresponding menuitem
@@ -5198,6 +5563,11 @@ void M_StartControlPanel (void)
 static
 void M_Clear_Menus (boolean callexitmenufunc)
 {
+#ifdef CONFIG_MENU_PAGE
+    menu_cfg = CFG_none;  // cancel any config editing
+    menu_cfg_editing = 0;
+#endif
+
     if(!menuactive)
         return;
 
@@ -5337,6 +5707,10 @@ void M_Init (void)
 
     quicksave_slotid = -1;
    
+#ifdef CONFIG_MENU_PAGE
+    temp_cvar.string = NULL;
+#endif
+
     CV_RegisterVar(&cv_skill);
     CV_RegisterVar(&cv_monsters);
     CV_RegisterVar(&cv_nextmap );
@@ -5349,7 +5723,7 @@ void M_Init (void)
     CV_RegisterVar(&cv_menusound);
 }
 
-// Called once, game dependent
+// Called once after gamemode has been determined, game dependent
 void M_Configure (void)
 {
     int i;
@@ -5735,6 +6109,7 @@ void M_HandleFogColor(int key)
 #endif
 
 
+
 //===========================================================================
 // Register Menu cv_ commands that do not have another Init to use.
 void M_Register_Menu_Controls( void )
@@ -5928,22 +6303,22 @@ void M_LaunchMenu( void )
     } while( menuactive );
 
     // add home
-    if(cv_home.flags & CV_MODIFIED)
+    if(cv_home.state & CS_MODIFIED)
         M_Change_2Param( "-home", cv_home.string );
     // add doomwaddir
-    if( (cv_doomwaddir.flags & CV_MODIFIED) && cv_doomwaddir.string )
+    if( (cv_doomwaddir.state & CS_MODIFIED) && cv_doomwaddir.string )
         doomwaddir[0] = cv_doomwaddir.string;
     // add config
-    if(cv_config.flags & CV_MODIFIED)
+    if(cv_config.state & CS_MODIFIED)
         M_Change_2Param( "-config", cv_config.string );
     // add iwad
-    if(cv_iwad.flags & CV_MODIFIED)
+    if(cv_iwad.state & CS_MODIFIED)
         M_Change_2Param( "-iwad", cv_iwad.string );
     // add switches
-    if( (cv_switch.flags & CV_MODIFIED) && cv_switch.string[0] )
+    if( (cv_switch.state & CS_MODIFIED) && cv_switch.string[0] )
         M_Add_Param( cv_switch.string, NULL );
     // add game
-    if( (cv_game.flags & CV_MODIFIED)
+    if( (cv_game.state & CS_MODIFIED)
         && cv_game.value >= 0 && cv_game.value < GDESC_other)
     {
         game_desc_t * gamedesc = D_GameDesc( cv_game.value );

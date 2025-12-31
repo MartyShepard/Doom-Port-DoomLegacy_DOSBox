@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: p_info.c 1434 2019-04-26 10:35:00Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -636,7 +636,7 @@ void P_Load_LevelInfo( void )
           COM_BufAddText(va("gravity %f\n", ((double)gravity) / FRACUNIT));
   }
 
-  COM_BufExecute(); //Hurdler: flush the command buffer
+  COM_BufExecute( CFG_none ); //Hurdler: flush the command buffer
   return;
 }
 

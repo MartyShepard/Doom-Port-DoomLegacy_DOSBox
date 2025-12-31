@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01434 ]: w108_22 config files
+          DOS: Oh boy.. Conig file not saved. Taken fix from future Commit.
+					
 [01433 ]: w108_21 vidstat
 [01432 ]: w108_20 clipfix
 [01431 ]: w108_19 clipping

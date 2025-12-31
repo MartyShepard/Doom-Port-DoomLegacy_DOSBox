@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1389 2018-04-23 02:49:28Z wesleyjohnson $
+// $Id: d_clisrv.c 1434 2019-04-26 10:35:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -3238,7 +3238,7 @@ void TryRunTics (tic_t realtics)
         realtics = 1;
 
     if( realtics > 0 )
-        COM_BufExecute();            
+        COM_BufExecute( CFG_none );
 
     NetUpdate();
 

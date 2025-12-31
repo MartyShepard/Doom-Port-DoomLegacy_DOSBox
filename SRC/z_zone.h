@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: z_zone.h 1434 2019-04-26 10:35:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -138,7 +138,7 @@ void*   Z_MallocAlign(int reqsize, memtag_e tag, void **user, int alignbits);
 #define Z_Malloc(s,t,p) Z_MallocAlign(s,t,p,0)
 #endif
 
-char *Z_Strdup(const char *s, memtag_e tag, void **user);
+char * Z_Strdup(const char *s, memtag_e tag, void **user);
 
 // return size of data of this block.
 int Z_Datasize( void* ptr );

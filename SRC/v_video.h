@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1423 2019-01-29 08:06:47Z wesleyjohnson $
+// $Id: v_video.h 1434 2019-04-26 10:35:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -99,7 +99,7 @@ extern byte drawmode_sel_avail[];
 extern const char * rendermode_name[];
 
 //  drawmode : drawmode_sel_t
-byte  V_switch_drawmode( byte drawmode );
+byte  V_switch_drawmode( byte drawmode, byte change_config );
 
 // Early setup of video controls, register cv_ vars
 void V_Init_VideoControl( void );

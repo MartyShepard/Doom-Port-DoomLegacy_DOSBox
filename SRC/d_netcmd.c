@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1423 2019-01-29 08:06:47Z wesleyjohnson $
+// $Id: d_netcmd.c 1434 2019-04-26 10:35:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -200,20 +200,21 @@ void Send_WeaponPref(void);
 void Send_NameColor(void);
 void Send_NameColor2(void);
 
+// Has CV_CFG1 where does not have support for insert into drawmode config file.
 // these two are just meant to be saved to the config
-consvar_t cv_playername = { "name", NULL, CV_SAVE | CV_CALL | CV_NOINIT, NULL, Send_NameColor };
-consvar_t cv_playercolor = { "color", "0", CV_SAVE | CV_CALL | CV_NOINIT, Color_cons_t, Send_NameColor };
+consvar_t cv_playername = { "name", NULL, CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, NULL, Send_NameColor };
+consvar_t cv_playercolor = { "color", "0", CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, Color_cons_t, Send_NameColor };
 
 // player's skin, saved for commodity, when using a favorite skins wad..
-consvar_t cv_skin = { "skin", DEFAULTSKIN, CV_SAVE | CV_CALL | CV_NOINIT, NULL /*skin_cons_t */ , Send_NameColor };
+consvar_t cv_skin = { "skin", DEFAULTSKIN, CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, NULL /*skin_cons_t */ , Send_NameColor };
 consvar_t cv_weaponpref = { "weaponpref", "014576328", CV_SAVE | CV_CALL | CV_NOINIT, NULL, Send_WeaponPref };
 consvar_t cv_autoaim = { "autoaim", "1", CV_SAVE | CV_CALL | CV_NOINIT, CV_OnOff, Send_WeaponPref };
 consvar_t cv_originalweaponswitch = { "originalweaponswitch", "0", CV_SAVE | CV_CALL | CV_NOINIT, CV_OnOff, Send_WeaponPref };
 
 // secondary player for splitscreen mode
-consvar_t cv_playername2 = { "name2", "big b", CV_SAVE | CV_CALL | CV_NOINIT, NULL, Send_NameColor2 };
-consvar_t cv_playercolor2 = { "color2", "1", CV_SAVE | CV_CALL | CV_NOINIT, Color_cons_t, Send_NameColor2 };
-consvar_t cv_skin2 = { "skin2", DEFAULTSKIN, CV_SAVE | CV_CALL | CV_NOINIT, NULL /*skin_cons_t */ , Send_NameColor2 };
+consvar_t cv_playername2 = { "name2", "big b", CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, NULL, Send_NameColor2 };
+consvar_t cv_playercolor2 = { "color2", "1", CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, Color_cons_t, Send_NameColor2 };
+consvar_t cv_skin2 = { "skin2", DEFAULTSKIN, CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, NULL /*skin_cons_t */ , Send_NameColor2 };
 
 CV_PossibleValue_t usemouse_cons_t[] = { {0, "Off"}, {1, "On"}, {2, "Force"}, {0, NULL} };
 

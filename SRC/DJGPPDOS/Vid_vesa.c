@@ -399,7 +399,10 @@ fail:
 }
 
 /*
-  Wofür ?. Kam mit r1433 rein.
+  Add a function to the video drivers, VID_GetMode_Stat().
+  This returns the video mode width, height, and some other attributes.
+  Some of the drivers can use it internally.
+  It is needed for some future enhancements.
 */
 modestat_t  VID_GetMode_Stat( modenum_t modenum )
 {

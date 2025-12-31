@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: m_misc.h 1434 2019-04-26 10:35:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -39,9 +39,6 @@
 #include "doomdef.h"
   // MAX_WADPATH
 #include "doomtype.h"
-
-// the file where all game vars and settings are saved
-#define CONFIGFILENAME   "config.cfg"
 
 
 //
@@ -96,15 +93,18 @@ void M_ScreenShot (void);
 
 //===========================================================================
 
-extern char   configfile[MAX_WADPATH];
+extern char * configfile_main;
+extern char * configfile_drawmode;
 
 void Command_SaveConfig_f (void);
 void Command_LoadConfig_f (void);
 void Command_ChangeConfig_f (void);
 
-void M_FirstLoadConfig(void);
-//Fab:26-04-98: save game config : cvars, aliases..
-void M_SaveConfig (const char *filename);
+void M_Set_configfile_main( const char * filename );
+void M_Set_configfile_drawmode( byte drawmode );
+void M_LoadConfig( byte cs_config, const char * cfgfile );
+void M_SaveConfig( byte cs_config, const char * cfgfile );
+void M_SaveAllConfig( void );
 
 //===========================================================================
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1432 2019-04-26 10:32:42Z wesleyjohnson $
+// $Id: r_things.c 1434 2019-04-26 10:35:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1143,7 +1143,7 @@ void R_DrawMaskedColumn (column_t* column)
     if ( dc_yh >= rdraw_viewheight )
     {
         printf( "DrawMasked dc_yh  %i > rdraw_viewheight\n", dc_yh );
-	dc_yh = rdraw_viewheight - 1;
+        dc_yh = rdraw_viewheight - 1;
     }
 #endif
 #endif

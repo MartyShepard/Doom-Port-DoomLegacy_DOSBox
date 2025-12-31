@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1431 2019-03-16 06:28:43Z wesleyjohnson $
+// $Id: screen.c 1434 2019-04-26 10:35:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -175,7 +175,7 @@ void SCR_SetMode (void)
     if( drawmode_recalc )
     {
         // Switch the drawmode, this may change the rendermode.
-        ret_value = V_switch_drawmode( set_drawmode );
+        ret_value = V_switch_drawmode( set_drawmode, 1 );
         if( setmodeneeded.modetype == MODE_NOP )
 	{
             if( ! ret_value )  goto done;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 1388 2018-04-15 02:10:08Z wesleyjohnson $
+// $Id: m_misc.c 1434 2019-04-26 10:35:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -279,22 +279,66 @@ boolean FIL_CheckExtension (const char * in)
 
 
 // ==========================================================================
-//                        CONFIGURATION FILE
-// ==========================================================================
-
-//
-// DEFAULTS
-//
-
-char   configfile[MAX_WADPATH];
-
-// ==========================================================================
 //                          CONFIGURATION
 // ==========================================================================
-boolean         gameconfig_loaded = false;      // true once config.cfg loaded
-                                                //  AND executed
+// owned, malloc
+char * configfile_main = NULL;
+char * configfile_drawmode = NULL;
+// true once config.cfg loaded, and values are present.
+// Bit 0x80 is used to flag that some configfile was loaded.
+static byte config_loaded = 0;
+static const byte  config_load_bit[ 4 ] = { 0, 0x01, 0x02, 0x04 };  // bit masks
+
+void  M_Set_configfile_main( const char * filename )
+{
+    free( configfile_main );
+    configfile_main = strdup( filename );
+}
+
+// This table will work even on compilers that do not
+// combine identical const strings.
+// index by drawmode : drawmode_e
+const char * configfile_drawmode_designator[] = {
+  "--", // no drawmode configfile
+  "8p",  // DRM_8pal
+  "15",  // DRM_15
+  "16",  // DRM_16
+  "24",  // DRM_24
+  "32",  // DRM_32
+  "bp",  // DRM_explicit_bpp,
+  "n",   // DRM_native
+#ifdef HWRENDER
+  "gl",  // DRM_opengl
+  "mg",  // DRM_minigl
+#ifdef SMIF_WIN_NATIVE
+  "wg",  // DRM_glide
+  "wd",  // DRM_d3d
+#endif
+#endif
+};
+
+// name is usually limited to 8 char
+#define  NAMEBUF_LEN  24
+
+//  drawmode : drawmode_sel_t
+void  M_Set_configfile_drawmode( byte drawmode )
+{
+    char cfgbuf[ MAX_WADPATH ];
+    char namebuf[ NAMEBUF_LEN ];
+
+    // Form drawmode config filename.
+    // example: /home/user/.legacy/configgl.cfg
+    const char * cfdd_str = configfile_drawmode_designator[ drawmode ];
+    snprintf( namebuf, NAMEBUF_LEN-1, DRAWMODE_CONFIGFILENAME, cfdd_str );
+    cat_filename( cfgbuf, legacyhome, namebuf );
+
+    free( configfile_drawmode );
+    configfile_drawmode = strdup( cfgbuf );
+}
 
 
+
+// Save config file, without disturbing configfile settings.
 void Command_SaveConfig_f (void)
 {
     char cfgname[MAX_WADPATH];
@@ -309,36 +353,81 @@ void Command_SaveConfig_f (void)
     }
     strncpy(cfgname, carg.arg[1], MAX_WADPATH-1);
     cfgname[MAX_WADPATH-1] = '\0';
+    if( cfgname[0] == 0 )  goto failed;
+
     FIL_DefaultExtension (cfgname,".cfg");
 
-    M_SaveConfig(cfgname);
-    CONS_Printf("config saved as %s\n", configfile);  // actual name
+    M_SaveConfig( CFG_main, cfgname );
+
+    // Also save the drawmode configfile, with NULL name check.
+    M_SaveConfig( CFG_drawmode, configfile_drawmode );
+
+    // Check that the file now exists.
+    FILE * f = fopen (cfgname, "r");
+    if( ! f ) goto failed;
+    fclose( f );
+   
+    CONS_Printf("config saved as %s\n", cfgname );  // actual name saved
+    return;
+
+failed:
+    I_SoftError("Could not save game config file %s\n", cfgname );
+    return;
 }
 
+// Replace config values from a new config file.
 void Command_LoadConfig_f (void)
 {
+    char cfgname[MAX_WADPATH];
     COM_args_t  carg;
+    byte  namearg = 1;
+    char  other_flag = 0;
     
     COM_Args( &carg );
+    if( carg.num < 2 || carg.num > 3 )  goto bad_syntax;
 
-    if (carg.num!=2)
+    if( carg.arg[1][0] == '-' )
     {
-        CONS_Printf("loadconfig <filename[.cfg]> : load config from a file\n");
-        return;
+        other_flag = carg.arg[1][1];
+        namearg = 2;
+    }
+    else if( carg.arg[2][0] == '-' )
+    {
+        other_flag = carg.arg[2][1];
     }
 
-    strncpy(configfile, carg.arg[1], MAX_WADPATH-1);
-    configfile[MAX_WADPATH-1] = '\0';
-    FIL_DefaultExtension (configfile,".cfg");
-/*  for create, don't check
+    strncpy(cfgname, carg.arg[namearg], MAX_WADPATH-1);
+    cfgname[MAX_WADPATH-1] = '\0';
+    if( cfgname[0] == 0 )  goto failed;
 
-    if ( access (tmpstr,F_OK) )
+    FIL_DefaultExtension (cfgname,".cfg");
+    //  for create, don't check if file exists
+
+    // The original intent was to load a complete config file, replacing all.
+    other_flag = tolower( other_flag );
+    if( other_flag == 'a' )  // append
     {
-        CONS_Printf("Error reading file %s (not exist ?)\n",tmpstr);
-        return;
+        // Append config file settings.
+        if( access(cfgname, R_OK ) < 0 )  goto failed;
+        // Load additional config settings.  Do not save them to the main config.
+        M_LoadConfig( CFG_other, cfgname );
     }
-*/
-    COM_BufInsertText (va("exec \"%s\"\n",configfile));
+    else
+    {
+        // Load config sets main config filename.
+        M_Set_configfile_main( cfgname );
+        // At program end, it will overwrite this config file with all the CFG_main settings.
+        M_LoadConfig( CFG_main, cfgname );
+    }
+    return;
+
+failed:
+    I_SoftError("Could not load game config file %s\n", cfgname );
+    return;
+   
+bad_syntax:
+    CONS_Printf("loadconfig (-A) <filename[.cfg]> : load config from a file\n");
+    return;
 }
 
 void Command_ChangeConfig_f (void)
@@ -353,84 +442,131 @@ void Command_ChangeConfig_f (void)
         return;
     }
 
-    COM_BufAddText (va("saveconfig \"%s\"\n", configfile));
+#if 1
+    // Why be indirect when there is a direct method, with all the parameters.
+    M_SaveAllConfig();
+#else
+    COM_BufAddText (va("saveconfig \"%s\"\n", configfile_main));
+#endif
+#if 1
+    // Replace the main config with a different config file.
+    CV_Clear_Config( CFG_main );  // cleanup old values
+#endif
+    // indirect invoke of LoadConfig above.
     COM_BufAddText (va("loadconfig \"%s\"\n", carg.arg[1])); // -> configfile
 }
 
+
+
 //
-// Load the default config file
+// Load a config file
 //
-void M_FirstLoadConfig(void)
+//   cfg : cv_config_e, source config file ident
+void M_LoadConfig( byte cfg, const char * cfgfile )
 {
-    int p;
+    FILE * fr;
 
-    //  configfile is initialised by d_main when searching for the wad ?!
+    //  cfgfile is initialised by d_main when searching for the wad ?!
+    if( ! cfgfile )  return;
 
-    // check for a custom config file
-    p = M_CheckParm ("-config");
-    if (p && p<myargc-1)
+    // Check that it can be opened.
+    fr = fopen ( cfgfile, "r" );
+    if( ! fr )
     {
-        strncpy (configfile, myargv[p+1], MAX_WADPATH-1);
-        configfile[MAX_WADPATH-1] = '\0';
-        CONS_Printf ("config file: %s\n",configfile);
+        // Marty:  Taken fix from future Commit.
+        if( cfg == CFG_main )
+        {
+            config_loaded |= 0x40;  // set flag bit, so can create CFG_main later
+        }
+        return;
     }
-
-    // load default control
-    G_Controldefault();
+    fclose( fr );
+   
+    COM_BufExecute( CFG_none );  // Clear buffer of any COM commands, before Loading
 
     // load config, make sure those commands doesnt require the screen..
     CONS_Printf("\n");
-    COM_BufInsertText (va("exec \"%s\"\n", configfile));
-    COM_BufExecute ();       // make sure initial settings are done
+    COM_BufInsertText (va("exec \"%s\"\n", cfgfile));
+    COM_BufExecute( cfg );       // make sure initial settings are done
 
     // make sure I_Quit() will write back the correct config
     // (do not write back the config if it crash before)
-    gameconfig_loaded = true;
+    config_loaded |= 0x80 | config_load_bit[cfg];  // set flag bit, and specific bit
 }
 
-//  Save all game config here
-//
-void M_SaveConfig (const char *filename)
+
+
+//   cfg : cv_config_e
+void M_SaveConfig( byte cfg, const char * cfgfile )
 {
-    FILE    *f;
+    FILE * fw;
+    consvar_t * cv;
+    // When CFG_main, also save CFG_none vars
+    byte cfg2;
+
+    if( ! cfgfile )  return;
 
     // make sure not to write back the config until
     //  it's been correctly loaded
-    if (!gameconfig_loaded)
+    if( ! config_loaded )
         return;
 
-    // can change the file name
-    if(filename)
-    {
-        f = fopen (filename, "w");
-        // change it only if valide
-        if(f)
-            strcpy(configfile,filename);  // filename is already MAX_WADPATH
-        else
-        {
-            I_SoftError("Could not save game config file %s\n",filename);
-            return;
-        }
-    }
-    else
-    {
-        f = fopen (configfile, "w");
-        if (!f)
-        {
-            I_SoftError("Could not save game config file %s\n",configfile);
-            return;
-        }
-    }
+    // Marty:  Taken fix from future Commit.
+    if( (cfg != CFG_main) // CFG_main always gets saved, has all CFG_none var too.
+        && ! (config_loaded & config_load_bit[cfg])  // cfg was NOT loaded
+        && ! CV_Config_check( cfg ) ) // NOT any of the cfg is (current or pushed).
+        return;
 
+    fw = fopen (cfgfile, "w");
+    if (!fw)
+    {
+        I_SoftError("Could not save game config file %s\n", cfgfile);
+        return;
+    }
+    
     // header message
-    fprintf (f, "// Doom Legacy configuration file.\n");
+    fprintf (fw, "// Doom Legacy configuration file.\n");
 
     //FIXME: save key aliases if ever implemented..
 
-    CV_SaveVariables (f);
-    G_SaveKeySetting(f);
+    // Save CV variables
+    // The main configfile also gets the uninitialized variables.
+    // There are no CFG_null variables.
+    cfg2 = (cfg == CFG_main) ? CFG_none : CFG_null;
+    for( cv = CV_IteratorFirst(); cv ; cv = CV_Iterator( cv ) )
+    {
+        if( cv->flags & CV_SAVE )
+        {
+            const char * str = NULL;
+            byte cm = cv->state & CS_CONFIG;
+            if( (cm == cfg) || (cm == cfg2) )
+            {
+                str = cv->string;
+            }
+            else if( cv->state & CS_PUSHED )
+            {
+                str = CV_Get_Config_string( cv, cfg );
+            }
+            else  continue;  // not current and not pushed
 
-    fclose (f);
+            if( ! str ) continue;
+            // Save the cvar string
+            fprintf( fw, "%s \"%s\"\n", cv->name, str );
+        }
+    }
+
+    if( cfg == CFG_main )
+        G_SaveKeySetting(fw);
+
+    fclose (fw);
+}
+
+//  Save all game config here
+void M_SaveAllConfig( void )
+{
+    M_SaveConfig( CFG_main, configfile_main );
+
+    M_SaveConfig( CFG_drawmode, configfile_drawmode );
 }
 
 
@@ -506,7 +642,7 @@ byte  M_Make_Screenshot_Filename( char * lbmname, const char * ext )
         return 0;
     }
 
-    if( access( savedir, 0 ) < 0 )
+    if( access( savedir, F_OK ) < 0 )
     {
         CONS_Printf("Screenshot directory error: %s\n", savedir);
         return 0;
@@ -519,7 +655,7 @@ byte  M_Make_Screenshot_Filename( char * lbmname, const char * ext )
         vernum[1] = '0' + ((i/100) % 10);
         vernum[2] = '0' + ((i/10) % 10);
         vernum[3] = '0' + ((i/1) % 10);
-        if (access(lbmname,0) == -1)
+        if (access(lbmname, F_OK) == -1)
             return 1;      // file doesn't exist
     }
 
