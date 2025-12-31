@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.h 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: r_things.h 1444 2019-06-12 04:08:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -64,10 +64,9 @@
   // consvar_t
 #include "d_player.h"
 
-#define CLIP_IN_BAND
 #define CLIP2_LIMIT
 
-#if defined(CLIP_IN_BAND) && defined(RANGECHECK) && defined(CLIP2_LIMIT)
+#if defined(RANGECHECK) && defined(CLIP2_LIMIT)
 # undef CLIP2_LIMIT
 #endif
 

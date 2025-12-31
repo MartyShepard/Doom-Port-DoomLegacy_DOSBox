@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 1431 2019-03-16 06:28:43Z wesleyjohnson $
+// $Id: r_plane.c 1444 2019-06-12 04:08:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -142,19 +142,13 @@ short *lastopening = NULL;
 
 //
 // Clip values are the solid pixel bounding the range.
-#ifdef CLIP_IN_BAND
 //  [WDJ] Clip is the highest/lowest drawable row for that column.
 //  This allows limit tests to be done without needing +1 and -1.
-//  In orignal Doom the clip was outside the drawable area,
-//  and in limit tests it needed +1 and -1 to get the drawable row.
+//  (In original Doom the clip was outside the drawable area,
+//  and in limit tests it needed +1 and -1 to get the drawable row.)
 //  Init floorclip to SCREENHEIGHT (bottom of screen).
 //  Init ceilingclip to 0 (top of screen).
 //  There are other limit tests applied that will limit the clip to the window.
-#else
-//  floorclip starts out SCREENHEIGHT
-//  ceilingclip starts out -1
-//
-#endif
 short                   floorclip[MAXVIDWIDTH];
 short                   ceilingclip[MAXVIDWIDTH];
 fixed_t                 backscale[MAXVIDWIDTH];
@@ -335,23 +329,14 @@ void R_Clear_Planes (player_t *player)
     for (i=0 ; i<rdraw_viewwidth ; i++)
     {
         backscale[i] = FIXED_MAX;
-#ifdef CLIP_IN_BAND
         // Init to drawable window.
         floorclip[i] = rdraw_viewheight - 1;
         ceilingclip[i] = con_clipviewtop;
-#else
-        floorclip[i] = rdraw_viewheight;
-        ceilingclip[i] = con_clipviewtop;       //Fab:26-04-98: was -1
-#endif
         for(p = 0; p < MAXFFLOORS; p++)
         {
-#ifdef CLIP_IN_BAND
+          // [WDJ] set to highest and lowest drawable row
           ffplane[p].front_clip_bot[i] = rdraw_viewheight - 1;
           ffplane[p].plane_clip_top[i] = con_clipviewtop;
-#else
-          ffplane[p].front_clip_bot[i] = rdraw_viewheight;
-          ffplane[p].plane_clip_top[i] = con_clipviewtop;
-#endif
         }
     }
 

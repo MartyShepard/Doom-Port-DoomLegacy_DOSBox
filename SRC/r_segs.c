@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 1435 2019-04-26 10:36:07Z wesleyjohnson $
+// $Id: r_segs.c 1444 2019-06-12 04:08:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -230,32 +230,17 @@ static void R_DrawSplatColumn (column_t* column)
         dc_yh = (bottom_post_sc-1)>>FRACBITS;
 
 #ifndef BORIS_FIX
-#ifdef CLIP_IN_BAND
         if (dc_yh > dm_floorclip[dc_x])
             dc_yh = dm_floorclip[dc_x];
         if (dc_yl < dm_ceilingclip[dc_x])
             dc_yl = dm_ceilingclip[dc_x];
 #else
-        if (dc_yh >= dm_floorclip[dc_x])
-            dc_yh = dm_floorclip[dc_x] - 1;
-        if (dc_yl < dm_ceilingclip[dc_x])
-            dc_yl = dm_ceilingclip[dc_x] + 1;
-#endif
-#else
-#ifdef CLIP_IN_BAND
         if (dc_yh > last_floorclip[dc_x])
             dc_yh =  last_floorclip[dc_x];
         if (dc_yl < last_ceilingclip[dc_x])
             dc_yl =  last_ceilingclip[dc_x];
-#else
-        if (dc_yh >= last_floorclip[dc_x])
-            dc_yh =  last_floorclip[dc_x]-1;
-        if (dc_yl <= last_ceilingclip[dc_x])
-            dc_yl =  last_ceilingclip[dc_x]+1;
-#endif
 #endif
 
-#ifdef CLIP_IN_BAND
 #ifdef RANGECHECK
     // Temporary check code.
     // Due to better clipping, this extra clip should no longer be needed.
@@ -269,7 +254,6 @@ static void R_DrawSplatColumn (column_t* column)
         printf( "DrawSplat dc_yh  %i > rdraw_viewheight\n", dc_yh );
         dc_yh = rdraw_viewheight - 1;
     }
-#endif
 #endif
 #ifdef CLIP2_LIMIT
         //[WDJ] phobiata.wad has many views that need clipping
@@ -603,24 +587,16 @@ void R_Render2sidedMultiPatchColumn (column_t* column)
     }
 
     {
-#ifdef CLIP_IN_BAND
       if(dc_yh > dm_floorclip[dc_x])
           dc_yh =  dm_floorclip[dc_x];
       if(dc_yl < dm_ceilingclip[dc_x])
           dc_yl =  dm_ceilingclip[dc_x];
-#else
-      if (dc_yh >= dm_floorclip[dc_x])
-          dc_yh =  dm_floorclip[dc_x]-1;
-      if (dc_yl <= dm_ceilingclip[dc_x])
-          dc_yl =  dm_ceilingclip[dc_x]+1;
-#endif
     }
 
     // [WDJ] Draws only within borders
     if (dc_yl >= rdraw_viewheight || dc_yh < 0)
       return;
 
-#ifdef CLIP_IN_BAND
 #ifdef RANGECHECK
     // Temporary check code.
     // Due to better clipping, this extra clip should no longer be needed.
@@ -634,7 +610,6 @@ void R_Render2sidedMultiPatchColumn (column_t* column)
         printf( "DrawMulti dc_yh  %i > rdraw_viewheight\n", dc_yh );
         dc_yh = rdraw_viewheight - 1;
     }
-#endif
 #endif
 #ifdef CLIP2_LIMIT
     //[WDJ] phobiata.wad has many views that need clipping
@@ -1044,11 +1019,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     int             base_fog_alpha;
     int             i, cnt;
     fixed_t         bottombounds = rdraw_viewheight << FRACBITS;
-#ifdef CLIP_IN_BAND
     fixed_t         topbounds = (con_clipviewtop - 2) << FRACBITS;
-#else
-    fixed_t         topbounds = (con_clipviewtop - 1) << FRACBITS;
-#endif
     fixed_t         offsetvalue = 0;
     fixed_t         lheight;
     r_lightlist_t * rlight; // dc_lightlist
@@ -1753,30 +1724,16 @@ void R_RenderSegLoop (void)
         yl = HEIGHTFRAC_TO_INT( (topfrac + HEIGHTUNIT - 1) );  // rounded up
         
         // no space above wall?
-#ifdef CLIP_IN_BAND
         if (yl < ceilingclip[rw_x])
             yl = ceilingclip[rw_x];
-#else
-        if (yl < ceilingclip[rw_x]+1)
-            yl = ceilingclip[rw_x]+1;
-#endif
         
         if (markceiling)
         {
-#ifdef CLIP_IN_BAND
             top = ceilingclip[rw_x];
-#else
-            top = ceilingclip[rw_x]+1;
-#endif
             bottom = yl-1;
 
-#ifdef CLIP_IN_BAND
             if (bottom > floorclip[rw_x])
                 bottom = floorclip[rw_x];
-#else	   
-            if (bottom >= floorclip[rw_x])
-                bottom = floorclip[rw_x]-1;
-#endif
             
             // visplane global parameter vsp_ceilingplane
             if (top <= bottom)
@@ -1789,26 +1746,15 @@ void R_RenderSegLoop (void)
         
         yh = HEIGHTFRAC_TO_INT( bottomfrac );
         
-#ifdef CLIP_IN_BAND
         if (yh > floorclip[rw_x])
             yh = floorclip[rw_x];
-#else
-        if (yh >= floorclip[rw_x])
-            yh = floorclip[rw_x]-1;
-#endif
         
         if (markfloor)
         {
             top = yh+1;
-#ifdef CLIP_IN_BAND
             bottom = floorclip[rw_x];
             if (top < ceilingclip[rw_x])
                 top = ceilingclip[rw_x];
-#else
-            bottom = floorclip[rw_x]-1;
-            if (top <= ceilingclip[rw_x])
-                top = ceilingclip[rw_x]+1;
-#endif
             // visplane global parameter vsp_floorplane
             if (top <= bottom && vsp_floorplane)
             {
@@ -1828,30 +1774,15 @@ void R_RenderSegLoop (void)
             if(ffplane[i].height < viewz)
             {
               int top_w = HEIGHTFRAC_TO_INT( ffplane[i].front_frac ) + 1;
-#ifdef CLIP_IN_BAND
               // [WDJ] To prevent little black lines, front_clip_bot is +1 from a normal clip.
 //              int bottom_w = ffplane[i].front_clip_bot[rw_x] - 1;  // get black lines
               int bottom_w = ffplane[i].front_clip_bot[rw_x];
-#else
-//              int bottom_w = ffplane[i].front_clip_bot[rw_x] - 1;  // get black lines
-              int bottom_w = ffplane[i].front_clip_bot[rw_x];
-#endif
 
-#ifdef CLIP_IN_BAND
               if(top_w < ceilingclip[rw_x])
                 top_w = ceilingclip[rw_x];
-#else
-              if(top_w < ceilingclip[rw_x] + 1)
-                top_w = ceilingclip[rw_x] + 1;
-#endif
 
-#ifdef CLIP_IN_BAND
               if (bottom_w > floorclip[rw_x])
                 bottom_w = floorclip[rw_x];
-#else
-              if (bottom_w > floorclip[rw_x] - 1)
-                bottom_w = floorclip[rw_x] - 1;
-#endif
 
               if (top_w <= bottom_w)
               {
@@ -1861,28 +1792,14 @@ void R_RenderSegLoop (void)
             }
             else if (ffplane[i].height > viewz)
             {
-#ifdef CLIP_IN_BAND
               int top_w = ffplane[i].plane_clip_top[rw_x];
-#else
-              int top_w = ffplane[i].plane_clip_top[rw_x] + 1;
-#endif
               int bottom_w = HEIGHTFRAC_TO_INT( ffplane[i].front_frac );
 
-#ifdef CLIP_IN_BAND
               if (top_w < ceilingclip[rw_x])
                 top_w = ceilingclip[rw_x];
-#else
-              if (top_w < ceilingclip[rw_x] + 1)
-                top_w = ceilingclip[rw_x] + 1;
-#endif
 
-#ifdef CLIP_IN_BAND
               if (bottom_w > floorclip[rw_x])
                 bottom_w = floorclip[rw_x];
-#else
-              if (bottom_w > floorclip[rw_x] - 1)
-                bottom_w = floorclip[rw_x] - 1;
-#endif
 
               if (top_w <= bottom_w)
               {
@@ -1963,7 +1880,6 @@ void R_RenderSegLoop (void)
             // single sided line
             dc_yl = yl;
             dc_yh = yh;
-#ifdef CLIP_IN_BAND
 #ifdef RANGECHECK
     // Temporary check code.
     // Due to better clipping, this extra clip should no longer be needed.
@@ -1977,7 +1893,6 @@ void R_RenderSegLoop (void)
         printf( "RenderSeg mid dc_yh  %i > rdraw_viewheight\n", dc_yh );
         dc_yh = rdraw_viewheight - 1;
     }
-#endif
 #endif
 #ifdef CLIP2_LIMIT
             //[WDJ] phobiata.wad has many views that need clipping
@@ -2009,13 +1924,8 @@ void R_RenderSegLoop (void)
           }
             // dont draw anything more for this column, since
             // a midtexture blocks the view
-#ifdef CLIP_IN_BAND
             ceilingclip[rw_x] = rdraw_viewheight;  // block all
             floorclip[rw_x] = 0;  // block all
-#else
-            ceilingclip[rw_x] = rdraw_viewheight;  // block all
-            floorclip[rw_x] = -1;  // block all
-#endif
         }
         else
         {
@@ -2026,13 +1936,8 @@ void R_RenderSegLoop (void)
                 mid = HEIGHTFRAC_TO_INT( pixhigh );
                 pixhigh += pixhighstep;
                 
-#ifdef CLIP_IN_BAND
                 if (mid > floorclip[rw_x])
                     mid = floorclip[rw_x];
-#else
-                if (mid >= floorclip[rw_x])
-                    mid = floorclip[rw_x]-1;
-#endif
                 
                 if (mid >= yl)
                 {
@@ -2041,7 +1946,6 @@ void R_RenderSegLoop (void)
                     dc_yl = yl;
                     dc_yh = mid;
 
-#ifdef CLIP_IN_BAND
 #ifdef RANGECHECK
     // Temporary check code.
     // Due to better clipping, this extra clip should no longer be needed.
@@ -2055,7 +1959,6 @@ void R_RenderSegLoop (void)
         printf( "RenderSeg top dc_yh  %i > rdraw_viewheight\n", dc_yh );
         dc_yh = rdraw_viewheight - 1;
     }
-#endif
 #endif
 #ifdef CLIP2_LIMIT
                     //[WDJ] phobiata.wad has many views that need clipping
@@ -2072,20 +1975,12 @@ void R_RenderSegLoop (void)
                     colfunc ();
 #endif
                   } // if mid >= 0
-#ifdef CLIP_IN_BAND
                     ceilingclip[rw_x] = mid + 1;  // next drawable row
-#else
-                    ceilingclip[rw_x] = mid;
-#endif
                 }
                 else
                 {
                     // mid < yl
-#ifdef CLIP_IN_BAND
                     ceilingclip[rw_x] = yl;  // undrawn
-#else		   
-                    ceilingclip[rw_x] = yl-1;
-#endif
                 }
             }
             else
@@ -2093,11 +1988,7 @@ void R_RenderSegLoop (void)
                 // no top wall
                 if (markceiling)
                 {
-#ifdef CLIP_IN_BAND
                     ceilingclip[rw_x] = yl;  // undrawn
-#else
-                    ceilingclip[rw_x] = yl-1;
-#endif
                 }
             }
             
@@ -2108,13 +1999,8 @@ void R_RenderSegLoop (void)
                 pixlow += pixlowstep;
                 
                 // no space above wall?
-#ifdef CLIP_IN_BAND
                 if (mid < ceilingclip[rw_x])
                     mid = ceilingclip[rw_x];
-#else
-                if (mid <= ceilingclip[rw_x])
-                    mid = ceilingclip[rw_x]+1;
-#endif
 
                 if (mid <= yh)
                 {
@@ -2122,7 +2008,6 @@ void R_RenderSegLoop (void)
                   {
                     dc_yl = mid;
                     dc_yh = yh;
-#ifdef CLIP_IN_BAND
 #ifdef RANGECHECK
     // Temporary check code.
     // Due to better clipping, this extra clip should no longer be needed.
@@ -2136,7 +2021,6 @@ void R_RenderSegLoop (void)
         printf( "RenderSeg bottom dc_yh  %i > rdraw_viewheight\n", dc_yh );
         dc_yh = rdraw_viewheight - 1;
     }
-#endif
 #endif
 #ifdef CLIP2_LIMIT
                     //[WDJ] phobiata.wad has many views that need clipping
@@ -2155,19 +2039,11 @@ void R_RenderSegLoop (void)
                     colfunc ();
 #endif
                   } // if mid >= 0
-#ifdef CLIP_IN_BAND
                     floorclip[rw_x] = mid - 1;  // next drawable row
-#else
-                    floorclip[rw_x] = mid;
-#endif
                 }
                 else
                 {
-#ifdef CLIP_IN_BAND
                     floorclip[rw_x] = yh;  // undrawn row
-#else
-                    floorclip[rw_x] = yh+1;
-#endif
                 }
 
             }
@@ -2176,11 +2052,7 @@ void R_RenderSegLoop (void)
                 // no bottom wall
                 if (markfloor)
                 {
-#ifdef CLIP_IN_BAND
                     floorclip[rw_x] = yh;  // undrawn row
-#else
-                    floorclip[rw_x] = yh+1;
-#endif
                 }
             }
         }
@@ -2222,15 +2094,11 @@ void R_RenderSegLoop (void)
           {
             int y_w = HEIGHTFRAC_TO_INT( ffplane[i].back_frac );
 
-#ifdef CLIP_IN_BAND
             // [WDJ] Would think this should just be (y_w - 1),
             // but adding 1 prevents little black lines between joined sector plane draws.
 //            ffplane[i].front_clip_bot[rw_x] = y_w - 1;  // get little black lines
             ffplane[i].front_clip_bot[rw_x] = y_w;
             ffplane[i].plane_clip_top[rw_x] = y_w + 1;
-#else
-            ffplane[i].front_clip_bot[rw_x] = ffplane[i].plane_clip_top[rw_x] = y_w;
-#endif
             ffplane[i].back_frac += ffplane[i].back_step;
           }
 

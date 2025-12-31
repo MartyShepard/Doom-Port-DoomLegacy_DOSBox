@@ -7102,7 +7102,7 @@ Added a corona menu control:
   
 
 *** w108_draw_alpha
-patchfile = w108_29_draw_alpha.patch
+patchfile = w108_28_draw_alpha.patch
 - commit revision 1440
 Improve the R_DrawAlphaColumn software draw routines with more options,
 and ones that are better suited to drawing coronas and fog.
@@ -7145,6 +7145,13 @@ Menu control, cv_corona_draw, added, that selects between the
 dr_alpha_modes for corona draw.
 
 
+*** w108_clipfinal
+patchfile = w108_29_clipfinal.patch
+- commit revision 1444
+Keep the CLIP3 conditional code, removing the alternative.
+Missed being committed.
+
+
 *** w108_debugfile
 patchfile = w108_30_debugfile.patch
 - commit revision 1441
@@ -7156,7 +7163,7 @@ Fixes bug #0650.
 
 *** w108_drawsegs
 patchfile = w108_31_drawsegs.patch
-- commit revision 1442
+- commit revision 1445
 Remove the backscale array from the drawsegs and give it a dynamic
 allocation.  This reduces the memory usage because most times that
 array was not used, and it had to be allocated at MAXVIDWIDTH.
@@ -7166,7 +7173,7 @@ This will allow the MAXVIDWIDTH to be increased, as requested.
 
 *** w108_modelist
 patchfile = w108_32_modelist.patch
-- commit revision 1443
+- commit revision 1446
 Adam Stylinski found that calls to SDL_VideoModeOK were causing
 the modelist to be released, causing error messages on the MAC.
 The SDL modelist is released by other SDL calls, as some of them

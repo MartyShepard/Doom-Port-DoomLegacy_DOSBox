@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01444 ]: w108 29 clipfinal
 [01443 ]: w108 30c CLIP3 option fixed
 [01442 ]: d108 29b CLIP3 options fixed again
 [01441 ]: w108 30 debugfile
