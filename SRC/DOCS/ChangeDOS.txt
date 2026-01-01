@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01450 ]: w108 36 deathmatch skill
+          Happy Near year 2026
+					
 [01449 ]: w108 35 textureformat
 [01448 ]: w108 34 NETBSD
 [01447 ]: w108 33 texgen options

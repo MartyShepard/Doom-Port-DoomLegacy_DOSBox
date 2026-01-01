@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1440 2019-05-19 02:31:03Z wesleyjohnson $
+// $Id: m_menu.c 1450 2019-07-21 01:32:30Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1285,10 +1285,10 @@ void M_StartServer( int choice )
     }
     D_WaitPlayer_Setup();
 
-    COM_BufAddText(va("stopdemo;splitscreen %d;deathmatch %d;map \"%s\" -monsters %d skill %d\n", 
+    COM_BufAddText(va("stopdemo;splitscreen %d;deathmatch %d;map \"%s\" -skill %d -monsters %d\n", 
                       StartSplitScreenGame, cv_newdeathmatch.value, 
                       (gamemode==doom2_commercial)? cv_nextmap.string : cv_nextepmap.string,
-                      cv_monsters.value, cv_skill.value));
+                      cv_skill.value, cv_monsters.value));
     // skin change
     if (StartSplitScreenGame
         && ! ( displayplayer2_ptr
@@ -5858,7 +5858,6 @@ void M_Configure (void)
 
     CV_menusound_OnChange();
 }
-
 
 //======================================================================
 // Lighting
