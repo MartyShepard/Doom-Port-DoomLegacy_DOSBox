@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1445 2019-06-12 04:10:19Z wesleyjohnson $
+// $Id: r_things.c 1449 2019-07-21 01:31:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1084,10 +1084,12 @@ fixed_t         dm_windowtop, dm_windowbottom;
 fixed_t         dm_texturemid;
 
 
-void R_DrawMaskedColumn (column_t* column)
+void R_DrawMaskedColumn ( byte * column_data )
 {
     fixed_t     top_post_sc, bottom_post_sc;  // fixed_t screen coord.
 
+    column_t * column = (column_t*) column_data;
+   
     // over all column posts for this column
     for ( ; column->topdelta != 0xff ; )
     {
@@ -1163,7 +1165,6 @@ void R_DrawMaskedColumn (column_t* column)
 static void R_DrawVisSprite ( vissprite_t *  vis,
                               int  x1,  int  x2 )
 {
-    column_t * column;
     int        texturecolumn;
     fixed_t    texcol_frac;
     patch_t  * patch;
@@ -1235,8 +1236,9 @@ static void R_DrawVisSprite ( vissprite_t *  vis,
             return;
         }
 #endif
-        column = (column_t *) ((byte *)patch + patch->columnofs[texturecolumn]);
-        R_DrawMaskedColumn (column);
+
+        byte * col_data = ((byte *)patch) + patch->columnofs[texturecolumn];
+        R_DrawMaskedColumn( col_data );
     }
 
     colfunc = basecolfunc;
@@ -2418,7 +2420,7 @@ void R_Load_Corona( void )
         {
             // Z_Malloc
             // The corona pic is INTENSITY_ALPHA, bytepp=2
-            corona_patch = R_Create_Patch( corona_pic->width, corona_pic->height, & corona_pic->data[0], 2, 1, 0 );
+            corona_patch = R_Create_Patch( corona_pic->width, corona_pic->height, 1, & corona_pic->data[0], 2, 1, 0, 1 );
             Z_ChangeTag( corona_patch, PU_STATIC );
             corona_patch->leftoffset += corona_pic->width/2;
             corona_patch->topoffset += corona_pic->height/2;
@@ -2856,7 +2858,6 @@ no_corona:
 static
 void Draw_Sprite_Corona_Light( vissprite_t * vis )
 {
-    column_t     * column;
     int            texturecolumn;
    
     // Sprite has a corona, and coronas are enabled.
@@ -2927,8 +2928,8 @@ void Draw_Sprite_Corona_Light( vissprite_t * vis )
             return;
         }
 #endif
-        column = (column_t *) ((byte *)corona_cc_patch + corona_cc_patch->columnofs[texturecolumn]);
-        R_DrawMaskedColumn (column);
+        byte * col_data = ((byte *)corona_cc_patch) + corona_cc_patch->columnofs[texturecolumn];
+        R_DrawMaskedColumn( col_data );
     }
 
     colfunc = basecolfunc;

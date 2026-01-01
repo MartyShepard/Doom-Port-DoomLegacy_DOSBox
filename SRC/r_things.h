@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.h 1444 2019-06-12 04:08:18Z wesleyjohnson $
+// $Id: r_things.h 1449 2019-07-21 01:31:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -99,7 +99,7 @@ extern fixed_t          pspriteyscale;  //added:02-02-98:for aspect ratio
 
 extern const int PSpriteSY[];
 
-void R_DrawMaskedColumn (column_t* column);
+void R_DrawMaskedColumn ( byte * column_data );
 
 void R_SortVisSprites (void);
 

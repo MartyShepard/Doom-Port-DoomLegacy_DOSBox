@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: r_data.h 1449 2019-07-21 01:31:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -149,29 +149,54 @@ typedef struct
 // See BUGFIX_TEXTURE0 in r_data.c.
 //   array[ 0.. numtextures-1 ] of texture_t*,
 //   but [0] is unusable because it conflicts with 0=no-texture.
-extern texture_t**     textures;
+
 extern int             numtextures;
+extern texture_t**     textures;
+
+#define PIXEL_DATA_OFFSET
+// [WDJ] To reduce the repeated indexing using texture id num, better locality of reference in cache.
+// To allow creating a texture that was not loaded from textures[].
+// Holds all the software render information.
+typedef struct
+{
+    byte     * cache;   // graphics data generated full-size texture (maybe TM_patch, or TM_picture)
+    uint32_t * columnofs;  // column offset lookup table for this texture
+    uint16_t   width_tile_mask;  // mask that tiles the texture
+    byte       texture_model;	// drawing and storage models
+#ifdef PIXEL_DATA_OFFSET
+    byte       pixel_data_offset;  // to add to columnofs[]
+#endif
+} texture_render_t;
+
+extern texture_render_t * texture_render;
+
+// textureheight is not used in the same locality as the other texture arrays.
+extern fixed_t*        textureheight;      // needed for texture pegging
+// [WDJ] Future consideration, as a render struct field.
+//    fixed_t    heightz;  // world coord. height, for texture pegging
 
 //extern lighttable_t    *colormaps;
 extern CV_PossibleValue_t Color_cons_t[];
 
 // Load TEXTURE1/TEXTURE2/PNAMES definitions, create lookup tables
 void  R_Load_Textures (void);
-void  R_FlushTextureCache (void);
+void  R_Flush_Texture_Cache (void);
 
 #ifdef ENABLE_DRAW_ALPHA
-//  data : source data of width x height
+//  column_oriented : source data orientation, 0 = row x column (image), 1 = column x row (pic_t)
+//  data : source data of width x height (in rows)
 //  bytepp : source pixel size in bytes
 //  sel_offset  : offset into pixel, 0..3
-//  blank_value : pixel value that is blank space
-patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte * data, byte bytepp, byte sel_offset, byte blank_value );
+//  blank_value : pixel value that is blank space, >255 = no blank pixel value
+//  enable_blank_trim : trim blank columns
+patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte column_oriented, byte * data, byte bytepp, byte sel_offset, uint16_t blank_value, byte enable_blank_trim );
 #endif
 
 // Generate a texture from texture desc. and patches.
-byte* R_GenerateTexture (int texnum);
+byte* R_GenerateTexture ( texture_render_t *  texren );
 
 // Retrieve column data for span blitting.
-byte* R_GetColumn (int texnum, int col);
+byte* R_GetColumn ( texture_render_t * texren, int colnum );
 
 byte* R_GetFlat (int  flatnum);
 

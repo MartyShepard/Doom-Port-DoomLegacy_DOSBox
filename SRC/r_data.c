@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1447 2019-07-21 01:27:14Z wesleyjohnson $
+// $Id: r_data.c 1449 2019-07-21 01:31:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -152,13 +152,15 @@ int             firstpatch, lastpatch, numpatches;
 int             numtextures=0;      // total number of textures found,
 // size of following tables
 
-texture_t**     textures=NULL;
-unsigned int**  texturecolumnofs;   // column offset lookup table for each texture
-byte**          texturecache;       // graphics data for each generated full-size texture
-int*            texturewidthmask;   // texture width is a power of 2, so it
-                                    // can easily repeat along sidedefs using
-                                    // a simple mask
+texture_t**     textures = NULL;   // owned array Z_Malloc
+
+// [WDJ] To reduce the repeated indexing using texture id num, better locality of reference.
+// To allow creating a texture that was not loaded from textures[].
+// Holds all the software render information.
+texture_render_t * texture_render = NULL;  // owned array Z_Malloc
+
 fixed_t*        textureheight;      // needed for texture pegging
+
 
 int       *flattranslation;             // for global animation
 int       *texturetranslation;
@@ -187,27 +189,29 @@ byte  color12_to_8[ 0x0FFF ];
 #endif
 
 #ifdef ENABLE_DRAW_ALPHA
-//  data : source data of width x height
+//  column_oriented : source data orientation, 0 = row x column (image), 1 = column x row (pic_t)
+//  data : source data of width x height (in rows)
 //  bytepp : source pixel size in bytes
 //  sel_offset  : offset into pixel, 0..3
-//  blank_value : pixel value that is blank space
-patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte * data, byte bytepp, byte sel_offset, byte blank_value )
+//  blank_value : pixel value that is blank space, >255 = no blank pixel value
+//  enable_blank_trim : trim blank columns
+patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte column_oriented, byte * data, byte bytepp, byte sel_offset, uint16_t blank_value, byte enable_blank_trim )
 {
     byte  postbuf[ 256 ];
     unsigned int  head_empty_columns = 0;  // left
     unsigned int  tail_empty_columns = 0;  // right
     unsigned int  mid_empty_columns = 0;
     unsigned int  count_good_columns = 0;
-    unsigned int  row_size = width * bytepp;
     unsigned int  colofs_size = width * sizeof( uint32_t );  // width * 4
     unsigned int  head_size = colofs_size + 8;
     unsigned int  wb_blocksize = head_size + 4 + (width * height);  // guess
     unsigned int  col, length, topdelta, dest_used;
+    unsigned int  row_inc, col_inc;
     uint32_t   *  colofs;
     post_t     *  destpost;
     byte       *  dest_term = NULL;
     byte       *  pb;
-    byte       * src0, * src_end, * src ;
+    byte       *  src0, * src_end, * src ;
 
     patch_t * wb_patch = (patch_t*) Z_Malloc( wb_blocksize, PU_IN_USE, NULL );
    
@@ -216,18 +220,29 @@ patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte * data, 
     wb_patch->leftoffset = 0;
     wb_patch->topoffset = 0;
     dest_used = 0;
+
+    if( column_oriented )
+    {
+        row_inc = bytepp;  // row to row, along col
+        col_inc = bytepp * height;  // col to col
+    }
+    else
+    {
+        col_inc = bytepp;  // col to col, along row
+        row_inc = bytepp * width;  // row to row
+    }
    
-    src_end = data + (height * row_size);  // past last byte
     destpost = (post_t*) ((byte*)wb_patch + head_size);  // posting area
     for( col=0; col<width; col++ )
     {
         colofs = & wb_patch->columnofs[ col ];  // header entry for this column
         *colofs = 0;  // flag column with no-posts value
-        src = src0 = & data[ col * bytepp ];
+        src = src0 = & data[ col * col_inc ];
+        src_end = src0 + (row_inc * (height-1)) + 1;  // past last byte of column
         while( src < src_end )
         {
             // traverse column
-            for( ; src < src_end ; src += row_size )
+            for( ; src < src_end ; src += row_inc )
             {
                 if( src[sel_offset] != blank_value )  goto start_post; // find first non blank pixel
             }
@@ -242,13 +257,13 @@ patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte * data, 
             break;
 
         start_post:
-            topdelta = (src - src0) / row_size;
+            topdelta = (src - src0) / row_inc;
             if( topdelta > 254 )  // topdelta would be too large
                 break;  // skip rest of height
 
             // traverse column
             pb = postbuf;  // put into postbuf
-            for( ; src < src_end ; src += row_size )
+            for( ; src < src_end ; src += row_inc )
             {
                 if(src[sel_offset] == blank_value)  break;  // find first blank pixel
                 if( pb >= & postbuf[254] )  break;  // max post length
@@ -257,7 +272,7 @@ patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte * data, 
             // src must point to next, not included in this post
             length = pb - postbuf;  // must be at least 1
 
-            dest_used = (byte*)(destpost + length + 4 + 1 ) - (byte*)wb_patch;
+            dest_used = ((byte*)destpost) + length + 4 + 1 - (byte*)wb_patch;
             if( dest_used + 8 > wb_blocksize )
             {
                 // will not fit in the allocation
@@ -266,26 +281,27 @@ patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte * data, 
                 patch_t * wb2 = (patch_t*) Z_Malloc( wb2_len, PU_IN_USE, NULL );
                 memcpy( wb2, wb_patch, wb_blocksize );
                 // Move ptrs to new allocation
-                uintptr_t  adjustdiff = (void*) wb2 - (void*) wb_patch;  // byte difference in locations
-                src += adjustdiff;
-                destpost += adjustdiff;
-                colofs += adjustdiff;
+                intptr_t  adjustdiff = (void*) wb2 - (void*) wb_patch;  // byte difference in locations
+                // Must adjust as byte ptr.
+                destpost = (post_t*) (((byte*)destpost) + adjustdiff);
+                colofs = (uint32_t*) (((byte*)colofs) + adjustdiff);
                 // Release old allocation
                 Z_Free( wb_patch );
                 wb_patch = wb2;
                 wb_blocksize = wb2_len;
             }
 
-            // copy upto, not including src
+            // Form postpuf into a column post.
             // Must be at least one pixel, because blank span found a non-blank.
             destpost->topdelta = topdelta;
             destpost->length = length;
-            byte * destpixels = (byte*)destpost + 3;
+            byte * destpixels = (byte*)destpost + 3;  // post pixel data
             destpixels[-1] = 0;	// pad 0
             memcpy( destpixels, postbuf, length );
             destpixels[length] = 0; // pad 0
-            destpixels[length+1] = 0xFF; // term, may get overwritten by next post
+            // Keep ptr to term, for empty columns.
             dest_term = & destpixels[length+1];
+            *dest_term = 0xFF; // term, may get overwritten by next post
             // Enter into header
             if( *colofs == 0 )
             {
@@ -296,9 +312,10 @@ patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte * data, 
                 tail_empty_columns = 0;
             }
             // next source colpost, adv by (length + 2 byte header + 2 extra bytes)
-            destpost = (column_t *)(  (byte *)destpost + length + 4);
+            destpost = (column_t *)dest_term;  // next post overwrites previous term
         }
-        destpost = (column_t*) ((byte*)destpost + 1);  // 0xFF column termination
+        // start new column
+        destpost = (column_t*) ((byte*)destpost + 1);  // skip 0xFF column termination
         dest_used++;
     }
 
@@ -315,7 +332,7 @@ patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte * data, 
         }
     }
 
-    if( head_empty_columns + tail_empty_columns > 0 )
+    if( enable_blank_trim && ((head_empty_columns + tail_empty_columns) > 0) )
     {
         // trim off the empty columns
         unsigned int  trim_width = head_empty_columns + tail_empty_columns;;
@@ -463,7 +480,7 @@ patch_t * R_Pic_to_Patch( pic_t * pic, byte patch_mode )
         }
     }
 
-    return  R_Create_Patch( pic->width, pic->height, & pic->data[0],
+    return  R_Create_Patch( pic->width, pic->height, 1, & pic->data[0],
                             bytepp, sel_offset, blank_value );
 }
 #endif
@@ -498,7 +515,7 @@ patch_t * R_Pic_to_Patch( pic_t * pic, byte patch_mode )
 
 //
 // R_DrawColumnInCache
-// Clip and draw a column from a patch into a cached post.
+// Clip and draw a column from a patch into a cached post.  Dest is in columns.
 //
 
 void R_DrawColumnInCache ( column_t*     colpost,	// source, list of 0 or more post_t
@@ -579,9 +596,11 @@ typedef struct {
     // [WDJ] Bad patch detection
     int   patchsize;
 } compat_t;
-   
 
-byte* R_GenerateTexture (int texnum)
+
+
+static
+byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren )
 {
     byte*               texgen;  // generated texture (return)
     texture_t*          texture; // texture info from wad
@@ -594,6 +613,7 @@ byte* R_GenerateTexture (int texnum)
     patch_t  * txcpatch; // header of txcblock
     byte     * txcdata;  // posting area
     byte     * destpixels;  // current post pixel in txcdata
+
     int	txcblocksize;
 
     // array to hold all patches for combine
@@ -603,6 +623,7 @@ byte* R_GenerateTexture (int texnum)
 
     unsigned int patchcount;
     unsigned int compostsize;
+    texture_model_e  texture_model;
     int patchsize;
     int	colofs_size;
     int x, x1, x2, i, p;
@@ -612,6 +633,7 @@ byte* R_GenerateTexture (int texnum)
 
 
     texture = textures[texnum];
+    texture_model = texture->texture_model;
     texture->texture_model = TM_invalid; // default in case this fails
     
     // Column offset table size as determined by wad specs.
@@ -628,7 +650,8 @@ byte* R_GenerateTexture (int texnum)
     // single-patch textures can have holes and may be used on
     // 2sided lines so they need to be kept in 'packed' format
     patchcount = texture->patchcount;
-    if (patchcount==1)
+    if(texture_model == TM_picture )  goto multipatch_combine;
+    if(patchcount==1)
     {
         // Texture patch format:
         //   patch header (8 bytes), ignored
@@ -734,7 +757,8 @@ byte* R_GenerateTexture (int texnum)
 #endif
             txcblock = Z_Malloc (txcblocksize,
                           PU_LEVEL,         // will change tag at end of this function
-                          (void**)&texturecache[texnum]);
+                          (void**)&texren->cache);
+
             // patches have 8 byte patch header, part of patch_t
             memcpy (txcblock, realpatch, 8); // header
             memcpy (txcblock + colofs_size + 8, ((byte*)realpatch) + patch_colofs_size + 8, patchsize - patch_colofs_size - 8 ); // posts
@@ -760,28 +784,28 @@ byte* R_GenerateTexture (int texnum)
 
         {
             // Normal: Most often use patch as it is.
-            // texturecache gets copy so that PU_CACHE deallocate clears the
-            // texturecache automatically
+            // texture_render cache gets copy so that PU_CACHE deallocate clears the
+            // cache automatically
             txcblock = Z_Malloc (patchsize,
                           PU_IN_USE,  // will change tag at end of this function
-                          (void**)&texturecache[texnum]);
+                          (void**)&texren->cache);
+
             memcpy (txcblock, realpatch, patchsize);
             txcblocksize = patchsize;
         }
 
   single_patch_finish:
+        Z_ChangeTag (realpatch, PU_CACHE);  // safe
+
         // Interface for texture picture format
         // use the single patch's, single column lookup
         colofs = (uint32_t*)&(((patch_t*)txcblock)->columnofs);
         // colofs from patch are relative to start of table
-        for (i=0; i<texture->width; i++)
-             colofs[i] = colofs[i] + 3;  // adjust colofs from wad
-              // offset to pixels instead of post header
-              // Many callers will use colofs-3 to get back to header, but
-              // some drawing functions need pixels.
-       
-        Z_ChangeTag (realpatch, PU_CACHE);  // safe
-        texturecolumnofs[texnum] = colofs;
+        texren->columnofs = colofs;
+#ifdef PIXEL_DATA_OFFSET       
+        texren->pixel_data_offset = 3;  // skip over post header and pad byte
+#endif
+        texren->texture_model = TM_patch;
         texture->texture_model = TM_patch;
         //debug_Printf ("R_GenTex SINGLE %.8s size: %d\n",texture->name,patchsize);
         texgen = txcblock;
@@ -793,9 +817,8 @@ byte* R_GenerateTexture (int texnum)
             // make a dummy texture
             int head_size = colofs_size + 8;
             txcblocksize = head_size + 4 + texture->height + 4;
-            txcblock = Z_Malloc (txcblocksize,
-                          PU_IN_USE,         // will change tag at end of this function
-                          (void**)&texturecache[texnum]);
+            // will change tag at end of this function
+            txcblock = Z_Malloc (txcblocksize, PU_IN_USE, (void**)&texren->cache);
             patch_t * txcpatch = (patch_t*) txcblock;
             txcpatch->width = texture->width;
             txcpatch->height = texture->height;
@@ -859,7 +882,7 @@ byte* R_GenerateTexture (int texnum)
     compostsize += colofs_size + 8;	// combined patch size
     txcblocksize = colofs_size + (texture->width * texture->height); // picture format size
     // If cache was flushed then do not change model
-    switch( texture->texture_model )
+    switch( texture_model )
     {
      case TM_picture:  goto picture_format;
      case TM_combine_patch:  goto combine_format;
@@ -904,8 +927,7 @@ byte* R_GenerateTexture (int texnum)
     // Combined patches + table + header + 1 byte per empty column
     txcblocksize = compostsize + texture->width;
 
-    txcblock = Z_Malloc (txcblocksize, PU_IN_USE,
-                      (void**)&texturecache[texnum]);
+    txcblock = Z_Malloc (txcblocksize, PU_IN_USE, (void**)&texren->cache);
     txcpatch = (patch_t*) txcblock;
     txcpatch->width = texture->width;
     txcpatch->height = texture->height;
@@ -928,10 +950,8 @@ byte* R_GenerateTexture (int texnum)
         int livepatchcount = 0;
         int reuse_column = -1;
        
-        // offset to pixels instead of post header
-        // Many callers will use colofs-3 to get back to header, but
-        // some drawing functions need pixels.
-        colofs[x] = destpixels - (byte*)txcblock + 3;  // this column
+        // offset to post header
+        colofs[x] = destpixels - (byte*)txcblock;  // this column
         destpost = (post_t*)destpixels;	// first post in column
         postlength = 0;  // length of current post
         bottom = 0;	 // next y in column
@@ -1000,7 +1020,7 @@ byte* R_GenerateTexture (int texnum)
                             }
 #else
                             // Compare with texture column, reuse when identical
-                            post_t * rpp = (post_t*)( txcblock + colofs[rtx] - 3 );  // texture column
+                            post_t * rpp = (post_t*)( txcblock + colofs[rtx] );  // texture column
                             post_t * ppp = cp->postptr;
 #ifdef DEBUG_REUSECOL
                             if( DEBUG_REUSECOL )
@@ -1185,8 +1205,7 @@ byte* R_GenerateTexture (int texnum)
             GenPrintf(EMSG_ver, "R_GenerateTexture: %8s re-alloc from %i to %i\n",
                     texture->name, old_txcblocksize, txcblocksize );
 #endif
-        txcblock = Z_Malloc (txcblocksize, PU_IN_USE,
-                      (void**)&texturecache[texnum]);
+        txcblock = Z_Malloc (txcblocksize, PU_IN_USE, (void**)&texren->cache);
         memcpy( txcblock, old_txcblock, old_txcblocksize );
         texture_end = txcblock + txcblocksize - 2; // do not exceed
         txcdata = (byte*)txcblock + colofs_size + 8;  // posting area
@@ -1197,7 +1216,7 @@ byte* R_GenerateTexture (int texnum)
         }
         x--;  // redo this column
         Z_Free(old_txcblock);  // also nulls texturecache ptr
-        texturecache[texnum] = txcblock; // replace ptr undone by Z_Free
+        texren->cache = txcblock; // replace ptr undone by Z_Free
        }
 
     } // for x
@@ -1216,7 +1235,11 @@ byte* R_GenerateTexture (int texnum)
     // Interface for texture picture format
     // texture data is after the offset table, no patch header
     texgen = txcblock;  // ptr to whole patch
-    texturecolumnofs[texnum] = colofs;
+    texren->columnofs = colofs;
+#ifdef PIXEL_DATA_OFFSET   
+    texren->pixel_data_offset = 3;  // skip over post header and pad byte
+#endif
+    texren->texture_model = TM_combine_patch;  // transparent combined
     texture->texture_model = TM_combine_patch;  // transparent combined
 #if 0
     // Enable to print memory usage
@@ -1237,7 +1260,7 @@ byte* R_GenerateTexture (int texnum)
  error_redo_as_picture:
     Z_Free( txcblock );
    
- picture_format:   
+ picture_format:
     //
     // multi-patch textures (or 'composite')
     // These are stored in a picture format and use a different drawing routine,
@@ -1249,10 +1272,8 @@ byte* R_GenerateTexture (int texnum)
     txcblocksize = colofs_size + (texture->width * texture->height);
     //debug_Printf ("R_GenTex MULTI  %.8s size: %d\n",texture->name,txcblocksize);
 
-    txcblock = Z_Malloc (txcblocksize,
-                      PU_IN_USE,  // will change at end of this function
-                      (void**)&texturecache[texnum]);
-
+    // will change PU_ at end of this function
+    txcblock = Z_Malloc (txcblocksize, PU_IN_USE, (void**)&texren->cache);
     memset( txcblock + colofs_size, 0, txcblocksize - colofs_size ); // black background
    
     // columns lookup table
@@ -1270,6 +1291,7 @@ byte* R_GenerateTexture (int texnum)
     }
 
     // Composite the columns together.
+    // The TM_picture format has data in full height columns.
     texpatch = texture->patches;
     for (i=0; i<texture->patchcount; i++, texpatch++)
     {
@@ -1280,12 +1302,10 @@ byte* R_GenerateTexture (int texnum)
         x1 = texpatch->originx;
         x2 = x1 + realpatch->width;
 
-        x = (x1<0)? 0 : x1;
-
         if (x2 > texture->width)
             x2 = texture->width;
 
-        for ( ; x<x2 ; x++)
+        for( x = (x1<0)? 0 : x1; x<x2 ; x++ )
         {
             // source patch column from wad, to be copied
             column_t* patchcol =
@@ -1299,13 +1319,19 @@ byte* R_GenerateTexture (int texnum)
     }
     // Interface for texture picture format
     // texture data is after the offset table, no patch header
-    texgen = txcblock + colofs_size;  // ptr to first column
-    texturecolumnofs[texnum] = colofs;
+//    texgen = txcblock + colofs_size;  // ptr to first column
+    texgen = txcblock;  // must return the ptr that is put into texture cache
+   
+    texren->columnofs = colofs;
+#ifdef PIXEL_DATA_OFFSET
+    texren->pixel_data_offset = 0;
+#endif
+    texren->texture_model = TM_picture;  // non-transparent picture format
     texture->texture_model = TM_picture;  // non-transparent picture format
 
 done:
     // Now that the texture has been built in column cache,
-    //  texturecache is purgable from zone memory.
+    //  texture cache is purgable from zone memory.
     Z_ChangeTag (txcblock, PU_PRIV_CACHE);  // priority because of expense
     texturememory += txcblocksize;  // global
 
@@ -1313,20 +1339,26 @@ done:
 }
 
 
+// Public
+byte* R_GenerateTexture ( texture_render_t *  texren )
+{
+    return  R_GenerateTexture2( texren - texture_render, texren );
+}
+
+
 //
 // R_GetColumn
 //
-byte* R_GetColumn ( int texnum, int col )
+byte* R_GetColumn ( texture_render_t * texren, int colnum )
 {
-    byte*       data;
+    // Get raw column ptr, one cache array structure.
+    byte * data = texren->cache;
 
-    col &= texturewidthmask[texnum];
-    data = texturecache[texnum];
+    if( !data )
+        data = R_GenerateTexture( texren ); // puts ptr in texture_render cache
 
-    if (!data)
-        data = R_GenerateTexture (texnum);
-
-    return data + texturecolumnofs[texnum][col];
+    colnum &= texren->width_tile_mask; // set by GenerateTexture
+    return data + texren->columnofs[colnum];
 }
 
 
@@ -1394,7 +1426,7 @@ byte* R_GetFlat (int  flatlumpnum)
 //
 // Empty the texture cache (used for load wad at runtime)
 //
-void R_FlushTextureCache (void)
+void R_Flush_Texture_Cache (void)
 {
     int i;
 
@@ -1402,8 +1434,9 @@ void R_FlushTextureCache (void)
     {
         for (i=0; i<numtextures; i++)
         {
-            if (texturecache[i])
-                Z_Free (texturecache[i]);
+            // Z_Free also sets the cache ptr to NULL
+            if( texture_render[i].cache )
+                Z_Free( texture_render[i].cache );
         }
     }
 }
@@ -1454,10 +1487,11 @@ void R_Load_Textures (void)
     {
         for (i=0; i<numtextures; i++)
         {
+            // Z_Free also sets the cache ptr to NULL
             if (textures[i])
                 Z_Free (textures[i]);
-            if (texturecache[i])
-                Z_Free (texturecache[i]);
+            if( texture_render[i].cache )
+                Z_Free( texture_render[i].cache );
         }
     }
 
@@ -1511,16 +1545,14 @@ void R_Load_Textures (void)
     if (textures)
     {
         Z_Free(textures);
-        Z_Free(texturecolumnofs);
-        Z_Free(texturecache);
-        Z_Free(texturewidthmask);
+        Z_Free(texture_render);
         Z_Free(textureheight);
     }
 
     textures         = Z_Malloc(numtextures * sizeof(*textures),         PU_STATIC, 0);
-    texturecolumnofs = Z_Malloc(numtextures * sizeof(*texturecolumnofs), PU_STATIC, 0);
-    texturecache     = Z_Malloc(numtextures * sizeof(*texturecache),     PU_STATIC, 0);
-    texturewidthmask = Z_Malloc(numtextures * sizeof(*texturewidthmask), PU_STATIC, 0);
+    texture_render   = Z_Malloc(numtextures * sizeof(texture_render_t),  PU_STATIC, 0);
+    // NULL the cache ptrs.
+    memset( texture_render, 0, sizeof(texture_render_t) * numtextures );
     textureheight    = Z_Malloc(numtextures * sizeof(*textureheight),    PU_STATIC, 0);
 
 #ifdef BUGFIX_TEXTURE0
@@ -1552,6 +1584,7 @@ void R_Load_Textures (void)
         // Ptr to texture header in lump
         mtexture = (maptexture_t *) ( (byte *)maptex + offset);
 
+        // Texture struct allocation is dependent upon number of patches.
         texture = textures[i] =
             Z_Malloc (sizeof(texture_t)
                       + sizeof(texpatch_t)*(LE_SWAP16(mtexture->patchcount)-1),
@@ -1591,7 +1624,7 @@ void R_Load_Textures (void)
         while (j*2 <= texture->width)
             j<<=1;
 
-        texturewidthmask[i] = j-1;
+        texture_render[i].width_tile_mask = j-1;
         textureheight[i] = texture->height<<FRACBITS;
     }
 
@@ -1603,7 +1636,7 @@ void R_Load_Textures (void)
 #ifdef BUGFIX_TEXTURE0
     // Move texture[0] to texture[numtextures-1]
     textures[numtextures-1] = textures[0];
-    texturewidthmask[numtextures-1] = texturewidthmask[0];
+    texture_render[numtextures-1] = texture_render[0];
     textureheight[numtextures-1] = textureheight[0];
     // cannot have ptr to texture in two places, will deallocate twice
     textures[0] = NULL;	// force segfault on any access to textures[0]
@@ -1611,8 +1644,6 @@ void R_Load_Textures (void)
 
     //added:01-04-98: this takes 90% of texture loading time..
     // Precalculate whatever possible.
-    for (i=0 ; i<numtextures ; i++)
-        texturecache[i] = NULL;
 
     // Create translation table for global animation.
     if (texturetranslation)
@@ -3233,8 +3264,8 @@ void R_PrecacheLevel (void)
             continue;
 
         //texture = textures[i];
-        if( texturecache[i]==NULL )
-            R_GenerateTexture (i);
+        if( texture_render[i].cache == NULL )
+            R_GenerateTexture2 ( i, &texture_render[i] );
         //numgenerated++;
 
         // note: pre-caching individual patches that compose textures became

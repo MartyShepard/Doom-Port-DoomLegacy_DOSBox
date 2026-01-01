@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1425 2019-01-29 08:07:59Z wesleyjohnson $
+// $Id: p_setup.c 1449 2019-07-21 01:31:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1819,7 +1819,7 @@ boolean P_SetupLevel (int      to_episode,
 
     // textures are needed first
 //    R_Load_Textures ();
-//    R_FlushTextureCache();
+//    R_Flush_Texture_Cache();
 
     R_Clear_FW_effect();  // clear and init of fog store
     R_Clear_Colormaps();  // colormap ZMalloc cleared by Z_FreeTags(PU_LEVEL, PU_PURGELEVEL-1)
@@ -2052,7 +2052,7 @@ boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
     // But any change of patch or texture will invalidate the current
     // cached textures, so the only safe thing to do is rebuild them all.
     // This fixes bad textures on netgames, and after Map command.
-    R_FlushTextureCache();  // clear all previous
+    R_Flush_Texture_Cache();  // clear all previous
     R_Load_Textures();       // reload all textures
 
     //

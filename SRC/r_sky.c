@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_sky.c 1414 2018-12-06 22:01:48Z wesleyjohnson $
+// $Id: r_sky.c 1449 2019-07-21 01:31:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -131,7 +131,7 @@ void R_Setup_SkyDraw (void)
         skytexturemid = 100<<FRACBITS;
         sky_240 = 0;
     }
-
+   
     // get the right drawer, it was set by screen.c, depending on the
     // current video mode bytes per pixel (quick fix)
     skycolfunc = skydrawerfunc[sky_240];

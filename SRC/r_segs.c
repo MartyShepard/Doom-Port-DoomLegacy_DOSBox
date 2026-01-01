@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_segs.c 1445 2019-06-12 04:10:19Z wesleyjohnson $
+// $Id: r_segs.c 1449 2019-07-21 01:31:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -135,6 +135,10 @@ static boolean         maskedtexture;
 static int             toptexture;
 static int             bottomtexture;
 static int             midtexture;  // single-sided only
+static texture_render_t * top_texren = NULL;
+static texture_render_t * mid_texren = NULL;
+static texture_render_t * bottom_texren = NULL;
+
 
 static int             numthicksides;
 //static short*          thicksidecol;
@@ -193,6 +197,47 @@ void* portable_realloc(void* mem, size_t siz)
     return realloc(mem, siz);
 }
 #endif
+
+// Define  colfunc_2s_t
+typedef  void (* colfunc_2s_t) (byte *);
+
+#ifdef PIXEL_DATA_OFFSET
+#else
+static byte column_to_pixel_offset[7] = {
+   0, // TM_none
+   3, // TM_patch
+   0, // TM_picture
+   3, // TM_combine_patch
+   3, // TM_multi_patch
+   3, // TM_masked
+   0, // TM_invalid
+};
+#endif
+
+// [WDJ] For the 1-sided wall drawer, which only wants a monolithic column of pixels.
+// This is only used in three places.
+// The previous code, with a +3 offset in the column offsets (for all textures), was not maintainable.
+// This is a specialized usage.  The burden of an additional lookup and add should be here
+// and not upon the other hacked-up operations that were needed.
+// It also allows this to be inline, which saves on the call overhead.
+static inline
+byte * R_GetPixelColumn ( texture_render_t * texren, int colnum )
+{
+    // Number of index [texnum]: 0
+    // Number of struct accesses: 4
+    byte * data = texren->cache;
+
+    if( !data )
+        data = R_GenerateTexture( texren ); // puts ptr in texture_render cache
+
+    colnum &= texren->width_tile_mask; // set by GenerateTexture
+#ifdef PIXEL_DATA_OFFSET
+    return data + texren->columnofs[colnum] + texren->pixel_data_offset;
+#else
+    return data + texturecolumnofs[texnum][colnum] + column_to_pixel_offset[ texren->texture_model ];
+#endif
+}
+
 
 // ==========================================================================
 // DrawSegs
@@ -689,7 +734,7 @@ void  expand_openings( size_t  need )
 static int  column2s_length;     // column->length : for multi-patch on 2sided wall = texture->height
 
 // The colfunc_2s function for TM_picture
-void R_Render2sidedMultiPatchColumn (column_t* column)
+void R_Render2sidedMultiPatchColumn ( byte* column_data )
 {
     fixed_t  top_post_sc, bottom_post_sc; // patch on screen, fixed_t screen coords.
 
@@ -740,30 +785,46 @@ void R_Render2sidedMultiPatchColumn (column_t* column)
 #endif
     if (dc_yl <= dc_yh)
     {
-        dc_source = (byte *)column + 3;
+        // TM_picture format, do not have to adjust.
+        dc_source = column_data;
         colfunc ();
     }
 }
+
+
+
+colfunc_2s_t  colfunc_2s_masked_table[] =
+{
+    NULL,  // TM_none
+    R_DrawMaskedColumn,  // TM_patch, render the usual 2sided single-patch packed texture
+    R_Render2sidedMultiPatchColumn,  // TM_picture, render multipatch with no holes (no post_t info)
+    R_DrawMaskedColumn,  // TM_combine_patch, render combined as 2sided single-patch packed texture
+      // The rest have no drawers
+    NULL,  // TM_multi_patch
+};
 
 
 // Render with fog, translucent, and transparent, over range x1..x2
 // Called from R_DrawMasked.
 void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
 {
-    column_t*       col;
     lightlev_t      vlight;  // visible light 0..255
     lightlev_t      orient_light = 0;  // wall orientation effect
     int             texnum;
     int             i;
     fixed_t	    windowclip_top, windowclip_bottom;
-    fixed_t         lightheight;
+    fixed_t         lightheight, texheightz;
     fixed_t         realbot;
     // Setup lightlist for all 3dfloors, then use it over all x.
     r_lightlist_t * rlight;  // dc_lightlist
     ff_light_t    * ff_light;  // ffloor lightlist item
     lighttable_t  * ro_colormap = NULL;  // override colormap
+    texture_render_t * texren;
 
-    void (*colfunc_2s) (column_t*);
+    // TM_picture does not use column_t.
+    // Each colfunc_2s for each format will have to convert type.
+    byte *  col_data;
+    void (*colfunc_2s) (byte*);
 
     line_t* ldef;   //faB
 
@@ -780,6 +841,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
 
     // midtexture, 0=no-texture, otherwise valid
     texnum = texturetranslation[curline->sidedef->midtexture];
+    texren = & texture_render[texnum];
 
     dm_windowbottom = dm_windowtop = dm_bottom_patch = FIXED_MAX; // default no clip
     windowclip_top = windowclip_bottom = FIXED_MAX;
@@ -846,27 +908,18 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
     //faB: handle case where multipatch texture is drawn on a 2sided wall, multi-patch textures
     //     are not stored per-column with post info anymore in Doom Legacy
     // [WDJ] multi-patch transparent texture restored
-  retry_texture_model:
-    switch (textures[texnum]->texture_model)
+    if( texren->cache == NULL )
     {
-     case TM_patch:
-        colfunc_2s = R_DrawMaskedColumn;                    //render the usual 2sided single-patch packed texture
-        break;
-     case TM_combine_patch:
-        colfunc_2s = R_DrawMaskedColumn;                    //render combined as 2sided single-patch packed texture
-        break;
-     case TM_picture:    
-        colfunc_2s = R_Render2sidedMultiPatchColumn;        //render multipatch with no holes (no post_t info)
-        column2s_length = textures[texnum]->height;
-        break;
-     case TM_masked:
-     case TM_none:
-        R_GenerateTexture( texnum );	// first time
-        goto retry_texture_model;
-     default:
-        return;	// no draw routine
+        R_GenerateTexture( texren );	// first time
     }
 
+    colfunc_2s = colfunc_2s_masked_table[ texren->texture_model ];
+
+    texheightz = textureheight[texnum];
+    dc_texheight = texheightz >> FRACBITS;
+    // For TM_picture, textures[texnum]->height
+    column2s_length = dc_texheight;
+    
     rw_scalestep = ds->scalestep;
     dm_yscale = ds->scale1 + (x1 - ds->x1)*rw_scalestep;
 
@@ -959,7 +1012,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
          (frontsector->floorheight > backsector->floorheight) ?
             frontsector->floorheight : backsector->floorheight;
         // top of texture, relative to viewer
-        dm_texturemid = dm_texturemid + textureheight[texnum] - viewz;
+        dm_texturemid = dm_texturemid + texheightz - viewz;
     }
     else
     {
@@ -974,8 +1027,6 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
     dm_texturemid += curline->sidedef->rowoffset;
     dc_texturemid = dm_texturemid; // for using R_Render2sidedMultiPatchColumn
      // R_DrawMaskedColumn uses dm_texturemid to make dc_texturemid
-
-    dc_texheight = textureheight[texnum] >> FRACBITS;
 
     // [WDJ] Initialize dc_colormap.
     // If fixedcolormap == NULL, then the loop will scale the light and colormap.
@@ -1001,10 +1052,10 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
             dm_bottom_patch = FIXED_MAX;
             // top/bottom of texture, relative to viewer, screen coord.
             dm_top_patch = dm_windowtop = (centeryfrac - FixedMul(dm_texturemid, dm_yscale));
-            realbot = dm_windowbottom = FixedMul(textureheight[texnum], dm_yscale) + dm_top_patch;
+            realbot = dm_windowbottom = FixedMul(texheightz, dm_yscale) + dm_top_patch;
             dc_iscale = 0xffffffffu / (unsigned)dm_yscale;
             
-            col = (column_t *)((byte *)R_GetColumn(texnum,maskedtexturecol[dc_x]) - 3);
+            col_data = R_GetColumn(texren, maskedtexturecol[dc_x]);
 
             // top floor colormap, or fixedcolormap
             dc_colormap = dc_lightlist[0].rcolormap;
@@ -1051,7 +1102,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
               {
                 // past bottom of view window
                 dm_windowbottom = realbot;
-                colfunc_2s (col);
+                colfunc_2s( col_data );
 
                 // Finish dc_lightlist height adjustments.
                 // highest light to lowest light, [0] is sector light at top
@@ -1063,7 +1114,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
                 goto next_x;
               }  // if( dm_windowbottom >= realbot )
 
-              colfunc_2s (col);
+              colfunc_2s( col_data );
 
               // for next draw, downward from this light height
               dm_windowtop = dm_windowbottom + 1;
@@ -1072,7 +1123,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
             // draw down to sector floor
             dm_windowbottom = realbot;
             if(dm_windowtop < dm_windowbottom)
-              colfunc_2s (col);
+              colfunc_2s( col_data );
 
           next_x:
             dm_yscale += rw_scalestep;
@@ -1111,10 +1162,9 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
           dc_iscale = 0xffffffffu / (unsigned)dm_yscale;
 
           // draw texture, as clipped
-          col = (column_t *)(
-                (byte *)R_GetColumn(texnum,maskedtexturecol[dc_x]) - 3);
-            
-          colfunc_2s (col);
+          col_data = R_GetColumn(texren, maskedtexturecol[dc_x]);
+          colfunc_2s( col_data );
+
         } // if (maskedtexturecol[dc_x] != MAXSHORT)
         dm_yscale += rw_scalestep;
     } // for( dx_x = x1..x2 )
@@ -1133,7 +1183,6 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
 // Called by R_DrawMasked.
 void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
 {
-    column_t*       col;
     lightlev_t      vlight;  // visible light 0..255
     lightlev_t      orient_light = 0;  // wall orientation effect
     int             texnum;
@@ -1143,13 +1192,17 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     fixed_t         bottombounds = rdraw_viewheight << FRACBITS;
     fixed_t         topbounds = (con_clipviewtop - 2) << FRACBITS;
     fixed_t         offsetvalue = 0;
-    fixed_t         lheight;
+    fixed_t         lightheight, texheightz;
     r_lightlist_t * rlight; // dc_lightlist
     ff_light_t    * ff_light; // light list item
     lighttable_t  * ro_colormap = NULL;  // override colormap
     extracolormap_t  * ro_extracolormap = NULL;  // override extracolormap
-
-    void (*colfunc_2s) (column_t*);
+    texture_render_t * texren;
+   
+    // TM_picture does not use column_t.
+    // Each colfunc_2s for each format will have to convert type.
+    byte * col_data;
+    void (*colfunc_2s) (byte*);
 
     // Calculate light table.
     // Use different light tables
@@ -1169,6 +1222,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     texnum = sides[ffloor->master->sidenum[0]].midtexture;
     if( texnum == 0 )  return;  // no texture to display (when 3Dslab is missing side texture)
     texnum = texturetranslation[texnum];
+    texren = & texture_render[texnum];
 
     colfunc = basecolfunc;
 
@@ -1239,15 +1293,15 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
             continue;  // too high, next ff_light
         }
 
-        lheight = ff_light->height;// > *ffloor->topheight ? *ffloor->topheight + FRACUNIT : ff_light->height;
-        rlight->heightstep = -FixedMul (rw_scalestep, (lheight - viewz));
-        rlight->height = (centeryfrac) - FixedMul((lheight - viewz), dm_yscale) - rlight->heightstep;
+        lightheight = ff_light->height;// > *ffloor->topheight ? *ffloor->topheight + FRACUNIT : ff_light->height;
+        rlight->heightstep = -FixedMul (rw_scalestep, (lightheight - viewz));
+        rlight->height = (centeryfrac) - FixedMul((lightheight - viewz), dm_yscale) - rlight->heightstep;
         rlight->flags = ff_light->flags;
         if(ff_light->flags & (FF_CUTSOLIDS|FF_CUTEXTRA))
         {
-          lheight = *ff_light->caster->bottomheight;// > *ffloor->topheight ? *ffloor->topheight + FRACUNIT : *ff_light->caster->bottomheight;
-          rlight->botheightstep = -FixedMul (rw_scalestep, (lheight - viewz));
-          rlight->botheight = (centeryfrac) - FixedMul((lheight - viewz), dm_yscale) - rlight->botheightstep;
+          lightheight = *ff_light->caster->bottomheight;// > *ffloor->topheight ? *ffloor->topheight + FRACUNIT : *ff_light->caster->bottomheight;
+          rlight->botheightstep = -FixedMul (rw_scalestep, (lightheight - viewz));
+          rlight->botheight = (centeryfrac) - FixedMul((lightheight - viewz), dm_yscale) - rlight->botheightstep;
         }
 
         rlight->lightlevel = *ff_light->lightlevel;
@@ -1326,8 +1380,6 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     dm_floorclip = ds->spr_bottomclip;
     dm_ceilingclip = ds->spr_topclip;
 
-    dc_texheight = textureheight[texnum] >> FRACBITS;
-
     dm_texturemid = *ffloor->topheight - viewz;
 
     offsetvalue = sides[ffloor->master->sidenum[0]].rowoffset;
@@ -1345,27 +1397,18 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     //faB: handle case where multipatch texture is drawn on a 2sided wall, multi-patch textures
     //     are not stored per-column with post info anymore in Doom Legacy
     // [WDJ] multi-patch transparent texture restored
-  retry_texture_model:
-    switch (textures[texnum]->texture_model)
+    if( texren->cache == NULL )
     {
-     case TM_patch:
-        colfunc_2s = R_DrawMaskedColumn;                    //render the usual 2sided single-patch packed texture
-        break;
-     case TM_combine_patch:
-        colfunc_2s = R_DrawMaskedColumn;                    //render combined as 2sided single-patch packed texture
-        break;
-     case TM_picture:    
-        colfunc_2s = R_Render2sidedMultiPatchColumn;        //render multipatch with no holes (no post_t info)
-        column2s_length = textures[texnum]->height;
-        break;
-     case TM_masked:
-     case TM_none:
-        R_GenerateTexture( texnum );	// first time
-        goto retry_texture_model;
-     default:
-        return;	// no draw routine
+        R_GenerateTexture( texren );	// first time
     }
 
+    colfunc_2s = colfunc_2s_masked_table[ texren->texture_model ];
+
+    texheightz = textureheight[texnum];
+    dc_texheight = texheightz >> FRACBITS;
+    // For TM_picture, textures[texnum]->height
+    column2s_length = dc_texheight;
+    
     // [WDJ] x1,x2 are limited to 0..rdraw_viewwidth to protect [dc_x] access.
 #ifdef RANGECHECK
     if( x1 < 0 || x2 >= rdraw_viewwidth )
@@ -1408,7 +1451,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
           dc_iscale = 0xffffffffu / (unsigned)dm_yscale;
             
           // draw the texture
-          col = (column_t *)((byte *)R_GetColumn(texnum,maskedtexturecol[dc_x]) - 3);
+          col_data = R_GetColumn(texren, maskedtexturecol[dc_x]);
 
           // Top level colormap, or fixedcolormap.
           dc_colormap = dc_lightlist[0].rcolormap;
@@ -1493,7 +1536,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
             {
               // bottom of view window
               dm_windowbottom = dm_bottom_patch;
-              colfunc_2s (col);
+              colfunc_2s( col_data );
 
               // Finish dc_lightlist height adjustments.
               // highest light to lowest light, [0] is sector light at top
@@ -1507,7 +1550,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
               goto next_x;
             }
 
-            colfunc_2s (col);  // draw
+            colfunc_2s( col_data );  // draw
 
             // downward light from this light level
             dm_windowtop = solid ? bheight : (dm_windowbottom + 1);
@@ -1517,7 +1560,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
           // bottom floor
           dm_windowbottom = dm_bottom_patch;
           if(dm_windowtop < dm_windowbottom)
-            colfunc_2s (col);
+            colfunc_2s( col_data );
 
         next_x:
           dm_yscale += rw_scalestep;
@@ -1546,9 +1589,9 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
         dc_iscale = 0xffffffffu / (unsigned)dm_yscale;
             
         // draw the texture
-        col = (column_t *)((byte *)R_GetColumn(texnum,maskedtexturecol[dc_x]) - 3);
-            
-        colfunc_2s (col);
+        col_data = R_GetColumn(texren, maskedtexturecol[dc_x]);
+        colfunc_2s( col_data );
+
         dm_yscale += rw_scalestep;
       }
     }
@@ -1565,19 +1608,22 @@ void R_RenderFog( ffloor_t* fff, sector_t * intosec, lightlev_t foglight,
     sector_t * modelsec = fogside->sector;
     lighttable_t** xwalllights = scalelight[0];  // local selection of light table
     lighttable_t  * ro_colormap = NULL;  // override colormap
+    texture_render_t * texren;
 
-    int      texnum, texheight;
+    byte *  col_data;
+    void (*colfunc_2s) (byte*);
+   
+    int      texnum;
+    fixed_t  texheightz;
     fixed_t  windowclip_top, windowclip_bottom;
     fixed_t  topheight, heightstep, bot_patch;
     fixed_t  sec_ceilingheight_viewrel;
     fixed_t  x1 = 0, x2 = rdraw_viewwidth - 1;
 
-    column_t*   col;
-    void (*colfunc_2s) (column_t*);
-
     // midtexture, 0=no-texture, otherwise valid
     texnum = texturetranslation[fogside->midtexture];
     if( texnum == 0 )  goto nofog;
+    texren = & texture_render[texnum];
 
     dm_windowbottom = dm_windowtop = dm_bottom_patch = FIXED_MAX; // default no clip
     // [WDJ] clip at ceiling and floor
@@ -1622,29 +1668,18 @@ void R_RenderFog( ffloor_t* fff, sector_t * intosec, lightlev_t foglight,
     // [WDJ] multi-patch transparent texture restored
     // DrawMasked needs: dm_floorclip, dm_ceilingclip, dm_yscale,
     //  dm_top_patch, dm_bottom_patch, dm_windowtop, dm_windowbottom
-
-  retry_texture_model:
-    switch (textures[texnum]->texture_model)
+    if( texren->cache == NULL )
     {
-     case TM_patch:
-        colfunc_2s = R_DrawMaskedColumn;                    //render the usual 2sided single-patch packed texture
-        break;
-     case TM_combine_patch:
-        colfunc_2s = R_DrawMaskedColumn;                    //render combined as 2sided single-patch packed texture
-        break;
-     case TM_picture:    
-        colfunc_2s = R_Render2sidedMultiPatchColumn;        //render multipatch with no holes (no post_t info)
-        column2s_length = textures[texnum]->height;
-        break;
-     case TM_masked:
-     case TM_none:
-        R_GenerateTexture( texnum );	// first time
-        goto retry_texture_model;
-     default:
-        goto nofog;  // no draw routine
+        R_GenerateTexture( texren );	// first time
     }
-    texheight = textureheight[texnum];
 
+    colfunc_2s = colfunc_2s_masked_table[ texren->texture_model ];
+
+    texheightz = textureheight[texnum];
+    dc_texheight = texheightz >> FRACBITS;
+    // For TM_picture, textures[texnum]->height
+    column2s_length = dc_texheight;
+    
     // fake floor light heights in screen coord. , at x=0
     sec_ceilingheight_viewrel = modelsec->ceilingheight - viewz;  // for fog sector
     topheight = (centeryfrac) - FixedMul(sec_ceilingheight_viewrel, dm_yscale);
@@ -1659,7 +1694,6 @@ void R_RenderFog( ffloor_t* fff, sector_t * intosec, lightlev_t foglight,
     // top of texture, relative to viewer, with rowoffset, world coord.
     dm_texturemid = modelsec->ceilingheight + fogside->rowoffset - viewz;
     dc_texturemid = dm_texturemid; // For column drawers other than R_DrawMaskedColumn
-    dc_texheight = texheight >> FRACBITS;
 
     // [WDJ] Initialize dc_colormap.
     // If fixedcolormap == NULL, then the loop will scale the light and colormap.
@@ -1688,7 +1722,7 @@ void R_RenderFog( ffloor_t* fff, sector_t * intosec, lightlev_t foglight,
     {
         // top/bottom of texture, relative to viewer, screen coord.
         dm_top_patch = (centeryfrac - FixedMul(dm_texturemid, dm_yscale));
-        bot_patch = FixedMul(texheight, dm_yscale) + dm_top_patch;
+        bot_patch = FixedMul(texheightz, dm_yscale) + dm_top_patch;
         // fog sheet clipping to ceiling and floor
         dm_windowtop = centeryfrac - FixedMul(windowclip_top, dm_yscale);
         dm_windowbottom = centeryfrac - FixedMul(windowclip_bottom, dm_yscale);
@@ -1720,8 +1754,8 @@ void R_RenderFog( ffloor_t* fff, sector_t * intosec, lightlev_t foglight,
 
             dc_iscale = 0xffffffffu / (unsigned)dm_yscale;
             // draw texture, as clipped
-            col = (column_t *)((byte *)R_GetColumn(texnum,0) - 3);
-            colfunc_2s (col);
+            col_data = R_GetColumn(texren, 0);
+            colfunc_2s( col_data );
         }
         dm_yscale += rw_scalestep;
     } // for( dx_x = x1..x2 )
@@ -1777,7 +1811,7 @@ void R_RenderSegLoop (void)
     int        i;
     lighttable_t  * ro_colormap = NULL;  // override colormap
     extracolormap_t  * ro_extracolormap = NULL;  // override colormap
-    
+
     // line orientation light, out of the loop
     if (curline->v1->y == curline->v2->y)
         orient_light = -ORIENT_LIGHT;
@@ -2024,7 +2058,9 @@ void R_RenderSegLoop (void)
 #endif
 
             dc_texturemid = rw_midtexturemid;
-            dc_source = R_GetColumn(midtexture,texturecolumn);
+            // Does not know if TM_picture or TM_patch	     
+            dc_source = R_GetPixelColumn(mid_texren, texturecolumn);
+
             dc_texheight = textureheight[midtexture] >> FRACBITS;
             //profile stuff ---------------------------------------------------------
 #ifdef TIMING
@@ -2090,7 +2126,9 @@ void R_RenderSegLoop (void)
 #endif
 
                     dc_texturemid = rw_toptexturemid;
-                    dc_source = R_GetColumn(toptexture,texturecolumn);
+                    // Does not know if TM_picture or TM_patch	     
+                    dc_source = R_GetPixelColumn(top_texren, texturecolumn);
+
                     dc_texheight = textureheight[toptexture] >> FRACBITS;
 #ifdef HORIZONTALDRAW
                     hcolfunc ();
@@ -2152,8 +2190,8 @@ void R_RenderSegLoop (void)
 #endif
 
                     dc_texturemid = rw_bottomtexturemid;
-                    dc_source = R_GetColumn(bottomtexture,
-                        texturecolumn);
+                    // Does not know if TM_picture or TM_patch	     
+                    dc_source = R_GetPixelColumn(bottom_texren, texturecolumn);
 
                     dc_texheight = textureheight[bottomtexture] >> FRACBITS;
 #ifdef HORIZONTALDRAW
@@ -2262,7 +2300,7 @@ void R_StoreWallRange( int   start, int   stop)
     ff_light_t        * ff_light;  // light list item
     r_lightlist_t     * rlight;
     ffloor_t          * bff, * fff;  // backsector fake floor, frontsector fake floor
-//    fixed_t             lheight;  // unused
+//    fixed_t             lightheight;  // unused
 
     if (ds_p == &drawsegs[max_drawsegs])   expand_drawsegs();
     // Transfer wall attributes to next drawseg ( ds_p ).
@@ -2346,6 +2384,8 @@ void R_StoreWallRange( int   start, int   stop)
     worldbottom = frontsector->floorheight - viewz;
 
     midtexture = toptexture = bottomtexture = maskedtexture = 0; // no-texture
+    mid_texren = top_texren = bottom_texren = NULL;
+
     ds_p->maskedtexturecol = NULL;
     ds_p->numthicksides = numthicksides = 0;
     ds_p->thicksidecol = NULL;
@@ -2369,11 +2409,13 @@ void R_StoreWallRange( int   start, int   stop)
         // Single sided: assumes that there MUST be a midtexture on this side.
         // midtexture, 0=no-texture, otherwise valid
         midtexture = texturetranslation[sidedef->midtexture];
+        mid_texren = & texture_render[midtexture];
         // a single sided line is terminal, so it must mark ends
         markfloor = markceiling = true;
         
         if (linedef->flags & ML_DONTPEGBOTTOM)
         {
+            // tile using original texture size
             vtop = frontsector->floorheight +
                 textureheight[sidedef->midtexture];
             // bottom of texture at bottom
@@ -2538,6 +2580,8 @@ void R_StoreWallRange( int   start, int   stop)
         {
             // top texture, 0=no-texture, otherwise valid
             toptexture = texturetranslation[sidedef->toptexture];
+            top_texren = & texture_render[toptexture];
+
             if (linedef->flags & ML_DONTPEGTOP)
             {
                 // top of texture at top
@@ -2545,6 +2589,7 @@ void R_StoreWallRange( int   start, int   stop)
             }
             else
             {
+                // tile using original texture size
                 vtop = backsector->ceilingheight
                      + textureheight[sidedef->toptexture];
                 
@@ -2552,11 +2597,13 @@ void R_StoreWallRange( int   start, int   stop)
                 rw_toptexturemid = vtop - viewz;
             }
         }
+
         // check BOTTOM TEXTURE
         if (worldbackbottom > worldbottom)     //seulement si VISIBLE!!!
         {
             // bottom texture, 0=no-texture, otherwise valid
             bottomtexture = texturetranslation[sidedef->bottomtexture];
+            bottom_texren = & texture_render[bottomtexture];
             
             if (linedef->flags & ML_DONTPEGBOTTOM )
             {
@@ -2747,6 +2794,7 @@ void R_StoreWallRange( int   start, int   stop)
 
           ds_p->numthicksides = numthicksides = i;
         } // if frontsector && backsector ..
+
         // midtexture, 0=no-texture, otherwise valid
         if (sidedef->midtexture)
         {
@@ -2873,7 +2921,7 @@ void R_StoreWallRange( int   start, int   stop)
         {
 #if 0
           // [WDJ] At some time this became unused.
-          lheight = (*ff_light->caster->bottomheight > frontsector->ceilingheight) ?
+          lightheight = (*ff_light->caster->bottomheight > frontsector->ceilingheight) ?
               frontsector->ceilingheight + FRACUNIT
              : *ff_light->caster->bottomheight;
 #endif
