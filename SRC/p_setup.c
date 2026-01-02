@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1463 2019-09-29 07:36:51Z wesleyjohnson $
+// $Id: p_setup.c 1471 2019-10-04 08:59:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2200,7 +2200,7 @@ boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
     // search for maps
     //
     lumpinfo = wadfile->lumpinfo;
-    firstmapreplaced = MAXINT;  // invalid
+    firstmapreplaced = INT_MAX;  // invalid
     for (i=0; i<wadfile->numlumps; i++,lumpinfo++)
     {
         name = lumpinfo->name;

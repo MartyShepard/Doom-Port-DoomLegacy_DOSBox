@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1456 2019-09-11 12:26:00Z wesleyjohnson $
+// $Id: r_things.c 1471 2019-10-04 08:59:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -845,7 +845,7 @@ void vissprites_tablesize ( void )
     if ( request == (vspr_max+1) )
         return;		// same as existing allocation
 
-    if( vspr_change_delay < MAXINT )
+    if( vspr_change_delay < INT_MAX )
     {
         vspr_change_delay ++;
     }
@@ -3621,7 +3621,7 @@ next_token:
 
             // not found so make a new one
             if( !found )
-                R_AddSingleSpriteDef (sprname, &sk->spritedef, wadnum, 0, MAXINT);
+                R_AddSingleSpriteDef (sprname, &sk->spritedef, wadnum, 0, INT_MAX);
 
         }
 

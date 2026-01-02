@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: I_system.c 1465 2019-10-01 02:36:54Z wesleyjohnson $
+// $Id: I_system.c 1471 2019-10-04 08:59:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1334,8 +1334,10 @@ void I_ShutdownSystem()
    int c;
 
    for (c=MAX_QUIT_FUNCS-1; c>=0; c--)
+   {
       if (quit_funcs[c])
          (*quit_funcs[c])();
+   }
 
 }
 
@@ -1348,7 +1350,7 @@ uint64_t I_GetDiskFreeSpace(void)
                      (unsigned long)df.bytes_per_sector *
                      (unsigned long)df.sectors_per_cluster;
     else
-        *freespace = MAXINT;
+        *freespace = INT_MAX;
 
     return *freespace;
 }

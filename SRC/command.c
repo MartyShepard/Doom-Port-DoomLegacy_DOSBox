@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1438 2019-05-19 02:24:21Z wesleyjohnson $
+// $Id: command.c 1471 2019-10-04 08:59:55Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1538,7 +1538,7 @@ void CV_ValueIncDec (consvar_t *cvar, int increment)
         {
             // MIN .. MAX
             int min_value = pv0->value;  // MIN value
-            int max_value = MAXINT;
+            int max_value = INT_MAX;
             CV_PossibleValue_t *  pv;
 
             // Search the list for MAX value, or INC.

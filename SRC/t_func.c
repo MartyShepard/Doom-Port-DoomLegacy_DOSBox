@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
+// $Id: t_func.c 1471 2019-10-04 08:59:55Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -273,7 +273,7 @@ player_err:
     goto errexit;
 
 errexit:
-    return  MAXINT;  //  > MAXPLAYERS, indicates error
+    return  INT_MAX;  //  > MAXPLAYERS, indicates error
 }
 
 

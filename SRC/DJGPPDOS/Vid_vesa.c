@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.c 1433 2019-04-26 10:33:53Z wesleyjohnson $
+// $Id: Vid_vesa.c 1471 2019-10-04 08:59:55Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -281,7 +281,7 @@ modenum_t  VID_GetModeForSize( int rw, int rh, byte rmodetype )
 {
     modenum_t  modenum = { MODE_NOP, 0 };
     int tdist;
-    int bestdist = MAXINT;
+    int bestdist = INT_MAX;
     int mi = 0;
     vmode_t * pv = all_vidmodes;
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1463 2019-09-29 07:36:51Z wesleyjohnson $
+// $Id: p_local.h 1471 2019-10-04 08:59:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -490,7 +490,7 @@ extern mobjtype_t      PuffType;
 #define FLIGHTTICS      (60*TICRATE)
 
 #define CHICKENTICS     (40*TICRATE)
-#define FLOATRANDZ      (MAXINT-1)
+#define FLOATRANDZ      (INT_MAX - 1)
 
 void P_RepositionMace(mobj_t *mo);
 void P_ActivateBeak(player_t *player);

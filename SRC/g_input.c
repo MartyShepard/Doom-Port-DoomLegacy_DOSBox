@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.c 1466 2019-10-01 02:37:37Z wesleyjohnson $
+// $Id: g_input.c 1471 2019-10-04 08:59:55Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -68,7 +68,7 @@ int num_joybindings = 0;
 joybinding_t joybindings[MAX_JOYBINDINGS];
 
 
-CV_PossibleValue_t mousesens_cons_t[]={{1,"MIN"},{MAXMOUSESENSITIVITY,"MAXCURSOR"},{MAXINT,"MAX"},{0,NULL}};
+CV_PossibleValue_t mousesens_cons_t[]={{1,"MIN"},{MAXMOUSESENSITIVITY,"MAXCURSOR"},{INT_MAX,"MAX"},{0,NULL}};
 CV_PossibleValue_t onecontrolperkey_cons_t[]={{1,"One"},{2,"Several"},{0,NULL}};
 
 // mouse values are used once

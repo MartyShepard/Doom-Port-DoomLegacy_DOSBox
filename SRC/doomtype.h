@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 1448 2019-07-21 01:30:31Z wesleyjohnson $
+// $Id: doomtype.h 1471 2019-10-04 08:59:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -192,14 +192,19 @@ int strlwr(char *n);
 #if ! defined(MAXINT) && defined( INT_MAX )
 // [WDJ] Define the values.h symbols using defines from limits.h.
 // This is what values.h does now.
-#define MAXCHAR   CHAR_MAX
-#define MINCHAR   CHAR_MIN
-#define MAXSHORT  SHRT_MAX
-#define MINSHORT  SHRT_MIN
 #define MAXINT    INT_MAX
 #define MININT    INT_MIN
+#endif
+#if ! defined(MAXCHAR) && defined( CHAR_MAX )
+#define MAXCHAR   CHAR_MAX
+#define MINCHAR   CHAR_MIN
+#endif
+#if ! defined(MAXSHORT) && defined( SHRT_MAX )
+#define MAXSHORT  SHRT_MAX
+#define MINSHORT  SHRT_MIN
+#endif
 
-#else
+#if 0
 // [WDJ] This is very dangerous considering 32 bit and 64 bit systems,
 // should use stdint.h values instead.
 // These are obsolete defines from values.h.
@@ -236,8 +241,8 @@ int strlwr(char *n);
 // used in many places
 #define MININT    ((int)0x80000000)
 #endif
-
 #endif
+
 // Sound effect id type.
 typedef  uint16_t  sfxid_t;
 

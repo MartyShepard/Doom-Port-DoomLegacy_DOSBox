@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_defs.h 1445 2019-06-12 04:10:19Z wesleyjohnson $
+// $Id: r_defs.h 1471 2019-10-04 08:59:55Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -398,7 +398,7 @@ typedef struct sector_s
     sector_model_e  model;  // Boom or Legacy special sector  [WDJ] 11/14/2009
     
     // [WDJ] 3/2011, (killough 8/28/98 Friction as sector property).
-    // friction=MAXINT when unused
+    // friction=INT_MAX when unused
     fixed_t  friction;
     int movefactor;
   
