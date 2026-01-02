@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1484 2019-12-13 05:19:05Z wesleyjohnson $
+// $Id: d_netfil.c 1488 2019-12-14 07:18:13Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -176,7 +176,7 @@ static
 void update_download_done( void )
 {
     int i;
-    for( i=cl_num_fileneed; i>=0; i-- )
+    for( i=0; i<cl_num_fileneed; i++ )
     {
         byte st = cl_fileneed[i].status;
         if( st > FS_FOUND )  return;

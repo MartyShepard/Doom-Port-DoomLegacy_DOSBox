@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1487 2019-12-13 05:21:38Z wesleyjohnson $
+// $Id: d_clisrv.c 1488 2019-12-14 07:18:13Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -223,7 +223,7 @@ byte     num_player_slots = 0;  // for messages with slots
 // nnode =255 when unused
 // nnode_state[] = NOS_idle, when net node is unused
 // The netnodes are counted, 0..32
-static byte     player_to_nnode[MAXPLAYERS];
+static byte  player_to_nnode[MAXPLAYERS];
 
 // Server net node state for
 // tracking client nodes.
@@ -291,6 +291,7 @@ static tic_t    cl_prev_tic = 0;  // client tests once per tic
 
 // server net node, 251=none (to not match invalid node)
 byte            servernode = 251;
+static byte     cl_server_state = NOS_idle; // nnode_state_e
 
 // Index for netcmds and textcmds
 #define BTIC_INDEX( tic )  ((tic)%BACKUPTICS)
@@ -1667,6 +1668,7 @@ void Command_connect(void)
     if( strcasecmp(COM_Argv(1),"self")==0 )
     {
         servernode = 0;  // server is self
+        cl_server_state = NOS_server;
         server = true;
         // should be but...
         //SV_SpawnServer();
@@ -1783,7 +1785,7 @@ void CL_Reset (void)
     {
         // Close connection to server
         // Client keeps nnode_state for server.	
-        nnode_state[servernode] = NOS_idle;
+        cl_server_state = NOS_idle;
         Net_CloseConnection(servernode, 0);
     }
     D_CloseConnection();         // netgame=false
@@ -2034,7 +2036,10 @@ void SV_ResetServer( void )
         serverplayer=consoleplayer;
 
     if(server)
+    {
         servernode=0;  // server to self
+        cl_server_state = NOS_idle;
+    }
 
     num_player_slots = 0;
     quit_netgame_status = 0;
@@ -2080,7 +2085,7 @@ void D_Quit_NetGame (void)
     }
     else  // Client not server
     if( (servernode < MAXNETNODES)
-       && (nnode_state[servernode] == NOS_server) )  // client keeps nnode_state for server
+       && (cl_server_state == NOS_server) )  // client connected to server
     {
         // Client sends quit to server.
         netbuffer->packettype=PT_CLIENTQUIT;
@@ -2088,6 +2093,7 @@ void D_Quit_NetGame (void)
     }
 
     D_CloseConnection();
+    cl_server_state = NOS_idle;
     network_state = NETS_shutdown;
 
     DEBFILE("==== Log finish ====\n" );
@@ -2578,7 +2584,7 @@ static void server_cfg_handler( byte nnode )
         maketic = gametic = cl_need_tic = LE_SWAP32(netbuffer->u.servercfg.gametic);
         // Client keeps nnode_state for server, but not other clients.
         if( servernode < MAXNETNODES )
-            nnode_state[servernode] = NOS_server;  // recognized
+            cl_server_state = NOS_server;  // connected
     }
 
 #ifdef CLIENTPREDICTION2
@@ -3224,7 +3230,7 @@ static void CL_Send_ClientCmd (void)
 //    if( cl_mode == CLM_connected )
     // [WDJ] Server also needs to send NetXCmd, even without serverplayer.
     // How this used to work is a mystery.
-    if( (server || (cl_mode = CLM_connected)) && (network_state > NETS_open) )
+    if( (server || (cl_mode == CLM_connected)) && (network_state > NETS_open) )
     {
         // send extra data if needed
         if( localtextcmd[0].len ) // text len

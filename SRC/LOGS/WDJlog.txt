@@ -7567,6 +7567,7 @@ patchfile = w108_71_progdir.patch
 - commit revision 1485
 Fix segfault of progdir in strcmp, for some operating systems that
 fail to return the progdir.
+Fixes Bug 00640, again.
 
 *** w108_netstate
 patchfile = w108_72_netstate.patch
@@ -7585,4 +7586,9 @@ to use this new state.
 patchfile = w108_73_netfunc.patch
 - commit revision 1487
 Clean up the network functions that had kluges.
+
+*** w108_netbug1
+patchfile = w108_74_netbug1.patch
+- commit revision 1488
+Fix some bugs introduced by the last two network patches.
 

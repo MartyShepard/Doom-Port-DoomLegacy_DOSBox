@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01488 ]: w108_74 netbug1
 [01487 ]: w108_73 netfunc
 [01486 ]: w108_72 netstate
 [01485 ]: w108_72 progdir NULL
