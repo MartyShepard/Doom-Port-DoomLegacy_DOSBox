@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01476 ]: w108 62 netvar read
 [01475 ]: w108 61 cvar call
 [01474 ]: w108 60 help
           DOS: Compile fix. Updated

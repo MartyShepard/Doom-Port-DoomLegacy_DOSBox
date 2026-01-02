@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1475 2019-10-15 12:34:52Z wesleyjohnson $
+// $Id: command.c 1476 2019-10-16 09:58:06Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1367,6 +1367,7 @@ void  CV_set_str_value( consvar_t * cvar, const char * valstr, byte call_enable,
 
 
 finish:
+    // The SHOWMODIF is display of CV_Set, and not other set paths.
     if( cvar->flags & (CV_SHOWMODIF | CV_SHOWMODIF_ONCE) )
     {
         CONS_Printf("%s set to %s\n", cvar->name, valstr );
@@ -1435,9 +1436,9 @@ void CV_Restore_User_Settings( void )
 void Got_NetXCmd_NetVar(xcmd_t * xc)
 {
     byte * bp = xc->curpos;	// macros READ,SKIP want byte*
-    char *svalue = (char *)bp;
 
-    consvar_t *cvar = CV_FindNetVar(READU16(bp));
+    consvar_t *cvar = CV_FindNetVar(READU16(bp));  // netvar id
+    char *svalue = (char *)bp;  // after netvar id
 
     while( *(bp++) ) {  // find 0 term
        if( bp > xc->endpos )  goto buff_overrun;  // bad string

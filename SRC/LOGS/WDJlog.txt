@@ -7493,5 +7493,11 @@ The cvar set functions needed to be fixed so that the CV_CALL was
 performed when needed.
 Added another config push level, to handle netvars in multiplayer games.
 
+*** w108_netvar_read
+patchfile = w108_62_netvar_read.patch
+- commit revision 1476
+Broke the netvar readback with cvar_call patch.
+Messes up netvar on netgames, and savegames.
+
 
 
