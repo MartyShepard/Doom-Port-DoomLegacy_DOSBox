@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1459 2019-09-22 07:02:50Z wesleyjohnson $
+// $Id: p_mobj.c 1463 2019-09-29 07:36:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -948,10 +948,10 @@ missile_impact:
     // tmr_ceilingline returned by P_TryMove
     if (tmr_ceilingline
         && tmr_ceilingline->backsector
-        && tmr_ceilingline->backsector->ceilingpic == skyflatnum
+        && tmr_ceilingline->backsector->ceilingpic == sky_flatnum
         // Added tests, not in Boom, Heretic.
         && tmr_ceilingline->frontsector
-        && tmr_ceilingline->frontsector->ceilingpic == skyflatnum
+        && tmr_ceilingline->frontsector->ceilingpic == sky_flatnum
         && mo->subsector->sector->ceilingheight == mo->ceilingz)
     {
         if (!EN_boom   //SoM: 4/7/2000: DEMO'S
@@ -1276,7 +1276,7 @@ zmove_floater:
         {
             // Heretic has this sky test, but PrBoom and EE do not.
             //SoM: 4/3/2000: Don't explode on the sky!
-            if ( mo->subsector->sector->ceilingpic == skyflatnum
+            if ( mo->subsector->sector->ceilingpic == sky_flatnum
                  && mo->subsector->sector->ceilingheight == mo->ceilingz
                  && (EV_legacy >= 129) )
             {
@@ -1364,7 +1364,7 @@ bouncer:
         {
             // Hit ceiling with momentum, handle bounce conditions.
             // Interact with ceiling type.
-            if( mo->subsector->sector->ceilingpic != skyflatnum )
+            if( mo->subsector->sector->ceilingpic != sky_flatnum )
             {
                 // Normal bounce off building ceiling
                 mo->momz = -mo->momz;
@@ -1417,7 +1417,7 @@ bouncer:
         // A BOUNCER MISSILE
         if( tmr_ceilingline
             && tmr_ceilingline->backsector
-            && tmr_ceilingline->backsector->ceilingpic == skyflatnum
+            && tmr_ceilingline->backsector->ceilingpic == sky_flatnum
             && mo->z > tmr_ceilingline->backsector->ceilingheight )
         {
             // Sky, do not explode.

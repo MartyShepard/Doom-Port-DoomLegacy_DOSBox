@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 1455 2019-09-11 12:25:21Z wesleyjohnson $
+// $Id: r_data.h 1463 2019-09-29 07:36:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -190,6 +190,10 @@ void  R_Flush_Texture_Cache (void);
 //  blank_value : pixel value that is blank space, >255 = no blank pixel value
 //  enable_blank_trim : trim blank columns
 patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte column_oriented, byte * data, byte bytepp, byte sel_offset, uint16_t blank_value, byte enable_blank_trim );
+#endif
+
+#if 0
+void  R_Set_Texture_Patch( int texnum, patch_t * patch );
 #endif
 
 // Generate a texture from texture desc. and patches.

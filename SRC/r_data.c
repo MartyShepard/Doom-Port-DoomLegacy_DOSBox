@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1456 2019-09-11 12:26:00Z wesleyjohnson $
+// $Id: r_data.c 1463 2019-09-29 07:36:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -202,9 +202,7 @@ patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte column_o
     unsigned int  tail_empty_columns = 0;  // right
     unsigned int  mid_empty_columns = 0;
     unsigned int  count_good_columns = 0;
-    unsigned int  colofs_size = width * sizeof( uint32_t );  // width * 4
-    unsigned int  head_size = colofs_size + 8;
-    unsigned int  wb_blocksize = head_size + 4 + (width * height);  // guess
+    unsigned int  colofs_size, head_size, wb_blocksize;
     unsigned int  col, length, topdelta, dest_used;
     unsigned int  row_inc, col_inc;
     uint32_t   *  colofs;
@@ -213,6 +211,9 @@ patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte column_o
     byte       *  pb;
     byte       *  src0, * src_end, * src ;
 
+    colofs_size = width * sizeof( uint32_t );  // width * 4
+    head_size = colofs_size + 8;
+    wb_blocksize = head_size + 4 + (width * height);  // guess   
     patch_t * wb_patch = (patch_t*) Z_Malloc( wb_blocksize, PU_IN_USE, NULL );
    
     wb_patch->width = width;
@@ -377,6 +378,59 @@ patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte column_o
 }
 #endif
 
+//  Fixed, solid, image.
+//  column_oriented : source data orientation, 0 = row x column (image), 1 = column x row (pic_t)
+//  data : source data of width x height (in rows)
+byte * R_Create_Image( unsigned int width, unsigned int height, byte column_oriented, byte * data )
+{
+    byte  postbuf[ 256 ];
+    unsigned int  wb_blocksize = (width * height);
+    unsigned int  col, length;
+    unsigned int  row_inc, col_inc;
+    byte       *  pb;
+    byte       *  src ;
+    byte       *  dest;
+
+    byte * wb_image = Z_Malloc( wb_blocksize, PU_IN_USE, NULL );
+   
+    if( column_oriented )
+    {
+        row_inc = 1;  // row to row, along col
+        col_inc = height;  // col to col
+    }
+    else
+    {
+        col_inc = 1;  // col to col, along row
+        row_inc = width;  // row to row
+    }
+   
+    dest = wb_image;  // posting area
+    for( col=0; col<width; col++ )
+    {
+        src = & data[ col * col_inc ];
+
+        // Copy column
+        pb = postbuf;  // put into postbuf
+        for( ;  ; src += row_inc )
+        {
+            if( pb >= & postbuf[height] )  break;  // max post length
+            *(pb++) = *src;
+        }
+        length = pb - postbuf;  // must be at least 1
+
+        // Form postpuf into a column post.
+        memcpy( dest, postbuf, length );
+        if( length < height )
+        {
+            memset( &dest[length], 0, height - length ) ;
+        }
+
+        dest += height;
+    }
+
+    return wb_image;
+}
+
 
 #if 0
 // indexed by pic_selection_e
@@ -504,6 +558,40 @@ patch_t * R_Pic_to_Patch( pic_t * pic, byte patch_mode )
 
 
 #endif
+
+#if 0
+// Some unique Texture setup for installing a patch.
+void  R_Set_Texture_Patch( int texnum, patch_t * patch )
+{
+    uint32_t*  colofs;  // to match size in wad
+
+    if( texturecache[texnum] )
+        Z_Free( texturecache[texnum] );
+
+    texturecache[texnum] = (byte*) patch;
+
+    // determine width power of 2
+    int j = 1;
+    while (j*2 <= patch->width)  j<<=1;
+    texturewidthmask[texnum] = j-1;
+    textureheight[texnum] = patch->height<<FRACBITS;
+   
+    colofs = &(patch->columnofs[0]);;
+#ifdef COLOFS_PLUS_3
+    if( colofs[0] == ((patch->width * sizeof(uint32_t)) + 8) )
+    {
+        // offset to pixels instead of post header
+        // Many callers will use colofs-3 to get back to header, but
+        // some drawing functions need pixels.
+        int i;
+        for (i=0; i<patch->width; i++)
+            colofs[i] = colofs[i] + 3;  // adjust colofs from wad
+    }
+#endif
+    texturecolumnofs[texnum] = colofs;
+}
+#endif
+
 
 // [WDJ] 2/5/2010
 // See LITE96 originx=-1, LITERED originx=-4, SW1WOOD originx=-64
@@ -635,7 +723,10 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren )
     texture = textures[texnum];
     texture_model = texture->texture_model;
     texture->texture_model = TM_invalid; // default in case this fails
-    
+
+    if( texren->cache )
+        Z_Free( texren->cache );
+
     // Column offset table size as determined by wad specs.
     // Column pixel data starts after the table.
     colofs_size = texture->width * sizeof( uint32_t );  // width * 4
@@ -3267,12 +3358,14 @@ void R_PrecacheLevel (void)
 #endif       
     }
 
+#if 0   
     // Sky texture is always present.
     // Note that F_SKY1 is the name used to
     //  indicate a sky floor/ceiling as a flat,
     //  while the sky texture is stored like
     //  a wall texture, with an episode dependent name.
-    texturepresent[skytexture] = 1;
+    texturepresent[sky_texture] = 1;
+#endif
 
     //if (devparm)
     //    GenPrintf(EMSG_dev, "Generating textures..\n");

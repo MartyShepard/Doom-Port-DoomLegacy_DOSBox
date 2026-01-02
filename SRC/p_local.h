@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1462 2019-09-27 06:58:56Z wesleyjohnson $
+// $Id: p_local.h 1463 2019-09-29 07:36:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -538,5 +538,8 @@ extern consvar_t cv_corona_draw_mode;
 extern consvar_t cv_monball_light;
 
 void  Deathmatch_OnChange( void );
+
+// Sky
+extern consvar_t cv_sky_gen;
 
 #endif  // P_LOCAL_H

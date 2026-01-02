@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1460 2019-09-23 08:42:17Z wesleyjohnson $
+// $Id: p_setup.c 1463 2019-09-29 07:36:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -753,7 +753,7 @@ void P_LoadSectors( lumpnum_t lumpnum )
     //debug_Printf("Load Sectors: %d flats found\n", numlevelflats);
 
     // set the sky flat num
-    skyflatnum = P_AddLevelFlat ("F_SKY1");
+    sky_flatnum = P_AddLevelFlat ("F_SKY1");
 
     // search for animated flats and set up
     P_Setup_LevelFlatAnims ();
@@ -1816,7 +1816,7 @@ void P_Setup_LevelSky (void)
             sn = skyLumpNames[gameepisode-1];
     }
 
-    skytexture = R_TextureNumForName ( sn );
+    sky_texture = R_TextureNumForName ( sn );
     // scale up the old skies, if needed
     R_Setup_SkyDraw ();
 }

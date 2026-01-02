@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1462 2019-09-27 06:58:56Z wesleyjohnson $
+// $Id: b_game.c 1463 2019-09-29 07:36:51Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -223,19 +223,20 @@ uint32_t  B_Gen_Random( void )
     {
      case 0:  // Plain
         r = B_Random();
-        break;       
+        break;
+     default:
      case 1:  // Seed
         r = B_Random() + cv_bot_randseed.value;
-        break;       
+        break;
      case 2:  // Seed Random
         r = E_Random() + cv_bot_randseed.value;
-        break;       
+        break;
      case 3:  // Cfg Random
         r = E_Random() + cv_bot_random.value;
-        break;       
+        break;
      case 4:  // Sys Random
         r = rand();
-        break;       
+        break;
     }
     return r;
 }

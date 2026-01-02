@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
+// $Id: p_map.c 1463 2019-09-29 07:36:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -2558,14 +2558,14 @@ boolean PTR_ShootTraverse (intercept_t* in)
         x = trace.x + FixedMul (trace.dx, frac);
         y = trace.y + FixedMul (trace.dy, frac);
 
-        if (li->frontsector->ceilingpic == skyflatnum)
+        if (li->frontsector->ceilingpic == sky_flatnum)
         {
             // don't shoot the sky!
             if (z > li->frontsector->ceilingheight)
                 return false;
 
             // it's a sky hack wall
-            if( li->backsector && (li->backsector->ceilingpic == skyflatnum))
+            if( li->backsector && (li->backsector->ceilingpic == sky_flatnum))
             {
                 if(demoversion<112)
                     return false;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.c 1439 2019-05-19 02:25:09Z wesleyjohnson $
+// $Id: hw_main.c 1463 2019-09-29 07:36:51Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1635,7 +1635,7 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
         worldbackbottom = gr_backsector->floorheight;
 
         // hack to allow height changes in outdoor areas
-        if (gr_frontsector->ceilingpic == skyflatnum && gr_backsector->ceilingpic == skyflatnum)
+        if (gr_frontsector->ceilingpic == sky_flatnum && gr_backsector->ceilingpic == sky_flatnum)
         {
             worldtop = worldbacktop;
         }
@@ -1906,7 +1906,7 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
         }
     }
 
-    if( (gr_frontsector->ceilingpic == skyflatnum)
+    if( (gr_frontsector->ceilingpic == sky_flatnum)
         && (skybottom < 1E10) )
     {
         // [WDJ] Above upper texture is sky
@@ -2827,7 +2827,7 @@ static void HWR_Subsector(int num)
     // yeah, easy backface cull! :)
     if (locFloorHeight < viewz)
     {
-        if (gr_frontsector->floorpic != skyflatnum)
+        if (gr_frontsector->floorpic != sky_flatnum)
         {
             if (sub->validcount != validcount)
             {
@@ -2849,7 +2849,7 @@ static void HWR_Subsector(int num)
 
     if (locCeilingHeight > viewz)
     {
-        if (gr_frontsector->ceilingpic != skyflatnum)
+        if (gr_frontsector->ceilingpic != sky_flatnum)
         {
             if (sub->validcount != validcount)
             {
@@ -3891,7 +3891,7 @@ void HWR_DrawSkyBackground(player_t * player, byte upper_lower)
 //  | /|
 //  |/ |
 //  0--1
-    HWR_GetTexture(skytexture, 0);
+    HWR_GetTexture(sky_texture, 0);
 
     //Hurdler: the sky is the only texture who need 4.0f instead of 1.0
     //         because it's called just after clearing the screen

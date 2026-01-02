@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1445 2019-06-12 04:10:19Z wesleyjohnson $
+// $Id: r_bsp.c 1463 2019-09-29 07:36:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -322,8 +322,8 @@ int R_DoorClosed(void)
         || curline->sidedef->bottomtexture) // 0=no-texture
 
     // properly render skies (consider door "open" if both ceilings are sky):
-    && (backsector->ceilingpic != skyflatnum
-        || frontsector->ceilingpic != skyflatnum)
+    && (backsector->ceilingpic != sky_flatnum
+        || frontsector->ceilingpic != sky_flatnum)
     );
 }
 
@@ -392,7 +392,7 @@ sector_t* R_FakeFlat(sector_t *sec, sector_t *tempsec, boolean back,
 
           if (viewer_underwater)
           {
-            if (modsecp->ceilingpic == skyflatnum)
+            if (modsecp->ceilingpic == sky_flatnum)
             {
                 // Boom ref: F_SKY1 as control sector ceiling gives strange effect.
                 // Underwater, only the control sector floor appears
@@ -438,7 +438,7 @@ sector_t* R_FakeFlat(sector_t *sec, sector_t *tempsec, boolean back,
 
             colormapnum = modsecp->topmap; // Boom colormap, over ceiling
 
-            if (modsecp->floorpic != skyflatnum)
+            if (modsecp->floorpic != sky_flatnum)
             {
                 // view over ceiling, model floor/ceiling
                 tempsec->ceilingheight = sec->ceilingheight;
@@ -875,7 +875,7 @@ void R_Subsector (int num)
 
     if ((frontsector->floorheight < viewz)
         || (frontsector->model > SM_fluid
-            && sectors[frontsector->modelsec].ceilingpic == skyflatnum))
+            && sectors[frontsector->modelsec].ceilingpic == sky_flatnum))
     {
         // visplane global parameter
         vsp_floorplane = R_FindPlane (frontsector->floorheight,
@@ -890,9 +890,9 @@ void R_Subsector (int num)
         vsp_floorplane = NULL;
 
     if ((frontsector->ceilingheight > viewz)
-        || (frontsector->ceilingpic == skyflatnum)
+        || (frontsector->ceilingpic == sky_flatnum)
         || (frontsector->model > SM_fluid
-            && sectors[frontsector->modelsec].floorpic == skyflatnum))
+            && sectors[frontsector->modelsec].floorpic == sky_flatnum))
     {
         // visplane global parameter
         vsp_ceilingplane = R_FindPlane (frontsector->ceilingheight,

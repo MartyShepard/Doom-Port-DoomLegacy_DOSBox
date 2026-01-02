@@ -7372,4 +7372,20 @@ Fix the bot generation duplicate name detection.
 Make the bot generation color selection use all colors before repeating.
 Add bot skins, and a bot skin control to the menu.
 
+*** w108_bot_gen
+patchfile = w108_49_bot_gen.patch
+- commit revision 1463
+Alternatives to the sky stretch, for normal sized sky textures.
+This is a work-in-progress.  Wanted to get it into the 1.48 release,
+even though it is not polished yet.  It is still better than always stretch.
+
+Sky gen control:
+0: auto   Will look for a replacement sky first, then will make best choice, which is usually extend_bg.
+1: subst  Will use a replacement sky. (not fully implemented yet)
+10: bg_stars   Extend the sky, replace all of background with stars.
+11: extend_stars   Extend the sky, replace missing background with stars.
+12: extend_bg      Extend the sky, fill with background color.
+13: extend_fill    Extend the sky, fill with random samples.
+250: stretch       Stretch the sky to fit.
+
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 1449 2019-07-21 01:31:43Z wesleyjohnson $
+// $Id: r_plane.c 1463 2019-09-29 07:36:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -416,7 +416,7 @@ visplane_t* R_FindPlane( fixed_t height,
     xoff += viewx; // SoM
     yoff = -viewy + yoff;
 
-    if (picnum == skyflatnum)
+    if (picnum == sky_flatnum)
     {
         height = 0;                     // all skys map together
         lightlevel = 0;
@@ -699,12 +699,12 @@ void R_Draw_Planes (void)
     for (pl=vispl_hashtab[i]; pl; pl=pl->next)
     {
         // sky flat
-        if (pl->picnum == skyflatnum)
+        if (pl->picnum == sky_flatnum)
         {
-            texture_render_t * sky_texren = & texture_render[ skytexture ];
+//            texture_render_t * sky_texren = & texture_render[ skytexture ];
 
             //added:12-02-98: use correct aspect ratio scale
-            dc_iscale = skyscale;
+            dc_iscale = sky_scale;
 
 // Kik test non-moving sky .. weird
 // cy = centery;
@@ -718,8 +718,9 @@ void R_Draw_Planes (void)
             else
                 dc_colormap = reg_colormaps;  // [0]
 
-            dc_texturemid = skytexturemid;
-            dc_texheight = textureheight[skytexture] >> FRACBITS;
+	    // Sky has dedicated texture.
+            dc_texturemid = sky_texturemid;
+            dc_texheight = sky_height;
             for (x=pl->minx ; x <= pl->maxx ; x++)
             {
                 dc_yl = pl->top[x];
@@ -732,7 +733,8 @@ void R_Draw_Planes (void)
                     if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
                     angle = (viewangle + x_to_viewangle[x])>>ANGLETOSKYSHIFT;
                     dc_x = x;
-                    dc_source = R_GetColumn( sky_texren, angle );
+                    // Sky has dedicated texture.
+                    dc_source = ((byte*)sky_patch) + sky_patch->columnofs[ angle & sky_widthmask ];
                     skycolfunc ();
                 }
             }
