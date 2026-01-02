@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1471 2019-10-04 08:59:55Z wesleyjohnson $
+// $Id: r_data.c 1473 2019-10-05 10:19:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -752,7 +752,7 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren )
 
         // Single patch texture, simplify
         texpatch = texture->patches;
-        patchsize = W_LumpLength (texpatch->patchnum);
+        patchsize = W_LumpLength( texpatch->lumpnum );
        
         // [WDJ] Protect every alloc using PU_CACHE from all Z_Malloc that
         // follow it, as that can deallocate the PU_CACHE unexpectedly.
@@ -762,9 +762,9 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren )
         // otherwise it will be in cache without endian changes.
 #if 1
         // To avoid hardware render cache.
-        realpatch = W_CachePatchNum_Endian(texpatch->patchnum, PU_IN_USE);  // texture lump temp
+        realpatch = W_CachePatchNum_Endian(texpatch->lumpnum, PU_IN_USE);  // texture lump temp
 #else
-        realpatch = W_CachePatchNum (texpatch->patchnum, PU_IN_USE);  // texture lump temp
+        realpatch = W_CachePatchNum (texpatch->lumpnum, PU_IN_USE);  // texture lump temp
 #endif
 
         // [WDJ] W_CachePatchNum should only get lumps from PATCH section,
@@ -964,16 +964,16 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren )
         cp->originy = texpatch->originy;
 #if 1
         // To avoid hardware render cache.
-        realpatch = W_CachePatchNum_Endian(texpatch->patchnum, PU_IN_USE);  // patch temp
+        realpatch = W_CachePatchNum_Endian(texpatch->lumpnum, PU_IN_USE);  // patch temp
 #else
-        realpatch = W_CachePatchNum(texpatch->patchnum, PU_IN_USE);  // patch temp
+        realpatch = W_CachePatchNum(texpatch->lumpnum, PU_IN_USE);  // patch temp
 #endif
         cp->patch = realpatch;
         cp->width = realpatch->width;
         int patch_colofs_size = realpatch->width * sizeof( uint32_t );  // width * 4
         // add posts, without columnofs table and 8 byte patch header
         // Need patchsize to detect invalid patches.
-        patchsize = W_LumpLength(texpatch->patchnum);
+        patchsize = W_LumpLength(texpatch->lumpnum);
         cp->patchsize = patchsize;
         compostsize += patchsize - patch_colofs_size - 8;
     }
@@ -1401,9 +1401,9 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren )
         // otherwise it will be in cache without endian changes.
 #if 1
         // To avoid hardware render cache.
-        realpatch = W_CachePatchNum_Endian(texpatch->patchnum, PU_CACHE);  // patch temp
+        realpatch = W_CachePatchNum_Endian(texpatch->lumpnum, PU_CACHE);  // patch temp
 #else
-        realpatch = W_CachePatchNum (texpatch->patchnum, PU_CACHE);  // patch temp
+        realpatch = W_CachePatchNum (texpatch->lumpnum, PU_CACHE);  // patch temp
 #endif
         x1 = texpatch->originx;
         x2 = x1 + realpatch->width;
@@ -1576,7 +1576,7 @@ void R_Load_Textures (void)
     char                name[9];
     char*               name_p;
 
-    int*                patch_to_num;  // patch name to num lookup
+    lumpnum_t         * patch_to_num;  // patch name to num lookup
 
     int                 nummappatches;
     int                 offset;
@@ -1613,7 +1613,7 @@ void R_Load_Textures (void)
     for (i=0 ; i<nummappatches ; i++)
     {
         strncpy (name,name_p+i*8, 8);
-        patch_to_num[i] = W_Check_Namespace( name, LNS_patch );
+        patch_to_num[i] = W_Check_Namespace( name, LNS_patch );  // NO_LUMP when invalid
     }
     Z_Free (pnames);
 
@@ -1717,8 +1717,8 @@ void R_Load_Textures (void)
             // get texture patch info from texture lump
             texpatch->originx = LE_SWAP16(mpatch->originx);
             texpatch->originy = LE_SWAP16(mpatch->originy);
-            texpatch->patchnum = patch_to_num[ (uint16_t)( LE_SWAP16(mpatch->patchnum) )];
-            if (texpatch->patchnum == -1)
+            texpatch->lumpnum = patch_to_num[ (uint16_t)( LE_SWAP16(mpatch->patchnum) )];
+            if( texpatch->lumpnum == NO_LUMP )
             {
                 I_Error ("R_Load_Textures: Missing patch in texture %s\n",
                          texture->name);

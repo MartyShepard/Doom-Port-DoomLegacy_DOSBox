@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 1463 2019-09-29 07:36:51Z wesleyjohnson $
+// $Id: r_data.h 1473 2019-10-05 10:19:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -110,7 +110,7 @@ typedef struct
 {
     int32_t     originx;
     int32_t     originy;
-    int		patchnum;  // because it uses -1 for no lump
+    lumpnum_t	lumpnum;
 } texpatch_t;
 
 // [WDJ] 2/8/2010

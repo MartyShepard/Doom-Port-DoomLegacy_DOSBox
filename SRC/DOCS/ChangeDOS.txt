@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01473 ]: w108 59 unsigned swap16
+[01472 ]: w108 58 starsky
 [01471 ]: w108 57 minmax
 [01470 ]: w108 55 botnet
 [01469 ]: w108 55 savegame

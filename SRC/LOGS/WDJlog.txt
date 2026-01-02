@@ -7464,8 +7464,19 @@ The file that originally defined MAXINT is obsolete.
 Change uses of MAXINT to INT_MAX, MININT to INT_MIN, and MAXSHORT to
 SHRT_MAX.
 
+*** w108_starsky
+patchfile = w108_58_starsky.patch
+- commit revision 1472
+Fix starry sky generation to handle wads with clouds in the sky.
+Make a better sky sampling routine.
+Fix sky wrap to handle sky where a horz row is all the same color
+(eventual segfault).
+Improve the embebedded sky blob handling.
 
-
-
+*** w108_swap16
+patchfile = w108_59_swap16.patch
+- commit revision 1473
+Hunt down some LE_SWAP16 that need to be unsigned.
+Attempting to fix BUG 0633.
 
 
