@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_heretic.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: p_heretic.c 1451 2019-08-03 07:02:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -233,291 +233,315 @@ extern byte cheat_clev_seq[];
 extern byte cheat_mypos_seq[];
 extern byte cheat_amap_seq[];
 
+
+// [WDJ] Reversible Heretic/Doom info table installation.
+typedef struct {
+  uint16_t  doomednum;
+  uint16_t  doom_mt;
+  uint16_t  heretic_mt;
+} doomednum_install_t;
+
+// Order is not important.  Only needs to include those doomednum that conflict.
+static const doomednum_install_t  doomednum_install_table[] = {
+  {  7, MT_SPIDER, MT_SORCERER1 },  // SORCERER  (monster)
+  {  9, MT_SHOTGUY, MT_MINOTAUR },    // MINOTAUR  (monster)
+  { 16, MT_CYBORG, MT_AMMACEHEFTY },  // MACE BALL STACK (ammo M mace)
+  { 64, MT_VILE, MT_HKNIGHT },       // KNIGHT  (monster undead)
+  { 65, MT_CHAINGUY, MT_KNIGHTGHOST },  // KNIGHT GHOST  (monster undead)
+  { 66, MT_UNDEAD, MT_IMP },         // IMP (monster flying)
+  { 68, MT_BABY, MT_MUMMY },  // MUMMY (monster)
+  { 69, MT_KNIGHT, MT_MUMMYGHOST },  // MUMMY GHOST  (monster)
+  { 82, MT_SUPERSHOTGUN, MT_HMISC3 },  // QUARTZ FLASK  (health)
+  { 83, MT_MEGA, MT_ARTIFLY },  // WINGS  (artifact)
+  { 84, MT_WOLFSS, MT_ARTIINVULNERABILITY },  // INVULNERABLE  (artifact invul)
+  { 87, MT_BOSSTARGET, MT_HMISC12 },  // VOLCANO SPEWER
+  { 2001, MT_SHOTGUN, MT_HMISC15 },  // CROSSBOW  (weapon)
+  { 2002, MT_CHAINGUN, MT_WMACE },  // MACE  (weapon)
+  { 2003, MT_ROCKETLAUNCH, MT_WPHOENIXROD },  // PHOENIX ROD  (weapon)
+  { 2004, MT_PLASMAGUN, MT_WSKULLROD },  // SKULL ROD, HELLSTAFF  (weapon)
+  { 2005, MT_SHAINSAW, MT_HMISC13 },  // GAUNTLETS  (weapon)
+  { 2035, MT_BARREL, MT_POD },  //  POD  (exploding)
+  {  5, MT_MISC4, MT_IMPLEADER },  // IMP LEADER (monster flying)
+  { 13, MT_MISC5, MT_AMMACEWIMPY },  // MACE BALL  (ammo S mace)
+  {  6, MT_MISC6, MT_HHEAD },  // HEAD  (monster)
+  { 39, MT_MISC7, MT_STALACTITESMALL },  // STALACTITE SMALL
+  { 38, MT_MISC8, MT_STALAGMITELARGE },  // STALAGMITE LARGE
+  { 40, MT_MISC9, MT_STALACTITELARGE },  // STALACTITE LARGE
+  { 17, MT_MISC21, MT_SKULLHANG70 },  // HANGING SKULL 70
+  {  8, MT_MISC24, MT_HMISC1 },  // BAG OF HOLDING (knapsack)
+  { 85, MT_MISC29, MT_ITEMSHIELD1 },  // SILVER SHIELD  (armor)
+  { 86, MT_MISC30, MT_ARTITOMEOFPOWER },  // TOME  (artifact)
+  { 30, MT_MISC32, MT_ARTIEGG },  // EGG  (artifact)
+  { 31, MT_MISC33, MT_ITEMSHIELD2 },  // SHIELD MEGA  (armor)
+  { 32, MT_MISC34, MT_ARTISUPERHEAL },  // SUPER HEAL  (artifact health)
+  { 33, MT_MISC35, MT_HMISC4 },  // TORCH  (artifact torch)
+  { 37, MT_MISC36, MT_STALAGMITESMALL },  // STALAGMITE SMALL
+  { 36, MT_MISC37, MT_ARTITELEPORT },  //  (artifact teleport)
+  { 41, MT_MISC38, MT_SOUNDWATERFALL },  // SOUND WATERFALL  (ambience sound)
+  { 42, MT_MISC39, MT_SOUNDWIND },  // SOUND WIND  (ambience sound)
+  { 43, MT_MISC40, MT_PODGENERATOR },  // POD GENERATOR
+  { 44, MT_MISC41, MT_HBARREL },  // BARREL
+  { 45, MT_MISC42, MT_MUMMYLEADER },  // MUMMY LEADER (monster)
+  { 46, MT_MISC43, MT_MUMMYLEADERGHOST },  // MUMMY LEADER GHOST  (monster)
+  { 55, MT_MISC44, MT_AMBLSRHEFTY },  // ENERGY ORB LARGE  (ammo M claw)
+  { 56, MT_MISC45, 0xFFFF  },  // heretic use it for monster spawn
+  { 47, MT_MISC47, MT_HMISC7 },  // PILLAR BROWN
+  { 48, MT_MISC48, MT_HMISC8 },  // MOSS 1
+  { 34, MT_MISC49, MT_HMISC5 },  // BOMB  (exploding timed)
+  { 35, MT_MISC50, MT_HMISC2 },  // MAP   (special)
+  { 49, MT_MISC51, MT_HMISC9 },  // MOSS 2
+  { 50, MT_MISC52, MT_HMISC10 },  // WALL TORCH  (torch)
+  { 51, MT_MISC53, MT_HMISC11 },  // HANGING CORPSE
+  { 52, MT_MISC54, MT_TELEGLITGEN2 },  // TELEPORT GLITTER GENERATOR 2
+  { 53, MT_MISC55, MT_HMISC14 },  // DRAGON CLAW  (weapon)
+  { 22, MT_MISC61, MT_AMPHRDWIMPY },  // FLAME ORB  (ammo S phoenix rod)
+  { 15, MT_MISC62, MT_WIZARD },  // WIZARD (monster floating)
+  { 18, MT_MISC63, MT_AMCBOWWIMPY },  // ETHEREAL ARROWS (ammo S crossbow)
+  { 21, MT_MISC64, MT_AMSKRDHEFTY },  // GREATER RUNES  (ammo M skull rod)
+  { 23, MT_MISC65, MT_AMPHRDHEFTY },  // FLAME ORB LARGE  (ammo M phoenix rod)
+  { 20, MT_MISC66, MT_AMSKRDWIMPY },  // LESSER RUNES  (ammo S skull rod)
+  { 19, MT_MISC67, MT_AMCBOWHEFTY },  // ETHEREAL ARROWS QUIVER  (ammo M crossbow)
+  { 10, MT_MISC68, MT_AMGWNDWIMPY },  // WAND CRYSTAL (ammo S staff)
+  { 12, MT_MISC69, MT_AMGWNDHEFTY },  // WAND CRYSTAL LARGE (ammo M staff)
+  { 28, MT_MISC70, MT_CHANDELIER },  // CHANDELIER
+  { 24, MT_MISC71, MT_SKULLHANG60 },  // HANGING SKULL 60
+  { 27, MT_MISC72, MT_SERPTORCH },  // SERPENT TORCH (torch)
+  { 29, MT_MISC73, MT_SMALLPILLAR },  // PILLAR SMALL
+  { 25, MT_MISC74, MT_SKULLHANG45 },  // HANGING SKULL 45
+  { 26, MT_MISC75, MT_SKULLHANG35 },  // HANGING SKULL 35
+  { 54, MT_MISC76, MT_AMBLSRWIMPY },  //  CLAW ORB  (ammo S claw)
+  { 70, MT_MISC77, MT_BEAST },  // BEAST (monster)
+  { 73, MT_MISC78, MT_AKYY },  // GREEN KEY  (key)
+  { 74, MT_MISC79, MT_TELEGLITGEN },  // TELEPORT GLITTER GENERATOR 1
+  { 75, MT_MISC80, MT_ARTIINVISIBILITY },  // INVISIBLE  (artifact invis)
+  { 76, MT_MISC81, MT_HMISC6 },  // FIRE BRAZIER (torch)
+  { 79, MT_MISC84, MT_BKYY },  // BLUE KEY  (key)
+  { 80, MT_MISC85, MT_CKEY },  // YELLOW KEY  (key)
+  { 81, MT_MISC86, MT_HMISC0 },  // CRYSTAL VIAL  (health)
+  { 0xFFFF, 0xFFFF, 0xFFFF },  // END
+};
+
+#if 0
+void  doomednum_check( byte heretic_check )
+{
+    doomednum_install_t * ii;
+    for( ii = & doomednum_install_table[0]; ii->doomednum < 0xFFFF; ii++ )
+    {
+        uint16_t mt = ( heretic_check )?  ii->heretic_mt : ii->doom_mt;
+        if( mt < NUMMOBJTYPES )
+          if( mobjinfo[ mt ].doomednum != ii->doomednum )
+            printf( "MOBJINFO[%i].doomednum=%i,  TABLE doomednum=%i, doom_mt=%i, heretic_mt=%i\n", mt, mobjinfo[mt].doomednum, ii->doomednum, ii->doom_mt, ii->heretic_mt );
+    }
+}
+#endif
+
+void  doomednum_install( byte set_heretic )
+{
+    const doomednum_install_t * ii;
+    uint16_t  cancel_mt, set_mt;
+    for( ii = & doomednum_install_table[0]; ii->doomednum < 0xFFFF; ii++ )
+    {
+        cancel_mt = ( set_heretic )?  ii->doom_mt : ii->heretic_mt;
+        set_mt = ( set_heretic )?  ii->heretic_mt : ii->doom_mt;
+        if( cancel_mt < NUMMOBJTYPES )
+        {
+            if( mobjinfo[ cancel_mt ].doomednum == ii->doomednum )
+                mobjinfo[ cancel_mt ].doomednum = -1;
+        }
+        if( set_mt < NUMMOBJTYPES )
+            mobjinfo[ set_mt ].doomednum = ii->doomednum;
+    }
+}
+
+
+// [WDJ] Reversible Heretic/Doom Ammo table installation.
+typedef struct {
+  uint16_t  max_val;
+  byte      clip_val;
+} ammo_install_t;
+
+// Index by ammotype_t
+static const ammo_install_t  heretic_ammo_table[NUMAMMO] = {
+   { 100,  5 }, // am_goldwand, clip used in deathmatch 1 & 3 mul by 5 (P_GiveWeapon)
+   {  50,  2 }, // am_crossbow
+   { 200,  6 }, // am_blaster
+   { 200, 10 }, // am_skullrod
+   {  20,  1 }, // am_phoenixrod
+   { 150, 10 }, // am_mace
+};
+
+// Index by ammotype_t
+static const ammo_install_t  doom_ammo_table[NUMAMMO] = {
+   { 200, 10 }, // am_clip
+   {  50,  4 }, // am_shell
+   { 300, 20 }, // am_cell
+   {  50,  1 }, // am_misl
+   {   0,  0 },
+   {   0,  0 },
+};
+
+// Index by weapontype_t
+static const byte  heretic_weapon_ammo_table[NUMWEAPONS] = {
+   0, // wp_staff
+  25, // wp_goldwand
+  10, // wp_crossbow
+  30, // wp_blaster
+  50, // wp_skullrod
+   2, // wp_phoenixrod
+  50, // wp_mace
+   0, // wp_gauntlets
+   0, // wp_beak
+};
+
+// Index by weapontype_t
+static const byte  doom_weapon_ammo_table[NUMWEAPONS] = {
+   0, // wp_fist
+  20, // wp_pistol
+   8, // wp_shotgun
+  20, // wp_chaingun
+   2, // wp_missle
+  40, // wp_plasma
+  40, // wp_bfg
+   0, // wp_chainsaw
+   8, // wp_supershotgun
+};
+
+
+// [WDJ] Reversible Heretic/Doom Sfx table installation.
+typedef struct {
+    sfxid_t  sfxid;  // sfxenum_e
+    char *  name;
+    byte     priority;
+} sfx_install_t;
+
+static const sfx_install_t  heretic_sfx_table[] = {
+  { sfx_oof, "plroof", 32 },
+  { sfx_swtchn, "switch", 40 },
+  { sfx_swtchx, "switch", 40 },
+  { sfx_telept, "telept", 50 },
+  { sfx_sawup, "gntact", 32 },  // gauntlets
+  { sfx_pistol, "keyup", 64 },  // for the menu
+  { sfx_tink, "chat", 100 },
+  { sfx_itmbk, "respawn", 10 },
+  { 0xFFFF, NULL, 0 }
+};
+
+// To undo heretic install.
+static const sfx_install_t  doom_sfx_table[] = {
+  { sfx_oof, "oof\0\0\0", 96 },
+  { sfx_swtchn, "swtchn", 78 },
+  { sfx_swtchx, "swtchx", 78 },
+  { sfx_telept, "telept", 32 },
+  { sfx_sawup, "sawup\0", 64 },  // chainsaw
+  { sfx_pistol, "pistol", 64 },  // pistol
+  { sfx_tink, "tink\0\0", 60 },
+  { sfx_itmbk, "itmbk\0", 100 },
+  { 0xFFFF, NULL, 0 }
+};
+
+
+// [WDJ] Reversible Heretic/Doom text table installation.
+typedef struct {
+    uint16_t  textid;
+    char *    text;
+} text_install_t;
+
+static const text_install_t  heretic_text_table[] = {
+  { PD_BLUEK_NUM,   "YOU NEED A BLUE KEY TO OPEN THIS DOOR" },
+  { PD_YELLOWK_NUM, "YOU NEED A YELLOW KEY TO OPEN THIS DOOR" },
+  { PD_REDK_NUM,    "YOU NEED A GREEN KEY TO OPEN THIS DOOR" },
+  { GOTBLUECARD_NUM, "BLUE KEY" },
+  { GOTYELWCARD_NUM, "YELLOW KEY" },
+  { GOTREDCARD_NUM,  "GREEN KEY" },
+  { GOTARMOR_NUM, "SILVER SHIELD" },
+  { GOTMEGA_NUM,  "ENCHANTED SHIELD" },
+  { GOTSTIM_NUM,  "CRYSTAL VIAL" },
+  { GOTMAP_NUM,  "MAP SCROLL" },
+  { 0xFFFF, NULL }
+};
+
+static const text_install_t  doom_text_table[] = {
+  { PD_BLUEK_NUM,   "You need a blue key to open this door" },
+  { PD_YELLOWK_NUM, "You need a yellow key to open this door" },
+  { PD_REDK_NUM,    "You need a red key to open this door" },
+  { GOTBLUECARD_NUM, "Picked up a blue keycard." },
+  { GOTYELWCARD_NUM, "Picked up a yellow keycard." },
+  { GOTREDCARD_NUM,  "Picked up a red keycard." },
+  { GOTARMOR_NUM, "Picked up the armor." },
+  { GOTMEGA_NUM,  "Picked up the MegaArmor!" },
+  { GOTSTIM_NUM,  "Picked up a stimpack." },
+  { GOTMAP_NUM,  "Computer Area Map" },
+  { 0xFFFF, NULL }
+};
+
+void  sfx_ammo_text_install( byte set_heretic )
+{
+    const sfx_install_t * st = doom_sfx_table;
+    const ammo_install_t * aat = doom_ammo_table;
+    const byte * wat = doom_weapon_ammo_table;
+    const text_install_t * tt = doom_text_table;
+    int ai;
+
+    // SFX
+    if( set_heretic )
+    {
+        ceilmovesound = sfx_dormov;
+        doorclosesound = sfx_doropn;
+
+        st = heretic_sfx_table;
+        aat = heretic_ammo_table;
+        wat = heretic_weapon_ammo_table;
+        tt = heretic_text_table;
+    }
+    else
+    {
+        ceilmovesound = sfx_stnmov;
+        doorclosesound = sfx_dorcls;
+    }
+
+    // SFX
+    for( ; st->sfxid < NUMSFX; st++ )
+    {
+        S_sfx[st->sfxid].priority = st->priority;
+        if( st->name )
+            S_sfx[st->sfxid].name = st->name;
+    }
+   
+
+    // AMMO
+    for( ai = 0; ai < NUMAMMO; ai++ )  // index ammotype_t
+    {
+        maxammo[ ai ]  = aat[ai].max_val;
+        clipammo[ ai ] = aat[ai].clip_val;
+    }
+
+    for( ai = 0; ai < NUMWEAPONS; ai++ )  // index weapontype_t
+    {
+        GetWeaponAmmo[ai] = wat[ai];
+    }
+
+    // TEXT
+    for( ; tt->textid < NUMTEXT ; tt++ )
+    {
+        text[tt->textid] = tt->text;
+    }
+}
+
+
+
 void Heretic_PatchEngine(void)
 {
-    ceilmovesound = sfx_dormov;
-    doorclosesound = sfx_doropn;
-
     // we can put such thinks in a dehacked lump, maybe for later
-    S_sfx[sfx_oof].name        = "plroof";
-    S_sfx[sfx_oof].priority    = 32;
-    text[PD_BLUEK_NUM]   = "YOU NEED A BLUE KEY TO OPEN THIS DOOR";
-    text[PD_YELLOWK_NUM] = "YOU NEED A YELLOW KEY TO OPEN THIS DOOR";
-    text[PD_REDK_NUM]    = "YOU NEED A GREEN KEY TO OPEN THIS DOOR";
-    S_sfx[sfx_swtchn].name     = "switch";
-    S_sfx[sfx_swtchn].priority = 40;
-    S_sfx[sfx_swtchx].name     = "switch";
-    S_sfx[sfx_swtchx].priority = 40;
-    S_sfx[sfx_telept].priority = 50;
-    S_sfx[sfx_sawup].name     = "gntact";  // gauntlets
-    S_sfx[sfx_sawup].priority = 32;
-
     mobjinfo[MT_TFOG].spawnstate = S_HTFOG1;
     sprnames[SPR_BLUD] = "BLOD";
-    maxammo [am_goldwand  ] = 100;
-    maxammo [am_crossbow  ] = 50;
-    maxammo [am_blaster   ] = 200;
-    maxammo [am_skullrod  ] = 200;
-    maxammo [am_phoenixrod] = 20;
-    maxammo [am_mace      ] = 150;
-    clipammo[am_goldwand  ] = 5;  // used in deathmatch 1 & 3 mul by 5 (P_GiveWeapon)
-    clipammo[am_crossbow  ] = 2; 
-    clipammo[am_blaster   ] = 6;
-    clipammo[am_skullrod  ] = 10;
-    clipammo[am_phoenixrod] = 1; 
-    clipammo[am_mace      ] = 10;
-    GetWeaponAmmo[wp_staff     ] = 0;
-    GetWeaponAmmo[wp_goldwand  ] = 25;
-    GetWeaponAmmo[wp_crossbow  ] = 10;
-    GetWeaponAmmo[wp_blaster   ] = 30;
-    GetWeaponAmmo[wp_skullrod  ] = 50;
-    GetWeaponAmmo[wp_phoenixrod] = 2;
-    GetWeaponAmmo[wp_mace      ] = 50;
-    GetWeaponAmmo[wp_gauntlets ] = 0;
-    GetWeaponAmmo[wp_beak      ] = 0; 
 
-    text[GOTARMOR_NUM] = "SILVER SHIELD";
-    text[GOTMEGA_NUM ] = "ENCHANTED SHIELD";
-    text[GOTSTIM_NUM ] = "CRYSTAL VIAL";
-    text[GOTMAP_NUM  ] = "MAP SCROLL";
-    text[GOTBLUECARD_NUM] = "BLUE KEY";
-    text[GOTYELWCARD_NUM] = "YELLOW KEY";
-    text[GOTREDCARD_NUM ] = "GREEN KEY";
-
-    S_sfx[sfx_pistol].name = "keyup";  // for the menu
     S_music[mus_inter].name = "MUS_INTR";
 
-    S_sfx[sfx_tink].name = "chat";
-    S_sfx[sfx_tink].priority = 100;
-    S_sfx[sfx_itmbk].name = "respawn";
-    S_sfx[sfx_itmbk].priority = 10;
-
+    sfx_ammo_text_install( 1 ); // install heretic sfx, ammo
+   
     // conflicting number for doomednum
     // so disable doom mobjs and enable heretic's one
-    mobjinfo[MT_SHOTGUY].doomednum = -1;
-    mobjinfo[MT_MINOTAUR].doomednum = 9;
-
-    mobjinfo[MT_VILE].doomednum = -1;
-    mobjinfo[MT_HKNIGHT].doomednum = 64;
-
-    mobjinfo[MT_CHAINGUY].doomednum = -1;
-    mobjinfo[MT_KNIGHTGHOST].doomednum = 65;
-
-    mobjinfo[MT_UNDEAD].doomednum = -1;
-    mobjinfo[MT_IMP].doomednum = 66;
-
-    mobjinfo[MT_KNIGHT].doomednum = -1;
-    mobjinfo[MT_MUMMYGHOST].doomednum = 69;
-
-    mobjinfo[MT_SPIDER].doomednum = -1;
-    mobjinfo[MT_SORCERER1].doomednum = 7;
-
-    mobjinfo[MT_BABY].doomednum = -1;
-    mobjinfo[MT_MUMMY].doomednum = 68;
-
-    mobjinfo[MT_CYBORG].doomednum = -1;
-    mobjinfo[MT_AMMACEHEFTY].doomednum = 16;
-
-    mobjinfo[MT_WOLFSS].doomednum = -1;
-    mobjinfo[MT_ARTIINVULNERABILITY].doomednum = 84;
-
-    mobjinfo[MT_BOSSTARGET].doomednum = -1;
-    mobjinfo[MT_HMISC12].doomednum = 87;
-
-    mobjinfo[MT_BARREL].doomednum = -1;
-    mobjinfo[MT_POD].doomednum = 2035;
-
-    mobjinfo[MT_MISC4].doomednum = -1;
-    mobjinfo[MT_IMPLEADER].doomednum = 5;
-
-    mobjinfo[MT_MISC5].doomednum = -1;
-    mobjinfo[MT_AMMACEWIMPY].doomednum = 13;
-
-    mobjinfo[MT_MISC6].doomednum = -1;
-    mobjinfo[MT_HHEAD].doomednum = 6;
-
-    mobjinfo[MT_MISC7].doomednum = -1;
-    mobjinfo[MT_STALACTITESMALL].doomednum = 39;
-
-    mobjinfo[MT_MISC8].doomednum = -1;
-    mobjinfo[MT_STALAGMITELARGE].doomednum = 38;
-
-    mobjinfo[MT_MISC9].doomednum = -1;
-    mobjinfo[MT_STALACTITELARGE].doomednum = 40;
-
-    mobjinfo[MT_MEGA].doomednum = -1;
-    mobjinfo[MT_ARTIFLY].doomednum = 83;
-
-    mobjinfo[MT_MISC21].doomednum = -1;
-    mobjinfo[MT_SKULLHANG70].doomednum = 17;
-
-    mobjinfo[MT_MISC24].doomednum = -1;
-    mobjinfo[MT_HMISC1].doomednum = 8;
-
-    mobjinfo[MT_CHAINGUN].doomednum = -1;
-    mobjinfo[MT_WMACE].doomednum = 2002;
-
-    mobjinfo[MT_SHAINSAW].doomednum = -1;
-    mobjinfo[MT_HMISC13].doomednum = 2005;
-
-    mobjinfo[MT_ROCKETLAUNCH].doomednum = -1;
-    mobjinfo[MT_WPHOENIXROD].doomednum = 2003;
-
-    mobjinfo[MT_PLASMAGUN].doomednum = -1;
-    mobjinfo[MT_WSKULLROD].doomednum = 2004;
-
-    mobjinfo[MT_SHOTGUN].doomednum = -1;
-    mobjinfo[MT_HMISC15].doomednum = 2001;
-
-    mobjinfo[MT_SUPERSHOTGUN].doomednum = -1;
-    mobjinfo[MT_HMISC3].doomednum = 82;
-
-    mobjinfo[MT_MISC29].doomednum = -1;
-    mobjinfo[MT_ITEMSHIELD1].doomednum = 85;
-
-    mobjinfo[MT_MISC30].doomednum = -1;
-    mobjinfo[MT_ARTITOMEOFPOWER].doomednum = 86;
-
-    mobjinfo[MT_MISC32].doomednum = -1;
-    mobjinfo[MT_ARTIEGG].doomednum = 30;
-
-    mobjinfo[MT_MISC33].doomednum = -1;
-    mobjinfo[MT_ITEMSHIELD2].doomednum = 31;
-
-    mobjinfo[MT_MISC34].doomednum = -1;
-    mobjinfo[MT_ARTISUPERHEAL].doomednum = 32;
-
-    mobjinfo[MT_MISC35].doomednum = -1;
-    mobjinfo[MT_HMISC4].doomednum = 33;
-
-    mobjinfo[MT_MISC36].doomednum = -1;
-    mobjinfo[MT_STALAGMITESMALL].doomednum = 37;
-
-    mobjinfo[MT_MISC37].doomednum = -1;
-    mobjinfo[MT_ARTITELEPORT].doomednum = 36;
-
-    mobjinfo[MT_MISC38].doomednum = -1;
-    mobjinfo[MT_SOUNDWATERFALL].doomednum = 41;
-
-    mobjinfo[MT_MISC39].doomednum = -1;
-    mobjinfo[MT_SOUNDWIND].doomednum = 42;
-
-    mobjinfo[MT_MISC40].doomednum = -1;
-    mobjinfo[MT_PODGENERATOR].doomednum = 43;
-
-    mobjinfo[MT_MISC41].doomednum = -1;
-    mobjinfo[MT_HBARREL].doomednum = 44;
-
-    mobjinfo[MT_MISC42].doomednum = -1;
-    mobjinfo[MT_MUMMYLEADER].doomednum = 45;
-
-    mobjinfo[MT_MISC43].doomednum = -1;
-    mobjinfo[MT_MUMMYLEADERGHOST].doomednum = 46;
-
-    mobjinfo[MT_MISC44].doomednum = -1;
-    mobjinfo[MT_AMBLSRHEFTY].doomednum = 55;
-
-    mobjinfo[MT_MISC45].doomednum = -1;
-    // heretic use it for monster spawn
-
-    mobjinfo[MT_MISC47].doomednum = -1;
-    mobjinfo[MT_HMISC7].doomednum = 47;
-
-    mobjinfo[MT_MISC48].doomednum = -1;
-    mobjinfo[MT_HMISC8].doomednum = 48;
-
-    mobjinfo[MT_MISC49].doomednum = -1;
-    mobjinfo[MT_HMISC5].doomednum = 34;
-
-    mobjinfo[MT_MISC50].doomednum = -1;
-    mobjinfo[MT_HMISC2].doomednum = 35;
-
-    mobjinfo[MT_MISC51].doomednum = -1;
-    mobjinfo[MT_HMISC9].doomednum = 49;
-
-    mobjinfo[MT_MISC52].doomednum = -1;
-    mobjinfo[MT_HMISC10].doomednum = 50;
-
-    mobjinfo[MT_MISC53].doomednum = -1;
-    mobjinfo[MT_HMISC11].doomednum = 51;
-
-    mobjinfo[MT_MISC54].doomednum = -1;
-    mobjinfo[MT_TELEGLITGEN2].doomednum = 52;
-
-    mobjinfo[MT_MISC55].doomednum = -1;
-    mobjinfo[MT_HMISC14].doomednum = 53;
-
-    mobjinfo[MT_MISC61].doomednum = -1;
-    mobjinfo[MT_AMPHRDWIMPY].doomednum = 22;
-
-    mobjinfo[MT_MISC62].doomednum = -1;
-    mobjinfo[MT_WIZARD].doomednum = 15;
-
-    mobjinfo[MT_MISC63].doomednum = -1;
-    mobjinfo[MT_AMCBOWWIMPY].doomednum = 18;
-
-    mobjinfo[MT_MISC64].doomednum = -1;
-    mobjinfo[MT_AMSKRDHEFTY].doomednum = 21;
-
-    mobjinfo[MT_MISC65].doomednum = -1;
-    mobjinfo[MT_AMPHRDHEFTY].doomednum = 23;
-
-    mobjinfo[MT_MISC66].doomednum = -1;
-    mobjinfo[MT_AMSKRDWIMPY].doomednum = 20;
-
-    mobjinfo[MT_MISC67].doomednum = -1;
-    mobjinfo[MT_AMCBOWHEFTY].doomednum = 19;
-
-    mobjinfo[MT_MISC68].doomednum = -1;
-    mobjinfo[MT_AMGWNDWIMPY].doomednum = 10;
-
-    mobjinfo[MT_MISC69].doomednum = -1;
-    mobjinfo[MT_AMGWNDHEFTY].doomednum = 12;
-
-    mobjinfo[MT_MISC70].doomednum = -1;
-    mobjinfo[MT_CHANDELIER].doomednum = 28;
-
-    mobjinfo[MT_MISC71].doomednum = -1;
-    mobjinfo[MT_SKULLHANG60].doomednum = 24;
-
-    mobjinfo[MT_MISC72].doomednum = -1;
-    mobjinfo[MT_SERPTORCH].doomednum = 27;
-
-    mobjinfo[MT_MISC73].doomednum = -1;
-    mobjinfo[MT_SMALLPILLAR].doomednum = 29;
-
-    mobjinfo[MT_MISC74].doomednum = -1;
-    mobjinfo[MT_SKULLHANG45].doomednum = 25;
-
-    mobjinfo[MT_MISC75].doomednum = -1;
-    mobjinfo[MT_SKULLHANG35].doomednum = 26;
-
-    mobjinfo[MT_MISC76].doomednum = -1;
-    mobjinfo[MT_AMBLSRWIMPY].doomednum = 54;
-
-    mobjinfo[MT_MISC77].doomednum = -1;
-    mobjinfo[MT_BEAST].doomednum = 70;
-
-    mobjinfo[MT_MISC78].doomednum = -1;
-    mobjinfo[MT_AKYY].doomednum = 73;
-
-    mobjinfo[MT_MISC79].doomednum = -1;
-    mobjinfo[MT_TELEGLITGEN].doomednum = 74;
-
-    mobjinfo[MT_MISC80].doomednum = -1;
-    mobjinfo[MT_ARTIINVISIBILITY].doomednum = 75;
-
-    mobjinfo[MT_MISC81].doomednum = -1;
-    mobjinfo[MT_HMISC6].doomednum = 76;
-
-    mobjinfo[MT_MISC84].doomednum = -1;
-    mobjinfo[MT_BKYY].doomednum = 79;
-
-    mobjinfo[MT_MISC85].doomednum = -1;
-    mobjinfo[MT_CKEY].doomednum = 80;
-
-    mobjinfo[MT_MISC86].doomednum = -1;
-    mobjinfo[MT_HMISC0].doomednum = 81;
+    doomednum_install( 1 );  // install heretic doomednum
 }
 
 mobj_t LavaInflictor;

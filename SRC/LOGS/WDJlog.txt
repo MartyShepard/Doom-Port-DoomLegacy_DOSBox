@@ -7215,3 +7215,32 @@ Deathmatch setup issues a text command, that is missing a switch "-",
 making the skill setting ignored.
 This was discovered by Leonardo Montenegro, support request 26.
 
+*** w108_heretic_rev
+patchfile = w108_37_heretic_rev.patch
+- commit revision 1451
+Make most of the heretic engine changes reversible, using tables.
+This is to support changing game mode from the menu, but is incomplete yet.
+
+*** w108_coop
+patchfile = w108_38_coop.patch
+- commit revision 1452
+Improve the deathmatch/coop menu selections.
+The Deathmatch settings are now:
+Coop_SP_Map: Play coop using the single player map, items, and monsters.
+Coop_60: Play coop, but the strong monsters added for coop are reduced.
+Coop_80: Play coop, but the string monsters added for coop are reduced.
+Coop: Play coop, using the respawn settings in the game options menu.
+Coop_weapons: Play coop, using the deathmatch weapon respawn (orig coop).
+DM: Play Deathmatch, using the respawn settings in the game options menu.
+DM_weapons: Play Deathmatch, respawn weapons (orig Deathmatch 1).
+DM_items: Play Deathmatch, respawn items (orig Deathmatch 2).
+DM_both: Play Deathmatch, respawn items and weapons (orig Deathmatch 3).
+
+Respawn weapons now works for Heretic too.
+
+*** w108_bot_menu
+patchfile = w108_39_bot_menu.patch
+- commit revision 1453
+Added a bot menu setting to the deathmatch menu, FeatureRequest 0092.
+Bot behavior is still not the best.  They will not back off.
+
