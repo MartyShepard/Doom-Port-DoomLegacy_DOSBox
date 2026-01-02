@@ -7328,7 +7328,6 @@ reach.  Added code to regulate bots attacking barrels.
 This is still a work-in-progress, and there will be furthur
 significant changes to bots.
 
-
 *** w108_hardskill
 patchfile = w108_45_hardskill.patch
 - commit revision 1459
@@ -7348,3 +7347,17 @@ blockmap overflow correction.
 If that fails it will find the 0xFFFF at the end of a list, and
 the 0 at the beginning of the next list.
 This fixes bug 0654.
+
+*** w108_autoexec
+patchfile = w108_47_autoexec.patch
+- commit revision 1461
+DoomLegacy may be installed local or in system directory.
+Feature Request 93 by Leonardo Montenegro.
+There may be a local autoexec, and/or a system autoexec.
+Standard Linux behavior: local preferred, chain to system file.
+If file  (~/.doomlegacy/autoexec.cfg) is present, it is executed, otherwise
+the autoexec.cfg with the executable is executed.
+The local file can exec the system autoexec file when preferable
+(exec autoexec.cfg).
+
+

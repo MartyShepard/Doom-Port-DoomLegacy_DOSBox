@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1434 2019-04-26 10:35:00Z wesleyjohnson $
+// $Id: d_main.c 1461 2019-09-25 07:13:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,13 +316,13 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1460"
+#define SVN_REV "1461"
 #endif
 
 
 // Version number: major.minor.revision
 const int  VERSION  = 148; // major*100 + minor
-const int  REVISION = 3;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 0;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 static const char VERSIONSTRING[] = "(Rev " SVN_REV ")";
 //static const char VERSIONSTRING[] = "Beta (Rev " SVN_REV ")";
 char VERSION_BANNER[80];
@@ -932,14 +932,27 @@ boolean spirit_update;
 // Called by port main program.
 void D_DoomLoop(void)
 {
+    char acbuf[_MAX_PATH ];
     tic_t oldentertics, entertic, realtics, rendertimeout = -1;
 
     if (demorecording)
         G_BeginRecording();
 
-    if( access( "autoexec.cfg", R_OK) == 0 )
+    // [WDJ] DoomLegacy may be installed local or in system directory.
+    // Feature Request by Leonardo Montenegro.
+    // There may be a local autoexec, and/or a system autoexec.
+    // Standard: The local file is preferred, and can chain to the system file when preferable.
+    cat_filename( acbuf, legacyhome, "autoexec.cfg");  // local file in doomlegacy home
+    if( access( acbuf, R_OK) == 0 )
     {
         // user settings
+	GenPrintf( EMSG_ver, "Exec Local autoexec: %s\n", acbuf );
+        COM_BufAddText( va( "exec %s\n", acbuf) );
+    }
+    else if( access( "autoexec.cfg", R_OK) == 0 )  // file with executable
+    {
+        // file with executable, may be system settings
+	GenPrintf( EMSG_ver, "Exec System autoexec\n" );
         COM_BufAddText("exec autoexec.cfg\n");
     }
 
