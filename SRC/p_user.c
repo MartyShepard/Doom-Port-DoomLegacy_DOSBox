@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1395 2018-06-17 04:52:14Z wesleyjohnson $
+// $Id: p_user.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1470,7 +1470,7 @@ void P_ArtiTele(player_t *player)
     angle_t destAngle;
     mapthing_t * mtp;
     
-    if( cv_deathmatch.EV )
+    if( deathmatch )
     {
         // Heretic use of P_Random
         i = P_Random()%numdmstarts;
@@ -1480,6 +1480,7 @@ void P_ArtiTele(player_t *player)
     {
         mtp = playerstarts[0];
     }
+
     destX = mtp->x<<FRACBITS;
     destY = mtp->y<<FRACBITS;
     destAngle = wad_to_angle(mtp->angle);

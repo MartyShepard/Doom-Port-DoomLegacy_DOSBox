@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1426 2019-01-29 08:09:01Z wesleyjohnson $
+// $Id: wi_stuff.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1977,9 +1977,9 @@ void WI_Ticker(void)
     switch (state)
     {
       case StatCount:
-        if( cv_deathmatch.EV )
+        if( deathmatch )
             WI_update_DeathmatchStats();
-        else if (multiplayer)
+        else if (multiplayer)  // coop
             WI_update_NetgameStats();
         else
             WI_update_Stats();
@@ -2228,7 +2228,7 @@ void WI_Drawer (void)
     switch (state)
     {
       case StatCount:
-        if( cv_deathmatch.EV )
+        if( deathmatch )
         {
             if( cv_teamplay.EV )
                 WI_Draw_TeamsStats();
@@ -2237,7 +2237,7 @@ void WI_Drawer (void)
 
             WI_Draw_wait( 0, 0, 0, cnt_pause );
         }
-        else if (multiplayer)
+        else if (multiplayer)  // coop
             WI_Draw_NetgameStats();
         else
             WI_Draw_Stats();
@@ -2295,9 +2295,9 @@ void WI_Start(wb_start_t * wb_start)
     WI_Init_Variables(wb_start);
     WI_Load_Data();
 
-    if( cv_deathmatch.EV )
+    if( deathmatch )
         WI_Init_DeathmatchStats();
-    else if (multiplayer)
+    else if (multiplayer)  // coop
         WI_Init_NetgameStats();
     else
         WI_Init_Stats();

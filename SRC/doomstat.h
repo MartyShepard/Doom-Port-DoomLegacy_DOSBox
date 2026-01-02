@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 1399 2018-07-02 03:41:01Z wesleyjohnson $
+// $Id: doomstat.h 1452 2019-08-03 07:03:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -242,9 +242,11 @@ extern  boolean         netgame;
 // Only true if >1 player. netgame => multiplayer but not (multiplayer=>netgame)
 extern  boolean         multiplayer;
 
-// Flag: true only if started as net deathmatch.
-// An enum might handle altdeath/cooperative better.
-extern  consvar_t       cv_deathmatch;
+// Now an enum to handle altdeath/cooperative better.
+extern  consvar_t       cv_deathmatch;  // deathmatch and coop
+extern  byte            deathmatch;  // deathmatch only
+extern  byte            weapon_persist; // deathmatch weapon pickup multiple times
+
 
 
 // ========================================

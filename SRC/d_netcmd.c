@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1434 2019-04-26 10:35:00Z wesleyjohnson $
+// $Id: d_netcmd.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -165,11 +165,6 @@ void Got_NetXCmd_SaveGamecmd(xcmd_t * xc);
 void Got_NetXCmd_Pause(xcmd_t * xc);
 void Got_NetXCmd_UseArtifact(xcmd_t * xc);
 
-void TeamPlay_OnChange(void);
-void FragLimit_OnChange(void);
-void Deathmatch_OnChange(void);
-void TimeLimit_OnChange(void);
-
 void Command_Playdemo_f(void);
 void Command_Timedemo_f(void);
 void Command_Stopdemo_f(void);
@@ -233,16 +228,6 @@ consvar_t cv_mouse2opt = { "mouse2opt", "0", CV_SAVE|CV_STRING, NULL };
 #else
 consvar_t cv_mouse2port = { "mouse2port", "COM2", CV_SAVE|CV_STRING, mouse2port_cons_t };
 #endif
-CV_PossibleValue_t teamplay_cons_t[] = { {0, "Off"}, {1, "Color"}, {2, "Skin"}, {3, NULL} };
-CV_PossibleValue_t deathmatch_cons_t[] = { {0, "Coop"}, {1, "1"}, {2, "2"}, {3, "3"}, {0, NULL} };
-CV_PossibleValue_t fraglimit_cons_t[] = { {0, "MIN"}, {1000, "MAX"}, {0, NULL} };
-
-consvar_t cv_teamplay = { "teamplay", "0", CV_NETVAR | CV_CALL, teamplay_cons_t, TeamPlay_OnChange };
-consvar_t cv_teamdamage = { "teamdamage", "0", CV_NETVAR, CV_OnOff };
-
-consvar_t cv_fraglimit = { "fraglimit", "0", CV_NETVAR | CV_VALUE | CV_CALL | CV_NOINIT, fraglimit_cons_t, FragLimit_OnChange };
-consvar_t cv_timelimit = { "timelimit", "0", CV_NETVAR | CV_VALUE | CV_CALL | CV_NOINIT, CV_Unsigned, TimeLimit_OnChange };
-consvar_t cv_deathmatch = { "deathmatch", "0", CV_NETVAR | CV_CALL, deathmatch_cons_t, Deathmatch_OnChange };
 
 consvar_t cv_netstat = { "netstat", "0", 0, CV_OnOff };
 
@@ -315,11 +300,6 @@ void D_Register_ClientCommands(void)
     CV_RegisterVar(&cv_originalweaponswitch);
 
     //misc
-    CV_RegisterVar(&cv_teamplay);
-    CV_RegisterVar(&cv_teamdamage);
-//    CV_RegisterVar(&cv_deathmatch);  // moved to m_menu to be after cv_itemrespawn
-    CV_RegisterVar(&cv_timelimit);
-    CV_RegisterVar(&cv_fraglimit);
     CV_RegisterVar(&cv_netstat);
 
     // r_things.c (skin NAME)
@@ -832,7 +812,7 @@ void Command_Frags_f(void)
 {
     int i, j;
 
-    if( !cv_deathmatch.EV )
+    if( ! deathmatch )
     {
         CONS_Printf("Frags : show the frag table\n");
         CONS_Printf("Only for deathmatch games\n");
@@ -859,7 +839,7 @@ void Command_TeamFrags_f(void)
     int frags[MAXPLAYERS];
     int fragtbl[MAXPLAYERS][MAXPLAYERS];
 
-    if( !cv_deathmatch.EV && !cv_teamplay.EV )
+    if( ! (deathmatch && cv_teamplay.EV) )
     {
         CONS_Printf("teamfrags : show the frag table for teams\n");
         CONS_Printf("Only for deathmatch teamplay games\n");
@@ -895,62 +875,6 @@ void Command_Quit_f(void)
     I_Quit();  // No return
 }
 
-void FragLimit_OnChange(void)
-{
-    int i;
-
-    // CV_VALUE, may be too large for EV
-    if (cv_fraglimit.value > 0)
-    {
-        for (i = 0; i < MAXPLAYERS; i++)
-            P_CheckFragLimit(&players[i]);
-    }
-}
-
-uint32_t  timelimit_tics = 0;
-
-void TimeLimit_OnChange(void)
-{
-    // CV_VALUE, may be too large for EV
-    if (cv_timelimit.value)
-    {
-        GenPrintf(EMSG_hud, "Levels will end after %d minute(s).\n", cv_timelimit.value);
-        timelimit_tics = cv_timelimit.value * 60 * TICRATE;
-    }
-    else
-    {
-        GenPrintf(EMSG_hud, "Time limit disabled\n");
-        timelimit_tics = 0;
-    }
-}
-
-void P_RespawnWeapons(void);
-
-// deathmatch (0..3)
-byte deathmatch_to_itemrespawn[4]    = { 0, 0, 1, 1 };
-byte deathmatch_to_weaponsrespawn[4] = { 0, 1, 0, 1 };
-
-void Deathmatch_OnChange(void)
-{
-    // Within a CV_CALL routine, use CV_Set_by_OnChange.
-    if (server)
-    {
-        // itemrespawn for deathmatch 2,3
-        CV_Set_by_OnChange( &cv_itemrespawn,
-            deathmatch_to_itemrespawn[ cv_deathmatch.EV ] );
-    }
-    if( deathmatch_to_weaponsrespawn[ cv_deathmatch.EV ] )
-        P_RespawnWeapons();
-
-    // give all key to the players
-    if( cv_deathmatch.EV )
-    {
-        int j;
-        for (j = 0; j < MAXPLAYERS; j++)
-            if (playeringame[j])
-                players[j].cards = it_allkeys;
-    }
-}
 
 void Command_ExitLevel_f(void)
 {

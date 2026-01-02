@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1405 2018-07-15 19:31:09Z wesleyjohnson $
+// $Id: p_inter.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -397,8 +397,12 @@ boolean P_GiveWeapon ( player_t*     player,
     boolean     gaveweapon;
     int         ammo_count;
 
-    if( multiplayer && (cv_deathmatch.EV != 2) && !dropped )
+    // [WDJ] Orig: (cv_deathmatch != 2)
+    if( multiplayer && weapon_persist && !dropped )
     {
+        // Deathmatch 1 and 3, map placed weapons persist.
+        // Each player can pick up each weapon type only once.
+
         // leave placed weapons forever on net games
         if (player->weaponowned[weapon])
             return false;
@@ -407,9 +411,9 @@ boolean P_GiveWeapon ( player_t*     player,
         player->weapon_pickup = PICKUP_FLASH_TICS;
         player->weaponowned[weapon] = true;
 
-        if( cv_deathmatch.EV )
+        if( deathmatch )
             P_GiveAmmo (player, player->weaponinfo[weapon].ammo, 5*clipammo[player->weaponinfo[weapon].ammo]);
-        else
+        else // coop
             P_GiveAmmo (player, player->weaponinfo[weapon].ammo, GetWeaponAmmo[weapon]);
 
         // Boris hack preferred weapons order...
@@ -675,17 +679,18 @@ boolean P_GiveArtifact(player_t *player, artitype_t arti, mobj_t *mo)
 static
 void P_SetDormantArtifact(mobj_t *arti)
 {
-        arti->flags &= ~MF_SPECIAL;
-        if( cv_deathmatch.EV && (arti->type != MT_ARTIINVULNERABILITY )
-                && (arti->type != MT_ARTIINVISIBILITY))
-        {
-                P_SetMobjState(arti, S_DORMANTARTI1);
-        }
-        else
-        { // Don't respawn
-                P_SetMobjState(arti, S_DEADARTI1);
-        }
-        S_StartObjSound(arti, sfx_artiup);
+    arti->flags &= ~MF_SPECIAL;
+    if( deathmatch
+        && (arti->type != MT_ARTIINVULNERABILITY )
+        && (arti->type != MT_ARTIINVISIBILITY)   )
+    {
+        P_SetMobjState(arti, S_DORMANTARTI1);
+    }
+    else
+    { // Don't respawn
+        P_SetMobjState(arti, S_DEADARTI1);
+    }
+    S_StartObjSound(arti, sfx_artiup);
 }
 
 //---------------------------------------------------------------------------
@@ -1739,7 +1744,7 @@ void P_KillMobj ( mobj_t*  target,
     //                (source is passed from barrel to barrel also!)
     //                (only for multiplayer fun, does not remember monsters)
     if ((target->type == MT_BARREL || target->type == MT_POD)
-	&& source && source->player)
+        && source && source->player)
     {
         P_SetReference(target->target, source);
         target->target = source;
@@ -2584,8 +2589,8 @@ boolean P_DamageMobj ( mobj_t*   target,
             || (EV_legacy < 125)   // old demoversion bypasses restrictions
             || (source==target)    // self-inflicted
             || (! multiplayer)     // single player
-            || ( (cv_deathmatch.EV == 0) && cv_teamdamage.EV )  // coop
-            || ( (cv_deathmatch.EV > 0)      // deathmatch 1,2,3
+            || ( (!deathmatch) && cv_teamdamage.EV )  // coop
+            || ( deathmatch        // deathmatch 1,2,3
                  && ( (!cv_teamplay.EV)    // no teams
                       || cv_teamdamage.EV  // can damage within team
                       || ! ST_SameTeam(source->player,player) // diff team
@@ -2594,7 +2599,7 @@ boolean P_DamageMobj ( mobj_t*   target,
             )
         {
             if(damage >= player->health
-                && ((gameskill == sk_baby) || cv_deathmatch.EV)
+                && ((gameskill == sk_baby) || deathmatch)
                 && !player->chickenTics)
             { // Try to use some inventory health
                 P_AutoUseHealth(player, damage - player->health + 1);

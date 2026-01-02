@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hpspr.c 1331 2017-05-30 15:34:06Z wesleyjohnson $
+// $Id: p_hpspr.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -318,7 +318,7 @@ void P_CloseWeapons(void)
     { // No maces placed
         return;
     }
-    if( !cv_deathmatch.EV && (P_Random() < 64) )
+    if( (! deathmatch) && (P_Random() < 64) )
     { // Sometimes doesn't show up if not in deathmatch
         return;
     }
@@ -645,8 +645,7 @@ void A_FireBlasterPL2(player_t *player, pspdef_t *psp)
 {
     mobj_t *mo;
 
-    player->ammo[am_blaster] -=
-      cv_deathmatch.EV ? USE_BLSR_AMMO_1 : USE_BLSR_AMMO_2;
+    player->ammo[am_blaster] -= (deathmatch)? USE_BLSR_AMMO_1 : USE_BLSR_AMMO_2;
     mo = P_SpawnPlayerMissile(player->mo, MT_BLASTERFX1);
     if( mo )
       mo->thinker.function.acp1 = (actionf_p1)P_BlasterMobjThinker;
@@ -690,8 +689,7 @@ void A_FireGoldWandPL2(player_t *player, pspdef_t *psp)
     angle_t angle;
     int damage;
 
-    player->ammo[am_goldwand] -=
-                cv_deathmatch.EV ? USE_GWND_AMMO_1 : USE_GWND_AMMO_2;
+    player->ammo[am_goldwand] -= (deathmatch)? USE_GWND_AMMO_1 : USE_GWND_AMMO_2;
     PuffType = MT_GOLDWANDPUFF2;
     P_BulletSlope(pmo);
 // [WDJ] Disabled since 1.42 and I do not know why.
@@ -889,8 +887,7 @@ void A_FireMacePL2(player_t *player, pspdef_t *psp)
     mobj_t * pmo = player->mo;
     mobj_t *mo;
 
-    player->ammo[am_mace] -=
-                cv_deathmatch.EV ? USE_MACE_AMMO_1 : USE_MACE_AMMO_2;
+    player->ammo[am_mace] -= (deathmatch)? USE_MACE_AMMO_1 : USE_MACE_AMMO_2;
     mo = P_SpawnPlayerMissile(pmo, MT_MACEFX4);
     if(mo)
     {
@@ -1027,8 +1024,7 @@ void A_FireCrossbowPL2(player_t *player, pspdef_t *psp)
 {
     mobj_t * pmo = player->mo;
 
-    player->ammo[am_crossbow] -=
-                cv_deathmatch.EV ? USE_CBOW_AMMO_1 : USE_CBOW_AMMO_2;
+    player->ammo[am_crossbow] -= (deathmatch)? USE_CBOW_AMMO_1 : USE_CBOW_AMMO_2;
     P_SpawnPlayerMissile(pmo, MT_CRBOWFX2);
     P_SPMAngle(pmo, MT_CRBOWFX2, pmo->angle-(ANG45/10));
     P_SPMAngle(pmo, MT_CRBOWFX2, pmo->angle+(ANG45/10));
@@ -1091,8 +1087,7 @@ void A_FireSkullRodPL2(player_t *player, pspdef_t *psp)
 {
     mobj_t *MissileMobj;
 
-    player->ammo[am_skullrod] -=
-        cv_deathmatch.EV ? USE_SKRD_AMMO_1 : USE_SKRD_AMMO_2;
+    player->ammo[am_skullrod] -= (deathmatch)? USE_SKRD_AMMO_1 : USE_SKRD_AMMO_2;
     MissileMobj = P_SpawnPlayerMissile(player->mo, MT_HORNRODFX2);
     // Use MissileMobj instead of the return value from
     // P_SpawnPlayerMissile because we need to give info to the mobj

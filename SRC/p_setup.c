@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1449 2019-07-21 01:31:43Z wesleyjohnson $
+// $Id: p_setup.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -279,7 +279,6 @@ byte     *      rejectmatrix;
 // Maintain single and multi player starting spots.
 mapthing_t  *   deathmatchstarts[MAX_DM_STARTS];
 int             numdmstarts;
-//mapthing_t**    deathmatch_p;
 mapthing_t  *   playerstarts[MAXPLAYERS];
 
 
@@ -1896,7 +1895,7 @@ boolean P_SetupLevel (int      to_episode,
     {
         if (playeringame[i])
         {
-            if( cv_deathmatch.EV )
+            if( deathmatch )
             {
                 G_DoReborn(i);
             }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1440 2019-05-19 02:31:03Z wesleyjohnson $
+// $Id: p_local.h 1452 2019-08-03 07:03:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -524,5 +524,7 @@ extern consvar_t cv_corona;
 extern consvar_t cv_coronasize;
 extern consvar_t cv_corona_draw_mode;
 extern consvar_t cv_monball_light;
+
+void  Deathmatch_OnChange( void );
 
 #endif  // P_LOCAL_H

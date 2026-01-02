@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1397 2018-07-02 03:39:47Z wesleyjohnson $
+// $Id: p_mobj.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -199,7 +199,7 @@ void P_Set_Voodoo( int playernum, mobj_t * voodoo_mobj )
 void P_SpawnVoodoo( int playernum, mapthing_t * mthing )
 {
     // Vanilla Doom does not voodoo when deathmatch.
-    if( (voodoo_mode == VM_vanilla) && (cv_deathmatch.EV > 0) )
+    if( (voodoo_mode == VM_vanilla) && deathmatch )
         return;
 
     if( playernum > 0 )
@@ -1944,7 +1944,7 @@ mobj_t * P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
         mobj->flags &= ~(MF_BOUNCES | MF_FRIEND | MF_TOUCHY);
     }
     // EternityEngine: new EE demo has different method.
-    else if((demoversion >= 147) && (cv_deathmatch.EV == 0))
+    else if((demoversion >= 147) && ( ! deathmatch ))
     {
         // DoomLegacy >= 147, or MBF or Boom demo, and not deathmatch
         // Boom demo: 201, 202
@@ -2243,6 +2243,9 @@ void P_RemoveMobj(mobj_t * mobj)
     P_RemoveThinker((thinker_t *) mobj);   // does Z_Free() mobj
 }
 
+   
+// ITEM RESPAWN
+
 consvar_t cv_itemrespawntime = { "respawnitemtime", "30", CV_NETVAR|CV_VALUE, CV_Unsigned };
 consvar_t cv_itemrespawn = { "respawnitem", "0", CV_NETVAR, CV_OnOff };
 
@@ -2260,7 +2263,7 @@ void P_RespawnSpecials(void)
 
     // only respawn items in deathmatch
     if( !cv_itemrespawn.EV )
-        return; //
+        return;
 
     // nothing left to respawn?
     if (iquehead == iquetail)
@@ -2340,58 +2343,77 @@ void P_RespawnSpecials(void)
     iquetail = (iquetail + 1) & (ITEMQUESIZE - 1);
 }
 
+   
+
+// FISTS and PISTOL are not map objects.
+static const uint16_t  doom_weapons[] = {
+  MT_SHOTGUN, MT_SUPERSHOTGUN, MT_CHAINGUN,
+  MT_ROCKETLAUNCH,
+  MT_PLASMAGUN, MT_BFG9000,
+  MT_SHAINSAW,
+  0 };
+
+// STAFF and GOLD WAND are not map objects.
+static const uint16_t  heretic_weapons[] = {
+  MT_HMISC14,  // Dragon Claw, id=53
+  MT_HMISC15,  // Ethereal Crossbow  id=2001
+  MT_WMACE,    // Mace, id=2002
+  MT_WPHOENIXROD, // Gold Wand, Phoenix Rod, id=2003
+  MT_WSKULLROD,  // Skull Rod, Hellstaff, id=2004
+  MT_HMISC13,  // Gauntlets, id=2005
+  0 };
+
+   
+// Return the info index, when it is a weapon.
+int  recognize_weapon( uint16_t thing_type )
+{
+    int wid = 0;
+    const uint16_t * widp = doom_weapons;
+
+    if( EN_heretic )
+    {
+        widp = heretic_weapons;
+    }
+
+    for(;;)
+    {
+        wid = *(widp++);
+        if( wid == 0 ) break;
+	    
+        if( mobjinfo[wid].doomednum == thing_type )
+	    return wid;
+    }
+    return 0;
+}
+
 // used when we are going from deathmatch 2 to deathmatch 1
 void P_RespawnWeapons(void)
 {
-    fixed_t x;
-    fixed_t y;
-    fixed_t z;
-
     subsector_t *ss;
     mobj_t *mo;
     mapthing_t *mthing;
 
-    int i, j, freeslot;
+    fixed_t x, y, z;
+    int wid, j, freeslot;
 
     freeslot = iquetail;
     for (j = iquetail; j != iquehead; j = (j + 1) & (ITEMQUESIZE - 1))
     {
         mthing = itemrespawnque[j];
 
-        i = 0;
-        switch (mthing->type)
+        wid = recognize_weapon( mthing->type );
+        if( wid == 0 )
         {
-            case 2001: //mobjinfo[MT_SHOTGUN].doomednum  :
-                i = MT_SHOTGUN;
-                break;
-            case 82:   //mobjinfo[MT_SUPERSHOTGUN].doomednum :
-                i = MT_SUPERSHOTGUN;
-                break;
-            case 2002: //mobjinfo[MT_CHAINGUN].doomednum :
-                i = MT_CHAINGUN;
-                break;
-            case 2006: //mobjinfo[MT_BFG9000].doomednum   : // bfg9000
-                i = MT_BFG9000;
-                break;
-            case 2004: //mobjinfo[MT_PLASMAGUN].doomednum   : // plasma launcher
-                i = MT_PLASMAGUN;
-                break;
-            case 2003: //mobjinfo[MT_ROCKETLAUNCH].doomednum   : // rocket launcher
-                i = MT_ROCKETLAUNCH;
-                break;
-            case 2005: //mobjinfo[MT_SHAINSAW].doomednum   : // shainsaw
-                i = MT_SHAINSAW;
-                break;
-            default:
-                if (freeslot != j)
-                {
-                    itemrespawnque[freeslot] = itemrespawnque[j];
-                    itemrespawntime[freeslot] = itemrespawntime[j];
-                }
+	    if (freeslot != j)
+            {
+                itemrespawnque[freeslot] = itemrespawnque[j];
+                itemrespawntime[freeslot] = itemrespawntime[j];
+            }
 
-                freeslot = (freeslot + 1) & (ITEMQUESIZE - 1);
-                continue;
+            freeslot = (freeslot + 1) & (ITEMQUESIZE - 1);
+            continue;
         }
+
         // respwan it
         x = mthing->x << FRACBITS;
         y = mthing->y << FRACBITS;
@@ -2405,14 +2427,14 @@ void P_RespawnWeapons(void)
         S_StartObjSound(mo, sfx_itmbk);
 
         // spawn it
-        if (mobjinfo[i].flags & MF_SPAWNCEILING)
+        if (mobjinfo[wid].flags & MF_SPAWNCEILING)
             z = ONCEILINGZ;
         else if(mthing->options & MTF_FS_SPAWNED)
             z = mthing->z << FRACBITS;
         else
             z = ONFLOORZ;
 
-        mo = P_SpawnMobj(x, y, z, i);
+        mo = P_SpawnMobj(x, y, z, wid);
         mo->spawnpoint = mthing;
         mthing->mobj = mo;  // [WDJ] replace ref to old mobj (missing in PrBoom)
         mo->angle = wad_to_angle(mthing->angle);
@@ -2538,7 +2560,7 @@ void P_SpawnPlayer( mapthing_t * mthing, int playernum )
     P_SetupPsprites(p);
 
     // give all cards in death match mode
-    if( cv_deathmatch.EV )
+    if( deathmatch )
         p->cards = it_allkeys;
 
     if (playernum == consoleplayer)
@@ -2572,7 +2594,7 @@ void P_SpawnPlayer( mapthing_t * mthing, int playernum )
     if (camera.chase == p)
         P_ResetCamera(p);
 
-   if( ! ( voodoo_mode == VM_vanilla && cv_deathmatch.EV ) )
+   if( ! ( (voodoo_mode == VM_vanilla) && deathmatch ) )
    {
        // [WDJ] Create any missing personal voodoo dolls for this player
        // But not the last spawnpoint, otherwise deathmatch gets extraneous voodoo dolls.
@@ -2593,19 +2615,41 @@ void P_SpawnPlayer( mapthing_t * mthing, int playernum )
    }
 }
 
+
+// SPAWN MAPTHING
+
+static byte coop_xx_table[ 4 ] = {
+   255, // coop_weapons, coop_sp_map
+   255, // coop
+   204, // coop_80
+   153, // coop_60
+};
+
+static uint16_t  coop_heretic_mon_table[ 8 ] = {
+  MT_MUMMYLEADER, MT_CLINK, MT_SNAKE, MT_BEAST, MT_WIZARD, MT_KNIGHT, MT_KNIGHTGHOST, MT_HEAD
+};
+static uint16_t  coop_doom1_mon_table[ 8 ] = {
+  MT_SHOTGUY, MT_HEAD, MT_HEAD, MT_HEAD, MT_BRUISER, MT_BRUISER, MT_BRUISER, MT_BRUISER
+};
+static uint16_t  coop_doom2_mon_table[ 8 ] = {
+  MT_CHAINGUY, MT_HEAD, MT_PAIN, MT_FATSO, MT_KNIGHT, MT_BABY, MT_VILE, MT_BRUISER
+};
+
+// sk_baby, sk_easy, sk_medium, sk_hard, sk_nightmare
+static byte  gameskill_bit[ 5 ] = { MTF_EASY, MTF_EASY, MTF_NORMAL, MTF_NORMAL, MTF_HARD };
+
+
 //
 // P_SpawnMapthing
 // The fields of the mapthing should
 // already be in host byte order.
 //
-
-
 void P_SpawnMapthing (mapthing_t* mthing)
 {
     int i;
-    int bit;
     mobj_t *mobj;
     fixed_t x, y, z;
+    byte  coop_index = 0;
 
     if (!mthing->type)
         return; //SoM: 4/7/2000: Ignore type-0 things as NOPs
@@ -2667,7 +2711,7 @@ void P_SpawnMapthing (mapthing_t* mthing)
 
         // old version spawn player now, new version spawn player when level is 
         // loaded, or in network event later when player join game
-        if( cv_deathmatch.EV == 0 && (EV_legacy < 128) )
+        if( (! deathmatch) && (EV_legacy < 128) )
         {
 #ifdef DOGS
             // [WDJ] From MBF, PrBoom, EternityEngine
@@ -2705,29 +2749,37 @@ void P_SpawnMapthing (mapthing_t* mthing)
     // Check for boss spots
     if (EN_heretic_hexen && (mthing->type == 56) )    // Monster_BossSpot
     {
-#if 1
-        // [WDJ] Gives same result as Heretic source.
+        // [WDJ] Gives same result as Heretic source.  ANGLE_1 has round-off error, so don't use it for this.
         P_AddBossSpot(mthing->x << FRACBITS, mthing->y << FRACBITS, wad_to_angle(mthing->angle));
-#else
-        // [WDJ] ANGLE_1 has a round-off error.  I do not know what this was trying to accomplish.
-        P_AddBossSpot(mthing->x << FRACBITS, mthing->y << FRACBITS, mthing->angle * ANGLE_1);   // SSNTails 06-10-2003
-#endif
         return;
     }
 
-    // check for apropriate skill level
-    if (!multiplayer && (mthing->options & MTF_MPSPAWN))
+    // Single player, or coop on single player map.
+    if ( ((!multiplayer) || (netgame && (cv_deathmatch.EV == 0x80))) && (mthing->options & MTF_MPSPAWN))
          return;
 
+    // When not netgame, then is single player mode.
+    if( netgame )
+    {
+        //SoM: 4/7/2000: Implement "not deathmatch" thing flag
+        if( deathmatch && (mthing->options & MTF_NODM))
+            return;
 
-    //SoM: 4/7/2000: Implement "not deathmatch" thing flag
-    if( netgame && cv_deathmatch.EV && (mthing->options & MTF_NODM))
+        // [WDJ] Coop_60, Coop_80, Coop
+        coop_index = (cv_deathmatch.EV & 0x30) >> 4;
+
+        //SoM: 4/7/2000: Implement "not cooperative" thing flag
+        if( (coop_index || (cv_deathmatch.EV == 0)) && (mthing->options & MTF_NOCOOP))
+            return;
+    }
+
+    // check for appropriate skill level
+#if 1
+    if( !(mthing->options & gameskill_bit[gameskill]) )
         return;
-
-    //SoM: 4/7/2000: Implement "not cooperative" thing flag
-    if( netgame && !cv_deathmatch.EV && (mthing->options & MTF_NOCOOP))
-        return;
-
+#else
+    // Original obtuse.
+    int bit;
     if (gameskill == sk_baby)
         bit = 1;
     else if (gameskill == sk_nightmare)
@@ -2737,6 +2789,7 @@ void P_SpawnMapthing (mapthing_t* mthing)
 
     if (!(mthing->options & bit))
         return;
+#endif
 
     // find which type to spawn
     for (i = 0; i < NUMMOBJTYPES; i++)
@@ -2749,8 +2802,30 @@ void P_SpawnMapthing (mapthing_t* mthing)
         return;
     }
 
+    // [WDJ] Coop items that do not appear in single player mode.
+    if( coop_index && ( mthing->options & MTF_MPSPAWN ) )
+    {
+        if((mobjinfo[i].spawnhealth > 1000) && (mobjinfo[i].painstate != S_NULL))
+        {
+            // Boss monster, not appropriate for lower levels.
+            unsigned int cr = ((int)coop_xx_table[ coop_index ]) * gamemap * gameepisode * gameskill;
+            unsigned int pr = (((int)P_Random() * 36) / 32) + 1;
+	    int mon_index = cr / pr;
+
+//     printf( "coop_index = %i,  cr=%i, pr=%i,   cr/pr=%i\n", coop_index, cr, pr, cr/pr );
+	    if( mon_index < 8 )
+	    {
+	        uint16_t * tab =
+		  (EN_heretic)? coop_heretic_mon_table
+	          : (gamemode == doom2_commercial)? coop_doom2_mon_table
+		  : coop_doom1_mon_table;
+	        i = tab[ mon_index ];  // substitute monster
+	    }
+	}
+    }
+
     // don't spawn keycards and players in deathmatch
-    if( cv_deathmatch.EV && (mobjinfo[i].flags & MF_NOTDMATCH) )
+    if( deathmatch && (mobjinfo[i].flags & MF_NOTDMATCH) )
         return;
 
     // don't spawn any monsters if -nomonsters

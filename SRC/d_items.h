@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_items.h 1347 2017-07-29 18:21:14Z wesleyjohnson $
+// $Id: d_items.h 1452 2019-08-03 07:03:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -74,7 +74,7 @@ typedef enum
   MTF_AMBUSH      = 0x0008,
 
 // 24/5/04: Exl: werent defined before
-  MTF_MPSPAWN     = 0x0010,  // Spawn in multiplayer
+  MTF_MPSPAWN     = 0x0010,  // Spawn only in multiplayer
   MTF_NODM        = 0x0020,  // Do not spawn in deathmatch mode
   MTF_NOCOOP      = 0x0040,  // Do not spawn in coop mode
 

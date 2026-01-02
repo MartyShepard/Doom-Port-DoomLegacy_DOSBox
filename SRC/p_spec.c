@@ -2,7 +2,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_spec.c 1427 2019-02-11 21:40:13Z wesleyjohnson $
+// $Id: p_spec.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2770,7 +2770,7 @@ void P_ProcessSpecialSector(player_t* player, sector_t* sector, boolean instantd
 found_secret_area:
    player->secretcount++;
    //faB: useful only in single & coop.
-   if( !cv_deathmatch.EV )
+   if( ! deathmatch )
    {
        if( player == displayplayer_ptr )
            GenPrintf(EMSG_playmsg, "\2You found a secret area!\n");

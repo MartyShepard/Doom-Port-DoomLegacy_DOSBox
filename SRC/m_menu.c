@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1450 2019-07-21 01:32:30Z wesleyjohnson $
+// $Id: m_menu.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1258,10 +1258,23 @@ CV_PossibleValue_t exmy_cons_t[] ={{11,"e1m1"} ,{12,"e1m2"} ,{13,"e1m3"}
 
 consvar_t cv_skill    = {"skill"    ,"4",CV_HIDEN,skill_cons_t};
 consvar_t cv_monsters = {"monsters" ,"0",CV_HIDEN,CV_YesNo};
+// The bots use player slots, so number of bots is limited to MAXPLAYERS.
+CV_PossibleValue_t bots_cons_t[] = {{0,"MIN"}, {MAXPLAYERS,"MAX"}, {0,NULL}};
+consvar_t cv_bots = {"bots", "0", CV_HIDEN, bots_cons_t};
 consvar_t cv_nextmap  = {"nextmap"  ,"1",CV_HIDEN,map_cons_t};
 consvar_t cv_nextepmap  = {"nextepmap"  ,"11",CV_HIDEN,exmy_cons_t};
+
+// To prevent changing game settings while changing between the possible settings.
 extern CV_PossibleValue_t deathmatch_cons_t[];
-consvar_t cv_newdeathmatch  = {"newdeathmatch"  ,"3",CV_HIDEN,deathmatch_cons_t};
+void deathmatch_menu_OnChange( void );
+consvar_t cv_deathmatch_menu  = {"dmm"  , "3", CV_HIDEN | CV_CALL, deathmatch_cons_t, deathmatch_menu_OnChange };
+
+void deathmatch_menu_OnChange( void )
+{
+    // Default monsters, because it often gets forgotten, and it is not saved.
+    CV_Set_by_OnChange( &cv_monsters, (cv_deathmatch_menu.EV > 4) );
+}
+
 CV_PossibleValue_t wait_players_cons_t[]=   {{0,"MIN"}, {32,"MAX"}, {0,NULL}};
 consvar_t cv_wait_players = {"wait_players" ,"2",CV_HIDEN,wait_players_cons_t};
 CV_PossibleValue_t wait_timeout_cons_t[]=   {{0,"MIN"}, {5,"INC"}, {244,"MAX"}, {0,NULL}};
@@ -1275,7 +1288,7 @@ void M_StartServer( int choice )
 
     netgame = true;
     multiplayer = true;
-    if( choice == 9 )
+    if( choice == 10 )
     {
         // Dedicated server menu choice.
         dedicated = true;
@@ -1283,10 +1296,12 @@ void M_StartServer( int choice )
         vid.draw_ready = 0;        
         I_ShutdownGraphics();
     }
+
     D_WaitPlayer_Setup();
 
+    // Before game start setup.
     COM_BufAddText(va("stopdemo;splitscreen %d;deathmatch %d;map \"%s\" -skill %d -monsters %d\n", 
-                      StartSplitScreenGame, cv_newdeathmatch.value, 
+                      StartSplitScreenGame, cv_deathmatch_menu.value, 
                       (gamemode==doom2_commercial)? cv_nextmap.string : cv_nextepmap.string,
                       cv_skill.value, cv_monsters.value));
     // skin change
@@ -1304,17 +1319,17 @@ menuitem_t  ServerMenu[] =
 {
     {IT_STRING | IT_CVAR,0,"Map"             ,&cv_nextmap          ,0},
     {IT_STRING | IT_CVAR,0,"Skill"           ,&cv_skill            ,0},
+    {IT_STRING | IT_CVAR,0,"Coop/Deathmatch" ,&cv_deathmatch_menu  ,0},
     {IT_STRING | IT_CVAR,0,"Monsters"        ,&cv_monsters         ,0},
-    {IT_STRING | IT_CVAR,0,"Deathmatch Type" ,&cv_newdeathmatch    ,0},
     {IT_STRING | IT_CVAR,0,"Wait Players"    ,&cv_wait_players     ,0},
     {IT_STRING | IT_CVAR,0,"Wait Timeout"    ,&cv_wait_timeout     ,0},
     {IT_STRING | IT_CVAR,0,"Internet Server" ,&cv_internetserver   ,0},
     {IT_STRING | IT_CVAR
      | IT_CV_STRING     ,0,"Server Name"     ,&cv_servername       ,0},
     {IT_WHITESTRING | IT_CALL | IT_YOFFSET,
-                         0,"Start"           ,M_StartServer        ,110}, // 8
+                         0,"Start"           ,M_StartServer        ,110}, // 9
     {IT_WHITESTRING | IT_CALL | IT_YOFFSET,
-                         0,"Dedicated"       ,M_StartServer        ,120}  // 9
+                         0,"Dedicated"       ,M_StartServer        ,120}  // 10
 };
 
 menuitem_t  ServerMenu_Map =
@@ -5718,7 +5733,7 @@ void M_Init (void)
     CV_RegisterVar(&cv_monsters);
     CV_RegisterVar(&cv_nextmap );
     CV_RegisterVar(&cv_nextepmap );
-    CV_RegisterVar(&cv_newdeathmatch);
+    CV_RegisterVar(&cv_deathmatch_menu);
     CV_RegisterVar(&cv_wait_players);
     CV_RegisterVar(&cv_wait_timeout);
     CV_RegisterVar(&cv_serversearch);
@@ -6169,6 +6184,10 @@ void M_Register_Menu_Controls( void )
 
     // misc
     CV_RegisterVar(&cv_deathmatch);  // after cv_itemrespawn
+    CV_RegisterVar(&cv_teamplay);
+    CV_RegisterVar(&cv_teamdamage);
+    CV_RegisterVar(&cv_timelimit);
+    CV_RegisterVar(&cv_fraglimit);
 
     // d_clisrv
     CV_RegisterVar(&cv_playdemospeed);

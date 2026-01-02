@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1397 2018-07-02 03:39:47Z wesleyjohnson $
+// $Id: p_map.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -226,7 +226,7 @@ static boolean PIT_StompThing (mobj_t* thing)
            break;
          default:
            // Block damage in deathmatch, it would always kill player1
-           if( cv_deathmatch.EV > 0 )
+           if( deathmatch )
               damage = 0;
         }
     }

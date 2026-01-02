@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: st_stuff.c 1426 2019-01-29 08:09:01Z wesleyjohnson $
+// $Id: st_stuff.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -332,7 +332,7 @@ static boolean          st_oldchat;
 static boolean          st_cursor_on;
 
 // !deathmatch
-static boolean          st_notdeathmatch;
+static boolean          st_not_deathmatch;
 
 // main bar left
 static patch_t*         sbar = NULL;
@@ -816,7 +816,7 @@ static void ST_updateWidgets(void)
     st_oldhealth = plyr->health;
 
     // used by the w_armsbg widget
-    st_notdeathmatch = !cv_deathmatch.EV;
+    st_not_deathmatch = ! deathmatch;
 
     st_fragscount = ST_PlayerFrags(statusbarplayer);
 
@@ -1011,7 +1011,7 @@ static void ST_Draw_Widgets( void )
 
     STlib_updateBinIcon(&w_armsbg);
 
-    if( cv_deathmatch.EV )
+    if( deathmatch )
     {
         // frags on
         STlib_updateNum(&w_frags);
@@ -1405,9 +1405,9 @@ void ST_Create_Widgets(void)
                       stbar_x + ST_ARMSBGX,
                       stbar_y + ST_ARMSBGY,
                       armsbg,
-                      &st_notdeathmatch );
+                      &st_not_deathmatch );
 
-    // weapons owned, draw enabled by !cv_deathmatch
+    // weapons owned, draw enabled by ! deathmatch
     for(i=0;i<6;i++)
     {
         STlib_initMultIcon(&w_arms[i],
@@ -1416,7 +1416,7 @@ void ST_Create_Widgets(void)
                       arms[i], (int *) &st_plyr->weaponowned[i+1] );
     }
 
-    // frags sum, draw enabled by cv_deathmatch
+    // frags sum, draw enabled by deathmatch
     STlib_initNum(&w_frags,
                   stbar_x + ST_FRAGSX,
                   stbar_y + ST_FRAGSY,
@@ -1742,7 +1742,7 @@ void ST_overlayDrawer ( byte status_position, player_t * plyr )
          case 'f': // draw frags
            st_fragscount = ST_PlayerFrags(plyr-players);
 
-           if (cv_deathmatch.EV)
+           if( deathmatch )
            {
                ST_drawOverlayNum(SCX(300), SCY(2,y0),
                                  st_fragscount,
@@ -1776,9 +1776,9 @@ void ST_overlayDrawer ( byte status_position, player_t * plyr )
            V_DrawScalePic_Num (SCX(302), lowerbar_y, sbo_armor);
            break;
 
-         // added by Hurdler for single player only
+         // added by Hurdler for single player only (or coop netplay)
          case 'e': // number of monster killed 
-           if( (!cv_deathmatch.EV) && (!cv_splitscreen.EV) )
+           if( (! deathmatch) && (!cv_splitscreen.EV) )
            {
                char buf[16];
                sprintf(buf, "%d/%d", plyr->killcount, totalkills);
@@ -1787,7 +1787,7 @@ void ST_overlayDrawer ( byte status_position, player_t * plyr )
            break;
 
          case 's': // number of secrets found
-           if( (!cv_deathmatch.EV) && (!cv_splitscreen.EV) )
+           if( (! deathmatch) && (!cv_splitscreen.EV) )
            {
                char buf[16];
                sprintf(buf, "%d/%d", plyr->secretcount, totalsecret);

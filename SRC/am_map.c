@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: am_map.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: am_map.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1403,7 +1403,7 @@ void AM_drawPlayers(void)
 
         p = &players[i];
 
-        if( (cv_deathmatch.EV && !singledemo) && p != plr)
+        if( (deathmatch && !singledemo) && (p != plr) )
             continue;
 
         if (p->powers[pw_invisibility])
