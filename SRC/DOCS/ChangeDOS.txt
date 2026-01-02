@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01464 ]: w108 50 texture get patch
+          DOS: Sky Crash Fixed. Using fix from future commit 1472
+					
 [01463 ]: w108 49 skygen
 [01462 ]: w108 48 bot gen
 [01461 ]: w108 47 autoexec

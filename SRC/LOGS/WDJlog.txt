@@ -7388,4 +7388,12 @@ Sky gen control:
 13: extend_fill    Extend the sky, fill with random samples.
 250: stretch       Stretch the sky to fit.
 
+This only affects Software Render yet.
+The Hardware Render (OpenGL) still stretches the sky.
 
+*** w108_texture_get_patch
+patchfile = w108_50_texture_get_patch.patch
+- commit revision 1464
+The SkyGen needs to generate the texture before it extends it.
+This fails with OpenGL, because of the tricks with the hardware render cache.
+Fix R_GenerateTexture to only get the ordinary texture patches.

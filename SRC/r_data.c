@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1463 2019-09-29 07:36:51Z wesleyjohnson $
+// $Id: r_data.c 1464 2019-09-29 08:31:19Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -760,7 +760,12 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren )
         // [WDJ] Only need patch lump for the following memcpy.
         // [WDJ] Must use common patch read to preserve endian consistency.
         // otherwise it will be in cache without endian changes.
+#if 1
+        // To avoid hardware render cache.
+        realpatch = W_CachePatchNum_Endian(texpatch->patchnum, PU_IN_USE);  // texture lump temp
+#else
         realpatch = W_CachePatchNum (texpatch->patchnum, PU_IN_USE);  // texture lump temp
+#endif
 
         // [WDJ] W_CachePatchNum should only get lumps from PATCH section,
         // but it will return a colormap of the same name.
@@ -957,7 +962,12 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren )
 
         cp->originx = texpatch->originx;
         cp->originy = texpatch->originy;
+#if 1
+        // To avoid hardware render cache.
+        realpatch = W_CachePatchNum_Endian(texpatch->patchnum, PU_IN_USE);  // patch temp
+#else
         realpatch = W_CachePatchNum(texpatch->patchnum, PU_IN_USE);  // patch temp
+#endif
         cp->patch = realpatch;
         cp->width = realpatch->width;
         int patch_colofs_size = realpatch->width * sizeof( uint32_t );  // width * 4
@@ -1389,7 +1399,12 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren )
         // [WDJ] patch only used in this loop, without any other Z_Malloc
         // [WDJ] Must use common patch read to preserve endian consistency.
         // otherwise it will be in cache without endian changes.
+#if 1
+        // To avoid hardware render cache.
+        realpatch = W_CachePatchNum_Endian(texpatch->patchnum, PU_CACHE);  // patch temp
+#else
         realpatch = W_CachePatchNum (texpatch->patchnum, PU_CACHE);  // patch temp
+#endif
         x1 = texpatch->originx;
         x2 = x1 + realpatch->width;
 

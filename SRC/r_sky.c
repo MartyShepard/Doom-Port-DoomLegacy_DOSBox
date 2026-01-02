@@ -100,13 +100,46 @@ typedef  struct{
    uint32_t  colofs[ SKY_WIDTH ];
 } pic_header_t;
 
+static
 byte dark_pixel( byte c )
 {
     RGBA_t rc = pLocalPalette[ c ];
     return( rc.s.red < 2 && rc.s.green < 2 && rc.s.blue < 2 );
 }
 
+static
+void  sample_sky( int r1, int dr, int tw, int twm, byte buf[SKY_WIDTH][SKY_HEIGHT], byte background_color, byte stargen )
+{
+    int c;
+    byte pix;
+    for( c=0; c < tw; c++ )
+    {
+        if( buf[c][r1] != background_color )  continue;
+
+        int c3 = (c + E_SignedRandom( 21 )) & twm;
+        int r3 = r1 + 1 + ((E_Random() * dr) >> 16);
+        pix = buf[c3][r3];
+        if( stargen && ! dark_pixel(pix) )
+        {
+            byte cn = 15;
+            while( cn-- )
+            {
+               // Find a star, surrounded by dark.
+               if( ( dark_pixel( buf[(c3-1)&twm][r3] )
+                + dark_pixel( buf[(c3+1)&twm][r3] )
+                + dark_pixel( buf[(c3)&twm][r3-1] )
+                + dark_pixel( buf[(c3)&twm][r3+1] ) ) > 2 )  break;
+               c3 += 27;
+               pix = buf[c3&twm][r3];
+            }
+        }
+        buf[c][r1] = pix;
+    }
+}
+
+
 // r : percentage of op1 to op2
+static
 float proportion( float op1, float op2, float r )
 {
     return  (op1 * r) + (op2 * (1.0f - r));
@@ -123,6 +156,7 @@ float proportion( float op1, float op2, float r )
 //  max_slope : maximum
 //  pinch_inc : which way and how strongly to pinch slopes together
 //  solid_width : width of the solid area
+static
 int  edge_by_slope( byte pixel, int c1, int r1, int edgeinc, int rinc, unsigned int twm, byte buf[SKY_WIDTH][SKY_HEIGHT], float reg_slope, float max_slope, float pinch_inc, int solid_width )
 {
     float accum_slope = 0.0;
@@ -259,6 +293,7 @@ typedef struct {
   byte  left_adj, right_adj;
 } sky_blob_t;
 
+static
 void init_sky_blob( sky_blob_t * sbp )
 {
     sbp->c1 = 0;
@@ -370,12 +405,12 @@ patch_t * R_Generate_Sky( int texnum )
     }
     hist_total = tw * HIST_DEPTH;
 
-    if( sky_dark_cnt > (hist_total * 3 / 4) )
+    if( sky_dark_cnt > (hist_total * 4 / 7) )
     {
         night_stars_upper = 1;
     }
 
-    if( gnd_dark_cnt > (hist_total * 3 / 4) )
+    if( gnd_dark_cnt > (hist_total * 4 / 7) )
     {
         night_stars_lower = 1;
     }
@@ -476,31 +511,16 @@ patch_t * R_Generate_Sky( int texnum )
                     sbp2->c2 = c1-1;
                     sbp2->importance++;
 
-                    sbp--; // interior blob
-                    // interior blob
-                    sbp->sb_left = -1;
-                    sbp->sb_right = -1;
-                    sbp->left_adj = BE_greater;
-                    sbp->right_adj = BE_less;
                     // linking
                     sbp3 = NULL;  // default, sb2 has no enclosures
-                    if( sbp2->has_enclosed )
-                    {
-                        for( sbp4 = sbp - 1; sbp4 >= sbp2; sbp4-- )
-                        {
-                            // find last member of interior of sbp2
-                            if( sbp4->sb_enclosure == sb2id )
-                            {
-                                sbp3 = sbp4;
-                                break;
-                            }
-                        }
-                    }
-
                     // traverse interior blobs
-                    for( sbp4 = sbp2+1; sbp4 <= sbp; sbp4++ )
+                    for( sbp4 = sbp2+1; sbp4 < sbp; sbp4++ )
                     {
-                        if( sbp4->sb_enclosure < 0 )  // an unlinked blob
+                        if( sbp4->sb_enclosure == sb2id )
+                        {
+                            sbp3 = sbp4;
+                        }
+                        else if( sbp4->sb_enclosure < 0 )  // an unlinked blob
                         {
                             // enclose it in sbp2
                             sbp4->sb_enclosure = sb2id; // enclosed by sbp2
@@ -509,10 +529,15 @@ patch_t * R_Generate_Sky( int texnum )
                                 int sb3id = sbp3 - &sky_blob[0];
                                 sbp4->sb_left = sb3id;
                             }
+                            else
+                            {
+                                sbp4->sb_left = -1;  // first
+                            }
                             sbp2->has_enclosed = 1;
                             sbp3 = sbp4;
                         }
                     } // traverse interior blobs
+                    sbp--; // was merged
                     break;
                 } // solid_color == solid_pixel
             } // for sbp2, blob in blob
@@ -531,10 +556,10 @@ patch_t * R_Generate_Sky( int texnum )
         sbp->importance = 1;
 
         // Wrap the sky
-        if( sbp->solid_color == sky_blob[0].solid_color )
+        if((sbp > &sky_blob[0]) && (sbp->solid_color == sky_blob[0].solid_color) )
         {
             // sky wraps, merge first and last
-            sky_blob[0].c1 = sbp->c1 - SKY_WIDTH;
+            sky_blob[0].c1 = sbp->c1 - tw;
             sky_blob[0].sb_left = sbp->sb_left;
             sbp--;
         }
@@ -546,7 +571,7 @@ patch_t * R_Generate_Sky( int texnum )
             if( sbp->sb_left >= 0 )
                 sky_blob[ sbp->sb_left ].sb_right = sbp - &sky_blob[0];
 
-            if( sbp == last_sbp )  break;
+            if( sbp >= last_sbp )  break;
         }
        
         // Draw
@@ -692,17 +717,9 @@ generate_backgrounds:
     {
         for( r1 = sky_top_align-1; r1 >= 0; r1-- )  // must be row first
         {
-            r2 = ((sky_top_align - r1) >> 1) + 3;
-            for( c1=0; c1 < tw; c1++ )
-            {
-                if( buf[c1][r1] != sky_color )  continue;
-
-                c3 = (c1 + E_SignedRandom( 13 )) & twm;
-                r3 = r1 + ((E_Random() * r2) >> 16) + 1;
-                buf[c1][r1] = buf[c3][r3];
-            }
+            int dr = ((sky_top_align - r1) >> 1) + 2;
+            sample_sky( r1, dr, tw, twm, buf, sky_color, night_stars_upper );
         }
-
     }
     else if((cv_sky_gen.EV == 10) || (cv_sky_gen.EV == 11))  // generate upper stars
     {
@@ -743,15 +760,8 @@ generate_backgrounds:
     {
         for( r1 = sky_bottom_align; r1 < SKY_HEIGHT; r1++ )
         {
-            r2 = ((r1 - sky_bottom_align) >> 1) + 3;
-            for( c1=0; c1 < tw; c1++ )
-            {
-                if( buf[c1][r1] != ground_color )  continue;
-
-                c3 = (c1 + E_SignedRandom( 19 )) & twm;
-                r3 = r1 - ((E_Random() * r2) >> 16) - 1;
-                buf[c1][r1] = buf[c3][r3];
-            }
+            int dr = ((r1 - sky_bottom_align) >> 1) + 2;
+            sample_sky( r1, dr, tw, twm, buf, ground_color, night_stars_lower );
         }
     }
 
