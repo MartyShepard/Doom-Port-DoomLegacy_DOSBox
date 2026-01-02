@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_node.c 1458 2019-09-11 12:27:47Z wesleyjohnson $
+// $Id: b_node.c 1478 2019-10-19 13:43:25Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -46,19 +46,15 @@
 
 sector_t *oksector = NULL;
 
-boolean  botdoorfound = false,
-         botteledestfound = false;
-int	 botteledestx,
-         botteledesty,
-         botteletype,
-         numbotnodes,
-         xOffset,
-         xSize,
-         yOffset,
-         ySize;
-SearchNode_t *** botNodeArray;
+boolean  bot_door_found = false,
+         bot_tele_dest_found = false;
+int  botteledestx, botteledesty;
+int  botteletype, numbotnodes;
+int  xOffset, yOffset;
+int  xSize, ySize;
+SearchNode_t *** botNodeArray = NULL;
 
-static sector_t *last_s;
+static sector_t *last_s = NULL;
 
 
 SearchNode_t* B_FindClosestNode(fixed_t x, fixed_t y)
@@ -236,8 +232,9 @@ boolean B_PTRPathTraverse (intercept_t *in)
             //Determine if looking at backsector/frontsector.
             oksector = (line->backsector == last_s) ? line->frontsector : line->backsector;
 
-            botdoorfound = true;
+            bot_door_found = true;
             break;
+
           //case 39: // TELEPORT TRIGGER	useful only once anyway so forget it
           case 97:  // TELEPORT RETRIGGER
           case 208:     //boom Silent thing teleporters
@@ -251,7 +248,7 @@ boolean B_PTRPathTraverse (intercept_t *in)
                         && m->subsector->sector-sectors == i
                       )
                     {
-                        botteledestfound = true;
+                        bot_tele_dest_found = true;
                         botteledestx = m->x;
                         botteledesty = m->y;
                         botteletype = line->special;
@@ -261,18 +258,19 @@ boolean B_PTRPathTraverse (intercept_t *in)
                 }
             }
             break;
+
           // boom linedef types.
           case 243:  //Same as below but trigger once.
           case 244:  //Silent line to line teleporter
           case 262:  //Same as 243 but reversed
           case 263:  //Same as 244 but reversed
-            if( !botteledestfound )
+            if( !bot_tele_dest_found )
             {
                 for (i = -1; (i = P_FindLineFromLineTag(line, i)) >= 0;)
                 {
                     if( &lines[i] != line )
                     {
-                        botteledestfound = true;
+                        bot_tele_dest_found = true;
                         botteledestx = (lines[i].v1->x+lines[i].v2->x)/2 - ((line->v1->x+line->v2->x)/2 - botteledestx);
                         botteledesty = (lines[i].v1->y+lines[i].v2->y)/2 - ((line->v1->y+line->v2->y)/2 - botteledesty);
                         botteletype = line->special;
@@ -282,8 +280,10 @@ boolean B_PTRPathTraverse (intercept_t *in)
                     break;
                 }
             }
+            break;
+
           default:	//not a special type
-            botteledestfound = false;
+            bot_tele_dest_found = false;
             //Determine if looking at backsector/frontsector.
             s = (line->backsector == last_s) ? line->frontsector : line->backsector;
             ceilingheight = s->ceilingheight;
@@ -376,8 +376,8 @@ boolean B_NodeReachable(mobj_t* mo, fixed_t x, fixed_t y, fixed_t destx, fixed_t
     fixed_t  nx = x2PosX(destx);
     fixed_t  ny = y2PosY(desty);
 
-    botdoorfound = false;
-    botteledestfound = false;
+    bot_door_found = false;
+    bot_tele_dest_found = false;
 
     if ((nx >= 0) && (nx < xSize) && (ny >= 0) && (ny < ySize))
     {	
@@ -413,7 +413,7 @@ boolean B_NodeReachable(mobj_t* mo, fixed_t x, fixed_t y, fixed_t destx, fixed_t
             return true;
         }
 
-        botteledestfound = false;
+        bot_tele_dest_found = false;
         return false;
     }
 
@@ -467,7 +467,8 @@ void B_DeleteNode(SearchNode_t* node)
 static
 void B_Build_Nodes(SearchNode_t* node);
 
-void B_SetNodeTeleDest(SearchNode_t* node)
+// Called by: B_Build_Nodes
+void B_SetNode_TeleDest(SearchNode_t* node)
 {
     fixed_t  x = x2ClosestPosX(botteledestx);
     fixed_t  y = y2ClosestPosY(botteledesty);
@@ -494,6 +495,7 @@ void B_SetNodeTeleDest(SearchNode_t* node)
     }
 }
 
+// Called by:  B_Init_Nodes, B_SetNode_TeleDest
 static
 void B_Build_Nodes(SearchNode_t* node)
 {
@@ -574,8 +576,8 @@ void B_Build_Nodes(SearchNode_t* node)
 
                 node->costDir[angle] = B_GetNodeCost(node->dir[angle]) + extraCost;
 
-                if( botteledestfound )
-                    B_SetNodeTeleDest(node->dir[angle]);
+                if( bot_tele_dest_found )
+                    B_SetNode_TeleDest(node->dir[angle]);
             }
             else
                 node->dir[angle] = NULL;
@@ -585,6 +587,7 @@ void B_Build_Nodes(SearchNode_t* node)
     B_LLDelete(queue);
 }
 
+// Called by: P_SetupLevel
 void B_Init_Nodes( void )
 {
     int  i, j, px, py;

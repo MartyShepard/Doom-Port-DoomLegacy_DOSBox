@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1477 2019-10-19 13:42:58Z wesleyjohnson $
+// $Id: b_game.c 1478 2019-10-19 13:43:25Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -54,13 +54,18 @@
 #include "r_things.h"
 #include "g_game.h"
 #include "d_net.h"
+#include "byteptr.h"
 
 
 // [WDJ] New Bot code is not compatible with old versions, is not old demo compatible.
 // #define BOT_VERSION_DETECT
 
+// Persistant random number, that changes after each use.  Only used to initialize.
+// Only CV_NETVAR in case someone uses the B_Gen_Random outside of initializing names.
 consvar_t  cv_bot_random = { "botrandom", "1333", CV_NETVAR | CV_SAVE, CV_Unsigned };
 
+// User set random seed.  Only used to initialize.
+// Only CV_NETVAR in case someone uses the B_Gen_Random outside of initializing names.
 static void CV_botrandom_OnChange( void );
 consvar_t  cv_bot_randseed = { "botrandseed", "0", CV_NETVAR | CV_SAVE | CV_CALL, CV_Unsigned, CV_botrandom_OnChange };
 
@@ -114,6 +119,8 @@ static uint32_t bot_run_tics_table[ 6 ] = { TICRATE/4, 4*TICRATE, 6*TICRATE, 12*
 static byte bot_speed_frac;
 static byte bot_run_tics;
 
+// A function of gameskill and cv_bot_speed.
+// Must be called when either changes.
 static void CV_botspeed_OnChange( void )
 {
     byte bot_speed_index;
@@ -245,23 +252,23 @@ void B_Init_Names()
 {
     int br, i, j;
     uint16_t color_used = 0;
-    char * bname;
+    byte   botindex = B_Rand_GetIndex();
 
     CV_ValueIncDec( &cv_bot_random, 7237 ); // add a prime
 
+    // Initialize botinfo.
     for (i=0; i< MAXPLAYERS; i++)
     {
         // Give each prospective bot a unique name.
         do
         {
             br = B_Gen_Random() % NUM_BOT_NAMES;
-            bname = botnames[br];
             for( j = 0; j < i; j++ )
             {
-                if( botinfo[j].name == bname )  break;
+                if( botinfo[j].name_index == br )  break;
             }
         } while ( j < i );  // when j==i then did not find any duplicates
-        botinfo[i].name = bname;
+        botinfo[i].name_index = br;
 
         // Assign a skin color.  Make them unique until have used all colors.
         j = NUMSKINCOLORS;
@@ -278,6 +285,17 @@ void B_Init_Names()
 
         botinfo[i].skinrand = B_Gen_Random();
     }
+   
+#if 1
+    // Restore to keep reproducible bot gen in spite of multiple calls during setup,
+    // and it minimizes effects of network races.
+    if( cv_bot_gen.EV < 2 )
+        B_Rand_SetIndex( botindex );
+#endif
+
+    // Existing bots keep their existing names and colors.
+    // This only changes the tables used to create new bots, by the server.
+    // Off-server clients will keep the original bot names that the server sent them.
 }
 
 
@@ -290,23 +308,39 @@ static void CV_botrandom_OnChange( void )
 #ifdef BOT_VERSION_DETECT
     if( demoversion < 148 )  return;
 #endif
+
+    // With so many NETVAR update paths, only let the server do this.
+    // The bot names will be passed with the NetXCmd, so clients do not need this.
+    // The random number generatators will be updated.
+    if( ! server )
+        return;
    
     // [WDJ] Updating the random number generators in the middle of a game, ugh.
-    if( server && netgame )
+    if( netgame )
         SV_Send_State( 1 );  // pause everybody
     
-    B_Rand_SetIndex( cv_bot_randseed.value );
-    // Only re-init after initial loading of config.
+    if( cv_bot_randseed.state & CS_MODIFIED )
+        B_Rand_SetIndex( cv_bot_randseed.value );
+   
+    // Only change names after initial loading of config.
     if( bot_init_done )
-       B_Init_Names();
+        B_Init_Names();
 
-    if( server && netgame )
+    if( netgame )
         SV_Send_State( was_paused );  // sync bot random numbers
+}
+
+
+void DemoAdapt_bots( void )
+{
+    CV_botspeed_OnChange();
 }
 
 
 void B_Init_Bots()
 {  
+    DemoAdapt_bots();
+
     B_Init_Names();
 
     botNodeArray = NULL;
@@ -320,6 +354,7 @@ void B_Init_Bots()
 
 void Command_AddBot(void)
 {
+    byte buf[10];
     byte pn = 0;
 
     if( !server )
@@ -336,7 +371,13 @@ void Command_AddBot(void)
         return;
     }
 
-    Send_NetXCmd(XD_ADDBOT, &pn, 1);
+    bot_info_t * bip = & botinfo[pn];
+    byte * b = &buf[0];
+    WRITEBYTE( b, pn );
+    WRITEBYTE( b, bip->name_index );
+    WRITEBYTE( b, bip->colour );
+    WRITEU16( b, LE_SWAP16( bip->skinrand ) );
+    Send_NetXCmd(XD_ADDBOT, buf, 5);
 }
 
 // Only call after console player and splitscreen players have grabbed their player slots.
@@ -348,15 +389,13 @@ void B_Regulate_Bots( int req_numbots )
         if( playeringame[pn] && players[pn].bot )  req_numbots--;
     }
 
-    pn = 0;
-    for( pn = 0; pn < MAXPLAYERS; pn++ )
+    if( req_numbots > (MAXPLAYERS - num_game_players) )
+        req_numbots = (MAXPLAYERS - num_game_players);
+
+    while( req_numbots > 0 )
     {
-        if( req_numbots <= 0 )  return;
-        if( ! playeringame[pn] ) // find free player slot
-        {
-            Send_NetXCmd(XD_ADDBOT, &pn, 1);
-            req_numbots --;
-        }
+        Command_AddBot();
+        req_numbots --;
     }
 }
 
@@ -1095,15 +1134,43 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 } // end of BOT_Thinker
 
 
-bot_t* B_Create_Bot()
+// Forget what cannot be saved.  To sync client and server bots.
+void  B_forget_stuff( bot_t * bot )
 {
-    bot_t* bot = Z_Malloc (sizeof(*bot), PU_STATIC, 0);
-
-    bot->path = B_LLCreate();
-
-    return bot;
+    bot->destNode = NULL;
+    B_LLClear( bot->path );
 }
 
+void  B_Destroy_Bot( player_t * player )
+{
+    bot_t * bot = player->bot;
+
+    if( bot )
+    {
+        B_LLClear( bot->path );
+
+        Z_Free( bot );
+
+        player->bot = NULL;
+    }
+}
+
+void  B_Create_Bot( player_t * player )
+{
+    bot_t * bot = player->bot;
+    if( bot )
+    {
+        B_LLClear( bot->path );
+        B_LLDelete( bot->path );
+    }
+    else
+    {
+        bot = Z_Malloc (sizeof(*bot), PU_STATIC, 0);
+        player->bot = bot;
+    }
+    memset( bot, 0, sizeof(bot_t));
+    bot->path = B_LLCreate();
+}
 
 
 void B_SpawnBot(bot_t* bot)

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_node.h 1458 2019-09-11 12:27:47Z wesleyjohnson $
+// $Id: b_node.h 1478 2019-10-19 13:43:25Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -75,9 +75,9 @@ typedef struct SearchNode_s
 } SearchNode_t;
 
 extern SearchNode_t***    botNodeArray;
-extern int    numbotnodes,
-              xOffset, yOffset,
-              xSize, ySize;
+extern int  numbotnodes;
+extern int  xOffset, yOffset;
+extern int  xSize, ySize;
 
 //boolean B_PTRPathTraverse (intercept_t *in);
 SearchNode_t* B_FindClosestNode(fixed_t x, fixed_t y);

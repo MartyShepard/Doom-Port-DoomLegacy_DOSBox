@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.h 1462 2019-09-27 06:58:56Z wesleyjohnson $
+// $Id: b_game.h 1478 2019-10-19 13:43:25Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -35,12 +35,13 @@
 
 typedef struct
 {
-    char* name;    // botnames
+    byte  name_index;    // botnames, can be sent by network
     byte  colour;  // 0..10
     uint16_t  skinrand;
 } bot_info_t;
 
 extern bot_info_t  botinfo[MAXPLAYERS];
+extern char* botnames[];
 
 void B_Register_Commands(void);
 void B_BuildTiccmd(player_t* p, ticcmd_t* cmd);
@@ -49,7 +50,10 @@ void B_Init_Nodes(void);
 void Command_AddBot(void);
 void B_Regulate_Bots( int req_numbots );
 
-bot_t* B_Create_Bot();
+void B_forget_stuff( bot_t * bot );
+
+void B_Destroy_Bot( player_t * player );
+void B_Create_Bot( player_t * player );
 void B_SpawnBot(bot_t* p);
 
 ////////// CTF ///////////

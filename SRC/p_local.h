@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1471 2019-10-04 08:59:55Z wesleyjohnson $
+// $Id: p_local.h 1478 2019-10-19 13:43:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -468,6 +468,7 @@ extern byte  legacy_detect;
 void  DemoAdapt_p_user( void );
 void  DemoAdapt_p_enemy( void );
 void  DemoAdapt_p_floor( void );
+void  DemoAdapt_bots( void );
 
 // Alter for Doom or Heretic.
 extern int ceilmovesound;

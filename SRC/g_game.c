@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1477 2019-10-19 13:42:58Z wesleyjohnson $
+// $Id: g_game.c 1478 2019-10-19 13:43:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1387,11 +1387,6 @@ void G_DoLoadLevel (boolean resetplayer)
     extra_dog_count = 0;
 #endif
 
-    if( server )
-    {
-        B_Regulate_Bots( cv_bots.EV );
-    }
-
     // game_map_filename is external wad
     if (!P_SetupLevel (gameepisode, gamemap, gameskill, game_map_filename ))
     {
@@ -1400,8 +1395,6 @@ void G_DoLoadLevel (boolean resetplayer)
         return;
     }
 
-    //BOT_InitLevelBots ();
-   
     // [WDJ] Some demos specify a console player that does not exist.
     // This happens before demoplayback is set.
     // Have not been able to determine anything better to do.
@@ -1424,6 +1417,12 @@ void G_DoLoadLevel (boolean resetplayer)
         displayplayer2_ptr = NULL;  // use as test for player2 active
     }
 
+    DemoAdapt_bots();
+    if( server )
+    {
+        B_Regulate_Bots( cv_bots.EV );
+    }
+   
     gameaction = ga_nothing;
 #ifdef PARANOIA
     Z_CheckHeap (-2);
@@ -3226,6 +3225,7 @@ boolean G_Downgrade(int version)
     DemoAdapt_p_enemy(); // local enables of p_enemy
     DemoAdapt_p_fab();   // local enables of p_fab
     DemoAdapt_p_floor(); // local enables of p_floor, TNT MAP30 fix
+    DemoAdapt_bots();    // local enables of bots
     return true;
 }
 

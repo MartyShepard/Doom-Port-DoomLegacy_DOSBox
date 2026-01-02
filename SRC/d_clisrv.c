@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1477 2019-10-19 13:42:58Z wesleyjohnson $
+// $Id: d_clisrv.c 1478 2019-10-19 13:43:25Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1696,7 +1696,7 @@ static void CL_RemovePlayer(int playernum)
     }
     player->mo = NULL;
    
-//    B_Destroy_Bot( player );
+    B_Destroy_Bot( player );
 }
 
 // By Client and non-specific code, to reset client connect.
@@ -2114,31 +2114,45 @@ void Got_NetXCmd_AddPlayer(xcmd_t * xc)
 // Xcmd XD_ADDBOT
 void Got_NetXCmd_AddBot(xcmd_t * xc)  //added by AC for acbot
 {
+    bot_info_t bi;
+
     // [WDJ] Having error due to sign extension of byte read (signed char).
-    unsigned int newplayernum=READBYTE(xc->curpos);  // unsigned
+    byte newplayernum = READBYTE(xc->curpos);  // unsigned
+    bi.name_index = READBYTE(xc->curpos);
+    bi.colour = READBYTE(xc->curpos);
+    bi.skinrand = LE_SWAP16( READU16(xc->curpos) );
+
     newplayernum&=0x7F;  // remove flag bit, and any sign extension
 
-    bot_info_t * bip = & botinfo[newplayernum];
     player_t * pl = & players[newplayernum];
+    char * botname = botnames[bi.name_index];
 
-    strcpy(player_names[newplayernum], bip->name);
-    players[newplayernum].skincolor = bip->colour;
+    if( playeringame[newplayernum] )
+    {
+        GenPrintf(EMSG_warn, "Bot %s: player slot %i already in use.\n", botname, newplayernum );
+        return;
+    }
+   
+    G_AddPlayer(newplayernum);
+
+    B_Create_Bot( pl );
+
+    strcpy(player_names[newplayernum], botname);
+    pl->skincolor = bi.colour;
     if( cv_bot_skin.EV && (numskins > 1))
     {
-        SetPlayerSkin_by_index( pl, (bip->skinrand % (numskins-1)) + 1 );
+        SetPlayerSkin_by_index( pl, (bi.skinrand % (numskins-1)) + 1 );
     }
-    G_AddPlayer(newplayernum);
-    pl->bot = B_Create_Bot();
 
     playeringame[newplayernum]=true;  // enable this player
     player_state[newplayernum]= PS_bot;
-    if( newplayernum+1 > num_player_slots )
+    if( num_player_slots < newplayernum+1 )
         num_player_slots = newplayernum+1;
     num_game_players++;
 
     multiplayer=1;
 
-    GenPrintf(EMSG_hud, "Bot %s has entered the game\n", player_names[newplayernum]);
+    GenPrintf(EMSG_hud, "Bot %s has entered the game\n", botname);
 }
 
 // By Server.
