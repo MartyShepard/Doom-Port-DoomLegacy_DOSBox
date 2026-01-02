@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1486 2019-12-13 05:21:09Z wesleyjohnson $
+// $Id: d_clisrv.c 1487 2019-12-13 05:21:38Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1304,7 +1304,7 @@ static void SL_Clear_ServerList( int keep_node )
     {
         if( serverlist[i].server_node != keep_node )
         {
-            Net_CloseConnection(serverlist[i].server_node);
+            Net_CloseConnection(serverlist[i].server_node, 0);
             serverlist[i].server_node = 0;
         }
     }
@@ -1731,7 +1731,7 @@ static void CL_RemovePlayer(int playernum)
         if( playerpernode[nnode] == 0 )
         {
             // No more players at this node.	   
-            Net_CloseConnection(player_to_nnode[playernum]);
+            Net_CloseConnection(nnode, 0);
             Reset_NetNode(nnode);  // node_state
         }
     }
@@ -1784,7 +1784,7 @@ void CL_Reset (void)
         // Close connection to server
         // Client keeps nnode_state for server.	
         nnode_state[servernode] = NOS_idle;
-        Net_CloseConnection(servernode);
+        Net_CloseConnection(servernode, 0);
     }
     D_CloseConnection();         // netgame=false
     multiplayer = false;
@@ -2402,7 +2402,7 @@ static void SV_Send_Refuse(int to_node, char *reason)
 
     netbuffer->packettype = PT_SERVERREFUSE;
     HSendPacket(to_node, true, 0, strlen(netbuffer->u.stringpak.str)+1);
-    Net_CloseConnection(to_node);
+    Net_CloseConnection(to_node, 0);
 }
 
 // By Server.
@@ -2415,7 +2415,7 @@ static void server_askinfo_handler( byte nnode )
         // Make the send_time the round trip ping time.
         SV_Send_ServerInfo(nnode,
                            LE_SWAP32(netbuffer->u.askinfo.send_time));
-        Net_CloseConnection(nnode);  // a temp connection
+        Net_CloseConnection(nnode, 0);  // a temp connection
     }
 }
 
@@ -2526,7 +2526,7 @@ static void client_quit_handler( byte nnode, byte client_pn )
             nnode_to_player[1][nnode] = 255;
         }
     }
-    Net_CloseConnection(nnode);
+    Net_CloseConnection(nnode, 0);
     nnode_state[nnode] = NOS_shutdown;
 }
 
@@ -3064,7 +3064,7 @@ static void Net_Packet_Handler(void)
                 continue;
              case PT_NODE_TIMEOUT:  // from client
              case PT_CLIENTQUIT:
-                Net_CloseConnection(nnode);
+                Net_CloseConnection(nnode, 0);  // normal closing
                 continue;
              case PT_REPAIR:
                 if( nodestate >= NOS_recognized )
@@ -3111,7 +3111,7 @@ static void Net_Packet_Handler(void)
         if((nnode >= MAXNETNODES) || (nnode_state[nnode] < NOS_recognized))
         {
             DEBFILE(va("Unknown packet received (%d) from unknown host !\n", packettype));
-            Net_CloseConnection(nnode);  // a temp connection
+            Net_CloseConnection(nnode, 0);  // a temp connection
             continue;
         }
 

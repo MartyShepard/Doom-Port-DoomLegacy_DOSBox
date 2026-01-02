@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1484 2019-12-13 05:19:05Z wesleyjohnson $
+// $Id: d_net.c 1487 2019-12-13 05:21:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -83,7 +83,6 @@
 //   next_tic_send is used to optimize a condition
 // normaly maketic>=gametic>0,
 
-#define FORCECLOSE         0x8000
 #define CONNECTION_TIMEOUT  (15*TICRATE)
 
 doomcom_t*  doomcom = NULL;
@@ -429,7 +428,7 @@ static void Remove_ackpak( ackpak_t * ackpakp )
     if( dnp->flags & NODE_CLOSE )
     {
         // Marked to close when all ACK have been settled.
-        Net_CloseConnection( dnode );
+        Net_CloseConnection( dnode, 0 );
     }
 }
 
@@ -705,7 +704,7 @@ void Net_AckTicker(void)
         {
             DEBFILE(va("Node %d: ack %d sent 10 times so connection is supposed lost\n",
                        nn, ackpakp->acknum));
-            Net_CloseConnection( nn | FORCECLOSE );
+            Net_CloseConnection( nn, 1 ); // forced close
 
             ackpakp->acknum = 0;  // inactive
             continue;
@@ -905,26 +904,21 @@ void Net_AbortPacketType(byte packettype)
 // -----------------------------------------------------------------
 
 
+// Server
 // Remove a node, clear all ack from this node and reset askret
 //   nnode : the net node number, 0..(MAX_CON_NETNODE-1)
-//      may be OR with flag  FORCECLOSE.
-void Net_CloseConnection(int nnode)
+//   forceclose : do not wait for ACK, close now
+void Net_CloseConnection(byte nnode, byte forceclose)
 {
-    boolean forceclose = ((nnode & FORCECLOSE)!=0);
     ackpak_t * ackpakp;
 
-    nnode &= ~FORCECLOSE;
     if( nnode >= MAXNETNODES )
     {
-#if 0
-        // [WDJ] GCC 4.5.2  Compiler bug.
-        goto free_done;
-#else
-        // [WDJ] Smaller code by 3K.
-        I_NetFreeNode(nnode);
+        // invalid node number, or BROADCAST_NODE
+        if( nnode < MAX_CON_NETNODE )  goto free_done;  // old code like dosnet
         return;
-#endif
     }
+
     if( nnode == 0 )
         return;  // Cannot close self connection.
 
@@ -953,13 +947,10 @@ void Net_CloseConnection(int nnode)
     }
 
     // No waiting for ack from this net node.
-    InitNode(nnode);
     Abort_SendFiles(nnode);
-#if 0
-// [WDJ] GCC 4.5.2 Using this label triggers a compiler bug that costs 3K size.
-// An if {}, also costs 3K in program size ! All variations.
+    InitNode(nnode);
+
 free_done:
-#endif
     I_NetFreeNode(nnode);
     return;
 }
@@ -1375,6 +1366,7 @@ boolean D_Startup_NetGame(void)
 
     // Need dedicated and server determined, before most other Init.
     num = MAXNETNODES+9;  // invalid, cv_wait_players already has default.
+    // dedicated set by d_main.c
     dedicated = ( M_CheckParm("-dedicated") != 0 );
     if( dedicated )
     {
@@ -1556,18 +1548,19 @@ boolean D_Startup_NetGame(void)
 }
 
 
+// Server or Client
 extern void D_CloseConnection( void )
 {
     int i;
 
     if( netgame )
     {
-        // wait the ack_return with timout of 5 Sec
+        // wait the ack_return with timeout of 5 Sec
         Net_Wait_AllAckReceived(5);
 
         // close all connection
         for( i=0; i<MAX_CON_NETNODE; i++ )
-            Net_CloseConnection(i | FORCECLOSE);
+            Net_CloseConnection(i, 1);  // force close
 
         InitAck();
 
@@ -1580,6 +1573,7 @@ extern void D_CloseConnection( void )
         I_NetCloseSocket   = NULL;
         I_NetFreeNode	   = Internal_FreeNode;
         I_NetMakeNode      = NULL;
+
         netgame = false;
     }
 }

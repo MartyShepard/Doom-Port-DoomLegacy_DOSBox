@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.h 1377 2017-12-18 17:29:50Z wesleyjohnson $
+// $Id: d_net.h 1487 2019-12-13 05:21:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -82,7 +82,7 @@ boolean HGetPacket (void);
 boolean D_Startup_NetGame(void);
 void    D_CloseConnection( void );
 void    Net_Cancel_Packet_Ack(int nnode);
-void    Net_CloseConnection(int nnode);
+void    Net_CloseConnection(byte nnode, byte forceclose);
 void    Net_AbortPacketType(byte packettype);
 void    Net_Send_AcksPacket(int to_node);
 void    Net_Wait_AllAckReceived( uint32_t timeout );
