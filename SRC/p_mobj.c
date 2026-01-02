@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
+// $Id: p_mobj.c 1459 2019-09-22 07:02:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2636,7 +2636,7 @@ static uint16_t  coop_doom2_mon_table[ 8 ] = {
 };
 
 // sk_baby, sk_easy, sk_medium, sk_hard, sk_nightmare
-static byte  gameskill_bit[ 5 ] = { MTF_EASY, MTF_EASY, MTF_NORMAL, MTF_NORMAL, MTF_HARD };
+static byte  gameskill_bit[ 5 ] = { MTF_EASY, MTF_EASY, MTF_NORMAL, MTF_HARD, MTF_HARD };
 
 
 //

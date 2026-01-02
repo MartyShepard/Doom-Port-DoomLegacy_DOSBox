@@ -7327,3 +7327,10 @@ Added some code to stop bots from obsessing over things they cannot
 reach.  Added code to regulate bots attacking barrels.
 This is still a work-in-progress, and there will be furthur
 significant changes to bots.
+
+
+*** w108_hardskill
+patchfile = w108_45_hardskill.patch
+- commit revision 1459
+A new table for skill levels had a bad entry for the hard skill level.
+
