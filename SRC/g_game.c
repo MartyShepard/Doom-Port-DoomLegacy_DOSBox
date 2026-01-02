@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
+// $Id: g_game.c 1453 2019-08-03 07:04:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1366,6 +1366,11 @@ void G_DoLoadLevel (boolean resetplayer)
 #ifdef DOGS   
     extra_dog_count = 0;
 #endif
+
+    // game_map_filename is external wad
+    {
+        B_Regulate_Bots( cv_bots.EV );
+    }
 
     // game_map_filename is external wad
     if (!P_SetupLevel (gameepisode, gamemap, gameskill, game_map_filename ))

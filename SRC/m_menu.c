@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
+// $Id: m_menu.c 1453 2019-08-03 07:04:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1313,6 +1313,24 @@ void M_StartServer( int choice )
     {
         COM_BufAddText ( va("%s \"%s\"\n", cv_skin2.name, cv_skin2.string));
     }
+   
+#if 0
+// Needs to be done after players have grabbed the player slots.
+    // Add bots
+    if( cv_bots.EV > 0 )
+    {
+        unsigned int cnt = cv_bots.EV;
+        while( cnt-- )
+        {
+#if 1	   
+            COM_BufAddText( "addbot;" );
+#else
+            // Delay to allow splitscreen to grab player2 first.
+            COM_BufAddText( "wait 35; addbot;" );
+#endif
+        }
+    }
+#endif   
 }
 
 menuitem_t  ServerMenu[] =
@@ -1321,6 +1339,7 @@ menuitem_t  ServerMenu[] =
     {IT_STRING | IT_CVAR,0,"Skill"           ,&cv_skill            ,0},
     {IT_STRING | IT_CVAR,0,"Coop/Deathmatch" ,&cv_deathmatch_menu  ,0},
     {IT_STRING | IT_CVAR,0,"Monsters"        ,&cv_monsters         ,0},
+    {IT_STRING | IT_CVAR,0,"Bots"            ,&cv_bots             ,0},
     {IT_STRING | IT_CVAR,0,"Wait Players"    ,&cv_wait_players     ,0},
     {IT_STRING | IT_CVAR,0,"Wait Timeout"    ,&cv_wait_timeout     ,0},
     {IT_STRING | IT_CVAR,0,"Internet Server" ,&cv_internetserver   ,0},
@@ -5731,6 +5750,7 @@ void M_Init (void)
 
     CV_RegisterVar(&cv_skill);
     CV_RegisterVar(&cv_monsters);
+    CV_RegisterVar(&cv_bots);
     CV_RegisterVar(&cv_nextmap );
     CV_RegisterVar(&cv_nextepmap );
     CV_RegisterVar(&cv_deathmatch_menu);

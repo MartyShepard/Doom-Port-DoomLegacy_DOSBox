@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1452 2019-08-03 07:03:27Z wesleyjohnson $
+// $Id: p_local.h 1453 2019-08-03 07:04:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -253,6 +253,9 @@ mobj_t *P_SpawnMissile (mobj_t* source, mobj_t* dest, mobjtype_t type);
 
 mobj_t *P_SPMAngle ( mobj_t* source, mobjtype_t type, angle_t angle );
 #define P_SpawnPlayerMissile(s,t) P_SPMAngle(s,t,s->angle)
+
+// Bots
+extern  consvar_t cv_bots;
 
 //
 // P_ENEMY
