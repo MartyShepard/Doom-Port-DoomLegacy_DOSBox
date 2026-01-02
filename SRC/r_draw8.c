@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw8.c 1440 2019-05-19 02:31:03Z wesleyjohnson $
+// $Id: r_draw8.c 1455 2019-09-11 12:25:21Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 // Portions Copyright (C) 2000-2016 by DooM Legacy Team.
@@ -578,10 +578,17 @@ void R_DrawAlphaColumn_8(void)
         {
             // Calculate transparency using RGBA
             register RGBA_t p = pLocalPalette[*dest];
+            unsigned int r,g,b;
+            // (0xFF * 0xFF * 0xFF) = 0xFD02FF
+            b = p.s.blue;
+            b += ((((unsigned int)dr_color.s.blue  * alpha * (255 - b)) + 0x8000) >> 16);
+            g = p.s.green;
+            g += ((((unsigned int)dr_color.s.green * alpha * (255 - g)) + 0x8000) >> 16);
+            r = p.s.red;
+            r += ((((unsigned int)dr_color.s.red   * alpha * (255 - r)) + 0x8000) >> 16);
+
             register unsigned int p12 = // 12 bit r,g,b color
-              ((( ((unsigned int)dr_color.s.blue * alpha * (255 - p.s.blue))   + 0x0080) >> (16+4-0)) & 0x000F)
-            | ((( ((unsigned int)dr_color.s.green * alpha * (255 - p.s.green)) + 0x0080) >> (16+4-4)) & 0x00F0)
-            | ((( ((unsigned int)dr_color.s.red * alpha * (255 - p.s.red))     + 0x0080) >> (16+4-8)) & 0x0F00);
+              ((b & 0xF0) >> 4) | (g & 0xF0) | ((r & 0xF0) << 4);
            *dest = color12_to_8[p12];  // lookup palette
         }
         dest += vid.ybytes;
@@ -601,12 +608,13 @@ void R_DrawAlphaColumn_8(void)
             // Calculate transparency using RGBA
             register RGBA_t p = pLocalPalette[*dest];
             unsigned int r,g,b;
+            // (0xFF * 0xFF * 0xFF) = 0xFD02FF
             b = (p.s.blue * alpha_r)>>8;
-            b += ((((unsigned int)dr_color.s.blue  * alpha * (255 - b)) + 0x0080) >> 16);
+            b += ((((unsigned int)dr_color.s.blue  * alpha * (255 - b)) + 0x8000) >> 16);
             g = (p.s.green * alpha_r)>>8;
-            g += ((((unsigned int)dr_color.s.green * alpha * (255 - g)) + 0x0080) >> 16);
+            g += ((((unsigned int)dr_color.s.green * alpha * (255 - g)) + 0x8000) >> 16);
             r = (p.s.red * alpha_r)>>8;
-            r += ((((unsigned int)dr_color.s.red   * alpha * (255 - r)) + 0x0080) >> 16);
+            r += ((((unsigned int)dr_color.s.red   * alpha * (255 - r)) + 0x8000) >> 16);
 
             register unsigned int p12 = // 12 bit r,g,b color
               ((b & 0xF0) >> 4) | (g & 0xF0) | ((r & 0xF0) << 4);

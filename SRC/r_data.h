@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 1449 2019-07-21 01:31:43Z wesleyjohnson $
+// $Id: r_data.h 1455 2019-09-11 12:25:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -248,7 +248,7 @@ extern union color8_u  color8;
 extern uint16_t*  hicolormaps;
 void R_Init_color8_translate ( RGBA_t * palette );
 #ifdef ENABLE_DRAW8_USING_12
-extern byte  color12_to_8[ 0x0FFF ];
+extern byte  color12_to_8[ 0x1000 ];
 void R_Init_color12_translate( RGBA_t * palette );
 #endif
 

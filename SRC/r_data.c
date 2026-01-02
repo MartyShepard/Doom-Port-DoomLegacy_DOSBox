@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1449 2019-07-21 01:31:43Z wesleyjohnson $
+// $Id: r_data.c 1455 2019-09-11 12:25:21Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -185,7 +185,7 @@ int             texturememory;	// all textures
 union color8_u   color8;  // remap color index to rgb value
 uint16_t*  hicolormaps = NULL;  // test a 32k colormap remaps high -> high
 #ifdef ENABLE_DRAW8_USING_12
-byte  color12_to_8[ 0x0FFF ];
+byte  color12_to_8[ 0x1000 ];
 #endif
 
 #ifdef ENABLE_DRAW_ALPHA
@@ -2639,20 +2639,40 @@ void R_Init_color8_translate ( RGBA_t * palette )
 #endif
 
 #ifdef ENABLE_DRAW8_USING_12
+//#define COLOR12_QUALITY_CHECK
 // covert 8 bit colors
 void R_Init_color12_translate ( RGBA_t * palette )
 {
     unsigned int i;
 
+#ifdef COLOR12_QUALITY_CHECK
+    printf(" color12 quality check:\n" );
+#endif
+   
     // Fill table
-    for( i=0; i<0x0FFF; i++ )
+    for( i=0; i <= 0x0FFF; i++ )
     {
         // 12 bit color is  R,G,B  4 bits each.
         // Must shift 4 bit color up to be 8 bit color;
-        register byte r = ((i & 0x0F00) >> 4) + 0x0008;
-        register byte g = ((i & 0x00F0)     ) + 0x0008;
-        register byte b = ((i & 0x000F) << 4) + 0x0008;
+        register byte r = ((i & 0x0F00) >> 4) + 0x08;
+        register byte g = ((i & 0x00F0)     ) + 0x08;
+        register byte b = ((i & 0x000F) << 4) + 0x08;
         color12_to_8[i] = NearestColor( r, g, b );
+
+#ifdef COLOR12_QUALITY_CHECK
+        unsigned int  b1 = ((i << 4) & 0xF0);
+        unsigned int  g1 = ((i ) & 0xF0);
+        unsigned int  r1 = ((i >> 4) & 0xF0);
+        register RGBA_t p = pLocalPalette[ color12_to_8[i] ];
+        unsigned int  er = (abs( b1 - p.s.blue ) + abs( g1 - p.s.green ) + abs( r1 - p.s.red )) * 100 / 255;  // 0 to 300%
+        if(   ( abs( b1 - p.s.blue  ) > 0x3F )
+           || ( abs( g1 - p.s.green ) > 0x3F )
+           || ( abs( r1 - p.s.red   ) > 0x3F )
+           || ( er > 99) )
+        {
+            printf(" color12_translate[%4i]: (%2X,%2X,%2X) ==> (%2X,%2X,%2X)  ERROR= %4i\n", i,  r1,g1,b1, p.s.red,p.s.green,p.s.blue, er );
+        }
+#endif
     }
 }
 #endif
