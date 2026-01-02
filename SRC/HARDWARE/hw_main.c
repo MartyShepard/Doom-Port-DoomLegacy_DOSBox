@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
+// $Id: hw_main.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -4051,20 +4051,22 @@ static byte viewsv_need_sky[2];
 
 //  viewnumber : splitscreen 0=upper, 1=lower. Single player is always 0.
 //    
-void HWR_RenderPlayerView(byte viewnumber, player_t * player)
+//  pind : splitscreen 0=upper, 1=lower, 2=init. Single player is always 0.
+void HWR_RenderPlayerView(byte pind, player_t * player)
 {
+    // viewnumber = pind, because [0] is upper splitscreen
     //static float    distance = BASEVIDWIDTH;
 
     // Palette moved to R_SetupFrame.
 
     // Is also forced upon first Render, by init of viewsv_viewnumber.
-    if(viewsv_viewnumber != viewnumber)
+    if(viewsv_viewnumber != pind)
     {
         if( viewsv_viewnumber < 2 )
         {
             // swap split window settings
             viewsv_need_sky[viewsv_viewnumber] = need_sky_background;
-            need_sky_background = viewsv_need_sky[viewnumber];
+            need_sky_background = viewsv_need_sky[pind];
         }
         else
         {
@@ -4072,12 +4074,12 @@ void HWR_RenderPlayerView(byte viewnumber, player_t * player)
             need_sky_background = DSB_all;
             viewsv_need_sky[0] = viewsv_need_sky[1] = DSB_all;
         }
-        viewsv_viewnumber = viewnumber;
-        HWR_Set_Lights(viewnumber);
+        viewsv_viewnumber = pind;
+        HWR_Set_Lights(pind);
     }
      
     // note: sets viewangle, viewx, viewy, viewz
-    R_SetupFrame(player);
+    R_SetupFrame(pind, player);
 
     // copy view cam position for local use
     dup_viewangle = viewangle;
@@ -4086,7 +4088,7 @@ void HWR_RenderPlayerView(byte viewnumber, player_t * player)
     gr_centery = gr_basecentery;
     gr_viewwindowy = gr_baseviewwindowy;
     gr_windowcentery = gr_basewindowcentery;
-    if (cv_splitscreen.value && viewnumber == 1)
+    if (cv_splitscreen.value && (pind == 1))
     {
         // lower screen
         //gr_centery += (vid.height/2 );

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1471 2019-10-04 08:59:55Z wesleyjohnson $
+// $Id: t_func.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -813,7 +813,7 @@ void SF_SkinColor(void)
            (players[playernum].mo->tflags & ~MFT_TRANSLATION6)
            | (players[playernum].mo->player->skincolor);
 
-        CV_SetValue (&cv_playercolor, colour);
+        CV_SetValue (&cv_playercolor[0], colour);
     }
 
     t_return.value.i = players[playernum].skincolor;
@@ -1131,10 +1131,11 @@ void SF_PlayerPitch(void)
 
     if(t_argc == 2)
     {
-        localaiming = FixedToAngle(fixedvalue(t_argv[1]));
+        localaiming[0] = FixedToAngle(fixedvalue(t_argv[1]));
     }
 
     t_return.value.f = AngleToFixed(players[playernum].aiming);
+
 done:
     return;
 
@@ -1492,7 +1493,7 @@ void SF_ObjAngle(void)
             //iori: now able to change the player's angle, not just mobj's
             if(mo == consoleplayer_ptr->mo)
             {
-                localangle = FixedToAngle(fixedvalue(t_argv[1]));
+                localangle[0] = FixedToAngle(fixedvalue(t_argv[1]));
             }
             else
             {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_telept.c 1335 2017-05-30 15:38:25Z wesleyjohnson $
+// $Id: p_telept.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -116,9 +116,10 @@ boolean P_Teleport(mobj_t *thing, fixed_t x, fixed_t y, angle_t angle)
             thing->reactiontime = 18;
         // added : absolute angle position
         if(thing== consoleplayer_ptr->mo)
-            localangle = angle;
+            localangle[0] = angle;
         if(displayplayer2_ptr && thing== displayplayer2_ptr->mo) // NULL when unused
-            localangle2 = angle;
+            localangle[1] = angle;
+
 #ifdef CLIENTPREDICTION2
         if(thing== consoleplayer_ptr->mo)
         {

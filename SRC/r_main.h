@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.h 1338 2017-06-21 16:07:52Z wesleyjohnson $
+// $Id: r_main.h 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -211,10 +211,12 @@ void   R_SetViewSize (void);
 // do it (sometimes explicitly called)
 void   R_ExecuteSetViewSize (void);
 
-void R_SetupFrame (player_t* player);
+//  pind : player index, [0]=main player, [1]=splitscreen player
+void  R_SetupFrame( byte pind, player_t* player );
 
 // Called by G_Drawer.
-void   R_RenderPlayerView (player_t *player);
+//  pind : player index, [0]=main player, [1]=splitscreen player
+void  R_RenderPlayerView( byte pind, player_t *player );
 
 // add commands related to engine, at game startup
 void   R_Register_EngineStuff (void);

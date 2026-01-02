@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1479 2019-10-19 13:43:52Z wesleyjohnson $
+// $Id: p_saveg.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2017 by DooM Legacy Team.
@@ -2352,9 +2352,9 @@ void P_UnArchiveThinkers(void)
                         mobj->player->mo = mobj;  // connect player to this mobj
                         // added for angle prediction
                         if (consoleplayer == i)
-                            localangle = mobj->angle;
+                            localangle[0] = mobj->angle;
                         if (displayplayer2 == i)  // player 2
-                            localangle2 = mobj->angle;
+                            localangle[1] = mobj->angle;
                     }
                     else if( i >= 128 && i < MAXPLAYERS+128 )
                     {
@@ -3629,7 +3629,7 @@ const byte sg_big_endian = 1;
 const byte sg_big_endian = 0;
 #endif
 
-// Called from menu via G_DoSaveGame via network Got_SaveGamecmd.
+// Called from menu via G_DoSaveGame via network Got_SaveGame_cmd.
 // Used for savegame file and netgame.
 //   write_netgame : 1 for network passed netgame
 // Write savegame header to savegame buffer.
@@ -3703,7 +3703,7 @@ void  term_header_line( char * infodest )
 }
 
 
-// Called from G_DoLoadGame, M_ReadSaveStrings
+// Called from G_DoLoadGame, M_Read_savestrings
 // Only for savegame file and netgame.
 // Read savegame header from savegame buffer.
 //   read_netgame : 1 for network passed netgame
@@ -3782,7 +3782,7 @@ boolean P_Read_Savegame_Header( savegame_info_t * infop, byte read_netgame )
 }
 
 
-// Called from menu via G_DoSaveGame via network Got_SaveGamecmd,
+// Called from menu via G_DoSaveGame via network Got_SaveGame_cmd,
 // and called from SV_Send_SaveGame by network for JOININGAME.
 // Write game data to savegame buffer.
 void P_SaveGame( void )

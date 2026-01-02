@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.h 1466 2019-10-01 02:37:37Z wesleyjohnson $
+// $Id: g_input.h 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -108,16 +108,16 @@ typedef enum
 } gamecontrols_e;
 
 
-extern consvar_t  cv_autorun;
-extern consvar_t  cv_autorun2;
-
 extern consvar_t   cv_grabinput;
 
-extern consvar_t   cv_joy_deadzone;
-// mouse
-extern consvar_t   cv_usemouse;
-extern consvar_t   cv_alwaysfreelook;
-extern consvar_t   cv_mouse_move;
+// Player control
+// [0]=main player [1]=splitscreen player
+extern consvar_t   cv_autorun[2];
+extern consvar_t   cv_usemouse[2];
+extern consvar_t   cv_mouse_move[2];
+extern consvar_t   cv_alwaysfreelook[2];
+
+// mouse1
 extern consvar_t   cv_mouse_invert;
 extern consvar_t   cv_mouse_sens_x;
 extern consvar_t   cv_mouse_sens_y;
@@ -130,19 +130,18 @@ extern int             joyymove;
 extern consvar_t   cv_usejoystick;
 extern consvar_t   cv_joystickfreelook;
 #endif
-// splitscreen with second mouse
-extern consvar_t   cv_usemouse2;
+// mouse2
 extern consvar_t   cv_mouse2port;
 #ifdef LMOUSE2
 extern consvar_t   cv_mouse2opt;
 #endif
-extern consvar_t   cv_alwaysfreelook2;
-extern consvar_t   cv_mouse2_move;
 extern consvar_t   cv_mouse2_invert;
 extern consvar_t   cv_mouse2_sens_x;
 extern consvar_t   cv_mouse2_sens_y;
 
 extern consvar_t   cv_mouse_double;
+
+extern consvar_t   cv_joy_deadzone;
 #ifdef JOY_BUTTONS_DOUBLE     
 extern consvar_t   cv_joy_double;
 #endif

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: d_netcmd.h 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -59,27 +59,20 @@
 #include "command.h"
 
 // console vars
-extern consvar_t   cv_playername;
-extern consvar_t   cv_playercolor;
+extern consvar_t   cv_splitscreen;
+
+// main player and splitscreen player
+extern consvar_t   cv_playername[2];
+extern consvar_t   cv_playercolor[2];
+extern consvar_t   cv_skin[2];
+
 extern consvar_t   cv_autoaim;
 extern consvar_t   cv_controlperkey;
 
-// normaly in p_mobj but the .h in not read !
 extern consvar_t   cv_itemrespawntime;
 extern consvar_t   cv_itemrespawn;
 extern consvar_t   cv_respawnmonsters;
 extern consvar_t   cv_respawnmonsterstime;
-
-// added 16-6-98 : splitscreen
-extern consvar_t   cv_splitscreen;
-
-// 02-08-98      : r_things.c
-extern consvar_t   cv_skin;
-
-// secondary splitscreen player
-extern consvar_t   cv_playername2;
-extern consvar_t   cv_playercolor2;
-extern consvar_t   cv_skin2;
 
 extern consvar_t   cv_teamplay;
 extern consvar_t   cv_teamdamage;

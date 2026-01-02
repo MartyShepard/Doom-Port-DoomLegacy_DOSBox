@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1480 2019-12-13 05:15:32Z wesleyjohnson $
+// $Id: d_netcmd.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -160,8 +160,8 @@ void Got_NetXCmd_NameColor(xcmd_t * xc);
 void Got_NetXCmd_WeaponPref(xcmd_t * xc);
 void Got_NetXCmd_Mapcmd(xcmd_t * xc);
 void Got_NetXCmd_ExitLevelcmd(xcmd_t * xc);
-void Got_NetXCmd_LoadGamecmd(xcmd_t * xc);
-void Got_NetXCmd_SaveGamecmd(xcmd_t * xc);
+void Got_NetXCmd_LoadGame_cmd(xcmd_t * xc);
+void Got_NetXCmd_SaveGame_cmd(xcmd_t * xc);
 void Got_NetXCmd_Pause(xcmd_t * xc);
 void Got_NetXCmd_UseArtifact(xcmd_t * xc);
 
@@ -191,36 +191,62 @@ void Command_Kill(void);
 //                           CLIENT VARIABLES
 // =========================================================================
 
-void Send_WeaponPref(void);
-void Send_NameColor(void);
-void Send_NameColor2(void);
+static void Send_WeaponPref_pind(byte pind);
+static void Send_NameColor_pind(byte pind);
+
+// [WDJ] Or could just send both when any change is made?
+// See Send_PlayerConfig
+static
+void Send_NameColor1(void)
+{
+    Send_NameColor_pind(0);
+}
+static
+void Send_NameColor2(void)
+{
+    Send_NameColor_pind(1);
+}
+
+static
+void Send_WeaponPref(void)
+{
+    Send_WeaponPref_pind(0);
+    Send_WeaponPref_pind(1);
+}
 
 // Has CV_CFG1 where does not have support for insert into drawmode config file.
 // these two are just meant to be saved to the config
-consvar_t cv_playername = { "name", NULL, CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, NULL, Send_NameColor };
-consvar_t cv_playercolor = { "color", "0", CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, Color_cons_t, Send_NameColor };
+consvar_t cv_playername[2] = {
+  { "name", NULL, CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, NULL, Send_NameColor1 },
+  { "name2", "big b", CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, NULL, Send_NameColor2 }
+};
+
+consvar_t cv_playercolor[2] = {
+  { "color", "0", CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, Color_cons_t, Send_NameColor1 },
+  { "color2", "1", CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, Color_cons_t, Send_NameColor2 }
+};
 
 // player's skin, saved for commodity, when using a favorite skins wad..
-consvar_t cv_skin = { "skin", DEFAULTSKIN, CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, NULL /*skin_cons_t */ , Send_NameColor };
+consvar_t cv_skin[2] = {
+  { "skin", DEFAULTSKIN, CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, NULL /*skin_cons_t */ , Send_NameColor1 },
+  { "skin2", DEFAULTSKIN, CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, NULL /*skin_cons_t */ , Send_NameColor2 }
+};
+
 consvar_t cv_weaponpref = { "weaponpref", "014576328", CV_SAVE | CV_CALL | CV_NOINIT, NULL, Send_WeaponPref };
 consvar_t cv_autoaim = { "autoaim", "1", CV_SAVE | CV_CALL | CV_NOINIT, CV_OnOff, Send_WeaponPref };
 consvar_t cv_originalweaponswitch = { "originalweaponswitch", "0", CV_SAVE | CV_CALL | CV_NOINIT, CV_OnOff, Send_WeaponPref };
 
-// secondary player for splitscreen mode
-consvar_t cv_playername2 = { "name2", "big b", CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, NULL, Send_NameColor2 };
-consvar_t cv_playercolor2 = { "color2", "1", CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, Color_cons_t, Send_NameColor2 };
-consvar_t cv_skin2 = { "skin2", DEFAULTSKIN, CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, NULL /*skin_cons_t */ , Send_NameColor2 };
-
 CV_PossibleValue_t usemouse_cons_t[] = { {0, "Off"}, {1, "On"}, {2, "Force"}, {0, NULL} };
+consvar_t cv_usemouse[2] = {
+  { "use_mouse", "1", CV_SAVE | CV_CALL, usemouse_cons_t, CV_mouse_OnChange },
+  { "use_mouse2", "0", CV_SAVE | CV_CALL, usemouse_cons_t, I_StartupMouse2 }
+};
 
 #ifdef LMOUSE2
 CV_PossibleValue_t mouse2port_cons_t[] = { {0, "/dev/gpmdata"}, {1, "/dev/ttyS0"}, {2, "/dev/ttyS1"}, {3, "/dev/ttyS2"}, {4, "/dev/ttyS3"}, {0, NULL} };
 #else
 CV_PossibleValue_t mouse2port_cons_t[] = { {1, "COM1"}, {2, "COM2"}, {3, "COM3"}, {4, "COM4"}, {0, NULL} };
 #endif
-
-consvar_t cv_usemouse = { "use_mouse", "1", CV_SAVE | CV_CALL, usemouse_cons_t, CV_mouse_OnChange };
-consvar_t cv_usemouse2 = { "use_mouse2", "0", CV_SAVE | CV_CALL, usemouse_cons_t, I_StartupMouse2 };
 
 #ifdef LMOUSE2
 consvar_t cv_mouse2port = { "mouse2port", "/dev/gpmdata", CV_SAVE|CV_STRING, mouse2port_cons_t };
@@ -290,24 +316,26 @@ void D_Register_ClientCommands(void)
     // Otherwise there will be error messages when config is loaded.
 
     // register these so it is saved to config
-    cv_playername.defaultvalue = I_GetUserName();
-    if (cv_playername.defaultvalue == NULL)
-        cv_playername.defaultvalue = "gi john";
-    CV_RegisterVar(&cv_playername);
-    CV_RegisterVar(&cv_playercolor);
+    cv_playername[0].defaultvalue = I_GetUserName();
+    if (cv_playername[0].defaultvalue == NULL)
+        cv_playername[0].defaultvalue = "gi john";
+
+    // Main player
+    CV_RegisterVar(&cv_playername[0]);
+    CV_RegisterVar(&cv_playercolor[0]);
+    CV_RegisterVar(&cv_skin[0]);  // r_things.c (skin NAME)
+
+    // Splitscreen player
+    CV_RegisterVar(&cv_playername[1]);
+    CV_RegisterVar(&cv_playercolor[1]);
+    CV_RegisterVar(&cv_skin[1]);
+   
     CV_RegisterVar(&cv_weaponpref);
     CV_RegisterVar(&cv_autoaim);
     CV_RegisterVar(&cv_originalweaponswitch);
 
     //misc
     CV_RegisterVar(&cv_netstat);
-
-    // r_things.c (skin NAME)
-    CV_RegisterVar(&cv_skin);
-    // secondary player (splitscreen)
-    CV_RegisterVar(&cv_skin2);
-    CV_RegisterVar(&cv_playername2);
-    CV_RegisterVar(&cv_playercolor2);
 
     //
     //  The above commands are enough for dedicated server
@@ -316,9 +344,9 @@ void D_Register_ClientCommands(void)
         return;
 
     COM_AddCommand("load", Command_Load_f, CC_savegame);
-    Register_NetXCmd(XD_LOADGAME, Got_NetXCmd_LoadGamecmd);
+    Register_NetXCmd(XD_LOADGAME, Got_NetXCmd_LoadGame_cmd);
     COM_AddCommand("save", Command_Save_f, CC_savegame);
-    Register_NetXCmd(XD_SAVEGAME, Got_NetXCmd_SaveGamecmd);
+    Register_NetXCmd(XD_SAVEGAME, Got_NetXCmd_SaveGame_cmd);
 
     // add cheat commands, I'm bored of deh patches renaming the idclev ! :-)
     COM_AddCommand("noclip", Command_CheatNoClip_f, CC_cheat);
@@ -384,45 +412,32 @@ byte *  write_stringn( byte *dst, const char* src, int num )
 //                            CLIENT STUFF
 // =========================================================================
 
+// [WDJ] Currently, these are being sent without cv_splitscreen knowledge,
+// so when not splitscreen, they may be mysterious settings to other nodes.
+
 // By Client.
 //  name, color, or skin has changed
-//
-void Send_NameColor(void)
+//  pind : player index, [0]=main player, [1]=splitscreen player
+static
+void Send_NameColor_pind( byte pind )
 {
     byte buf[MAXPLAYERNAME + 1 + SKINNAMESIZE + 1];
     byte *p;
+    consvar_t * skinp;
 
     p = buf;
     // Format:  color byte, player_name str0, skin_name str0.
-    WRITEBYTE(p, cv_playercolor.value);
-    p = write_stringn(p, cv_playername.string, MAXPLAYERNAME);
+    WRITEBYTE(p, cv_playercolor[pind].value);
+    p = write_stringn(p, cv_playername[pind].string, MAXPLAYERNAME);
 
     // check if player has the skin loaded (cv_skin may have
     //  the name of a skin that was available in the previous game)
-    cv_skin.value = R_SkinAvailable(cv_skin.string);
-    char * svstr = (cv_skin.value)? cv_skin.string : DEFAULTSKIN;
+    skinp = & cv_skin[pind];
+    skinp->value = R_SkinAvailable(skinp->string);
+    char * svstr = (skinp->value)? skinp->string : DEFAULTSKIN;
     p = write_stringn(p, svstr, SKINNAMESIZE);
 
-    Send_NetXCmd(XD_NAMEANDCOLOR, buf, (p - buf));
-}
-
-// splitscreen
-void Send_NameColor2(void)
-{
-    byte buf[MAXPLAYERNAME + 1 + SKINNAMESIZE + 1], *p;
-
-    p = buf;
-    // Format:  color byte, player_name str0, skin_name str0.
-    WRITEBYTE(p, cv_playercolor2.value);
-    p = write_stringn(p, cv_playername2.string, MAXPLAYERNAME);
-
-    // check if player has the skin loaded (cv_skin may have
-    //  the name of a skin that was available in the previous game)
-    cv_skin2.value = R_SkinAvailable(cv_skin2.string);
-    char * svstr = (cv_skin2.value)? cv_skin2.string : DEFAULTSKIN;
-    p = write_stringn(p, svstr, SKINNAMESIZE);
-
-    Send_NetXCmd2(XD_NAMEANDCOLOR, buf, (p - buf));
+    Send_NetXCmd_pind(XD_NAMEANDCOLOR, buf, (p - buf), pind);
 }
 
 void Got_NetXCmd_NameColor(xcmd_t * xc)
@@ -494,7 +509,9 @@ done:
     xc->curpos = (byte*)lcp;  // OUT once
 }
 
-void Send_WeaponPref(void)
+//  pind : player index, [0]=main player, [1]=splitscreen player
+static
+void Send_WeaponPref_pind( byte pind )
 {
     char buf[NUMWEAPONS + 2];
 
@@ -510,10 +527,9 @@ void Send_WeaponPref(void)
     buf[0] = cv_originalweaponswitch.value;
     memcpy(buf + 1, cv_weaponpref.string, NUMWEAPONS);
     buf[1 + NUMWEAPONS] = cv_autoaim.value;
-    Send_NetXCmd(XD_WEAPONPREF, buf, NUMWEAPONS + 2);
     // FIXME : the split screen player have the same weapon pref of the first player
-    if (cv_splitscreen.value)
-        Send_NetXCmd2(XD_WEAPONPREF, buf, NUMWEAPONS + 2);
+
+    Send_NetXCmd_pind(XD_WEAPONPREF, buf, NUMWEAPONS + 2, pind);
 }
 
 void Got_NetXCmd_WeaponPref(xcmd_t * xc)
@@ -530,10 +546,13 @@ void Got_NetXCmd_WeaponPref(xcmd_t * xc)
 
 void D_Send_PlayerConfig(void)
 {
-    Send_NameColor();
+    Send_NameColor_pind(0);
+    Send_WeaponPref_pind(0);
     if (cv_splitscreen.value)
-        Send_NameColor2();
-    Send_WeaponPref();
+    {
+        Send_NameColor_pind(1);
+        Send_WeaponPref_pind(1);
+    }
 }
 
 // ========================================================================
@@ -936,7 +955,7 @@ void Command_Load_f(void)
     Send_NetXCmd(XD_LOADGAME, &slot, 1);
 }
 
-void Got_NetXCmd_LoadGamecmd(xcmd_t * xc)
+void Got_NetXCmd_LoadGame_cmd(xcmd_t * xc)
 {
     // Format: save_slot byte.
     byte slot = *(xc->curpos++);
@@ -969,7 +988,7 @@ void Command_Save_f(void)
     Send_NetXCmd(XD_SAVEGAME, &p, strlen(&p[1]) + 2);
 }
 
-void Got_NetXCmd_SaveGamecmd(xcmd_t * xc)
+void Got_NetXCmd_SaveGame_cmd(xcmd_t * xc)
 {
     byte slot;
     char description[SAVESTRINGSIZE];

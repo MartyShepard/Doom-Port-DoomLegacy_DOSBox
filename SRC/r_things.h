@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.h 1449 2019-07-21 01:31:43Z wesleyjohnson $
+// $Id: r_things.h 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -143,7 +143,7 @@ typedef struct
 
 extern int       numskins;
 extern skin_t *  skins[MAXSKINS+1];
-extern consvar_t cv_skin;
+extern consvar_t cv_skin[2];
 
 void    SetPlayerSkin_by_index( player_t * player, int index );
 void    SetPlayerSkin(int playernum, const char *skinname);

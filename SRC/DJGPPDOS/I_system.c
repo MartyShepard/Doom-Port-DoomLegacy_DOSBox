@@ -662,7 +662,7 @@ void I_StartupMouse2()
     if( mouse2_started )
         I_ShutdownMouse2();
 
-    if(!cv_usemouse2.value)
+    if(!cv_usemouse[1].value)
         return;
 
     handlermouse2x=handlermouse2y=handlermouse2buttons=0;
@@ -718,12 +718,12 @@ void I_StartupMouse2()
 
     outportb(mouse2port+4,0x0b);   // restart mouse
     i=I_GetTime()+TICRATE;
-    found=cv_usemouse2.value==2;
+    found=cv_usemouse[1].value==2;
     while (I_GetTime()<i || !found)
        if(combytes[0]!='M')
           found=true;
 
-    if(found || cv_usemouse2.value==2)
+    if(found || cv_usemouse[1].value==2)
     {
         CONS_Printf("Microsoft compatible Secondary Mouse detected\n");
 
@@ -748,7 +748,7 @@ void I_StartupMouse ( boolean play_mode )
     __dpmi_regs r;
 
     // mouse detection may be skipped by setting usemouse false
-    if(cv_usemouse.value == 0)
+    if(cv_usemouse[0].value == 0)
     {
         mouse_detected=false;
         I_ShutdownMouse2();
@@ -762,7 +762,7 @@ void I_StartupMouse ( boolean play_mode )
     __dpmi_int(0x33,&r);
 
     //added:03-01-98:
-    if( r.x.ax == 0 && cv_usemouse.value != 2)
+    if( r.x.ax == 0 && cv_usemouse[0].value != 2)
     {
         mouse_detected=false;
         CONS_Printf("\2I_StartupMouse: mouse not present.\n");

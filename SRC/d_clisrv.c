@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1480 2019-12-13 05:15:32Z wesleyjohnson $
+// $Id: d_clisrv.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -223,8 +223,8 @@ static tic_t    cl_maketic[MAXNETNODES];  // unused
 
 
 // Server net node state
-static byte     nnode_to_player[MAXNETNODES];  // 255= unused
-static byte     nnode_to_player2[MAXNETNODES]; // splitscreen player, 255= unused
+// [0]=main player [1]=splitscreen player
+static byte     nnode_to_player[2][MAXNETNODES];  // 255= unused
 static byte     playerpernode[MAXNETNODES]; // used specialy for splitscreen
 static byte     nodewaiting[MAXNETNODES];  // num of players waiting to join
 static byte     num_waiting_players;
@@ -255,10 +255,9 @@ byte            servernode = 255; // server net node, 255=none
 // One extra byte at end for 0 termination, to protect against malicious use.
 // Use textbuf_t from textcmdpak
 
-static ticcmd_t localcmds;
-static textbuf_t  localtextcmd;
-static ticcmd_t localcmds2;  // player 2
-static textbuf_t  localtextcmd2; // splitscreen player2
+// [0]=main player [1]=splitscreen player
+static ticcmd_t   localcmds[2];
+static textbuf_t  localtextcmd[2];
 
 // engine
 ticcmd_t        netcmds[BACKUPTICS][MAXPLAYERS];
@@ -319,63 +318,49 @@ void Register_NetXCmd(netxcmd_e cmd_id, void (*cmd_f) (xcmd_t * xc))
    netxcmd_func[cmd_id] = cmd_f;
 }
 
+// Command sent over text cmd channel.  Default as main player.
 //  cmd_id :  X command, XD_
 //  param : parameter strings
 //  param_len : number of parameter strings
-void Send_NetXCmd(byte cmd_id, void *param, int param_len)
+void Send_NetXCmd(byte cmd_id, void *param, int nparam)
+{
+    Send_NetXCmd_pind( cmd_id, param, nparam, 0 );  // main player
+}
+
+// Command sent over text cmd channel.
+//  cmd_id :  X command, XD_
+//  param : parameter strings
+//  param_len : number of parameter strings
+//  pind : player index, [0]=main player, [1]=splitscreen player
+void Send_NetXCmd_pind(byte cmd_id, void *param, int param_len, byte pind)
 {
    if(demoplayback)
        return;
 
-   int textlen = localtextcmd.len;
+   textbuf_t * ltcbp = &localtextcmd[pind];
+   int textlen = ltcbp->len;
    if( (textlen + 1 + param_len) > MAXTEXTCMD)  // with XD_ and param
    {
 #ifdef PARANOIA
-       I_SoftError("Net command [%i] exceeds buffer: netcmd %d\n", cmd_id, 1);
+       I_SoftError("Net command exceeds buffer: pind=%d  netcmd=%d  netcmdlen=%d  total=%d\n",
+                   pind, cmd_id, param_len, (textlen + 1 + param_len));
 #else
-       GenPrintf(EMSG_warn, "\2Net Command [%] exceeds buffer\n", 1);
+       GenPrintf(EMSG_warn, "\2Net Command exceeds buffer: pind=%d  netcmd %d  netcmdlen=%d  total=%d\n",
+                   pind, cmd_id, param_len, (textlen + 1 + param_len));
 #endif
        return;
    }
 
    // Append to player1 text commands.
    // First byte is the cmd, followed by its parameters (binary or string).
-   localtextcmd.text[textlen++] = cmd_id; // XD_
+   ltcbp->text[textlen++] = cmd_id; // XD_
    if(param && param_len)
    {
-       memcpy(&localtextcmd.text[textlen], param, param_len);
+       memcpy(&ltcbp->text[textlen], param, param_len);
        textlen += param_len;
    }
-   localtextcmd.len = textlen;
+   ltcbp->len = textlen;
 }
-
-// splitscreen player
-void Send_NetXCmd2(byte cmd_id, void *param, int param_len)
-{
-   if(demoplayback)
-       return;
-
-   int textlen = localtextcmd2.len;
-   if( (textlen + 1 + param_len) > MAXTEXTCMD) // with XD_ and param
-   {
-#ifdef PARANOIA
-       I_SoftError("Net command [%i] exceeds buffer: netcmd %d\n", cmd_id, 2);
-#else
-       GenPrintf(EMSG_warn, "\2Net Command [%i] exceeds buffer\n", 2);
-#endif
-       return;
-   }
-
-   // Append
-   localtextcmd2.text[textlen++] = cmd_id;  // XD_
-   if(param && param_len)
-   {
-       memcpy(&localtextcmd2.text[textlen], param, param_len);
-       textlen += param_len;
-   }
-   localtextcmd2.len = textlen;
-}
-
 
 // NetXCmd with 2 parameters.
 void Send_NetXCmd_p2(byte cmd_id, byte param1, byte param2)
@@ -384,7 +369,7 @@ void Send_NetXCmd_p2(byte cmd_id, byte param1, byte param2)
 
     buf[0] = param1;
     buf[1] = param2;
-    Send_NetXCmd(cmd_id, &buf, 2);
+    Send_NetXCmd(cmd_id, &buf, 2);  // always main player
 }
 
 
@@ -929,11 +914,12 @@ static void SV_Send_Pos_repair( byte repair_type, byte to_node )
     }
 #endif
 
-    SV_Send_player_repair( nnode_to_player[ to_node ], to_node );
+    SV_Send_player_repair( nnode_to_player[0][ to_node ], to_node );
    
-    if( nnode_to_player2[ to_node ] < MAXPLAYERS )
+    byte pn2 = nnode_to_player[1][ to_node ];  // splitscreen player at the node
+    if( pn2 < MAXPLAYERS )
     {
-        SV_Send_player_repair( nnode_to_player2[ to_node ], to_node );
+        SV_Send_player_repair( pn2, to_node );
     }
 }
 
@@ -1912,8 +1898,8 @@ void D_Init_ClientServer (void)
 static void Reset_NetNode(byte nnode)
 {
     node_in_game[nnode] = false;
-    nnode_to_player[nnode] = 255;
-    nnode_to_player2[nnode] = 255;
+    nnode_to_player[0][nnode] = 255;
+    nnode_to_player[1][nnode] = 255;
     nettics[nnode]=gametic;
     nextsend_tic[nnode]=gametic;
 #if 0
@@ -2195,18 +2181,19 @@ boolean SV_AddWaitingPlayers(void)
 
             if( playerpernode[nnode]<1 )
             {
-                nnode_to_player[nnode] = newplayernum;
+                nnode_to_player[0][nnode] = newplayernum;
                 addplayer_param = newplayernum;
             }
             else
             {
-                nnode_to_player2[nnode] = newplayernum;
+                nnode_to_player[1][nnode] = newplayernum;
                 addplayer_param = newplayernum | 0x80;  // player 2 flag
             }
             playerpernode[nnode]++;
 
+            // Message from server to everyone, to add the player.
             Send_NetXCmd_p2(XD_ADDPLAYER, nnode, addplayer_param);
-            
+
             DEBFILE(va("Server added player %d net node %d\n",
                        newplayernum, nnode));
 
@@ -2282,8 +2269,8 @@ void SV_StopServer( void )
 
     gamestate = wipegamestate = GS_NULL;
 
-    localtextcmd.len = 0;  // text len
-    localtextcmd2.len = 0; // text len
+    localtextcmd[0].len = 0;  // text len
+    localtextcmd[1].len = 0; // text len
 
     for(i=0; i<BACKUPTICS; i++)
         D_Clear_ticcmd(i);
@@ -2414,29 +2401,30 @@ static void client_join_handler( byte nnode )
 // BY Server.
 // PT_NODE_TIMEOUT, PT_CLIENTQUIT
 //   nnode : the network client node quitting
-//   netconsole : the player
-static void client_quit_handler( byte nnode, int netconsole )
+//   client_pn : the client player num that sent the quit
+static void client_quit_handler( byte nnode, byte client_pn )
 {
     // node_in_game will made false during the execution of kick command.
     // This allows the sending of some packets to the quiting client
     // and to have them ack back.
     nodewaiting[nnode]= 0;
-    if(netconsole >= 0 && playeringame[netconsole])
+    if( (client_pn < MAXPLAYERS) && playeringame[client_pn])
     {
         byte reason = (netbuffer->packettype == PT_NODE_TIMEOUT) ?
            KICK_MSG_TIMEOUT : KICK_MSG_PLAYER_QUIT;
         // Update other players by kicking nnode.
-        Send_NetXCmd_p2(XD_KICK, netconsole, reason);  // kick player
-        nnode_to_player[nnode] = 255;
+        Send_NetXCmd_p2(XD_KICK, client_pn, reason);  // kick player
+        nnode_to_player[0][nnode] = 255;
 
-        if( nnode_to_player2[nnode] < MAXPLAYERS )
+        byte pn2 = nnode_to_player[1][nnode];  // splitscreen player at the nnode
+        if( pn2 < MAXPLAYERS )
         {
-            if( playeringame[nnode_to_player2[nnode]] )
+            if( playeringame[pn2] )
             {
                // kick player2
-               Send_NetXCmd_p2(XD_KICK, nnode_to_player2[nnode], reason);
+               Send_NetXCmd_p2(XD_KICK, pn2, reason);
             }
-            nnode_to_player2[nnode] = 255;
+            nnode_to_player[1][nnode] = 255;
         }
     }
     Net_CloseConnection(nnode);
@@ -2657,8 +2645,9 @@ static void TicCmdCopy(ticcmd_t * dst, ticcmd_t * src, int n)
 // By Server
 // PT_TEXTCMD, PT_TEXTCMD2
 //   nnode : the network client
-//   netconsole : playernum
-static void net_textcmd_handler( byte nnode, int netconsole )
+//   client_pn : playernum of client
+// Called by Net_Packet_Handler
+static void net_textcmd_handler( byte nnode, byte client_pn )
 {
     int nbtc_len = netbuffer->u.textcmdpak.len;  // incoming length
     int tc_limit;  // Max size of existing textcmd that can be included with this textcmd.
@@ -2680,7 +2669,7 @@ static void net_textcmd_handler( byte nnode, int netconsole )
     tic = maketic;
     while( TotalTextCmdPerTic(tic) > tc_limit )
     {
-        textbuf = & textcmds[ BTIC_INDEX( tic ) ][netconsole];
+        textbuf = & textcmds[ BTIC_INDEX( tic ) ][client_pn];
         if( (nbtc_len + textbuf->len) < MAXTEXTCMD )
           break; // found one
         tic++;
@@ -2688,10 +2677,10 @@ static void net_textcmd_handler( byte nnode, int netconsole )
     }
 
     btic = BTIC_INDEX( tic );
-    textbuf = & textcmds[btic][netconsole];
+    textbuf = & textcmds[btic][client_pn];
     textlen = textbuf->len;
     DEBFILE(va("Textcmd: btic %d text[%d] player %d nxttic %d maketic %d\n",
-               btic, textlen, netconsole, next_tic_send, maketic));
+               btic, textlen, client_pn, next_tic_send, maketic));
     // Append to the selected buffer.
     memcpy(&textbuf->text[ textlen ],
            &netbuffer->u.textcmdpak.text[0],  // the text
@@ -2703,7 +2692,7 @@ drop_packet:
     // Drop the packet, let the node resend it.
     DEBFILE(va("Textcmd too long: max %d used %d maketic %d nxttic %d node %d player %d\n",
                tc_limit, TotalTextCmdPerTic(maketic), maketic, next_tic_send,
-               nnode, netconsole));
+               nnode, client_pn));
     Net_Cancel_Packet_Ack(nnode);
     return;
 }
@@ -2711,8 +2700,8 @@ drop_packet:
 // By Server
 // PT_CLIENTCMD, PT_CLIENT2CMD, PT_CLIENTMIS, PT_CLIENT2MIS,
 // PT_NODEKEEPALIVE, PT_NODEKEEPALIVEMIS from Client.
-//  netconsole: a player
-static void client_cmd_handler( byte netcmd, byte nnode, int netconsole )
+//  client_pn: the player that sent the cmd, set bit 0x80 when DRONE
+static void client_cmd_handler( byte netcmd, byte nnode, byte client_pn )
 {
     tic_t  start_tic, end_tic;
     int  btic;
@@ -2742,7 +2731,8 @@ static void client_cmd_handler( byte netcmd, byte nnode, int netconsole )
     nettics[nnode] = end_tic;
 
     // Don't do any tic cmds for drones, just update their nettics.
-    if((netconsole & DRONE) || netconsole==-1
+    if( (client_pn >= MAXPLAYERS) // invalid player num, or DRONE
+//       || (client_pn & DRONE)   // DRONE bit set is also > MAXPLAYERS
        || netcmd==PT_NODEKEEPALIVE || netcmd==PT_NODEKEEPALIVEMIS)
        return;
 
@@ -2760,14 +2750,14 @@ static void client_cmd_handler( byte netcmd, byte nnode, int netconsole )
             {
                 // Failed the consistency check too many times
 #if 1
-                Send_NetXCmd_p2(XD_KICK, netconsole, KICK_MSG_CON_FAIL);
+                Send_NetXCmd_p2(XD_KICK, client_pn, KICK_MSG_CON_FAIL);
 #else
                 // Debug message instead.
                 GenPrintf(EMSG_warn, "Kick player %d at tic %d, consistency failure\n",
-                    netconsole, start_tic);
+                    client_pn, start_tic);
 #endif
                 DEBFILE(va("Kick player %d at tic %d, consistency %d != %d\n",
-                    netconsole, start_tic, consistency[btic],
+                    client_pn, start_tic, consistency[btic],
                     LE_SWAP16_FAST(netbuffer->u.clientpak.consistency)));
 
             }
@@ -2792,15 +2782,20 @@ static void client_cmd_handler( byte netcmd, byte nnode, int netconsole )
 
     // Copy the ticcmd
     btic = BTIC_INDEX( maketic );
-    TicCmdCopy(&netcmds[btic][netconsole],
+    TicCmdCopy(&netcmds[btic][client_pn],
                &netbuffer->u.clientpak.cmd, 1);
 
-    if( netcmd==PT_CLIENT2CMD
-        && (nnode_to_player2[nnode] < MAXPLAYERS))
+    // PT_CLIENT2CMD has cmd for both players
+    if( netcmd == PT_CLIENT2CMD )
     {
-        // Copy the ticcmd for player2.
-        TicCmdCopy(&netcmds[btic][nnode_to_player2[nnode]], 
+        // From player2
+        byte client_pn2 = nnode_to_player[1][nnode];  // splitscreen player
+        if( client_pn2 < MAXPLAYERS)
+        {
+            // Copy the ticcmd for player2.
+            TicCmdCopy(&netcmds[btic][client_pn2], 
                    &netbuffer->u.client2pak.cmd2, 1);
+        }
     }
     return;
 }
@@ -2893,7 +2888,7 @@ static void servertic_handler( byte nnode )
 //
 static void Net_Packet_Handler(void)
 {
-    int  netconsole;
+    byte client_pn;
     byte nnode;
 
     while ( HGetPacket() )
@@ -2928,12 +2923,13 @@ static void Net_Packet_Handler(void)
         }
 
         // Known nodes only.
-        netconsole = nnode_to_player[nnode];  // the player
+        client_pn = nnode_to_player[0][nnode];  // the player
 #ifdef PARANOIA
-        if(!(netconsole & DRONE) && netconsole>=MAXPLAYERS)
+        if(!(client_pn & DRONE) && (client_pn>=MAXPLAYERS))
         {
-            I_Error("bad table nnode_to_player : node %d player %d",
-                     doomcom->remotenode,netconsole);
+            I_SoftError("Net_Packet_Handler: recognized node %d,  with bad player_num %d",
+                nnode, client_pn);
+            return;
         }
 #endif
 
@@ -2948,21 +2944,21 @@ static void Net_Packet_Handler(void)
             case PT_NODEKEEPALIVE :
             case PT_NODEKEEPALIVEMIS :
                 if(server)
-                     client_cmd_handler(netbuffer->packettype, nnode, netconsole );
+                     client_cmd_handler(netbuffer->packettype, nnode, client_pn );
                 break;
             case PT_TEXTCMD2 : // splitscreen special
-                netconsole=nnode_to_player2[nnode];
+                client_pn = nnode_to_player[1][nnode];
                 // fall through
             case PT_TEXTCMD :
                 if(server)
                 {
-                    if( netconsole<0 || netconsole>=MAXPLAYERS )
+                    if( client_pn >= MAXPLAYERS )  // unused = 255
                     {
-                        // Do not ACK the packet from a strange netconsole.
+                        // Do not ACK the packet from a strange client_pn.
                         Net_Cancel_Packet_Ack(nnode);
                         break;
                     }
-                    net_textcmd_handler( nnode, netconsole );
+                    net_textcmd_handler( nnode, client_pn );
                 }
                 break;
             case PT_REPAIR:
@@ -2975,7 +2971,7 @@ static void Net_Packet_Handler(void)
             case PT_NODE_TIMEOUT:
             case PT_CLIENTQUIT:
                 if(server)
-                    client_quit_handler( nnode, netconsole );
+                    client_quit_handler( nnode, client_pn );
                 break;
 
             // ---- CLIENT Handling Server packets ----------
@@ -3032,26 +3028,48 @@ static int16_t Consistency(void)
     return ret;
 }
 
+
+// By Server, Client.
+static void Send_localtextcmd( byte pind )
+{
+    static byte PT_TEXTCMD_pind[2] = {PT_TEXTCMD, PT_TEXTCMD2};
+
+    textbuf_t * ltcp = &localtextcmd[pind];
+    int tc_len = ltcp->len+1;  // text len + cmd
+    netbuffer->packettype = PT_TEXTCMD_pind[pind];
+    memcpy(&netbuffer->u.textcmdpak, ltcp, tc_len);
+    // all extra data have been sent
+    if( HSendPacket(servernode, true, 0, tc_len)) // send can fail for some reasons...
+        ltcp->len = 0;  // text len
+}
+
+
 // By Server, Client.
 // send the client packet to the server
 // Called by NetUpdate, 
 static void CL_Send_ClientCmd (void)
 {
+    // index by  [mis]
+    static byte  PT_CLIENTCMD_options[2] = {PT_CLIENTCMD, PT_CLIENTMIS};
+    static byte  PT_CLIENT2CMD_options[2] = {PT_CLIENT2CMD, PT_CLIENT2MIS};
+    // index by  [mis]
+    static byte  PT_NODEKEEPALIVE_options[2] = {PT_NODEKEEPALIVE, PT_NODEKEEPALIVEMIS};
+
 /* oops can do that until i have implemented a real dead reckoning
     static ticcmd_t lastcmdssent;
     static int      lastsenttime=-TICRATE;
 
-    if( memcmp(&localcmds,&lastcmdssent,sizeof(ticcmd_t))!=0 || lastsenttime+TICRATE/3<I_GetTime())
+    if( memcmp(&localcmds[0],&lastcmdssent,sizeof(ticcmd_t))!=0 || lastsenttime+TICRATE/3<I_GetTime())
     {
         lastsenttime=I_GetTime();
 */
-    byte  cmd_options = 0;  // easier to understand and maintain
     int packetsize=0;
 
+    byte  cmd_options = 0;  // easier to understand and maintain
     if (cl_packetmissed)
-        cmd_options |= 1;  // MIS bit
+        cmd_options = 1;  // MIS bit
    
-    netbuffer->packettype = PT_CLIENTCMD + cmd_options;
+    netbuffer->packettype = PT_CLIENTCMD_options[cmd_options];
     netbuffer->u.clientpak.resendfrom = cl_need_tic;
     netbuffer->u.clientpak.client_tic = gametic;
 
@@ -3059,7 +3077,7 @@ static void CL_Send_ClientCmd (void)
     {
         // Server is waiting for network players before starting the game.
         // send NODEKEEPALIVE, or NODEKEEPALIVEMIS packet
-        netbuffer->packettype = PT_NODEKEEPALIVE + cmd_options;
+        netbuffer->packettype = PT_NODEKEEPALIVE_options[cmd_options];
 //        packetsize = sizeof(clientcmd_pak_t)-sizeof(ticcmd_t)-sizeof(int16_t);
         packetsize = offsetof(clientcmd_pak_t, consistency);
         HSendPacket (servernode,false,0,packetsize);
@@ -3068,15 +3086,15 @@ static void CL_Send_ClientCmd (void)
     if( gamestate != GS_NULL )
     {
         int btic = BTIC_INDEX( gametic );
-        TicCmdCopy(&netbuffer->u.clientpak.cmd, &localcmds, 1);
+        TicCmdCopy(&netbuffer->u.clientpak.cmd, &localcmds[0], 1);
         netbuffer->u.clientpak.consistency = LE_SWAP16_FAST(consistency[btic]);
 
         // send a special packet with 2 cmd for splitscreen
         if (cv_splitscreen.value)
         {
             // send PT_CLIENT2CMD, or PT_CLIENT2CMDMIS packet
-            netbuffer->packettype = PT_CLIENT2CMD + cmd_options;
-            TicCmdCopy(&netbuffer->u.client2pak.cmd2, &localcmds2, 1);
+            netbuffer->packettype = PT_CLIENT2CMD_options[cmd_options];
+            TicCmdCopy(&netbuffer->u.client2pak.cmd2, &localcmds[1], 1);
             packetsize = sizeof(client2cmd_pak_t);
         }
         else
@@ -3088,32 +3106,22 @@ static void CL_Send_ClientCmd (void)
     if( cl_mode == CLM_connected )
     {
         // send extra data if needed
-        if (localtextcmd.len) // text len
+        if( localtextcmd[0].len ) // text len
         {
-            int tc_len = localtextcmd.len+1;  // text len + cmd
-            netbuffer->packettype = PT_TEXTCMD;
-            memcpy(&netbuffer->u.textcmdpak, &localtextcmd, tc_len);
-            // all extra data have been sended
-            if( HSendPacket(servernode, true, 0, tc_len)) // send can fail for some reasons...
-                localtextcmd.len = 0;  // text len
+            Send_localtextcmd(0);
         }
         
         // send extra data if needed for player 2 (splitscreen)
-        if (localtextcmd2.len) // text len
+        if( localtextcmd[1].len ) // text len
         {
-            int tc_len = localtextcmd2.len+1;  // text len + cmd
-            netbuffer->packettype = PT_TEXTCMD2;
-            memcpy(&netbuffer->u.textcmdpak, &localtextcmd2, tc_len);
-            // all extra data have been sended
-            if( HSendPacket(servernode, true, 0, tc_len)) // send can fail for some reasons...
-                localtextcmd2.len = 0; // text len
+            Send_localtextcmd(1);
         }
     }
     else
     {
         // Clear XCmds that would overflow the buffers.
-        localtextcmd.len = 0;
-        localtextcmd2.len = 0;
+        localtextcmd[0].len = 0;
+        localtextcmd[1].len = 0;
     }
 }
 
@@ -3279,19 +3287,19 @@ static void Local_Maketic(int realtics)
 {
     rendergametic=gametic;
     // translate inputs (keyboard/mouse/joystick) into game controls
-    G_BuildTiccmd(&localcmds, realtics, 0);
+    G_BuildTiccmd(&localcmds[0], realtics, 0);
     // [WDJ] requires splitscreen and player2 present
     if (cv_splitscreen.value && displayplayer2_ptr )
-      G_BuildTiccmd(&localcmds2, realtics, 1);
+      G_BuildTiccmd(&localcmds[1], realtics, 1);
 
 #ifdef CLIENTPREDICTION2
     if( !paused && localgametic<gametic+BACKUPTICS)
     {
-        P_MoveSpirit ( &players[consoleplayer], &localcmds, realtics );
+        P_MoveSpirit ( &players[consoleplayer], &localcmds[0], realtics );
         localgametic+=realtics;
     }
 #endif
-    localcmds.angleturn |= TICCMD_RECEIVED;
+    localcmds[0].angleturn |= TICCMD_RECEIVED;
 }
 
 void SV_SpawnPlayer(int playernum, int x, int y, angle_t angle)
@@ -3319,7 +3327,7 @@ void SV_Maketic(void)
     {
         if(playerpernode[nnode] == 0)  continue;
        
-        player=nnode_to_player[nnode];
+        player = nnode_to_player[0][nnode];
         if((netcmds[btic][player].angleturn & TICCMD_RECEIVED) == 0)
         {
             // Catch startup glitch where playerpernode gets set
@@ -3337,7 +3345,7 @@ void SV_Maketic(void)
             {
                 netcmds[btic][player] = netcmds[bticprev][player];
                 netcmds[btic][player].angleturn &= ~TICCMD_RECEIVED;
-                player = nnode_to_player2[nnode];
+                player = nnode_to_player[1][nnode];
             }
         }
     }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1478 2019-10-19 13:43:25Z wesleyjohnson $
+// $Id: g_game.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -498,16 +498,24 @@ CV_PossibleValue_t showmessages_cons_t[]={{0,"Off"},{1,"Minimal"},{2,"Play"},{3,
 CV_PossibleValue_t crosshair_cons_t[]   ={{0,"Off"},{1,"Cross"},{2,"Angle"},{3,"Point"},{0,NULL}};
 CV_PossibleValue_t pickupflash_cons_t[]   ={{0,"Off"},{1,"Status"},{2,"Half"},{3,"Vanilla"},{0,NULL}};
 
+// [0]=main player [1]=splitscreen player
+consvar_t cv_autorun[2] = {
+  {"autorun"     ,"0",CV_SAVE,CV_OnOff},
+  {"autorun2"    ,"0",CV_SAVE,CV_OnOff}
+};
+consvar_t cv_alwaysfreelook[2] = {
+  {"alwaysmlook" ,"0",CV_SAVE,CV_OnOff},
+  {"alwaysmlook2","0",CV_SAVE,CV_OnOff}
+};
+consvar_t cv_mouse_move[2] = {
+  {"mousemove"   ,"1",CV_SAVE,CV_OnOff},
+  {"mousemove2"  ,"1",CV_SAVE,CV_OnOff}
+};
+
 consvar_t cv_crosshair        = {"crosshair"   ,"0",CV_SAVE,crosshair_cons_t};
 //consvar_t cv_crosshairscale   = {"crosshairscale","0",CV_SAVE,CV_YesNo};
-consvar_t cv_autorun          = {"autorun"     ,"0",CV_SAVE,CV_OnOff};
-consvar_t cv_autorun2         = {"autorun2"    ,"0",CV_SAVE,CV_OnOff};
 consvar_t cv_mouse_invert     = {"invertmouse" ,"0",CV_SAVE,CV_OnOff};
-consvar_t cv_mouse_move       = {"mousemove"   ,"1",CV_SAVE,CV_OnOff};
-consvar_t cv_alwaysfreelook   = {"alwaysmlook" ,"0",CV_SAVE,CV_OnOff};
 consvar_t cv_mouse2_invert    = {"invertmouse2","0",CV_SAVE,CV_OnOff};
-consvar_t cv_mouse2_move      = {"mousemove2"  ,"1",CV_SAVE,CV_OnOff};
-consvar_t cv_alwaysfreelook2  = {"alwaysmlook2","0",CV_SAVE,CV_OnOff};
 
 CV_PossibleValue_t joy_deadzone_cons_t[]={{0,"MIN"},{20,"INC"},{2000,"MAX"},{0,NULL}};
 consvar_t cv_joy_deadzone     = {"joydeadzone" ,"800",CV_SAVE,joy_deadzone_cons_t};
@@ -820,8 +828,9 @@ angle_t G_ClipAimingPitch(angle_t aiming)
 //
 // set displayplayer2_ptr to build player 2's ticcmd in splitscreen mode
 //
-angle_t localaiming, localaiming2; // player1 and player2
-angle_t localangle, localangle2;
+//  [0]=main player, [1]=splitscreen player
+angle_t localaiming[2];
+angle_t localangle[2];
 
 //added:06-02-98: mouseaiming (looking up/down with the mouse or keyboard)
 #define KB_LOOKSPEED    (1<<25)
@@ -892,8 +901,9 @@ byte BestWeapon(player_t *player)
     return (BT_CHANGE | (newweapon<<BT_WEAPONSHIFT));
 }
 
-// id : 0,1 for split player identity
-boolean G_InventoryResponder(player_t *ply, byte id,
+// pind : 0,1 for split player identity
+static
+boolean G_InventoryResponder(player_t *ply, byte pind,
                              int gc[num_gamecontrols][2], event_t *ev)
 {
   // [WDJ] 1/9/2009 Do not get to process any keyup events, unless also saw
@@ -961,20 +971,13 @@ boolean G_InventoryResponder(player_t *ply, byte id,
     case ev_keyup:
       if( ev->data1 == gc[gc_invuse ][0] || ev->data1 == gc[gc_invuse ][1] )
       {
-          if( keyup_armed[id] )  // [WDJ] Only if the keydown was not intercepted by some other responder
+          if( keyup_armed[pind] )  // [WDJ] Only if the keydown was not intercepted by some other responder
           {
               if( ply->st_inventoryTics )
                  ply->st_inventoryTics = 0;
               else if( ply->inventory[ply->inv_ptr].count>0 )
               {
-                  if( ply == consoleplayer_ptr )
-                  {
-                      Send_NetXCmd( XD_USEARTIFACT,
-                                   &ply->inventory[ply->inv_ptr].type, 1);
-                  } else {
-                      Send_NetXCmd2( XD_USEARTIFACT,
-                                    &ply->inventory[ply->inv_ptr].type, 1);
-                  }
+                  Send_NetXCmd_pind( XD_USEARTIFACT, &ply->inventory[ply->inv_ptr].type, 1, pind);
               }
               goto used_key;
           }
@@ -988,21 +991,22 @@ boolean G_InventoryResponder(player_t *ply, byte id,
       break; // shut up compiler
   }
 
-  keyup_armed[id] = 0;  // blanket unused
+  keyup_armed[pind] = 0;  // blanket unused
   return false;
 
 arm_key:
-  keyup_armed[id] = 1;  // ready for keyup event
+  keyup_armed[pind] = 1;  // ready for keyup event
   return true;
    
 used_key:
-  keyup_armed[id] = 0;  // used up
+  keyup_armed[pind] = 0;  // used up
   return true;
 }
 
 
 
-void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
+//  pind : player index, [0]=main player, [1]=splitscreen player
+void G_BuildTiccmd(ticcmd_t* cmd, int realtics, byte pind)
 {
     int         i;
     
@@ -1018,16 +1022,15 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
 
     angle_t pitch;
 
-    if (which_player == 0)
+    if( pind == 0 )
     {
       this_player = consoleplayer_ptr;
       gcc = gamecontrol;
-      pitch = localaiming;
     } else {
       this_player = displayplayer2_ptr;
       gcc = gamecontrol2;
-      pitch = localaiming2;
     }
+    pitch = localaiming[pind];
 
     // Exit now if locked
     if (this_player->locked)
@@ -1035,12 +1038,11 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
 
     // a little clumsy, but then the g_input.c became a lot simpler!
     boolean strafe = G_KEY_DOWN(gc_strafe);
-    int speed  = G_KEY_DOWN(gc_speed) ^ (which_player == 0 ? cv_autorun.EV : cv_autorun2.EV);
+    int speed  = G_KEY_DOWN(gc_speed) ^ cv_autorun[pind].EV;
 
     boolean turnright = G_KEY_DOWN(gc_turnright);
     boolean turnleft  = G_KEY_DOWN(gc_turnleft);
-    boolean mouseaiming = G_KEY_DOWN(gc_mouseaiming) ^ (which_player == 0 ? cv_alwaysfreelook.EV : cv_alwaysfreelook2.EV);
-
+    boolean mouseaiming = G_KEY_DOWN(gc_mouseaiming) ^ cv_alwaysfreelook[pind].EV;
 
     int forward = 0, side = 0; // these must not wrap around, so we need bigger ranges than chars
 
@@ -1076,11 +1078,11 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
       static int  turnheld[2];   // for accelerative turning
 
       if (turnleft || turnright)
-        turnheld[which_player] += realtics;
+        turnheld[pind] += realtics;
       else
-        turnheld[which_player] = 0;
+        turnheld[pind] = 0;
       
-      int tspeed = (turnheld[which_player] < SLOWTURNTICS) ? 2 : speed;
+      int tspeed = (turnheld[pind] < SLOWTURNTICS) ? 2 : speed;
 
       if (turnright)
         cmd->angleturn -= angleturn[tspeed];
@@ -1148,39 +1150,39 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
 
 
     // pitch
-    static boolean keyboard_look[2]; // true if lookup/down using keyboard
+    static byte  keyboard_look[2]; // true if lookup/down using keyboard
 
 
     // spring back if not using keyboard neither mouselookin'
-    if (!keyboard_look[which_player] && !mouseaiming)
+    if (!keyboard_look[pind] && !mouseaiming)
         pitch = 0;
 
     if (G_KEY_DOWN(gc_lookup))
     {
         pitch += KB_LOOKSPEED;
-        keyboard_look[which_player] = true;
+        keyboard_look[pind] = true;
     }
     else
     if (G_KEY_DOWN(gc_lookdown))
     {
         pitch -= KB_LOOKSPEED;
-        keyboard_look[which_player] = true;
+        keyboard_look[pind] = true;
     }
     else
     if (G_KEY_PRESSED(gc_centerview))
     {
         pitch = 0;
-        keyboard_look[which_player] = false;
+        keyboard_look[pind] = false;
     }
 
     // mice
 
     // mouse look stuff (mouse look is not the same as mouse aim)
-    if (which_player == 0)
+    if (pind == 0)
     {
       if (mouseaiming)
       {
-        keyboard_look[which_player] = false;
+        keyboard_look[pind] = false;
 
         // looking up/down
         if (cv_mouse_invert.EV)
@@ -1188,7 +1190,7 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
         else
             pitch += mousey<<19;
       }
-      else if (cv_mouse_move.EV)
+      else if (cv_mouse_move[0].EV)
         forward += mousey;
 
       if (strafe)
@@ -1202,7 +1204,7 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
     {
       if (mouseaiming)
       {
-        keyboard_look[which_player] = false;
+        keyboard_look[pind] = false;
 
         // looking up/down
         if (cv_mouse2_invert.EV)
@@ -1210,7 +1212,7 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
         else
           pitch += mouse2y<<19;
       }
-      else if (cv_mouse2_move.EV)
+      else if (cv_mouse_move[1].EV)
         forward += mouse2y;
 
       if (strafe)
@@ -1226,7 +1228,7 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
     {
       joybinding_t j = joybindings[i];
 
-      if (j.playnum != which_player)
+      if (j.playnum != pind)
         continue;
 
       int joyvalue = I_JoystickGetAxis(j.joynum, j.axisnum);
@@ -1276,17 +1278,9 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, int which_player)
     cmd->aiming = pitch >> 16; // to short
 
     // Generated cmd are absolute angles
-    if (which_player == 0)
-    {
-        localangle += (cmd->angleturn<<16);
-        cmd->angleturn = localangle >> 16;
-        localaiming = pitch;
-    } else {
-        // Generated command are absolute
-        localangle2 += (cmd->angleturn<<16);
-        cmd->angleturn = localangle2 >> 16;
-        localaiming2 = pitch;
-    }
+    localangle[pind] += (cmd->angleturn<<16);
+    cmd->angleturn = localangle[pind] >> 16;
+    localaiming[pind] = pitch;
 
     if( gamemode == heretic )
     {

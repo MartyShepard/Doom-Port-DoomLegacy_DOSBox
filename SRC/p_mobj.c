@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1463 2019-09-29 07:36:51Z wesleyjohnson $
+// $Id: p_mobj.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2519,13 +2519,13 @@ void P_SpawnPlayer( mapthing_t * mthing, int playernum )
     mobj->angle = wad_to_angle(mthing->angle);
     if (playernum == consoleplayer)
     {
-        localangle = mobj->angle;
-        localaiming = 0;
+        localangle[0] = mobj->angle;
+        localaiming[0] = 0;
     }
     else if (playernum == displayplayer2)  // player 2
     {
-        localangle2 = mobj->angle;
-        localaiming2 = 0;
+        localangle[1] = mobj->angle;
+        localaiming[1] = 0;
     }
     else if (p->bot)    //added by AC for acbot
     {

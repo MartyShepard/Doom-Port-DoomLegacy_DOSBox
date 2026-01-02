@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1480 2019-12-13 05:15:32Z wesleyjohnson $
+// $Id: d_main.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1480"
+#define SVN_REV "1481"
 #endif
 
 
@@ -750,7 +750,7 @@ void D_Display(void)
                     HWR_RenderPlayerView(0, displayplayer_ptr);
                 else    //if (rendermode == render_soft)
 #endif
-                    R_RenderPlayerView(displayplayer_ptr);
+                    R_RenderPlayerView(0, displayplayer_ptr);
 #ifdef CLIENTPREDICTION2
                 displayplayer_ptr->mo->flags2 &= ~MF2_DONTDRAW;
 #endif
@@ -773,7 +773,7 @@ void D_Display(void)
                     viewwindowy = vid.height / 2;
                     memcpy(ylookup, ylookup2, rdraw_viewheight * sizeof(ylookup[0]));
 
-                    R_RenderPlayerView(displayplayer2_ptr);
+                    R_RenderPlayerView(1, displayplayer2_ptr);
 
                     // Restore first player tables
                     viewwindowy = 0;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1477 2019-10-19 13:42:58Z wesleyjohnson $
+// $Id: d_clisrv.h 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -383,8 +383,10 @@ int     ExpandTics (int low);
 // initialise the other field
 void    Register_NetXCmd(netxcmd_e cmd_id,
                         void (*cmd_f) (xcmd_t * xc));
+// default, always main player
 void    Send_NetXCmd(byte cmd_id, void *param, int nparam);
-void    Send_NetXCmd2(byte cmd_id, void *param, int nparam); // splitsreen player
+//  pind : player index, [0]=main player, [1]=splitscreen player
+void    Send_NetXCmd_pind(byte cmd_id, void *param, int nparam, byte pind);
 
 // command.c
 void Got_NetXCmd_NetVar(xcmd_t * xc);

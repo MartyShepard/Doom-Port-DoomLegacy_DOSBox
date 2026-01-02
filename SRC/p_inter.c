@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
+// $Id: p_inter.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1827,13 +1827,13 @@ void P_KillMobj ( mobj_t*  target,
                 AM_Stop ();
 
             //added:22-02-98: recenter view for next live...
-            localaiming = 0;
+            localaiming[0] = 0;
         }
         if (target->player == displayplayer2_ptr) // NULL when unused
         {
             // player 2
             //added:22-02-98: recenter view for next live...
-            localaiming2 = 0;
+            localaiming[1] = 0;
         }
 /* HERETODO
         if(target->flags2&MF2_FIREDAMAGE)

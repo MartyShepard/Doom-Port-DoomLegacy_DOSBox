@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1463 2019-09-29 07:36:51Z wesleyjohnson $
+// $Id: r_main.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1165,7 +1165,8 @@ subsector_t* R_IsPointInSubsector ( fixed_t x, fixed_t y )
 // Setup viewx, viewy, viewz, and other view global variables.
 // Called by R_RenderPlayerView.
 // Called by HWR_RenderPlayerView.
-void R_SetupFrame (player_t* player)
+//  pind : player index, [0]=main player, [1]=splitscreen player
+void R_SetupFrame( byte pind, player_t* player )
 {
     int  i;
     int  fixedcolormap_num;
@@ -1256,18 +1257,8 @@ void R_SetupFrame (player_t* player)
 
         if(!demoplayback && player->playerstate!=PST_DEAD && !cl_drone)
         {
-            if(player== consoleplayer_ptr)
-            {
-                viewangle = localangle; // WARNING : camera use this
-                aimingangle=localaiming;
-            }
-            else
-                if(player== displayplayer2_ptr)  // NULL when unused
-                {
-                    // player 2
-                    viewangle = localangle2;
-                    aimingangle=localaiming2;
-                }
+            viewangle = localangle[pind]; // WARNING : camera use this
+            aimingangle=localaiming[pind];
         }
 
     }
@@ -1491,10 +1482,11 @@ extern void R_DrawFloorSplats (void);   //r_plane.c
 // Draw player view, render_soft.
 // In splitscreen the ylookup tables and viewwindowy are adjusted per player.
 // Global variables include:  ylookup[], viewwindowy, rdraw_viewheight
-void R_RenderPlayerView (player_t* player)
+//  pind : player index, [0]=main player, [1]=splitscreen player
+void R_RenderPlayerView( byte pind, player_t* player )
 {
     // rendermode == render_soft
-    R_SetupFrame (player);
+    R_SetupFrame(pind, player);
 
     // Clear buffers.
     R_Clear_ClipSegs ();
