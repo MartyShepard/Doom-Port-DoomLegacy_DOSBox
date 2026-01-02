@@ -7563,7 +7563,7 @@ Fix some endian problems.
 Easier to maintain communication with higher level network operations.
 
 *** w108_progdir
-patchfile = w108_71_fs_player2.patch
+patchfile = w108_71_progdir.patch
 - commit revision 1485
 Fix segfault of progdir in strcmp, for some operating systems that
 fail to return the progdir.
