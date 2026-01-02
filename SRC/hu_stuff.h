@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.h 1418 2019-01-29 08:01:04Z wesleyjohnson $
+// $Id: hu_stuff.h 1482 2019-12-13 05:16:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -44,6 +44,8 @@
 #include "w_wad.h"
 #include "wi_stuff.h"
 #include "r_defs.h"
+#include "command.h"
+  // consvar_t
 
 //------------------------------------
 //           heads up font
@@ -56,8 +58,8 @@
 #define HU_FONTSIZE     (HU_FONTEND - HU_FONTSTART + 1)
 
 
-// maximum 9
-#define HU_CROSSHAIRS   3
+extern consvar_t  cv_crosshair[2];
+//extern consvar_t  cv_crosshairscale;
 
 extern char*   shiftxform;   // french/english translation shift table
 

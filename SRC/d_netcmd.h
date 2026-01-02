@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.h 1481 2019-12-13 05:16:17Z wesleyjohnson $
+// $Id: d_netcmd.h 1482 2019-12-13 05:16:47Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -65,8 +65,9 @@ extern consvar_t   cv_splitscreen;
 extern consvar_t   cv_playername[2];
 extern consvar_t   cv_playercolor[2];
 extern consvar_t   cv_skin[2];
+extern consvar_t   cv_autoaim[2];
+extern consvar_t   cv_weaponpref[2];
 
-extern consvar_t   cv_autoaim;
 extern consvar_t   cv_controlperkey;
 
 extern consvar_t   cv_itemrespawntime;

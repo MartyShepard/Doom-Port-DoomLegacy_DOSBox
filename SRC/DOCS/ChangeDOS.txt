@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01482 ]: w108_68 player2
 [01481 ]: w108_67 pind
           DOS: Compile fix. Updated djgppdos\i_system.c
           cv_usemouse.value = cv_usemouse[0].value

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
+// $Id: m_menu.c 1482 2019-12-13 05:16:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -410,7 +410,7 @@ typedef struct menuitem_s
 typedef struct menu_s
 {
     char          * menutitlepic;
-    char          * menutitle;             // title as string for display with fontb if present
+    const char    * menutitle;              // title as string for display with fontb if present
     menuitem_t    * menuitems;              // menu items
     void            (*drawroutine)(void);   // draw routine
     boolean         (*quitroutine)(void);   // called before quit a menu return true if we can
@@ -550,10 +550,12 @@ static void M_BotOption(int choice);
 static void M_NetOption(int choice);
 //28/08/99: added by Hurdler
 static void M_OpenGLOption(int choice);
+static void M_PlayerDirector(int choice);
 
 menu_t MainDef, SoundDef, EpiDef, NewDef,
   VideoModeDef, VideoOptionsDef, DrawmodeDef, MouseOptionsDef,
-  SingleMultiDef, TwoPlayerDef, PlayerOptionsDef, MultiPlayerDef, SetupMultiPlayerDef,
+  PlayerDirectorDef, PlayerOptionsDef,
+  SingleMultiDef, TwoPlayerDef, MultiPlayerDef, SetupMultiPlayerDef,
   ReadDef2, ReadDef1, SaveDef, LoadDef, 
   ControlDef, ControlDef2, ControlDef3, MControlDef, JoystickOptionsDef,
   OptionsDef, EffectsOptionsDef, GameOptionDef, AdvOption1Def, AdvOption2Def,
@@ -596,6 +598,16 @@ void M_DrawMenuTitle(void)
         if(xtitle<0) xtitle=0;
         if(ytitle<0) ytitle=0;
         V_DrawScaledPatch (xtitle, ytitle, tp);
+    }
+    else
+    if( currentMenu->menutitle && !use_font1 )
+    {
+        int xtitle = (BASEVIDWIDTH-V_StringWidth(currentMenu->menutitle))/2;
+        int ytitle = (currentMenu->y - 16)/2;
+        if(xtitle<0) xtitle=0;
+        if(ytitle<1) ytitle=1;
+
+        V_DrawString(xtitle, ytitle, 0, currentMenu->menutitle);
     }
 }
 
@@ -1390,6 +1402,7 @@ static void M_SetupMultiPlayer1 (int choice);
 static void M_SetupMultiPlayer2 (int choice);
 static void M_TwoPlayerMenu(int choice);
 
+// index for MultiPlayerMenu
 enum {
     MPM_player1 = 1, // referenced in M_Player2_MenuEnable
     MPM_player2 = 2, // referenced in M_Player2_MenuEnable
@@ -1490,32 +1503,56 @@ menu_t  SecondMouseCfgdef =
 // Options for the main player and the splitscreen player
 //===========================================================================
 
+// [0]=main player, [1]=splitscreen player
+static byte menu_pind = 0;
+static byte menu_multiplayer = 0;
+
+static void M_SetupMultiPlayer_pind( byte pind );
+static void M_SetupMultiPlayer1(int choice);
+static void M_SetupMultiPlayer2(int choice);
+static void M_Setup_P1_Controls(int choice);
+static void M_Setup_P2_Controls(int choice);
+
+static menufunc_t M_SetupMultiPlayer[2] = { M_SetupMultiPlayer1, M_SetupMultiPlayer2 };
+static menufunc_t M_Setup_P_Controls[2] = { M_Setup_P1_Controls, M_Setup_P2_Controls };
+static const char *  player_pind_str[2] = { "Player1", "Player2" };
+static const char *  player_setup_str[2] = { "Player1 setup >>", "Player2 setup >>" };
+static const char *  player_controls_str[2] = { "Player1 controls >>", "Player2 controls >>" };
+
 // Customized by M_SetupMultiPlayer1 and M_SetupMultiPlayer2
 menuitem_t  PlayerOptionsMenu[] =
 {
 //    {IT_STRING | IT_CVAR,"Messages:"       ,&cv_showmessages2    ,0},
-    {IT_STRING | IT_CVAR,0, "Use Mouse"     ,&cv_usemouse[1]       ,0},
-    {IT_STRING | IT_CVAR,0, "Always MouseLook", &cv_alwaysfreelook[1],0},
-    {IT_STRING | IT_CVAR,0, "Mouse Move"    ,&cv_mouse_move[1]     ,0},
-    {IT_STRING | IT_CVAR,0, "Always Run"    ,&cv_autorun[1]        ,0},
-//    {IT_STRING | IT_CVAR,"Crosshair"       ,&cv_crosshair2       ,0},
-//    {IT_STRING | IT_CVAR,"Autoaim"         ,&cv_autoaim2         ,0},
+    {IT_STRING | IT_CVAR,0, "Always Run",  &cv_autorun[0]        ,0},
+    {IT_STRING | IT_CVAR,0, "Crosshair",   &cv_crosshair[0]      ,0},
+    {IT_STRING | IT_CVAR,0, "Autoaim",     &cv_autoaim[0]        ,0},
+    {IT_STRING | IT_CVAR,0, "Use Mouse" ,  &cv_usemouse[0]       ,0},
+    {IT_STRING | IT_CVAR,0, "Mouse Move",  &cv_mouse_move[0]     ,0},
+    {IT_STRING | IT_CVAR,0, "Always MouseLook", &cv_alwaysfreelook[0], 0},
+    {IT_STRING | IT_CVAR | IT_CV_STRING,0, "WeaponPref", &cv_weaponpref[1] ,0},
 //    {IT_STRING | IT_CVAR,"Control per key" ,&cv_controlperkey2   ,0},
+    {IT_CALL | IT_WHITESTRING, 0,"Player1 setup >>", M_SetupMultiPlayer1, 's'},
+    {IT_CALL | IT_WHITESTRING, 0,"Player1 controls >>", M_Setup_P1_Controls, 'c'},
 };
 
-// index to above menu lines
+// index by above menu lines
 enum {
-    playeroption_usemouse,
-    playeroption_mouselook,
-    playeroption_mousemove,
     playeroption_alwaysrun,
+    playeroption_crosshair,
+    playeroption_autoaim,
+    playeroption_usemouse,
+    playeroption_mousemove,
+    playeroption_mouselook,
+    playeroption_weaponpref,
+    playeroption_setupplayer,
+    playeroption_setupcontrol,
     playeroption_end
 };
 
 menu_t  PlayerOptionsDef =
 {
-    "M_OPTTTL",
-    "Options",
+    NULL,
+    "Player1",
     PlayerOptionsMenu,
     M_DrawGenericMenu,
     NULL,
@@ -1524,13 +1561,50 @@ menu_t  PlayerOptionsDef =
     0,
 };
 
+
+static void M_PlayerDirectorChoice(int choice)
+{
+    // pind = choice
+    M_SetupMultiPlayer_pind( choice );  // pind = 0,1
+    Pop_Menu();
+    Push_Setup_Menu( &PlayerOptionsDef );
+}
+
+menuitem_t  PlayerDirectorMenu[] =
+{
+    {IT_CALL | IT_WHITESTRING, 0,"Player1 config >>", M_PlayerDirectorChoice, '1'},
+    {IT_CALL | IT_WHITESTRING, 0,"Player2 config >>", M_PlayerDirectorChoice, '2'}
+};
+
+menu_t  PlayerDirectorDef =
+{
+    "M_OPTTTL",
+    "Player",
+    PlayerDirectorMenu,
+    M_DrawGenericMenu,
+    NULL,
+    sizeof(PlayerDirectorMenu)/sizeof(menuitem_t),
+    27,40,
+    0,
+};
+
+static void M_PlayerDirector(int choice)
+{
+    // Select the menu
+    if( ! menu_multiplayer )
+    {
+        M_SetupMultiPlayer_pind( 0 );
+        Push_Setup_Menu( &PlayerOptionsDef );
+        return;        
+    }
+    Push_Setup_Menu( &PlayerDirectorDef );
+}
+
 //===========================================================================
 //MULTI PLAYER SETUP MENU
 //===========================================================================
 static void M_DrawSetupMultiPlayerMenu(void);
 static void M_MultiPlayer_Responder(int choice);
-static void M_Setup_P1_Controls(int choice);
-static void M_Setup_P2_Controls(int choice);
 static boolean M_QuitMultiPlayerMenu(void);
 
 #define PLBOXW    8
@@ -1588,8 +1662,11 @@ static  consvar_t* setupm_cvcolor;
 static  consvar_t* setupm_cvname;
 static  byte       setupm_skinindex;
 
+static
 void M_SetupMultiPlayer_pind( byte pind )
 {
+    menu_pind = pind;
+
     // SetupMultiPlayerMenu
     setupm_cvname = &cv_playername[pind];
     strcpy (setupm_name, cv_playername[pind].string);
@@ -1600,11 +1677,19 @@ void M_SetupMultiPlayer_pind( byte pind )
     SetupMultiPlayerMenu[setupmultiplayer_color].itemaction = setupm_cvcolor;
 
     // PlayerOptionsMenu
+    PlayerOptionsDef.menutitle = player_pind_str[pind];
     PlayerOptionsMenu[playeroption_usemouse].itemaction = &cv_usemouse[pind];
     PlayerOptionsMenu[playeroption_mouselook].itemaction = &cv_alwaysfreelook[pind];
     PlayerOptionsMenu[playeroption_mousemove].itemaction = &cv_mouse_move[pind];
     PlayerOptionsMenu[playeroption_alwaysrun].itemaction = &cv_autorun[pind];
-
+    PlayerOptionsMenu[playeroption_crosshair].itemaction = &cv_crosshair[pind];
+    PlayerOptionsMenu[playeroption_autoaim].itemaction = &cv_autoaim[pind];
+    PlayerOptionsMenu[playeroption_weaponpref].itemaction = &cv_weaponpref[pind];
+    PlayerOptionsMenu[playeroption_setupplayer].itemaction = M_SetupMultiPlayer[pind];
+    PlayerOptionsMenu[playeroption_setupcontrol].itemaction = M_Setup_P_Controls[pind];
+    PlayerOptionsMenu[playeroption_setupplayer].text = (char*) player_setup_str[pind];
+    PlayerOptionsMenu[playeroption_setupcontrol].text = (char*) player_controls_str[pind];
+   
     // skin display
     multi_state = &states[mobjinfo[MT_PLAYER].seestate];
     multi_tics = multi_state->tics;
@@ -1642,8 +1727,11 @@ void M_SetupMultiPlayer2 (int choice)
 void M_Player2_MenuEnable( boolean player2_enable )
 {
 // activate setup for player 2
+    menu_multiplayer = player2_enable;
     if ( player2_enable )
+    {
         MultiPlayerMenu[MPM_player2].status = IT_CALL | IT_PATCH;
+    }
     else
     {
         MultiPlayerMenu[MPM_player2].status = IT_DISABLED;
@@ -2001,9 +2089,13 @@ menuitem_t OptionsMenu[]=
 {
     {IT_STRING | IT_CVAR,0,"Messages:"       ,&cv_showmessages    ,0},
     {IT_STRING | IT_CVAR,0,"Always Run"      ,&cv_autorun[0]      ,0},
-    {IT_STRING | IT_CVAR,0,"Crosshair"       ,&cv_crosshair       ,0},
+    {IT_STRING | IT_CVAR,0,"Crosshair"       ,&cv_crosshair[0]    ,0},
 //    {IT_STRING | IT_CVAR,0,"Crosshair scale" ,&cv_crosshairscale  ,0},
-    {IT_STRING | IT_CVAR,0,"Autoaim"         ,&cv_autoaim         ,0},
+#if 1
+    {IT_CALL    | IT_WHITESTRING,0,"Player >>"  ,M_PlayerDirector   ,0},
+#else
+    {IT_STRING | IT_CVAR,0,"Autoaim"         ,&cv_autoaim[0]      ,0},
+#endif
 
     {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"Effects Options >>",&EffectsOptionsDef ,50},
     {IT_CALL    | IT_WHITESTRING,0,"Game Options >>"  ,M_GameOption       ,0},
@@ -2388,7 +2480,7 @@ menuitem_t BotOptionMenu[]=
 
 menu_t  BotDef =
 {
-    "M_OPTTTL",
+    NULL,
     "Bot Options",
     BotOptionMenu,
     M_DrawGenericMenu,
@@ -5133,7 +5225,7 @@ boolean M_Responder (event_t* ev)
         {
             button_key = key;  // mouse or joystick
 
-	    // Menu slider, all buttons of mouse1, 1st button of mouse2 ???
+            // Menu slider, all buttons of mouse1, 1st button of mouse2 ???
             if( key <= KEY_MOUSE2 )
                 button_down = 1;
         
@@ -6385,16 +6477,15 @@ void M_Register_Menu_Controls( void )
 
     // Player1
     CV_RegisterVar(&cv_autorun[0]);
+    CV_RegisterVar(&cv_crosshair[0]);
 
     // Player2
     CV_RegisterVar(&cv_autorun[1]);
+    CV_RegisterVar(&cv_crosshair[1]);
 
-    CV_RegisterVar(&cv_crosshair);
     //CV_RegisterVar (&cv_crosshairscale); // doesn't work for now
     CV_RegisterVar(&cv_showmessages);
     //CV_RegisterVar (&cv_showmessages2);
-    //CV_RegisterVar (&cv_crosshair2);
-    //CV_RegisterVar (&cv_autoaim2);
     //CV_RegisterVar (&cv_controlperkey2);
 
     CV_RegisterVar(&cv_screenslink);

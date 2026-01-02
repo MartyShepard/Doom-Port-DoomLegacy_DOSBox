@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 1481 2019-12-13 05:16:17Z wesleyjohnson $
+// $Id: g_game.h 1482 2019-12-13 05:16:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -140,9 +140,6 @@ extern  boolean   singledemo;
 // gametic at level start
 extern  tic_t     levelstarttic;  
 
-// used in game menu
-extern consvar_t  cv_crosshair;
-//extern consvar_t  cv_crosshairscale;
 extern consvar_t  cv_showmessages;
 extern consvar_t  cv_pickupflash;
 extern consvar_t  cv_weapon_recoil;  // Boom weapon recoil

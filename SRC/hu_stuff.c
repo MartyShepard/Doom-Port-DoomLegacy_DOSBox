@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
+// $Id: hu_stuff.c 1482 2019-12-13 05:16:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -132,8 +132,18 @@ static char             hu_tick;
 
 consvar_t*   chat_macros[10];
 
+static
+CV_PossibleValue_t crosshair_cons_t[] = {{0,"Off"},{1,"Cross"},{2,"Angle"},{3,"Point"},{0,NULL}};
+consvar_t cv_crosshair[2] = {
+  {"crosshair"   ,"0",CV_SAVE,crosshair_cons_t},
+  {"crosshair2"   ,"0",CV_SAVE,crosshair_cons_t}
+};
+//consvar_t cv_crosshairscale   = {"crosshairscale","0",CV_SAVE,CV_YesNo};
+
+// maximum 9
+#define HU_CROSSHAIRS   3
 //added:16-02-98: crosshair 0=off, 1=cross, 2=angle, 3=point, see m_menu.c
-patch_t*     crosshair[3];     //3 precached crosshair graphics
+static patch_t * crosshair_patch[HU_CROSSHAIRS];     //3 precached crosshair graphics
 
 static byte  hu_fonts_loaded = 0;
 
@@ -151,9 +161,9 @@ static byte  hu_HWR_patchstore;  // the HWR_patchstore setting used by fonts.
 // -------
 // protos.
 // -------
-void   HU_Draw_DeathmatchRankings (void);
-void   HU_Draw_Crosshair (void);
-static void HU_Draw_Tip();
+static void  HU_Draw_DeathmatchRankings (void);
+static void  HU_Draw_Crosshair (void);
+static void  HU_Draw_Tip();
 
 
 
@@ -212,7 +222,7 @@ void HU_Load_Graphics( void )
     for(i=0; i<HU_CROSSHAIRS; i++)
     {
        sprintf(buffer, "CROSHAI%c", '1'+i);
-       crosshair[i] = W_CachePatchName(buffer, PU_STATIC);
+       crosshair_patch[i] = W_CachePatchName(buffer, PU_STATIC);
     }
 
     hu_fonts_loaded = 1;
@@ -239,7 +249,7 @@ void HU_Release_Graphics( void )
 
         // Has protection against individual NULL ptr in array.
         release_patch_array( hu_font, HU_FONTSIZE );
-        release_patch_array( crosshair, HU_CROSSHAIRS );
+        release_patch_array( crosshair_patch, HU_CROSSHAIRS );
        
 #ifdef HU_HWR_PATCHSTORE_SAVE
         HWR_patchstore = saved_HWR_patchstore;
@@ -621,7 +631,7 @@ void HU_Drawer(void)
         HU_Draw_DeathmatchRankings ();
 
     // draw the crosshair, not when viewing demos nor with chasecam
-    if (!automapactive && cv_crosshair.value && !demoplayback && !cv_chasecam.value)
+    if (!automapactive && !demoplayback && !cv_chasecam.value)
         HU_Draw_Crosshair ();
 
     HU_Draw_Tip();
@@ -1051,6 +1061,7 @@ int HU_Create_TeamFragTbl(fragsort_t *fragtab,
 //
 //  draw Deathmatch Rankings
 //
+static
 void HU_Draw_DeathmatchRankings (void)
 {
     fragsort_t   fragtab[MAXPLAYERS];
@@ -1131,13 +1142,15 @@ void HU_Draw_DeathmatchRankings (void)
     extern float gr_viewheight;
 #endif
 
-void HU_Draw_Crosshair (void)
+static
+void HU_Draw_Crosshair( void )
 {
     // vid : from video setup
-    int y;
+    int y, yinc, chv1, chv2;
 
-    int chv = cv_crosshair.value & 3;
-    if (!chv)
+    chv1 = cv_crosshair[0].value & 3;
+    chv2 = (cv_splitscreen.value)? (cv_crosshair[1].value & 3) : 0;
+    if( !chv1 && !chv2 )
         return;
 
 #if 0
@@ -1149,25 +1162,29 @@ void HU_Draw_Crosshair (void)
     V_SetupDraw( 0 | V_SCALEPATCH | V_NOSCALE );
 #endif
 
+    // reduce this to one rendermode test
 #ifdef HWRENDER
     if( rendermode != render_soft ) 
+    {
         y = gr_basewindowcentery;
+        yinc = gr_viewheight;
+    }
     else
 #endif
-        y = viewwindowy+(rdraw_viewheight>>1);
-
-    V_DrawTranslucentPatch (vid.width>>1, y, crosshair[chv-1]);
-
-    if( cv_splitscreen.value )
     {
-#ifdef HWRENDER
-        if ( rendermode != render_soft )
-            y += gr_viewheight;
-        else
-#endif
-            y += rdraw_viewheight;
+        y = viewwindowy + (rdraw_viewheight>>1);
+        yinc = rdraw_viewheight;
+    }
 
-        V_DrawTranslucentPatch (vid.width>>1, y, crosshair[chv-1]);
+    if( chv1 )
+    {
+        V_DrawTranslucentPatch (vid.width>>1, y, crosshair_patch[chv1-1]);
+    }
+
+    if( chv2 )
+    {
+        y += yinc;
+        V_DrawTranslucentPatch (vid.width>>1, y, crosshair_patch[chv2-1]);
     }
     // V_SetupDraw( drawinfo.prev_screenflags );  // restore
 }
