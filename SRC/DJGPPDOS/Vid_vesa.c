@@ -321,10 +321,10 @@ done:
 // only called once
 void VID_Init (void)
 {
-    COM_AddCommand ("vid_nummodes", VID_Command_NumModes_f);
-    COM_AddCommand ("vid_modeinfo", VID_Command_ModeInfo_f);
-    COM_AddCommand ("vid_modelist", VID_Command_ModeList_f);
-    COM_AddCommand ("vid_mode", VID_Command_Mode_f);
+    COM_AddCommand ("vid_nummodes", VID_Command_NumModes_f, CC_command);
+    COM_AddCommand ("vid_modeinfo", VID_Command_ModeInfo_f, CC_command);
+    COM_AddCommand ("vid_modelist", VID_Command_ModeList_f, CC_command);
+    COM_AddCommand ("vid_mode", VID_Command_Mode_f, CC_command);
 }
 
 // Get Fullscreen, VESA modes, append to VGA window modes

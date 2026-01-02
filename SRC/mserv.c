@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: mserv.c 1377 2017-12-18 17:29:50Z wesleyjohnson $
+// $Id: mserv.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -261,7 +261,7 @@ void MS_Register_Commands(void)
     CV_RegisterVar(&cv_internetserver);
     CV_RegisterVar(&cv_masterserver);
     CV_RegisterVar(&cv_servername);
-    COM_AddCommand("listserv", Command_Listserv_f);
+    COM_AddCommand("listserv", Command_Listserv_f, CC_net);
 }
 
 static void MS_Close_socket(void)

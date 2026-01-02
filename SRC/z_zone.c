@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 1401 2018-07-04 11:12:43Z wesleyjohnson $
+// $Id: z_zone.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -437,7 +437,7 @@ void Z_Init (void)
 #endif
 
     // calls Z_Malloc, so must be last
-    COM_AddCommand ("meminfo", Command_MemInfo_f);
+    COM_AddCommand("meminfo", Command_MemInfo_f, CC_info);
 }
 
 

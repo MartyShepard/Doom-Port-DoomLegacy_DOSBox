@@ -352,7 +352,7 @@ void I_InitCD (void)
         cdValid = true;
     }
 
-    COM_AddCommand ("cd", Command_Cd_f);
+    COM_AddCommand ("cd", Command_Cd_f, CC_command);
 }
 
 

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_script.c 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: t_script.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -777,13 +777,13 @@ err_scriptnum:
 void T_Register_Commands( void )
 {
 #ifdef FRAGGLESCRIPT
-  COM_AddCommand("fs_dumpscript",  COM_T_DumpScript_f);
-  COM_AddCommand("fs_runscript",   COM_T_RunScript_f);
-  COM_AddCommand("fs_running",     COM_T_Running_f);
+  COM_AddCommand("fs_dumpscript",  COM_T_DumpScript_f, CC_fs);
+  COM_AddCommand("fs_runscript",   COM_T_RunScript_f, CC_fs);
+  COM_AddCommand("fs_running",     COM_T_Running_f, CC_fs);
   // for old wads with bind keys (like Chex newmaps)
-  COM_AddCommand("t_runscript",   COM_T_RunScript_f);
-  COM_AddCommand("t_running",     COM_T_Running_f);
-//  COM_AddCommand("t_dumpscript",  COM_T_DumpScript_f);
+  COM_AddCommand("t_runscript",   COM_T_RunScript_f, CC_fs);
+  COM_AddCommand("t_running",     COM_T_Running_f, CC_fs);
+//  COM_AddCommand("t_dumpscript",  COM_T_DumpScript_f, CC_fs);
 #endif
 }
 

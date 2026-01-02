@@ -7472,11 +7472,26 @@ Make a better sky sampling routine.
 Fix sky wrap to handle sky where a horz row is all the same color
 (eventual segfault).
 Improve the embebedded sky blob handling.
+Fixes BUG 0656.
 
 *** w108_swap16
 patchfile = w108_59_swap16.patch
 - commit revision 1473
 Hunt down some LE_SWAP16 that need to be unsigned.
 Attempting to fix BUG 0633.
+
+*** w108_help
+patchfile = w108_60_help.patch
+- commit revision 1474
+Add help categories, so that it shows commands specific to the category.
+This avoids overflowing the screen, which was not helpful.
+
+*** w108_cvar_call
+patchfile = w108_61_cvar_call.patch
+- commit revision 1475
+The cvar set functions needed to be fixed so that the CV_CALL was
+performed when needed.
+Added another config push level, to handle netvars in multiplayer games.
+
 
 

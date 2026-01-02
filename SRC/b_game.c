@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1470 2019-10-04 08:59:06Z wesleyjohnson $
+// $Id: b_game.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -363,7 +363,7 @@ void B_Regulate_Bots( int req_numbots )
 
 void B_Register_Commands()
 {
-    COM_AddCommand ("addbot", Command_AddBot);
+    COM_AddCommand ("addbot", Command_AddBot, CC_command);
 }
 
 static

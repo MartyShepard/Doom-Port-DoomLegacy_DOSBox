@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: console.c 1444 2019-06-12 04:08:18Z wesleyjohnson $
+// $Id: console.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -414,8 +414,8 @@ void CON_Register(void)
     CV_RegisterVar (&cons_speed);
     CV_RegisterVar (&cons_height);
     CV_RegisterVar (&cons_backpic);
-    COM_AddCommand ("cls", CONS_Clear_f);
-    COM_AddCommand ("bind", CONS_Bind_f);
+    COM_AddCommand ("cls", CONS_Clear_f, CC_console);
+    COM_AddCommand ("bind", CONS_Bind_f, CC_console);
 }
 
 // after FullGraphics

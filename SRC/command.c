@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1471 2019-10-04 08:59:55Z wesleyjohnson $
+// $Id: command.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -299,6 +299,7 @@ typedef struct xcommand_s
     const char       * name;
     struct xcommand_s * next;
     com_func_t         function;
+    byte    cctype; // classification for help
 } xcommand_t;
 
 static  xcommand_t  *com_commands = NULL;     // current commands
@@ -324,12 +325,12 @@ void COM_Init (void)
     VS_Alloc (&com_text, COM_BUF_SIZE);
 
     // add standard commands
-    COM_AddCommand ("alias",COM_Alias_f);
-    COM_AddCommand ("echo", COM_Echo_f);
-    COM_AddCommand ("exec", COM_Exec_f);
-    COM_AddCommand ("wait", COM_Wait_f);
-    COM_AddCommand ("help", COM_Help_f);
-    COM_AddCommand ("toggle", COM_Toggle_f);
+    COM_AddCommand ("alias",COM_Alias_f, CC_command);
+    COM_AddCommand ("echo", COM_Echo_f, CC_command);
+    COM_AddCommand ("exec", COM_Exec_f, CC_command);
+    COM_AddCommand ("wait", COM_Wait_f, CC_command);
+    COM_AddCommand ("toggle", COM_Toggle_f, CC_command);
+    COM_AddCommand ("help", COM_Help_f, CC_info);
     Register_NetXCmd(XD_NETVAR, Got_NetXCmd_NetVar);
 }
 
@@ -441,7 +442,7 @@ static void COM_TokenizeString (const char * text, boolean script)
 
 // Add a command before existing ones.
 //
-void COM_AddCommand (const char *name, com_func_t func)
+void COM_AddCommand( const char *name, com_func_t func, byte command_type )
 {
     xcommand_t * cmd;
 
@@ -465,6 +466,7 @@ void COM_AddCommand (const char *name, com_func_t func)
     cmd = Z_Malloc (sizeof(xcommand_t), PU_STATIC, NULL);
     cmd->name = name;
     cmd->function = func;
+    cmd->cctype = command_type;
     cmd->next = com_commands;
     com_commands = cmd;
 }
@@ -684,16 +686,71 @@ static void COM_Wait_f (void)
         com_wait = 1;   // 1 frame
 }
 
+// [WDJ] Categorized help.
+typedef struct {
+  const char * str;
+  byte  cctype;  // cc type
+  byte  varflag; // cvar flags
+} help_cat_t;
+
+#define NUM_HELP_CAT   13
+static help_cat_t  helpcat_table[ NUM_HELP_CAT ] =
+{
+   {"INFO", CC_info, 0},
+   {"CHEAT", CC_cheat, 0},
+   {"COMMAND", CC_command, 0},
+   {"SAVEGAME", CC_savegame, 0},
+   {"CONFIG", CC_config, 0},
+   {"CONTROL", CC_control, 0},
+   {"FS", CC_fs, 0},  // fragglescript
+   {"CHAT", CC_chat, 0},
+   {"NET", CC_net, 0},
+   {"CONSOLE", CC_console, 0},
+   {"VAR", 0xFF, 0xFF},
+   {"NETVAR", 0xFF, CV_NETVAR},
+   {"CFGVAR", 0xFF, CV_SAVE},
+};
+
 static void COM_Help_f (void)
 {
     xcommand_t  *cmd;
     consvar_t  *cvar;
-    int i=0;
+    int i, k;
+    uint32_t   varflag = 0;
+    byte  cctype = 0;
+
     COM_args_t  carg;
     
     COM_Args( &carg );
 
-    if( carg.num>1 )
+    // [WDJ] Categorized help.
+    if( carg.num < 2 )
+    {
+        CONS_Printf ("HELP <category>\n" );
+        CONS_Printf ("   INFO CHEAT COMMAND SAVEGAME CONFIG CONTROL FS CHAT NET CONSOLE\n" );
+        CONS_Printf ("   VAR NETVAR CFGVAR\n" );
+        CONS_Printf ("HELP <varname>\n");
+        return;
+    }
+   
+    for( i = 1; i < carg.num; i++ )
+    {
+        for( k = 0; k < NUM_HELP_CAT; k++ )
+        {
+            if( strcasecmp( carg.arg[i], helpcat_table[k].str ) == 0 )
+            {
+                if( helpcat_table[k].cctype < 20 )
+                {
+                    cctype = helpcat_table[k].cctype;
+                    break;
+                }
+                varflag |= helpcat_table[k].varflag;
+                cctype = 0xF0; // var listing
+            }
+        }
+    }
+
+    if((carg.num>1) && (cctype == 0))
     {
         cvar = CV_FindVar (carg.arg[1]);
         if( cvar )
@@ -736,30 +793,46 @@ static void COM_Help_f (void)
         }
         else
             con_Printf("No Help for this command/variable\n");
+       
+        return;
     }
-    else
+    
+    i = 0; // cnt vars and commands
+    if( cctype == 0 )
+        varflag = 0xFFFF;  // all variables
+
+    if( cctype < 20 )
     {
         // commands
         con_Printf("\2Commands\n");
         for (cmd=com_commands ; cmd ; cmd=cmd->next)
         {
+          if( (cctype == 0) || (cctype == cmd->cctype) )
+          {
             con_Printf("%s ",cmd->name);
             i++;
+          }
         }
+    }
 
+    if( varflag )
+    {
         // variable
         con_Printf("\2\nVariables\n");
         for (cvar=consvar_vars; cvar; cvar = cvar->next)
         {
+          if( cvar->flags & varflag )
+          {
             con_Printf("%s ",cvar->name);
             i++;
+          }
         }
-
-        con_Printf("\2\nRead the console docs for more or type help <command or variable>\n");
-
-        if( devparm )
-            con_Printf("\2Total : %d\n",i);
     }
+
+    con_Printf("\2\nRead the console docs for more or type help <command or variable>\n");
+
+    if( devparm )
+            con_Printf("\2Total : %d\n",i);
 }
 
 static void COM_Toggle_f(void)

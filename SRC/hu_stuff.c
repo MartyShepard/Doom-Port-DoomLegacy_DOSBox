@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
+// $Id: hu_stuff.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -1257,9 +1257,9 @@ void Command_Chatmacro_f (void)
 
 void HU_Register_Commands( void )
 {
-    COM_AddCommand ("say"    , Command_Say_f);
-    COM_AddCommand ("sayto"  , Command_Sayto_f);
-    COM_AddCommand ("sayteam", Command_Sayteam_f);
+    COM_AddCommand ("say"    , Command_Say_f, CC_chat);
+    COM_AddCommand ("sayto"  , Command_Sayto_f, CC_chat);
+    COM_AddCommand ("sayteam", Command_Sayteam_f, CC_chat);
     Register_NetXCmd(XD_SAY, Got_NetXCmd_Saycmd);
 }
 

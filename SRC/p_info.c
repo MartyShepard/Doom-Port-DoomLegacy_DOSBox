@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 1434 2019-04-26 10:35:00Z wesleyjohnson $
+// $Id: p_info.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -654,7 +654,7 @@ void COM_MapInfo_f(void)
 
 void P_Register_Info_Commands(void)
 {
-  COM_AddCommand("mapinfo",  COM_MapInfo_f);
+  COM_AddCommand("mapinfo",  COM_MapInfo_f, CC_info);
 }
 
 

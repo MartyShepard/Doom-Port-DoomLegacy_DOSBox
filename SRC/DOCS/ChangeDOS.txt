@@ -1,5 +1,13 @@
 * Not need to Compile.
 
+[01474 ]: w108 60 help
+          DOS: Compile fix. Updated
+          COM_AddCommand "cd"
+          COM_AddCommand "vid_nummodes"
+          COM_AddCommand "vid_modeinfo"
+          COM_AddCommand "vid_modelist"
+          COM_AddCommand "vid_mode"
+					
 [01473 ]: w108 59 unsigned swap16
 [01472 ]: w108 58 starsky
 [01471 ]: w108 57 minmax

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
+// $Id: d_netcmd.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -253,35 +253,35 @@ void D_Register_ClientCommands(void)
     Register_NetXCmd(XD_PAUSE, Got_NetXCmd_Pause);
     Register_NetXCmd(XD_USEARTIFACT, Got_NetXCmd_UseArtifact);
 
-    COM_AddCommand("playdemo", Command_Playdemo_f);
-    COM_AddCommand("timedemo", Command_Timedemo_f);
-    COM_AddCommand("stopdemo", Command_Stopdemo_f);
-    COM_AddCommand("map", Command_Map_f);
-    COM_AddCommand("restartlevel", Command_Restart_f);
-    COM_AddCommand("exitgame", Command_ExitGame_f);
-    COM_AddCommand("exitlevel", Command_ExitLevel_f);
+    COM_AddCommand("playdemo", Command_Playdemo_f, CC_command);
+    COM_AddCommand("timedemo", Command_Timedemo_f, CC_command);
+    COM_AddCommand("stopdemo", Command_Stopdemo_f, CC_command);
+    COM_AddCommand("map", Command_Map_f, CC_command);
+    COM_AddCommand("restartlevel", Command_Restart_f, CC_command);
+    COM_AddCommand("exitgame", Command_ExitGame_f, CC_command);
+    COM_AddCommand("exitlevel", Command_ExitLevel_f, CC_command);
 
-    COM_AddCommand("addfile", Command_Addfile);
-    COM_AddCommand("pause", Command_Pause);
+    COM_AddCommand("addfile", Command_Addfile, CC_command);
+    COM_AddCommand("pause", Command_Pause, CC_command);
 
-    COM_AddCommand("turbo", Command_Turbo_f);   // turbo speed
-    COM_AddCommand("version", Command_Version_f);
-    COM_AddCommand("quit", Command_Quit_f);
+    COM_AddCommand("turbo", Command_Turbo_f, CC_command);   // turbo speed
+    COM_AddCommand("quit", Command_Quit_f, CC_command);
+    COM_AddCommand("screenshot", M_ScreenShot, CC_command);
+    COM_AddCommand("kill", Command_Kill, CC_command);
 
-    COM_AddCommand("chatmacro", Command_Chatmacro_f);   // hu_stuff.c
-    COM_AddCommand("setcontrol", Command_Setcontrol_f);
-    COM_AddCommand("setcontrol2", Command_Setcontrol2_f);
-    COM_AddCommand("bindjoyaxis", Command_BindJoyaxis_f);
+    COM_AddCommand("chatmacro", Command_Chatmacro_f, CC_chat);   // hu_stuff.c
+    COM_AddCommand("setcontrol", Command_Setcontrol_f, CC_control);
+    COM_AddCommand("setcontrol2", Command_Setcontrol2_f, CC_control);
+    COM_AddCommand("bindjoyaxis", Command_BindJoyaxis_f, CC_control);
 
-    COM_AddCommand("frags", Command_Frags_f);
-    COM_AddCommand("teamfrags", Command_TeamFrags_f);
+    COM_AddCommand("version", Command_Version_f, CC_info);
+    COM_AddCommand("frags", Command_Frags_f, CC_info);
+    COM_AddCommand("teamfrags", Command_TeamFrags_f, CC_info);
 
-    COM_AddCommand("saveconfig", Command_SaveConfig_f);
-    COM_AddCommand("loadconfig", Command_LoadConfig_f);
-    COM_AddCommand("changeconfig", Command_ChangeConfig_f);
-    COM_AddCommand("screenshot", M_ScreenShot);
+    COM_AddCommand("saveconfig", Command_SaveConfig_f, CC_config);
+    COM_AddCommand("loadconfig", Command_LoadConfig_f, CC_config);
+    COM_AddCommand("changeconfig", Command_ChangeConfig_f, CC_config);
 
-    COM_AddCommand("kill", Command_Kill);
 
     //Added by Hurdler for master server connection
     MS_Register_Commands();
@@ -315,15 +315,15 @@ void D_Register_ClientCommands(void)
     if (dedicated)
         return;
 
-    COM_AddCommand("load", Command_Load_f);
+    COM_AddCommand("load", Command_Load_f, CC_savegame);
     Register_NetXCmd(XD_LOADGAME, Got_NetXCmd_LoadGamecmd);
-    COM_AddCommand("save", Command_Save_f);
+    COM_AddCommand("save", Command_Save_f, CC_savegame);
     Register_NetXCmd(XD_SAVEGAME, Got_NetXCmd_SaveGamecmd);
 
     // add cheat commands, I'm bored of deh patches renaming the idclev ! :-)
-    COM_AddCommand("noclip", Command_CheatNoClip_f);
-    COM_AddCommand("god", Command_CheatGod_f);
-    COM_AddCommand("gimme", Command_CheatGimme_f);
+    COM_AddCommand("noclip", Command_CheatNoClip_f, CC_cheat);
+    COM_AddCommand("god", Command_CheatGod_f, CC_cheat);
+    COM_AddCommand("gimme", Command_CheatGimme_f, CC_cheat);
 
 /* ideas of commands names from Quake
     "status"

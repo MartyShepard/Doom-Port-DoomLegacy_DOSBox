@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.c 1463 2019-09-29 07:36:51Z wesleyjohnson $
+// $Id: hw_main.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -4362,7 +4362,7 @@ void HWR_Register_Gr2Commands(void)
     CV_RegisterVar(&cv_grclipwalls);
 
     // engine commands
-    COM_AddCommand("gr_stats", Command_GrStats_f);
+    COM_AddCommand("gr_stats", Command_GrStats_f, CC_info);
 }
 
 // --------------------------------------------------------------------------
