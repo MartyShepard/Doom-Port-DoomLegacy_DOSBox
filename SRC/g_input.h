@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.h 1465 2019-10-01 02:36:54Z wesleyjohnson $
+// $Id: g_input.h 1466 2019-10-01 02:37:37Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -100,6 +100,10 @@ typedef enum
     gc_invuse,
     gc_flydown,     // flyup is jump !
     gc_screenshot,
+// Mouse and joystick only, Fixed assignment for keyboard.
+    gc_menuesc,  // joystick menu enter and escape key
+    gc_pause,
+    gc_automap,
     num_gamecontrols
 } gamecontrols_e;
 
@@ -109,6 +113,7 @@ extern consvar_t  cv_autorun2;
 
 extern consvar_t   cv_grabinput;
 
+extern consvar_t   cv_joy_deadzone;
 // mouse
 extern consvar_t   cv_usemouse;
 extern consvar_t   cv_alwaysfreelook;
@@ -141,6 +146,7 @@ extern consvar_t   cv_mouse_double;
 #ifdef JOY_BUTTONS_DOUBLE     
 extern consvar_t   cv_joy_double;
 #endif
+
 extern int             mousex;
 extern int             mousey;
 extern int             mouse2x;

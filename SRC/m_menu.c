@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1465 2019-10-01 02:36:54Z wesleyjohnson $
+// $Id: m_menu.c 1466 2019-10-01 02:37:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -555,7 +555,7 @@ menu_t MainDef, SoundDef, EpiDef, NewDef,
   VideoModeDef, VideoOptionsDef, DrawmodeDef, MouseOptionsDef,
   SingleMultiDef, TwoPlayerDef, MultiPlayerDef, SetupMultiPlayerDef,
   ReadDef2, ReadDef1, SaveDef, LoadDef, 
-  ControlDef, ControlDef2, ControlDef3, MControlDef,
+  ControlDef, ControlDef2, ControlDef3, MControlDef, JoystickOptionsDef,
   OptionsDef, EffectsOptionsDef, GameOptionDef, AdvOption1Def, AdvOption2Def,
   MenuOptionsDef, LightingDef, BotDef,
   NetOptionDef, ConnectOptionDef, ServerOptionsDef,
@@ -2208,6 +2208,37 @@ menu_t  MouseOptionsDef =
 };
 
 //===========================================================================
+//                        Joystick OPTIONS MENU
+//===========================================================================
+
+menuitem_t JoystickOptionsMenu[]=
+{
+#ifdef __DJGPP__			 
+    {IT_STRING | IT_CVAR,0,"Use Joystick", &cv_usejoystick    ,0},
+#endif 
+#ifdef JOY_BUTTONS_DOUBLE
+    {IT_STRING | IT_CVAR, 0,"Joystick Doubleclick" ,&cv_joy_double ,0},
+#endif
+#if 1
+    {IT_STRING | IT_CVAR, 0,"Joystick Deadzone" ,&cv_joy_deadzone ,0},
+#else
+    {IT_STRING | IT_CVAR | IT_CV_SLIDER, 0,"Deadzone" ,&cv_joy_deadzone ,0},
+#endif
+};
+
+menu_t  JoystickOptionsDef =
+{
+    "M_OPTTTL",
+    "Joystick Options",
+    JoystickOptionsMenu,
+    M_DrawGenericMenu,
+    NULL,
+    sizeof(JoystickOptionsMenu)/sizeof(menuitem_t),
+    60,40,
+    0
+};
+   
+//===========================================================================
 //                        Game OPTIONS MENU
 //===========================================================================
 
@@ -2642,14 +2673,12 @@ menu_t  SoundDef =
 //===========================================================================
 menuitem_t MControlMenu[]=
 {
-    {IT_STRING | IT_CVAR,0,"Control per key" ,&cv_controlperkey   ,0},
-#ifdef __DJGPP__			 
-    {IT_STRING | IT_CVAR,0,"Use Joystick", &cv_usejoystick    ,0},
-#endif    
+    {IT_STRING | IT_CVAR, 0,"Control per key" ,&cv_controlperkey   ,0},
     {IT_SUBMENU | IT_WHITESTRING, 0,"Mouse Options >>" ,&MouseOptionsDef   , 'm'},
     {IT_SUBMENU | IT_WHITESTRING, 0,"Second Mouse config >>", &SecondMouseCfgdef, 0},
     {IT_CALL | IT_WHITESTRING, 0,"Player1 Controls >>", M_Setup_P1_Controls, '1'},
     {IT_CALL | IT_WHITESTRING, 0,"Player2 Controls >>", M_Setup_P2_Controls, '2'},
+    {IT_SUBMENU | IT_WHITESTRING, 0,"Joystick Options >>" ,&JoystickOptionsDef   , 'j'},
 };
 
 menu_t  MControlDef =
@@ -2746,6 +2775,10 @@ menuitem_t ControlMenu3[]=
   {IT_CONTROL, 0,"Rankings/Scores",M_ChangeControl,gc_scores },
   {IT_CONTROL, 0,"Console"        ,M_ChangeControl,gc_console},
   {IT_CONTROL, 0,"Screenshot"     ,M_ChangeControl,gc_screenshot},
+  {IT_WHITESTRING | IT_SPACE, 0, "Joystick and Mouse Only" ,0},
+  {IT_CONTROL, 0,"Main menu"      ,M_ChangeControl,gc_menuesc},
+  {IT_CONTROL, 0,"Pause"          ,M_ChangeControl,gc_pause},
+  {IT_CONTROL, 0,"Automap"        ,M_ChangeControl,gc_automap},
                        
   {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"next"    ,&ControlDef,128}
 };
@@ -2851,8 +2884,15 @@ void M_ChangecontrolResponse(event_t* ev)
     int        ch=ev->data1;
 
     // The new key for a control function.
-    // ESCAPE cancels
+    // ESCAPE cancels assignment.
     // Not allowed to assign KEY_ESCAPE nor KEY_PAUSE to another control function.
+
+    // [WDJ] Test has interference with joystick assign.
+    // Input gamecontrol[gc_menuesc] is translated to KEY_ESCAPE.
+    //   This prevents reprogram of joystick buttons using button already programmed for gc_menuesc, which is probably a good thing.
+    // If cancel gamecontrol[gc_menuesc] assignment, menus may become inaccessible to joystick.
+    // Joystick gamecontrol[gc_pause]: does not cancel this assign, does not interfere.
+    //   Pause game does test of gamecontrol[gc_pause] directly, not translated.
     if (ch!=KEY_ESCAPE && ch!=KEY_PAUSE)
     {
 
@@ -2860,7 +2900,7 @@ void M_ChangecontrolResponse(event_t* ev)
         {
           // ignore mouse/joy movements, just get buttons
           case ev_mouse:
-               ch = KEY_NULL;      // no key
+            ch = KEY_NULL;      // no key
             break;
 
           // keypad arrows are converted for the menu in cursor arrows
@@ -2925,8 +2965,15 @@ void M_ChangecontrolResponse(event_t* ev)
             found = 0;
             if (setupcontrols[control][0] == KEY_NULL)
                 found++;
-            if (setupcontrols[control][1] == KEY_NULL)
+           if (setupcontrols[control][1] == KEY_NULL)
                 found++;
+
+            if( (controls_player == 0) && (control == gc_menuesc)
+                && ((ch == KEY_NULL) || (ch == KEY_BACKSPACE)) )
+            {
+                // Protect gc_menuesc against being set to NULL.
+                goto done;
+            }
 
             if (found==2)
             {
@@ -5056,6 +5103,7 @@ boolean M_Responder (event_t* ev)
 
     int i;
     int key = KEY_NULL; // key pressed (if any)
+    int button_key = 0; // mouse and joystick specific
     char ch = '\0';  // ASCII char it corresponds to
 
     switch (ev->type )
@@ -5065,7 +5113,9 @@ boolean M_Responder (event_t* ev)
         ch  = ev->data2;  // ASCII char
         if( key >= KEY_MOUSE1 )
         {
-            // Menu slider, all buttons of mouse1, 1st button of mouse2 ???
+            button_key = key;  // mouse or joystick
+
+	    // Menu slider, all buttons of mouse1, 1st button of mouse2 ???
             if( key <= KEY_MOUSE2 )
                 button_down = 1;
         
@@ -5083,6 +5133,35 @@ boolean M_Responder (event_t* ev)
              case KEY_JOY0BUT1:
                 key = KEY_BACKSPACE;
                 break;
+             default:
+                // [Leonardo Montenegro]
+                // Custom binding for accessing main menu through other means
+                // beside ESC key. Useful for allowing menu navigation through
+                // controllers, per example
+                if (key == gamecontrol[gc_menuesc][0] || key == gamecontrol[gc_menuesc][1] )
+                {
+                    key = KEY_ESCAPE;
+                }
+                else if(menuactive)
+                {
+                    // Navigating menus through joy hat of first controller.
+                    if(key == KEY_JOY0HATUP)
+                    {
+                        key = KEY_UPARROW;
+                    }
+                    else if(key == KEY_JOY0HATDOWN)
+                    {
+                        key = KEY_DOWNARROW;
+                    }
+                    else if(key == KEY_JOY0HATLEFT)
+                    {
+                        key = KEY_LEFTARROW;
+                    }
+                    else if(key == KEY_JOY0HATRIGHT)
+                    {
+                        key = KEY_RIGHTARROW;
+                    }
+                }
             }
         }
         else
@@ -5124,6 +5203,7 @@ boolean M_Responder (event_t* ev)
 
             if( key )
             {
+                button_key = key;
                 // On any trigger, zero everything, so cannot drift off slider.
                 mousewait = I_GetTime() + TICRATE/7;
                 mousex = mousey = 0;
@@ -5357,6 +5437,15 @@ boolean M_Responder (event_t* ev)
           else if (tolower(ch) == 'y')
             key = 'y';
 
+          if( button_key )  // Translate only for mouse and joystick.
+          {
+              if(key == KEY_ENTER) key = 'y'; // Convert Enter keypress to 'y' in menus, allowing game exit from controller
+              if(key == KEY_BACKSPACE) key = 'n'; // Convert Backspace keypress to 'n' in menus, making possible to go back
+          }
+
+          // [WDJ] Important that message boxes not be cleared away by ENTER or any normal keypress.
+          // If a message box pops up, it must ignore the normal keypresses.  Otherwise someone hitting
+          // keys quickly will blow it away before they even read it.
           if(key == KEY_SPACE || key == 'n' || key == 'y' || key == KEY_ESCAPE)
           {
                 if(routine) routine(key);
@@ -6353,7 +6442,7 @@ void M_Register_Menu_Controls( void )
 #ifdef JOY_BUTTONS_DOUBLE
     CV_RegisterVar(&cv_joy_double);
 #endif
-
+    CV_RegisterVar(&cv_joy_deadzone);
 #if defined( __DJGPP__ )
     CV_RegisterVar(&cv_usejoystick);
     CV_RegisterVar(&cv_joystickfreelook);

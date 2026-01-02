@@ -171,6 +171,8 @@
 #define CORONA_CHOICE
 #endif
 
+// XBOX controller
+#define XBOX_CONTROLLER
 
 // Player morph canceling invisibility and MF_SHADOW, is inconsistent.
 // The Heretic vanilla behavior cancels SHADOW when turned into a chicken.
