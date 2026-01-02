@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_random.c 1399 2018-07-02 03:41:01Z wesleyjohnson $
+// $Id: m_random.c 1454 2019-09-11 12:24:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -198,5 +198,164 @@ int P_Random(pr_class_t pr_class)
   return boom & 255;
 }
 #endif
+
+
+// [WDJ] Extended random, has long repeat period.
+// This is necessary for graphical creation, as the short period random numbers show patterns.
+// E_Random state.
+static uint32_t rng1 = 33331;
+static uint32_t rng_stir = 1;
+
+//  returns unsigned 16 bit
+int  E_Random(void)
+{
+    // A Linear Congruential Generator with long period.
+    // Multiply 16 bit value by a const, with addition of previous multiplication carry out bits.
+    // Adding an odd constant ensures it is self starting from 0, but often makes it get stuck (undesireable).
+    // Want a safe-prime p, where (p-1)/2 is also prime.
+    // Then the period will be (p-1)/2, where p = (mult_a * 2**16) - 1.
+//    rng1 = ((rng1 & 0xFFFF) * 57827) + 1 + (rng1 >> 16);  // period   6_059115
+//    rng1 = ((rng1 & 0xFFFF) * 57829) + 1 + (rng1 >> 16);  // period  92_017900
+    // Multiplier a = 65534, p = 4294836223, (p - 1)/2 = 2147418111.  ?? not primes
+//    rng1 = ((rng1 & 0xFFFF) * 65534) + (rng1 >> 16);      // period 261_880256
+    // Multiplier a = 65184, p = 65184 * 2**16 - 1 = 427189623 (prime), and (p-1)/2 = 2135949311 (prime).
+    rng1 = ((rng1 & 0xFFFF) * 65184) + 1 + (rng1 >> 16);  // period 2135_949311
+
+    rng_stir += 21611; // add prime, period 2**32
+    // Extended period = (rng1_period * rng_stir_period), as long as the periods do not have a common factor.
+    return (rng1 ^ rng_stir) & 0xFFFF;
+}
+
+//  returns -range, 0, +range
+int  E_SignedRandom( int range )
+{
+    return ((int)( E_Random() % (range + range + 1) )) - range;
+}
+
+// True for the percentage of the calls.
+#define E_RandomPercent( per )   (E_Random() < ((unsigned int)(per * (0.01f * 0xFFFF))))
+
+//#define TEST_ERANDOM
+#ifdef TEST_ERANDOM
+void test_erandom()
+{
+#define HASHSIZE  0x1000
+#define BINSIZE   0x1000
+#define SAMPLESIZE    4096
+    // Do not need to save every value.  When it repeats it will repeat perfectly.
+static    uint32_t val[HASHSIZE][BINSIZE];
+static    uint32_t ind[HASHSIZE][BINSIZE];
+static    uint32_t num[HASHSIZE];
+
+    unsigned int bin, numval;
+    unsigned int c2, n2;
+    unsigned int c1, n1;
+    unsigned int prev_bin, last_bin;
+    uint32_t * last;
+    uint32_t * p_end;
+    uint32_t * p;
+	  
+    memset( &num[0], 0, sizeof(num));
+    prev_bin = last_bin = 0xFFFFFFFF;
+   
+    for( c2=0; c2< 0x3FFFFFFF; c2++ )
+    {
+        // sample state
+        prev_bin = last_bin;
+        bin = rng1 & (HASHSIZE-1);
+        last_bin = bin;
+        numval = num[bin];
+        if( numval < BINSIZE )
+        {
+            val[bin][numval] = rng1;
+ 	    ind[bin][numval] = c2;
+	    num[bin] = numval + 1;
+        }
+       
+        for( n2=0; n2<SAMPLESIZE; n2++ )
+        {
+            E_Random();  // next
+
+	    // Check hashed per SAMPLE
+	    bin = rng1 & (HASHSIZE-1);
+	    numval = num[bin];
+	    if( numval )
+	    {
+                p_end = & val[bin][numval];
+	        p = & val[bin][0];
+	        for( ; p < p_end; p++ )
+	        {
+		    if( *p == rng1 )
+		    {
+		        unsigned int bi2 = (p - & val[bin][0]);
+		        c1 = ind[bin][bi2];
+		        n1 = 0;
+		        goto found_hit;
+		    }
+	        }
+            }
+        }
+    }
+    printf(" E_Random: no repeats found in %i tests\n", c2 );
+    fflush( stdout );
+    return;
+   
+found_hit:
+    if( c2 > c1 )  goto print_hit;
+   
+    // The detected repeat value was the last sample saved.
+    // Might have had a very small tight loop, or have become stuck on a value.
+    // Do not know when the loop started.
+    printf("E_Random repeat val=%x, 1st at %i.%i, 2nd at %i.%i, preliminary.\n", rng1, c1, 0, c2, n2 );
+   
+    // Reset RNG to previous sample.
+    if( prev_bin < BINSIZE )
+    {
+        // Use the previous sample
+        bin = prev_bin;
+        numval = num[bin];
+        if((last_bin == prev_bin) && (numval>0) )   numval--;
+    }
+    else
+    {
+        // Previous sample invalid, so this must be the very first sample.
+        bin = last_bin;
+	numval = num[bin];
+    }
+       
+    rng1 = val[bin][numval];
+    c1 = c2 = ind[bin][numval];
+
+    last = &val[0][0];  // reuse val array space
+    *last = rng1;
+    last++;
+
+    for( n2=0; n2 < SAMPLESIZE*2; n2++ )
+    {
+        E_Random();  // next
+
+        // Check last SAMPLE
+	p = &val[0][0];  // reuse val array space
+        for( ; p < last; p++ )
+        {
+            if( *p == rng1 )
+	    {
+	        n1 = (p - &val[0][0]);
+	        goto print_hit;
+	    }
+        }
+        *last = rng1;
+    }
+    printf("E_Random repeat failed\n");
+    n1 = 0;
+
+print_hit:
+    printf("E_Random repeat val=%x, 1st at %i.%i, 2nd at %i.%i\n", rng1, c1, n1, c2, n2 );
+    uint64_t period = ((uint64_t)(c2 - c1) * SAMPLESIZE) + n2 - n1 + 1;
+    printf("E_Random period %Lu\n", period );
+    fflush( stdout );
+}
+#endif
+
 
 

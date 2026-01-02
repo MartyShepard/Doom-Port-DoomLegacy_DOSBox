@@ -7007,7 +7007,7 @@ F4 = normal menu
 INSERT = add the menu item to the config file
 DEL = delete the menu item from the config file
 
-Menu entries that are relevant to the drawmode config, like the control
+Menu entries that are not relevant to the drawmode config, like the control
 key assignments, do not have support for insert to the drawmode config
 file.
 
@@ -7196,6 +7196,7 @@ patchfile = w108_34_netbsd.patch,
 - commit revision 1448
 NETBSD port fixes to the Makefile and network code.
 Optioned as NETBSD.
+Feature Request 0090: based on code submitted by Michael Bäuere.
 
 *** w108_textureformat
 patchfile = w108_35_textureformat.patch
@@ -7213,7 +7214,7 @@ patchfile = w108_36_deathmatch_skill.patch
 - commit revision 1450
 Deathmatch setup issues a text command, that is missing a switch "-",
 making the skill setting ignored.
-This was discovered by Leonardo Montenegro, support request 26.
+This was discovered by Leonardo Montenegro, support request 0026.
 
 *** w108_heretic_rev
 patchfile = w108_37_heretic_rev.patch
@@ -7228,7 +7229,7 @@ Improve the deathmatch/coop menu selections.
 The Deathmatch settings are now:
 Coop_SP_Map: Play coop using the single player map, items, and monsters.
 Coop_60: Play coop, but the strong monsters added for coop are reduced.
-Coop_80: Play coop, but the string monsters added for coop are reduced.
+Coop_80: Play coop, but the strong monsters added for coop are reduced.
 Coop: Play coop, using the respawn settings in the game options menu.
 Coop_weapons: Play coop, using the deathmatch weapon respawn (orig coop).
 DM: Play Deathmatch, using the respawn settings in the game options menu.
@@ -7244,3 +7245,85 @@ patchfile = w108_39_bot_menu.patch
 Added a bot menu setting to the deathmatch menu, FeatureRequest 0092.
 Bot behavior is still not the best.  They will not back off.
 
+*** w108_erandom
+patchfile = w108_40_erandom.patch
+- commit revision 1454
+Add the E_Random support.
+E_Random returns a 16 bit unsigned random number, from a very long
+period random number generator.
+This is needed for random graphics generation because the short
+period random number generaters show patterns in the graphics.
+
+*** w108_draw8_alpha
+patchfile = w108_41_draw8_alpha.patch
+- commit revision 1455
+The draw8 implementation of the additive_alpha draw was
+missing the add to the current screen value.
+This created a dark circle for the corona.
+The color12_to_8 table was missing the last entry (defined as [0xFFF]).
+An addition that resulted in color (0xF0,0xF0,0xF0) or brighter got 0 from the table.
+This fixes bug 0652.
+
+*** w108_BE_SWAP16
+patchfile = w108_42_BE_SWAP16.patch
+- commit revision 1456
+The LE_SWAP16 returns a signed 16 bit on big-endian machines.
+In some uses this is getting sign-extended into a large number.
+Michael Bauerle reported that this happens when loading the blockmap on
+a large wad, preacher.wad, using a big-endian machine.
+This fixes bug 0653.
+
+*** w108_148
+patchfile = w108_43_148.patch
+- commit revision 1457
+Version 1.48.0.
+Too many features that may need version detection.
+
+*** w108_bots
+patchfile = w108_44_bots.patch
+- commit revision 1458
+Overhaul of bot code.
+Cleaned up the bot names, created some more.
+Created a new name/color randomizer, the orignal had bugs.
+Added controls for bot skill, bot speed, bot respawn time, and bot random number.
+This is not compatible with previous bots that may be in saved demos.
+I am hoping that there are no bot demos that are important.
+
+Some of the bot skill selections affect all bots, but the rand bot skills
+gives each individual bot an independent skill setting.
+The game selections make the skill dependent upon the game skill setting.
+
+Bot skill:
+  0:crippled
+  1:baby
+  2:easy
+  3:medium
+  4:hard
+  5:nightmare
+  6:randmed   (random 0 to gameskill-1)
+  7:randgame  (random 1 to gameskill)
+  8:gamemed   (use gameskill-1 setting)
+  9:gameskill (use gameskill setting)
+
+Some of the bot speed selections affect all bots, but the botskill
+selection makes the bot speed dependent upon the individual bot skill.
+The game selections make the speed dependent upon the game skill setting.
+
+Bot speed:
+  0:walk
+  1:trainer
+  2:slow
+  3:medium
+  4:fast
+  5:run
+  8:gamemed    (dependent upon gameskill-1, speed=0..4)
+  9:gameskill  (dependent upon gameskill, speed=1..5)
+  10:botskill  (dependent upon bot skill, speed=0..5)
+
+Bot random number sets the bot random number generator index, and
+selects the bot name and color.
+
+Added some code to stop bots from obsessing over things they cannot
+reach.  Added code to regulate bots attacking barrels.
+This is still a work-in-progress, and there will be furthur
+significant changes to bots.
