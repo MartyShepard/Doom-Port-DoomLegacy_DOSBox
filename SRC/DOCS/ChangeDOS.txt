@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01479 ]: w108 65 botsave
 [01478 ]: w108 64 botnet
 [01477 ]: w108 63 add player
           DOS: Compile Fix (doomcom->numplayers)

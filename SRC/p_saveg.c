@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1469 2019-10-04 08:58:45Z wesleyjohnson $
+// $Id: p_saveg.c 1479 2019-10-19 13:43:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2017 by DooM Legacy Team.
@@ -110,6 +110,8 @@
   // to save command line
 #include "m_misc.h"
   // FIL_Filename_of
+#include "b_game.h"
+  // B_Destroy_Bot
 
 #include "p_saveg.h"
 
@@ -393,6 +395,7 @@ typedef enum {
   // optionals that game may use
   SYNC_fragglescript = 70,
   SYNC_extra_mapthing,
+  SYNC_bots,
   // optional controls that may vary per game
   SYNC_gamma = 200,
   SYNC_slowdoor,
@@ -520,6 +523,7 @@ char * SG_read_nstring( int field_length )
 
 //int num_thinkers;       // number of thinkers in level being archived
 
+static byte bots_detected = 0;
 
 typedef enum
 {
@@ -533,19 +537,21 @@ typedef enum
     DIDSECRET = 0x8000,
 } player_saveflags;
 
+// 32 bit flags
 typedef enum
 {
     // powers      = 0x00ff
-    PD_REFIRE = 0x0100,
+    PD_REFIRE    = 0x0100,
     PD_KILLCOUNT = 0x0200,
     PD_ITEMCOUNT = 0x0400,
     PD_SECRETCOUNT = 0x0800,
     PD_DAMAGECOUNT = 0x1000,
-    PD_BONUSCOUNT = 0x2000,
+    PD_BONUSCOUNT  = 0x2000,
     PD_CHICKENTICS = 0x4000,
     PD_CHICKENPECK = 0x8000,
-    PD_FLAMECOUNT = 0x10000,
-    PD_FLYHEIGHT = 0x20000,
+    PD_FLAMECOUNT  = 0x10000,
+    PD_FLYHEIGHT   = 0x20000,
+    PD_BOT         = 0x40000,
 } player_diff;
 
 //
@@ -565,6 +571,8 @@ void P_ArchivePlayers(void)
             continue;
 
         ply = &players[i];
+
+        if( ply->bot )  bots_detected = 1;
 
         flags = 0;
         diff = 0;
@@ -686,6 +694,7 @@ void P_ArchivePlayers(void)
                 WRITEMEM(save_p, &ply->inventory[j], sizeof(ply->inventory[j]));
             }
         }
+
         SG_Writebuf();
     }
 }
@@ -705,11 +714,15 @@ void P_UnArchivePlayers(void)
     for (i = 0; i < MAXPLAYERS; i++)
     {
         SG_Readbuf();
-        memset(&players[i], 0, sizeof(player_t));
-        if (!playeringame[i])
-            continue;
 
         ply = &players[i];
+        
+        if( ply->bot )  B_Destroy_Bot( ply );
+       
+        memset( ply, 0, sizeof(player_t));
+
+        if (!playeringame[i])
+            continue;
 
         diff = READU32(save_p);
 
@@ -810,6 +823,7 @@ void P_UnArchivePlayers(void)
         }
         else
             ply->weaponinfo = doomweaponinfo;
+
     }
 }
 
@@ -3304,6 +3318,138 @@ boolean SG_fragglescript_detect( void )
 
 #endif // FRAGGLESCRIPT
 
+
+// =======================================================================
+//          Bots
+// =======================================================================
+
+typedef enum {
+   PB_item = 0x01,
+   PB_enemy = 0x02,
+   PB_missile = 0x04,
+   PB_teammate = 0x08
+} PB_bots_e;
+
+static
+void P_Archive_Bots()
+{
+    int i;
+    player_t * ply;
+    bot_t * botp;
+    byte  botflags;
+
+    for (i = 0; i < MAXPLAYERS; i++)
+    {
+        if (!playeringame[i])  continue;
+
+        ply = &players[i];
+        botp = ply->bot;
+
+        if( ! botp )  continue;
+       
+        botflags = 0;
+
+        SG_SaveSync( SYNC_bots );  // before each bot
+        WRITEBYTE(save_p, ply - players ); // player number
+        WRITEBYTE(save_p, botp->skill);
+        WRITEBYTE(save_p, botp->lastNumWeapons);
+        WRITEBYTE(save_p, botp->straferight);
+
+        if( botp->bestSeenItem || botp->bestItem )  botflags |= PB_item;
+        if( botp->closestEnemy || botp->closestUnseenEnemy || botp->lastMobj )  botflags |= PB_enemy;
+        if( botp->closestMissile )  botflags |= PB_missile;
+        if( botp->teammate || botp->closestUnseenTeammate )  botflags |= PB_teammate;
+
+        WRITEBYTE(save_p, botflags);
+
+        if(botflags & PB_item )
+        {
+            WRITE_MobjPointerID(save_p, botp->bestSeenItem );
+            WRITE_MobjPointerID(save_p, botp->bestItem );
+        }
+        if(botflags & PB_enemy )
+        {
+            WRITE_MobjPointerID(save_p, botp->closestEnemy );
+            WRITE_MobjPointerID(save_p, botp->closestUnseenEnemy );
+            WRITE_MobjPointerID(save_p, botp->lastMobj );
+        }
+        if(botflags & PB_missile )
+        {
+            WRITE_MobjPointerID(save_p, botp->closestMissile );
+        }
+        if(botflags & PB_teammate )
+        {
+            WRITE_MobjPointerID(save_p, botp->teammate );
+            WRITE_MobjPointerID(save_p, botp->closestUnseenTeammate );
+        }
+        // Forget what cannot be saved.
+        B_forget_stuff( botp );
+
+        SG_Writebuf();
+    }
+}
+
+// Ver 1.48
+// [WDJ]
+static
+void P_UnArchive_Bots()
+{
+    player_t * player;
+    bot_t * botp;
+    byte  botflags;
+    byte  playernum;
+   
+    // This cannot be in player section because it needs mobj pointers, which are only
+    // valid after the mobj section.
+   
+    DemoAdapt_bots();
+
+    // Bots sections starts with 2 Sync_bots, one for the section, one for the first bot.
+    while( SG_ReadSync( SYNC_bots, 1 ) )  // marker for each bot
+    {
+        SG_Readbuf();
+
+        playernum = READBYTE(save_p);
+        if( playernum > MAXPLAYERS )
+        {
+            I_SoftError( "SaveGame Bots: Bad Player number\n" );
+            playernum = MAXPLAYERS - 1;
+        }
+        player = & players[playernum];
+
+        B_Create_Bot( player );
+        botp = player->bot;
+       
+        botp->skill = READBYTE(save_p);
+        botp->lastNumWeapons = READBYTE(save_p);
+        botp->straferight = READBYTE(save_p);
+
+        botflags = READBYTE(save_p);
+
+        if(botflags & PB_item )
+        {
+            botp->bestSeenItem = READ_MobjPointerID(save_p);
+            botp->bestItem = READ_MobjPointerID(save_p);
+        }
+        if(botflags & PB_enemy )
+        {
+            botp->closestEnemy = READ_MobjPointerID(save_p);
+            botp->closestUnseenEnemy = READ_MobjPointerID(save_p);
+            botp->lastMobj = READ_MobjPointerID(save_p);
+        }
+        if(botflags & PB_missile )
+        {
+            botp->closestMissile = READ_MobjPointerID(save_p);
+        }
+        if(botflags & PB_teammate )
+        {
+            botp->teammate = READ_MobjPointerID(save_p);
+            botp->closestUnseenTeammate = READ_MobjPointerID(save_p);
+        }
+        // Will create path and dest_node as needed.
+    }
+}
+
 // =======================================================================
 //          Misc
 // =======================================================================
@@ -3350,6 +3496,7 @@ boolean P_UnArchiveMisc()
     for (i = 0; i < MAXPLAYERS; i++)
     {
         playeringame[i] = (pig & (1 << i)) != 0;
+        player_state[i] = (playeringame[i])? PS_from_savegame : 0;
         players[i].playerstate = PST_REBORN;
     }
 
@@ -3673,6 +3820,12 @@ void P_SaveGame( void )
         P_ArchiveScripts();
     }
 #endif
+    // Optional bots section
+    if( bots_detected )
+    {
+        SG_SaveSync( SYNC_bots );
+        P_Archive_Bots();  // Player Bots
+    }
    
     SG_SaveSync( SYNC_end );
 
@@ -3735,6 +3888,11 @@ boolean P_LoadGame(void)
         goto failed;
     }
 #endif
+    // Optional bots section
+    if( SG_ReadSync( SYNC_bots, 1 ) )
+    {
+        P_UnArchive_Bots();
+    }
 
     if( ! SG_ReadSync( SYNC_end, 1 ) )  goto sync_err;
    
