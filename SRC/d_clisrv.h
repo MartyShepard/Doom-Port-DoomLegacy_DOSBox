@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1378 2017-12-18 17:31:35Z wesleyjohnson $
+// $Id: d_clisrv.h 1468 2019-10-04 08:58:11Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -162,6 +162,14 @@ typedef struct {
 //   char        textcmds[BACKUPTICS][MAXTEXTCMD];
 } servertics_pak_t;
 
+// ver 1.48
+// included in other pak
+typedef struct {
+   byte        p_rand_index; // to sync P_Random
+   byte        b_rand_index; // to sync B_Random
+   uint32_t    e_rand1, e_rand2;  // to sync E_Random
+} random_state_t;
+
 // Repair messages triggered by consistency fault.
 typedef enum   {
   RQ_NULL,
@@ -184,16 +192,18 @@ typedef struct {
 } pos_repair_t;
 
 // Server update of client.
+// ver 1.48
 typedef struct {
-   byte        repair_type;
-   byte        p_rand_index; // to sync P_Random
    tic_t       gametic;
    pos_repair_t  pos;
+   random_state_t  rs;  // P_Random, etc.
+   byte        repair_type;
 } repair_pak_t;
 
+// ver 1.48
 typedef struct {
    tic_t       gametic;
-   byte        p_rand_index; // to sync P_Random
+   random_state_t  rs;  // P_Random, etc.
    byte        server_pause; // silent pause
 } state_pak_t;
 
@@ -217,7 +227,7 @@ typedef struct {
 typedef struct {
    byte        version;    // exe from differant version don't work
    uint32_t    subversion; // contain build version and maybe crc
-   byte        localplayers;
+   byte        num_node_players; // 0,1,2
    byte        mode;
 } clientconfig_pak_t;
 
@@ -228,11 +238,12 @@ typedef struct {
    byte        data[100];  // size is variable using hardare_MAXPACKETLENGTH
 } filetx_pak_t;
 
+// ver 1.48
 typedef struct {
     byte       num_netplayer;  // count players due to 2 player nodes
     byte       wait_netplayer;  // if non-zero, wait for player net nodes
     uint16_t   wait_tics;  // if non-zero, the timeout tics
-    byte       p_rand_index; // to sync P_Random
+    random_state_t  rs;  // P_Random, etc.
 } netwait_pak_t;
 
 #define MAXSERVERNAME 32
@@ -388,6 +399,10 @@ boolean SV_SpawnServer( void );
 void    SV_SpawnPlayer(int playernum, int x, int y, angle_t angle);
 void    SV_StopServer( void );
 void    SV_ResetServer( void );
+
+// [WDJ] Update state by sever.
+// By Server
+void SV_Send_State( byte server_pause );
 
 void    CL_AddSplitscreenPlayer( void );
 void    CL_RemoveSplitscreenPlayer( void );

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1467 2019-10-04 08:57:38Z wesleyjohnson $
+// $Id: d_clisrv.c 1468 2019-10-04 08:58:11Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -181,7 +181,7 @@
 
 // The addition of wait messages should be transparent to previous network
 // versions.
-const int  NETWORK_VERSION = 24; // separate version number for network protocol (obsolete)
+const int  NETWORK_VERSION = 25; // separate version number for network protocol (obsolete)
 
 
 #define JOININGAME
@@ -599,18 +599,17 @@ static boolean  CL_Send_Join( void )
 {
     GenPrintf(EMSG_hud, "Send join request...\n");
     netbuffer->packettype=PT_CLIENTJOIN;
+    netbuffer->u.clientcfg.version = VERSION;
+    netbuffer->u.clientcfg.subversion = LE_SWAP32(NETWORK_VERSION);
 
     // Declare how many players at this node.
     if (cl_drone)
-        netbuffer->u.clientcfg.localplayers=0;
+        netbuffer->u.clientcfg.num_node_players=0;
     else
     if (cv_splitscreen.value)
-        netbuffer->u.clientcfg.localplayers=2;
+        netbuffer->u.clientcfg.num_node_players=2;
     else
-        netbuffer->u.clientcfg.localplayers=1;
-
-    netbuffer->u.clientcfg.version = VERSION;
-    netbuffer->u.clientcfg.subversion = LE_SWAP32(NETWORK_VERSION);
+        netbuffer->u.clientcfg.num_node_players=1;
 
     return HSendPacket(servernode,true,0,sizeof(clientconfig_pak_t));
 }
@@ -699,13 +698,45 @@ static void SV_SendPacket_All( boolean reliable, size_t size_packet, const char 
     }
 }
 
+// Send: Fill in the fields
+static void get_random_state( random_state_t * rs )
+{
+    uint32_t rand2;
+    rs->p_rand_index = P_Rand_GetIndex(); // to sync P_Random
+    rs->b_rand_index = B_Rand_GetIndex(); // to sync B_Random
+    rs->e_rand1 = LE_SWAP32_FAST( E_Rand_Get( & rand2 ) ); // to sync E_Random
+    rs->e_rand2 = LE_SWAP32_FAST( rand2 );
+}
+
+// Receive: Update our random state.
+static void set_random_state( random_state_t * rs, const char * msg )
+{
+    if( msg )
+    {
+        byte rp = P_Rand_GetIndex();
+        if( rp != rs->p_rand_index )
+        {
+            // Warn when different P_Random index.
+            GenPrintf( EMSG_warn, "%s: gametic %i, update P_random index %i to %i\n",
+                 msg, gametic, rp, rs->p_rand_index );
+            P_Rand_SetIndex( rs->p_rand_index ); // to sync P_Random
+	}
+    }
+    else
+    {
+        P_Rand_SetIndex( rs->p_rand_index ); // to sync P_Random
+    }
+    B_Rand_SetIndex( rs->b_rand_index ); // to sync B_Random
+    E_Rand_Set( LE_SWAP32_FAST(rs->e_rand1), LE_SWAP32_FAST(rs->e_rand2) ); // to sync E_Random
+}
+
 // [WDJ] Update state by sever.
 // By Server
-static void CL_Send_State( byte server_pause )
+void SV_Send_State( byte server_pause )
 {
     netbuffer->packettype=PT_STATE;
     netbuffer->u.state.gametic = LE_SWAP32_FAST(gametic);
-    netbuffer->u.state.p_rand_index = P_Rand_GetIndex(); // to sync P_Random
+    get_random_state( & netbuffer->u.state.rs ); // to sync P_Random
     netbuffer->u.state.server_pause = server_pause;
 
     SV_SendPacket_All( true, sizeof(state_pak_t), NULL );
@@ -723,18 +754,16 @@ static void state_handler( void )
         // Gametic cannot be fixed directly, need game commands.        
         // It may just be behind by a tic or two.
     }
-    else if( P_Rand_GetIndex() != netbuffer->u.state.p_rand_index )
+    else
     {
-        // Same gametic, but different P_Random index.
-        GenPrintf( EMSG_warn, "PT_STATE: gametic %i, update P_random index %i to %i\n",
-                 gametic, P_Rand_GetIndex(), netbuffer->u.state.p_rand_index );
-        P_Rand_SetIndex( netbuffer->u.state.p_rand_index ); // to sync P_Random
+        // Update the random generators.
+        set_random_state( & netbuffer->u.state.rs, "PT_STATE" ); // to sync P_Random
     }
     paused = netbuffer->u.state.server_pause;
 
 #if 0
     debug_Printf( "STATE: gametic %i, P_Random [%i], paused %i\n",
-          gametic, netbuffer->u.state.p_rand_index, netbuffer->u.state.server_pause );
+          gametic, netbuffer->u.state.rs.p_rand_index, netbuffer->u.state.server_pause );
 #endif
 }
 
@@ -748,7 +777,7 @@ static void SV_Send_SaveGame(int to_node)
     size_t  length;
     byte    was_paused = paused;
 
-    CL_Send_State( 1 );  // pause game during download
+    SV_Send_State( 1 );  // pause game during download
      
     P_Alloc_savebuffer( 1 );	// large buffer, but no header
     if(! savebuffer)   return;
@@ -765,7 +794,7 @@ static void SV_Send_SaveGame(int to_node)
     // SendData frees the savebuffer using free() after it is sent.
     // This is the only use of TAH_MALLOC_FREE.
     
-    CL_Send_State( was_paused );  // unpause maybe
+    SV_Send_State( was_paused );  // unpause maybe
     paused = was_paused;
 }
 
@@ -880,7 +909,7 @@ static void SV_Send_Pos_repair( byte repair_type, byte to_node )
 {
     netbuffer->packettype = PT_REPAIR;
     netbuffer->u.repair.gametic = LE_SWAP32_FAST(gametic);
-    netbuffer->u.repair.p_rand_index = P_Rand_GetIndex(); // to sync P_Random
+    get_random_state( & netbuffer->u.repair.rs ); // to sync P_Random
        
 #ifdef JOININGAME
     if( repair_type == RQ_SUG_SAVEGAME )
@@ -924,7 +953,7 @@ static void repair_handler( byte nnode )
     {
         // Server repairs client.
         gametic = LE_SWAP32_FAST(netbuffer->u.repair.gametic);
-        P_Rand_SetIndex( netbuffer->u.repair.p_rand_index ); // to sync P_Random
+        set_random_state( & netbuffer->u.repair.rs, NULL ); // to sync P_Random
     }
    
     switch( msg_type )
@@ -1014,7 +1043,7 @@ static void SV_Send_NetWait( void )
     netbuffer->u.netwait.num_netplayer = num_netplayer;
     netbuffer->u.netwait.wait_netplayer = wait_netplayer;
     netbuffer->u.netwait.wait_tics = LE_SWAP16( wait_tics );
-    netbuffer->u.netwait.p_rand_index = P_Rand_GetIndex(); // to sync P_Random
+    get_random_state( & netbuffer->u.netwait.rs ); // to sync P_Random
 #ifdef WAITPLAYER_DEBUG
     debug_Printf( "WaitPlayer update: num_netnodes=%d num_netplayer=%d  wait_netplayer=%d  wait_tics=%d\n",
                num_netnodes, num_netplayer, wait_netplayer, wait_tics );
@@ -2260,8 +2289,16 @@ static void client_join_handler( byte nnode )
         || LE_SWAP32(netbuffer->u.clientcfg.subversion) != NETWORK_VERSION)
     {
         SV_Send_Refuse(nnode,
-           va("Different DOOM versions cannot play a net game! (server version %s)",
-               VERSION_BANNER));
+#if 1
+           // Text is automatically centered, must not be too long.
+           va("Incompatible client\nServer %i Net %i\nLegacy %i Net %i",
+               VERSION, NETWORK_VERSION, netbuffer->u.clientcfg.version, LE_SWAP32(netbuffer->u.clientcfg.subversion) )
+#else
+	   // Too long
+           va("Different DOOM versions cannot play a net game!\n (server version %s)",
+               VERSION_BANNER)
+#endif
+        );
         return;
     }
     // nnode==0 is self, which is always accepted.
@@ -2281,7 +2318,7 @@ static void client_join_handler( byte nnode )
     }
    
     // Client authorized to join.
-    nodewaiting[nnode] = netbuffer->u.clientcfg.localplayers - playerpernode[nnode];
+    nodewaiting[nnode] = netbuffer->u.clientcfg.num_node_players - playerpernode[nnode];
     if(!nodeingame[nnode])
     {
         SV_AddNode(nnode);
@@ -2887,7 +2924,7 @@ static void Net_Packet_Handler(void)
                     num_netplayer = netbuffer->u.netwait.num_netplayer;
                     wait_netplayer = netbuffer->u.netwait.wait_netplayer;
                     wait_tics = LE_SWAP16( netbuffer->u.netwait.wait_tics );
-                    P_Rand_SetIndex( netbuffer->u.netwait.p_rand_index ); // to sync P_Random
+                    set_random_state( & netbuffer->u.netwait.rs, NULL ); // to sync P_Random
                 }
                 break;
             default:
@@ -2918,7 +2955,7 @@ static int16_t Consistency(void)
             ret += players[pn].mo->x;
         }
     }
-    DEBFILE(va("pos = %d, rnd %d\n",ret,P_Rand_GetIndex()));
+    DEBFILE(va("pos = %d, rnd %d\n", ret, P_Rand_GetIndex()));
     ret+=P_Rand_GetIndex();
 
     return ret;

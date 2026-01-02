@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1467 2019-10-04 08:57:38Z wesleyjohnson $
+// $Id: p_saveg.c 1469 2019-10-04 08:58:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2017 by DooM Legacy Team.
@@ -3324,6 +3324,13 @@ void P_ArchiveMisc()
 
     WRITEU32(save_p, leveltime);
     WRITEBYTE(save_p, P_Rand_GetIndex());
+    // ver 1.48, save B_Random, E_Random
+    WRITEBYTE(save_p, B_Rand_GetIndex());
+    uint32_t rand1, rand2; // cannot trust compiler to keep order
+    rand1 = E_Rand_Get( & rand2 );
+    WRITEU32(save_p, rand1);
+    WRITEU32(save_p, rand2);
+
     SG_Writebuf();
 }
 
@@ -3353,6 +3360,13 @@ boolean P_UnArchiveMisc()
     // get the time
     leveltime = READU32(save_p);
     P_Rand_SetIndex(READBYTE(save_p));
+    if( sg_version >= 148 )
+    {
+        B_Rand_SetIndex(READBYTE(save_p));
+        uint32_t rand1 = READU32(save_p); // cannot trust compiler to keep order
+        uint32_t rand2 = READU32(save_p);
+        E_Rand_Set( rand1, rand2 );
+    }
 
     return true;
 }
