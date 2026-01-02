@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1453 2019-08-03 07:04:10Z wesleyjohnson $
+// $Id: m_menu.c 1458 2019-09-11 12:27:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -546,6 +546,7 @@ static void M_Clear_Menus (boolean callexitmenufunc);
 static int  M_StringHeight(char* string);
 static void M_GameOption(int choice);
 static void M_AdvOption(int choice);
+static void M_BotOption(int choice);
 static void M_NetOption(int choice);
 //28/08/99: added by Hurdler
 static void M_OpenGLOption(int choice);
@@ -556,7 +557,7 @@ menu_t MainDef, SoundDef, EpiDef, NewDef,
   ReadDef2, ReadDef1, SaveDef, LoadDef, 
   ControlDef, ControlDef2, ControlDef3, MControlDef,
   OptionsDef, EffectsOptionsDef, GameOptionDef, AdvOption1Def, AdvOption2Def,
-  LightingDef,
+  LightingDef, BotDef,
   NetOptionDef, ConnectOptionDef, ServerOptionsDef,
   MPOptionDef;
 
@@ -2198,6 +2199,7 @@ menuitem_t GameOptionsMenu[]=
     {IT_STRING | IT_CVAR,0,"Predicting Monsters" ,&cv_predictingmonsters ,0},	//added by AC for predmonsters
     {IT_STRING | IT_CVAR,0,"Solid corpse"        ,&cv_solidcorpse        ,0},
     {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Adv Options >>"      ,M_AdvOption     ,120},
+    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Bot Options >>"      ,M_BotOption     ,130},
 //    {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Network Options >>"  ,M_NetOption     ,130}
     {IT_CALL | IT_WHITESTRING,0,"Network Options >>"  ,M_NetOption     ,0}
 };
@@ -2296,6 +2298,41 @@ void M_AdvOption(int choice)
         return;
     }
     Push_Setup_Menu(&AdvOption1Def);
+}
+
+//===========================================================================
+//                        Bot OPTIONS MENU
+//===========================================================================
+
+menuitem_t BotOptionMenu[]=
+{
+    {IT_STRING | IT_CVAR,0,"Bot skill"           ,&cv_bot_skill          ,0},
+    {IT_STRING | IT_CVAR,0,"Bot speed"           ,&cv_bot_speed          ,0},
+    {IT_STRING | IT_CVAR,0,"Bot respawn"         ,&cv_bot_respawn_time   ,0},
+    {IT_STRING | IT_CVAR,0,"Bot random"          ,&cv_bot_random         ,0},
+};
+
+menu_t  BotDef =
+{
+    "M_OPTTTL",
+    "Bot Options",
+    BotOptionMenu,
+    M_DrawGenericMenu,
+    NULL,
+    sizeof(BotOptionMenu)/sizeof(menuitem_t),
+    60,40,
+    0
+};
+
+static
+void M_BotOption(int choice)
+{
+    if(!server)
+    {
+        M_SimpleMessage("You are not the server\nYou cannot change Bot options\n");
+        return;
+    }
+    Push_Setup_Menu(&BotDef);
 }
 
 //===========================================================================
@@ -5751,6 +5788,10 @@ void M_Init (void)
     CV_RegisterVar(&cv_skill);
     CV_RegisterVar(&cv_monsters);
     CV_RegisterVar(&cv_bots);
+    CV_RegisterVar(&cv_bot_skill);
+    CV_RegisterVar(&cv_bot_speed);
+    CV_RegisterVar(&cv_bot_random);
+    CV_RegisterVar(&cv_bot_respawn_time);
     CV_RegisterVar(&cv_nextmap );
     CV_RegisterVar(&cv_nextepmap );
     CV_RegisterVar(&cv_deathmatch_menu);

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1453 2019-08-03 07:04:10Z wesleyjohnson $
+// $Id: p_local.h 1458 2019-09-11 12:27:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -256,6 +256,10 @@ mobj_t *P_SPMAngle ( mobj_t* source, mobjtype_t type, angle_t angle );
 
 // Bots
 extern  consvar_t cv_bots;
+extern  consvar_t cv_bot_skill;
+extern  consvar_t cv_bot_speed;
+extern  consvar_t cv_bot_respawn_time;
+extern  consvar_t cv_bot_random;
 
 //
 // P_ENEMY
@@ -289,6 +293,8 @@ extern  int     *spechit;                //SoM: 3/15/2000: Limit removal
 extern  int     numspechit;
 
 void P_NoiseAlert (mobj_t* target, mobj_t* emmiter);
+boolean P_IsOnLift( const mobj_t *actor );
+int P_IsUnderDamage(mobj_t *actor);
 
 void P_UnsetThingPosition (mobj_t* thing);
 void P_SetThingPosition (mobj_t* thing);

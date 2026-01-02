@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_random.h 1454 2019-09-11 12:24:43Z wesleyjohnson $
+// $Id: m_random.h 1458 2019-09-11 12:27:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -70,6 +70,7 @@ void M_ClearRandom (void);
 byte P_GetRandIndex(void);
 
 void P_SetRandIndex(byte rindex);
+void B_SetRandIndex(byte rindex);
 
 // [WDJ] Extended random, has long repeat period.
 //  returns unsigned 16 bit

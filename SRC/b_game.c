@@ -55,54 +55,140 @@
 #include "g_game.h"
 #include "d_net.h"
 
+
+// [WDJ] New Bot code is not compatible with old versions, is not old demo compatible.
+// #define BOT_VERSION_DETECT
+
+static void CV_botrandom_OnChange( void );
+consvar_t  cv_bot_random = { "botrandom", "0", CV_NETVAR | CV_SAVE | CV_CALL, CV_Unsigned, CV_botrandom_OnChange };
+
+CV_PossibleValue_t botrespawn_cons_t[]={
+  {5,"MIN"},
+  {255,"MAX"},
+  {0,NULL}};
+consvar_t  cv_bot_respawn_time = { "botrespawntime", "8", CV_NETVAR | CV_SAVE, botrespawn_cons_t };
+
+CV_PossibleValue_t botskill_cons_t[]={
+  {0,"crippled"},
+  {1,"baby"},
+  {2,"easy"},
+  {3,"medium"},
+  {4,"hard"},
+  {5,"nightmare"},
+  {6,"randmed"},
+  {7,"randgame"},
+  {8,"gamemed"},
+  {9,"gameskill"},
+  {0,NULL}};
+consvar_t  cv_bot_skill = { "botskill", "gamemed", CV_NETVAR | CV_SAVE, botskill_cons_t };
+
+static void CV_botspeed_OnChange( void );
+
+CV_PossibleValue_t botspeed_cons_t[]={
+  {0,"walk"},
+  {1,"trainer"},
+  {2,"slow"},
+  {3,"medium"},
+  {4,"fast"},
+  {5,"run"},
+  {8,"gamemed"},
+  {9,"gameskill"},
+  {10,"botskill"},
+  {0,NULL}};
+consvar_t  cv_bot_speed = { "botspeed", "botskill", CV_NETVAR | CV_SAVE | CV_CALL, botspeed_cons_t, CV_botspeed_OnChange };
+
+// [WDJ] Tables just happened to be this way for now, they may change later.
+static byte bot_botskill_to_speed[ 6 ] = { 0, 1, 2, 3, 4, 5 };
+static byte bot_gameskill_to_speed[ 5 ] = { 1, 2, 3, 4, 5 };  // lowest value must be >= 1 (see gamemed)
+static byte bot_speed_frac_table[ 6 ] = { 110, 90, 102, 112, 122, 128 };  // 128=full
+static uint32_t bot_run_tics_table[ 6 ] = { TICRATE/4, 4*TICRATE, 6*TICRATE, 12*TICRATE, 24*TICRATE, 128*TICRATE };  // tics
+static byte bot_speed_frac;
+static byte bot_run_tics;
+
+static void CV_botspeed_OnChange( void )
+{
+    byte bot_speed_index;
+    switch( cv_bot_speed.EV )
+    {
+      case 8:  // gamemed
+        // One step slower than gameskill.
+        bot_speed_index = bot_gameskill_to_speed[ gameskill ] - 1;
+        break;
+      case 10: // botskill (temp value, deferred determination)
+      case 9:  // gameskill
+        bot_speed_index = bot_gameskill_to_speed[ gameskill ];
+        break;
+      default:
+        bot_speed_index = cv_bot_speed.EV;  // 0..5
+        break;
+    }
+#ifdef BOT_VERSION_DETECT
+    if( demoversion < 148 )  bot_speed_index = 5; // always run
+#endif
+
+    bot_speed_frac = bot_speed_frac_table[ bot_speed_index ];
+    bot_run_tics = bot_run_tics_table[ bot_speed_index ];
+}
+
+
 #ifndef M_PI
 #define M_PI		3.14159265358979323846	// matches value in gcc v2 math.h
 #endif
 
 boolean B_FindNextNode(player_t* p);
 
-BOTINFOTYPE botinfo[MAXPLAYERS];
+bot_info_t  botinfo[MAXPLAYERS];
 fixed_t botforwardmove[2] = {25/NEWTICRATERATIO, 50/NEWTICRATERATIO};
 fixed_t botsidemove[2]    = {24/NEWTICRATERATIO, 40/NEWTICRATERATIO};
-fixed_t botangleturn[4]   = {500, 1000, 2000, 4000};
+angle_t botangleturn[4]   = {500, 1000, 2000, 4000};
 
 extern consvar_t cv_skill;
 extern thinker_t thinkercap;
 extern mobj_t*	tmthing;
 
-char* botnames[MAXPLAYERS] = {
+// Player name that is seen for each bot.
+#define NUM_BOT_NAMES 40
+char* botnames[NUM_BOT_NAMES] = {
   "Frag-God",
+  "TF-Master",
+  "FragMaster",
   "Thresh",
   "Reptile",
   "Archer",
   "Freak",
-  "TF-Master",
-  "Carmack",
-  "Quaker",
-  "FragMaster",
+  "Reeker",
+  "Dranger",
+  "Enrage",
+  "Franciot",
+  "Grimknot",
+  "Fodder",
+  "Rumble",
+  "Crusher",
+  "Crash",
+  "Krunch",
+  "Wreaker",
   "Punisher",
-  "Romero",
+  "Quaker",
+  "Reaper",
+  "Slasher",
+  "Tormenot",
+  "Drat",
+  "Labrat",
+  "Nestor",
+  "Akira",
+  "Meikot",
+  "Aliciot",
+  "Leonardot",
+  "Ralphat",
   "Xoleras",
-  "Hurdlerbot",
-  "Meisterbot",
-  "Borisbot",
-  "Tailsbot",
-  "crackbaby",
-  "yo momma",
-  "crusher",
-  "aimbot",
-  "crash",
-  "akira",
-  "meiko",
-  "undead",
-  "death",
-  "TonyD-bot",
-  "unit",
-  "fodder",
-  "2-vile",
-  "nitemare",
-  "nos482",
-  "billy"
+  "Zetat",
+  "Carmack",  // Hon
+  "Romero",  // Hon
+  "Hurdlerbot",  // Team member
+  "Meisterbot",  // Team member
+  "Borisbot",  // Team member
+  "Tailsbot",  // Team member
+  "TonyD-bot", // Team member
 };
 
 int botcolors[NUMSKINCOLORS] = 
@@ -120,31 +206,77 @@ int botcolors[NUMSKINCOLORS] =
    10 // = Bleached Bone
 };
 
-void B_Init_Bots()
-{  
-    boolean duplicateBot;
+void B_Init_Names()
+{
     int botNum, i, j;
 
     for (i=0; i< MAXPLAYERS; i++)
     {
+#if 1
+        // Give each prospective bot a unique name.
+        char * bname;
         do
         {
-            botNum = B_Random()%MAXPLAYERS;
+            botNum = (( cv_bot_random.value )?
+                    (B_Random() + cv_bot_random.value)
+                  : E_Random()
+                )%NUM_BOT_NAMES;
+            bname = botnames[botNum];
+            for( j = 0; j < i; j++ );
+            {
+                if( botinfo[j].name == bname )  break;
+            }
+        } while ( j < i );  // when j==i then did not find any duplicates
+        botinfo[i].name = bname;
+#else
+        // [WDJ] This tests botinfo[botNum] before it has been set.
+        // I don't know exactly what it was trying to accomplish.
+        boolean duplicateBot;
+        do
+        {
+            botNum = B_Random()%NUM_BOT_NAMES;
             botinfo[i].name = botnames[botNum];
             duplicateBot = false;
-            j = 0;
-            while((j < i) && !duplicateBot)
+            for( j = 0; j < i; j++ );
             {
                 if( (j != botNum) && (botinfo[j].name == botinfo[botNum].name) )
+                {
                    duplicateBot = true;
-
-                j++;
+                   break;
+                }
             }
         } while (duplicateBot);
-
-        botinfo[i].colour = B_Random() % NUMSKINCOLORS;
+#endif
+        botinfo[i].colour = (( cv_bot_random.value )?
+                (B_Random() + cv_bot_random.value)
+              : E_Random()
+            )% NUMSKINCOLORS;
     }
+}
+
+
+static byte bot_init_done = 0;
+
+static void CV_botrandom_OnChange( void )
+{
+#ifdef BOT_VERSION_DETECT
+    if( demoversion < 148 )  return;
+#endif
+
+    B_SetRandIndex( cv_bot_random.value );
+    // Only re-init after initial loading of config.
+    if( bot_init_done )
+       B_Init_Names();
+}
+
+
+void B_Init_Bots()
+{  
+    B_Init_Names();
+
     botNodeArray = NULL;
+
+    bot_init_done = 1;
 }
 
 //
@@ -161,7 +293,7 @@ void Command_AddBot(void)
         return;
     }
 
-    while ((pn < MAXPLAYERS) && playeringame[pn])	//find free playerspot
+    while ((pn < MAXPLAYERS) && playeringame[pn])  // find free player slot
        pn++;
 
     if( pn >= MAXPLAYERS )
@@ -202,10 +334,8 @@ void B_Register_Commands()
 static
 void B_AvoidMissile(player_t* p, mobj_t* missile)
 {
-    fixed_t  missileAngle = R_PointToAngle2 (p->mo->x, p->mo->y,
-                                             missile->x, missile->y);
-
-    fixed_t  delta = p->mo->angle - missileAngle;
+    angle_t  missile_angle = R_PointToAngle2 (p->mo->x, p->mo->y, missile->x, missile->y);
+    signed_angle_t  delta = p->mo->angle - missile_angle;
 
     if( delta >= 0)
         p->cmd.sidemove = -botsidemove[1];
@@ -216,82 +346,85 @@ void B_AvoidMissile(player_t* p, mobj_t* missile)
 static
 void B_ChangeWeapon (player_t* p)
 {
-    boolean  hasWeaponAndAmmo[NUMWEAPONS];
-    byte  i;
-    byte  numWeapons = 0;
+    bot_t * pbot = p->bot;
+    boolean  usable_weapon[NUMWEAPONS]; // weapons with ammo
+    byte  num_weapons = 0;
     byte  weaponChance;
+    byte  i;
 
     for (i=0; i<NUMWEAPONS; i++)
     {
+        byte hw = false;
         switch (i)
         {
          case wp_fist:
-            hasWeaponAndAmmo[i] = false;//true;
+            hw = false;//true;
             break;
          case wp_pistol:
-            hasWeaponAndAmmo[i] = p->ammo[am_clip];
+            hw = p->ammo[am_clip];
             break;
          case wp_shotgun:
-            hasWeaponAndAmmo[i] = (p->weaponowned[i] && p->ammo[am_shell]);
+            hw = (p->weaponowned[i] && p->ammo[am_shell]);
             break;
          case wp_chaingun:
-            hasWeaponAndAmmo[i] = (p->weaponowned[i] && p->ammo[am_clip]);
+            hw = (p->weaponowned[i] && p->ammo[am_clip]);
             break;
          case wp_missile:
-            hasWeaponAndAmmo[i] = (p->weaponowned[i] && p->ammo[am_misl]);
+            hw = (p->weaponowned[i] && p->ammo[am_misl]);
             break;
          case wp_plasma:
-            hasWeaponAndAmmo[i] = (p->weaponowned[i] && p->ammo[am_cell]);
+            hw = (p->weaponowned[i] && p->ammo[am_cell]);
             break;
          case wp_bfg:
-            hasWeaponAndAmmo[i] = (p->weaponowned[i] && (p->ammo[am_cell] >= 40));
+            hw = (p->weaponowned[i] && (p->ammo[am_cell] >= 40));
             break;
          case wp_chainsaw:
-            hasWeaponAndAmmo[i] = p->weaponowned[i];
+            hw = p->weaponowned[i];
             break;
          case wp_supershotgun:
-            hasWeaponAndAmmo[i] = (p->weaponowned[i] && (p->ammo[am_shell] >= 2));
+            hw = (p->weaponowned[i] && (p->ammo[am_shell] >= 2));
         }
-        if( hasWeaponAndAmmo[i])// || ((i == wp_fist) && p->powers[pw_strength]))
-            numWeapons++;
+        usable_weapon[i] = hw;
+        if( hw ) // || ((i == wp_fist) && p->powers[pw_strength]))
+            num_weapons++;
     }
 
     //or I have just picked up a new weapon
-    if( !p->bot->weaponchangetimer || !hasWeaponAndAmmo[p->readyweapon]
-        || (numWeapons != p->bot->lastNumWeapons))
+    if( !pbot->weaponchangetimer || !usable_weapon[p->readyweapon]
+        || (num_weapons != pbot->lastNumWeapons))
     {
-        if( (hasWeaponAndAmmo[wp_shotgun] && (p->readyweapon != wp_shotgun))
-            || (hasWeaponAndAmmo[wp_chaingun] && (p->readyweapon != wp_chaingun))
-            || (hasWeaponAndAmmo[wp_missile] && (p->readyweapon != wp_missile))
-            || (hasWeaponAndAmmo[wp_plasma] && (p->readyweapon != wp_plasma))
-            || (hasWeaponAndAmmo[wp_bfg] && (p->readyweapon != wp_bfg))
-            || (hasWeaponAndAmmo[wp_supershotgun] && (p->readyweapon != wp_supershotgun)))
+        if( (usable_weapon[wp_shotgun] && (p->readyweapon != wp_shotgun))
+            || (usable_weapon[wp_chaingun] && (p->readyweapon != wp_chaingun))
+            || (usable_weapon[wp_missile] && (p->readyweapon != wp_missile))
+            || (usable_weapon[wp_plasma] && (p->readyweapon != wp_plasma))
+            || (usable_weapon[wp_bfg] && (p->readyweapon != wp_bfg))
+            || (usable_weapon[wp_supershotgun] && (p->readyweapon != wp_supershotgun)))
         {
             p->cmd.buttons &= ~BT_ATTACK;	//stop rocket from jamming;
             do
             {
                 weaponChance = B_Random();
-                if( (weaponChance < 30) && hasWeaponAndAmmo[wp_shotgun]
+                if( (weaponChance < 30) && usable_weapon[wp_shotgun]
                      && (p->readyweapon != wp_shotgun))//has shotgun and shells
                     p->cmd.buttons |= (BT_CHANGE | (wp_shotgun<<BT_WEAPONSHIFT));
-                else if( (weaponChance < 80) && hasWeaponAndAmmo[wp_chaingun]
+                else if( (weaponChance < 80) && usable_weapon[wp_chaingun]
                      && (p->readyweapon != wp_chaingun))//has chaingun and bullets
                     p->cmd.buttons |= (BT_CHANGE | (wp_chaingun<<BT_WEAPONSHIFT));
-                else if( (weaponChance < 130) && hasWeaponAndAmmo[wp_missile]
+                else if( (weaponChance < 130) && usable_weapon[wp_missile]
                      && (p->readyweapon != wp_missile))//has rlauncher and rocket
                     p->cmd.buttons |= (BT_CHANGE | (wp_missile<<BT_WEAPONSHIFT));
-                else if( (weaponChance < 180) && hasWeaponAndAmmo[wp_plasma]
+                else if( (weaponChance < 180) && usable_weapon[wp_plasma]
                      && (p->readyweapon != wp_plasma))//has plasma and cells
                     p->cmd.buttons |= (BT_CHANGE | (wp_plasma<<BT_WEAPONSHIFT));
-                else if( (weaponChance < 200) && hasWeaponAndAmmo[wp_bfg]
+                else if( (weaponChance < 200) && usable_weapon[wp_bfg]
                      && (p->readyweapon != wp_bfg))//has bfg and cells
                     p->cmd.buttons |= (BT_CHANGE | (wp_bfg<<BT_WEAPONSHIFT));
-                else if( hasWeaponAndAmmo[wp_supershotgun]
+                else if( usable_weapon[wp_supershotgun]
                      && (p->readyweapon != wp_supershotgun))
                     p->cmd.buttons |= (BT_CHANGE | BT_EXTRAWEAPON | (wp_shotgun<<BT_WEAPONSHIFT));
             } while (!(p->cmd.buttons & BT_CHANGE));
         }
-        else if( hasWeaponAndAmmo[wp_pistol]
+        else if( usable_weapon[wp_pistol]
                  && (p->readyweapon != wp_pistol))//has pistol and bullets
             p->cmd.buttons |= (BT_CHANGE | wp_pistol<<BT_WEAPONSHIFT);
         else if( p->weaponowned[wp_chainsaw] && !p->powers[pw_strength]
@@ -300,16 +433,16 @@ void B_ChangeWeapon (player_t* p)
         else	//resort to fists, if have powered fists, better with fists then chainsaw
             p->cmd.buttons |= (BT_CHANGE | wp_fist<<BT_WEAPONSHIFT);
 
-        p->bot->weaponchangetimer = (B_Random()<<7)+10000;	//how long until I next change my weapon
+        pbot->weaponchangetimer = (B_Random()<<7)+10000;	//how long until I next change my weapon
     }
-    else if( p->bot->weaponchangetimer)
-        p->bot->weaponchangetimer--;
+    else if( pbot->weaponchangetimer)
+        pbot->weaponchangetimer--;
 
-    if( numWeapons != p->bot->lastNumWeapons)
+    if( num_weapons != pbot->lastNumWeapons)
         p->cmd.buttons &= ~BT_ATTACK;	//stop rocket from jamming;
-    p->bot->lastNumWeapons = numWeapons;
+    pbot->lastNumWeapons = num_weapons;
 
-    //debug_Printf("p->bot->weaponchangetimer is %d\n", p->bot->weaponchangetimer);
+    //debug_Printf("pbot->weaponchangetimer is %d\n", pbot->weaponchangetimer);
 }
 
 #define ANG5 (ANG90/18)
@@ -317,105 +450,141 @@ void B_ChangeWeapon (player_t* p)
 // returns the difference between the angle mobj is facing,
 // and the angle from mo to x,y
 
-fixed_t B_AngleDiff(mobj_t* mo, fixed_t x, fixed_t y)
+#if 0
+// Not Used
+static
+signed_angle_t  B_AngleDiff(mobj_t* mo, fixed_t x, fixed_t y)
 {
     return ((R_PointToAngle2 (mo->x, mo->y, x, y)) - mo->angle);
 }
+#endif
 
 static
 void B_TurnTowardsPoint(player_t* p, fixed_t x, fixed_t y)
 {
-    int  botspeed;
-    fixed_t  angle = R_PointToAngle2 (p->mo->x, p->mo->y, x, y);
-    fixed_t  delta = angle - p->mo->angle;
+    angle_t  angle = R_PointToAngle2(p->mo->x, p->mo->y, x, y);
+    signed_angle_t  delta =  angle - p->mo->angle;
+    angle_t  abs_delta = abs(delta);
 
-    if( abs(delta) < (ANG45>>2))
-        botspeed = 0;
-    else if( abs(delta) < ANG45)
-        botspeed = 1;
-    else
-        botspeed = 1;
-
-    if( abs(delta) < ANG5)
+    if( abs_delta < ANG5 )
+    {
         p->cmd.angleturn = angle>>FRACBITS;	//perfect aim
-    else if( delta > 0)
-        p->cmd.angleturn += botangleturn[botspeed];
+    }
     else
-        p->cmd.angleturn -= botangleturn[botspeed];
+    {
+        angle_t  turnspeed = botangleturn[ (abs_delta < (ANG45>>2))? 0 : 1 ];
+
+        if( delta > 0)
+            p->cmd.angleturn += turnspeed;
+        else
+            p->cmd.angleturn -= turnspeed;
+    }
+}
+
+// Turn away from a danger, or friend.
+static
+void B_Turn_Away_Point(player_t* p, fixed_t x, fixed_t y)
+{
+    signed_angle_t  delta = R_PointToAngle2(p->mo->x, p->mo->y, x, y) - p->mo->angle;
+    angle_t  abs_delta = abs(delta);
+
+    if( abs_delta < (ANG45*3) )
+    {
+        angle_t  turnspeed = botangleturn[ (abs_delta < ANG45)? 1 : 0 ];
+
+        // No perfect aim
+        if( delta > 0 )
+            p->cmd.angleturn -= turnspeed;
+        else
+            p->cmd.angleturn += turnspeed;
+    }
 }
 
 static
 void B_AimWeapon(player_t* p)
 {
-    mobj_t  *dest = p->bot->closestEnemy;
-    mobj_t  *source = p->mo;
+    bot_t  * pbot = p->bot;
+    mobj_t * source = p->mo;
+    mobj_t * dest = pbot->closestEnemy;
 
     int  botspeed = 0;
-    int  angle, delta, dist, missileSpeed, realAngle;
     int  mtime, t;
+    angle_t angle, perfect_angle;
+    signed_angle_t  delta;
+    angle_t  abs_delta;
+    byte botskill = pbot->skill;
 
     fixed_t  px, py, pz;
+    fixed_t  weapon_range;
+    fixed_t  dist, missile_speed;
     subsector_t	*sec;
     boolean  canHit;
 
+    missile_speed = 0;  // default
     switch (p->readyweapon)	// changed so bot projectiles don't lead targets at lower skills
     {
      case wp_fist: case wp_chainsaw:			//must be close to hit with these
+        missile_speed = 0;
+        weapon_range = 20<<FRACBITS;
+        break;
      case wp_pistol: case wp_shotgun: case wp_chaingun:	//instant hit weapons, aim directly at enemy
-        missileSpeed = 0;
+        missile_speed = 0;
+        weapon_range = 512<<FRACBITS;
         break;
      case wp_missile:
-        if( gameskill == sk_baby || gameskill == sk_easy || gameskill == sk_hard)
-        {
-            missileSpeed = 0;
-            //debug_Printf("rocketspeed zero\n");
-            break;
-        }
-        else
-        {
-            missileSpeed = mobjinfo[MT_ROCKET].speed;
-            //debug_Printf("rocketspeed perfect\n");
-        }
+        missile_speed = mobjinfo[MT_ROCKET].speed;
+        weapon_range = 1024<<FRACBITS;
         break;
      case wp_plasma:
-        if( gameskill == sk_baby || gameskill == sk_easy || gameskill == sk_hard)
-        {
-            missileSpeed = 0;
-            //debug_Printf("plasmaspeed = zero\n");
-            break;
-        }
-        else
-        {
-            missileSpeed = mobjinfo[MT_PLASMA].speed;
-            //debug_Printf("plasmaspeed perfect\n");
-            break;
-        }
+        missile_speed = mobjinfo[MT_PLASMA].speed;
+        weapon_range = 1024<<FRACBITS;
+        break;
      case wp_bfg:
-        if( gameskill == sk_baby || gameskill == sk_easy || gameskill == sk_hard)
-        {
-            missileSpeed = 0;
-            //debug_Printf("BFGspeed = zero\n");
-            break;
-        }
-        else
-        {
-            missileSpeed = mobjinfo[MT_BFG].speed;
-            //debug_Printf("BFGspeed perfect\n");
-            break;
-        }
+        missile_speed = mobjinfo[MT_BFG].speed;
+        weapon_range = 1024<<FRACBITS;
+        break;
      default:
-        missileSpeed = 0;
+        missile_speed = 0;
+        weapon_range = 4096<<FRACBITS;
+        break;
+    }
+
+    // botskill 0 to 5
+    if( botskill < 2 )
+    {
+        missile_speed = 0;  // no aim prediction
+    }
+    else if( botskill == 3 )
+    {
+        missile_speed *= 3;  // throw off aiming
+    }
+    else if( botskill == 4 )
+    {
+        missile_speed *= 2;  // throw off aiming
     }
 
     dist = P_AproxDistance (dest->x - source->x, dest->y - source->y);
+
+    if( (dest->type == MT_BARREL) || (dest->type == MT_POD) || (dest->flags & MF_TOUCHY) )
+    {
+        // [WDJ] Do not attack exploding things with fists.	    
+        if( weapon_range < (100<<FRACBITS))  goto reject_enemy;
+        if( dist < (100<<FRACBITS))  goto reject_enemy;  // too close, must get distance first.
+    }
+
+    if( dist > weapon_range )
+    {
+        if( B_Random() < 240 )  return;  // wait till in range, most of the time
+    }
+   
     if( (p->readyweapon != wp_missile) || (dist > (100<<FRACBITS)))
     {
-        if( missileSpeed)
+        if( missile_speed)
         {
-            mtime = dist/missileSpeed;
+            mtime = dist/missile_speed;
             mtime = P_AproxDistance ( dest->x + dest->momx*mtime - source->x,
                                       dest->y + dest->momy*mtime - source->y)
-                            / missileSpeed;
+                            / missile_speed;
 
             t = mtime + 4;
             do
@@ -445,75 +614,93 @@ void B_AimWeapon(player_t* p)
             pz = dest->z;
         }
 
-        realAngle = angle = R_PointToAngle2 (source->x, source->y, px, py);
+        perfect_angle = angle = R_PointToAngle2 (source->x, source->y, px, py);
         p->cmd.aiming = ((int)((atan ((pz - source->z + (dest->height - source->height)/2) / (double)dist)) * ANG180/M_PI))>>FRACBITS;
 
+        // Random aiming imperfections.
         if( (P_AproxDistance(dest->momx, dest->momy)>>FRACBITS) > 8)	//enemy is moving reasonably fast, so not perfectly acurate
         {
             if( dest->flags & MF_SHADOW)
                 angle += P_SignedRandom()<<23;
-            else if( !missileSpeed)
+            else if( missile_speed == 0 )
                 angle += P_SignedRandom()<<22;
         }
         else
         {
             if( dest->flags & MF_SHADOW)
                 angle += P_SignedRandom()<<22;
-            else if( !missileSpeed)
+            else if( missile_speed == 0 )
                 angle += P_SignedRandom()<<21;
         }
 
         delta = angle - source->angle;
-        if( abs(delta) < (ANG45>>1))
-            botspeed = 0;
-        else if( abs(delta) < ANG45)
-            botspeed = 1;
-        else
-            botspeed = 3;
+        abs_delta = abs(delta);
 
-        if( abs(delta) < ANG45)
+        if( abs_delta < ANG45 )
         {
+            // Fire weapon when aim is best.
+            if( abs_delta <= ANG5 )
+            {
+                // cmd.angleturn is 16 bit angle (angle is not fixed_t)
+                // lower skill levels have imperfect aim
+                p->cmd.angleturn = (( botskill < 4 )?  // < hard
+                      angle  // not so perfect aim
+                    : perfect_angle // perfect aim
+                    ) >>16;  // 32 bit to 16 bit angle
+                p->cmd.buttons |= BT_ATTACK;
+                return;
+            }
+
+            // Fire some weapons when aim is just close.
             if( (p->readyweapon == wp_chaingun) || (p->readyweapon == wp_plasma)
                 || (p->readyweapon == wp_pistol))
                  p->cmd.buttons |= BT_ATTACK;
-
-            if( abs(delta) <= ANG5)
-            {
-                // check skill, if anything but nightmare bot aim is imperfect
-                if( gameskill == sk_baby || gameskill == sk_easy || gameskill == sk_medium)
-                     p->cmd.angleturn = angle>>FRACBITS;  // not so perfect aim
-                else if( gameskill == sk_hard || gameskill == sk_nightmare)
-                     p->cmd.angleturn = realAngle>>FRACBITS; // perfect aim
-                delta = 0;
-                p->cmd.buttons |= BT_ATTACK;
-            }
         }
+
+        // Still turning to face target.
+        botspeed = ( abs_delta < (ANG45>>1) )? 0
+           : ( abs_delta < ANG45 )? 1
+           : 3;
 
         if( delta > 0)
             p->cmd.angleturn += botangleturn[botspeed];	//turn right
         else if( delta < 0)
             p->cmd.angleturn -= botangleturn[botspeed]; //turn left
     }
+    return;
+
+reject_enemy:
+    pbot->closestEnemy = NULL;
+    return;
 } 
 
 //
 // MAIN BOT AI
 //
+
+static fixed_t bot_strafe_dist[6] = {
+   (20<<FRACBITS),  // crippled
+   (32<<FRACBITS),  // baby
+   (150<<FRACBITS), // easy
+   (150<<FRACBITS), // medium
+   (350<<FRACBITS), // hard
+   (650<<FRACBITS)  // nightmare
+};
+
 void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 {
-    boolean  blocked, notUsed = true;
-
     mobj_t * pmo = p->mo;
     bot_t  * pbot = p->bot;
-    int  botspeed = 1;
+    ticcmd_t*  cmd = &p->cmd;
+
     int  x, y;
     fixed_t  cmomx, cmomy;  //what the extra momentum added from this tick will be
     fixed_t  px, py;  //coord of where I will be next tick
     fixed_t  forwardmove = 0, sidemove = 0;
     int      forward_angf, side_angf;
-    fixed_t  targetDistance;  //how far away is my enemy, wanted thing
-
-    ticcmd_t*  cmd = &p->cmd;
+    fixed_t  target_dist;  //how far away is my enemy, wanted thing
+    byte  botspeed = 1;
+    boolean  blocked, notUsed = true;
 
     //needed so bot doesn't hold down use before reaching switch object
     if( cmd->buttons & BT_USE)
@@ -528,8 +715,8 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
 
     if( p->playerstate == PST_LIVE)
     {
-        cmd->angleturn = pmo->angle>>FRACBITS;
-        cmd->aiming = 0;//p->aiming>>FRACBITS;
+        cmd->angleturn = pmo->angle>>16;  // 32 bit angle to 16 bit angle
+        cmd->aiming = 0;//p->aiming>>16;
 
         B_LookForThings(p);
         B_ChangeWeapon(p);
@@ -553,24 +740,23 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
         }
         else
         {
-            if( pbot->bestSeenItem)
+            if( pbot->bestSeenItem )
             {
-                targetDistance = P_AproxDistance (pmo->x - pbot->bestSeenItem->x, pmo->y - pbot->bestSeenItem->y)>>FRACBITS;
-                if( targetDistance > 64)
-                    botspeed = 1;
-                else
-                    botspeed = 0;
+                // Move towards the item.
+                target_dist = P_AproxDistance (pmo->x - pbot->bestSeenItem->x, pmo->y - pbot->bestSeenItem->y);
+                botspeed = (target_dist > (64<<FRACBITS))? 1 : 0;
                 B_TurnTowardsPoint(p, pbot->bestSeenItem->x, pbot->bestSeenItem->y);
                 forwardmove = botforwardmove[botspeed];
                 if( (((pbot->bestSeenItem->floorz - pmo->z)>>FRACBITS) > 24)
-                    && (targetDistance <= 100))
+                    && (target_dist <= (100<<FRACBITS)))
                     cmd->buttons |= BT_JUMP;
 
                 pbot->bestItem = NULL;
-            }	//if a target exists and is alive
-            else if( pbot->closestEnemy)
-             // && (pbot->closestEnemy->flags & ~MF_CORPSE))
+            }
+            else if( pbot->closestEnemy && (pbot->closestEnemy->health > 0))
             {
+	        // Target exists and is still alive.
+                // Prepare to attack the enemy.
                 player_t * enemyp = pbot->closestEnemy->player;
                 weapontype_t  enemy_readyweapon =
                  ( enemyp )? enemyp->readyweapon
@@ -581,51 +767,36 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
                    || (enemy_readyweapon == wp_chaingun);
 
                 //debug_Printf("heading for an enemy\n");
-                targetDistance = P_AproxDistance (pmo->x - pbot->closestEnemy->x, pmo->y - pbot->closestEnemy->y)>>FRACBITS;
-                if( (targetDistance > 300)
+                target_dist = P_AproxDistance (pmo->x - pbot->closestEnemy->x, pmo->y - pbot->closestEnemy->y);
+                if( (target_dist > (300<<FRACBITS))
                     || (p->readyweapon == wp_fist)
                     || (p->readyweapon == wp_chainsaw))
                     forwardmove = botforwardmove[botspeed];
-                if( (p->readyweapon == wp_missile) && (targetDistance < 400))
+                if( (p->readyweapon == wp_missile) && (target_dist < (400<<FRACBITS)))
                     forwardmove = -botforwardmove[botspeed];
 
-                // gameskill setting determines likelyhood bot will start strafing
-                switch(gameskill)
+                // bot skill setting determines likelyhood bot will start strafing
+                if(( target_dist <= bot_strafe_dist[ pbot->skill ])
+                    || ( enemy_linescan_weapon && (pbot->skill >= 3) ))  // >= medium skill
                 {
-                 case sk_baby:
-                    if(targetDistance <=32)
-                        sidemove = botsidemove[botspeed];
-                    break;
-                 case sk_easy:
-                    if(targetDistance <=150)
-                        sidemove = botsidemove[botspeed];
-                    break;
-                 case sk_medium:
-                    if((targetDistance <= 150) || enemy_linescan_weapon )
-                        sidemove = botsidemove[botspeed];
-                    break;
-                 case sk_hard:
-                    if((targetDistance <= 350) || enemy_linescan_weapon )
-                        sidemove = botsidemove[botspeed];
-                    break;
-                 case sk_nightmare:
-                    if((targetDistance <= 650) || enemy_linescan_weapon )
-                        sidemove = botsidemove[botspeed];
-                    break;
-                 default:
-                    break;
+                    sidemove = botsidemove[botspeed];
                 }
 
                 B_AimWeapon(p);
-                pbot->lastMobj = pbot->closestEnemy;
-                pbot->lastMobjX = pbot->closestEnemy->x;
-                pbot->lastMobjY = pbot->closestEnemy->y;
+
+                if( pbot->closestEnemy )
+                {
+                    pbot->lastMobj = pbot->closestEnemy;
+                    pbot->lastMobjX = pbot->closestEnemy->x;
+                    pbot->lastMobjY = pbot->closestEnemy->y;
+                }
             }
             else
             {
                 cmd->aiming = 0;
                 //look for an unactivated switch/door
-                if( B_LookForSpecialLine(p, &x, &y)
+                if( (B_Random() > 190)  // not every time, so it does not obsess
+                    && B_LookForSpecialLine(p, &x, &y)
                     && B_ReachablePoint(p, pmo->subsector->sector, x, y))
                 {
                     //debug_Printf("found a special line\n");
@@ -641,9 +812,25 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
                 else if( pbot->teammate)
                 {
                     mobj_t * tmate = pbot->teammate;
-                    targetDistance =
-                        P_AproxDistance (pmo->x - tmate->x, pmo->y - tmate->y)>>FRACBITS;
-                    if( targetDistance > 100)
+                    target_dist =
+                        P_AproxDistance (pmo->x - tmate->x, pmo->y - tmate->y);
+
+                    // [WDJ]: Like MBF, Move away from friends when too close, except
+                    // in certain situations.
+
+                    // assume BOTH_FRIEND( p, tmate )
+                    if( target_dist < EV_mbf_distfriend )
+                    {
+                        // Allowed to bump bot away, even in crusher.
+                        if(( !P_IsOnLift( tmate )
+                              && !P_IsUnderDamage( pmo ) )
+                            || (target_dist <= (pmo->info->radius + tmate->info->radius + (FRACUNIT*35/16))) )  // bump
+                        {
+                            B_Turn_Away_Point(p, tmate->x, tmate->y);
+                            forwardmove = botforwardmove[0];
+                        }
+                    }
+                    else if( target_dist > (EV_mbf_distfriend + (8<<FRACBITS)) )
                     {
                         B_TurnTowardsPoint(p, tmate->x, tmate->y);
                         forwardmove = botforwardmove[botspeed];
@@ -653,8 +840,8 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
                     pbot->lastMobjX = tmate->x;
                     pbot->lastMobjY = tmate->y;
                 }
-                //since nothing else to do, go where last enemy/teamate was seen
-                else if( pbot->lastMobj && (pbot->lastMobj->flags & MF_SOLID))
+                //since nothing else to do, go where last enemy/teammate was seen
+                else if( pbot->lastMobj && (pbot->lastMobj->health > 0))
                   // && B_ReachablePoint(p, R_PointInSubsector(pbot->lastMobjX, pbot->lastMobjY)->sector, pbot->lastMobjX, pbot->lastMobjY))
                 {
                     if( (pmo->momx == 0 && pmo->momy == 0)
@@ -669,9 +856,10 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
                 }
                 else
                 {
+		    byte br = B_Random();
                     pbot->lastMobj = NULL;
 
-                    if( pbot->bestItem)
+                    if( pbot->bestItem && (br & 0x01) )  // do not obsess if cannot get to it
                     {
                         SearchNode_t* temp =
                             B_GetNodeAt(pbot->bestItem->x, pbot->bestItem->y);
@@ -680,22 +868,18 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
                             B_LLClear(pbot->path);
                         pbot->destNode = temp;
                     }
-                    else if( pbot->closestUnseenTeammate)
+                    else if( pbot->closestUnseenTeammate && (br & 0x02) )  // do not obsess if cannot get to it
                     {
                         SearchNode_t* temp =
-                            B_GetNodeAt(pbot->closestUnseenTeammate->x,
-                                        pbot->closestUnseenTeammate->y);
-                        //debug_Printf("found a best item at x:%d, y:%d\n", pbot->bestItem->x>>FRACBITS, pbot->bestItem->y>>FRACBITS);
+                            B_GetNodeAt(pbot->closestUnseenTeammate->x, pbot->closestUnseenTeammate->y);
                         if( pbot->destNode != temp)
                             B_LLClear(pbot->path);
                         pbot->destNode = temp;
                     }
-                    else if( pbot->closestUnseenEnemy)
+                    else if( pbot->closestUnseenEnemy && (br & 0x04) )  // do not obsess if cannot get to it
                     {
                         SearchNode_t* temp =
-                            B_GetNodeAt(pbot->closestUnseenEnemy->x,
-                                        pbot->closestUnseenEnemy->y);
-                        //debug_Printf("found a best item at x:%d, y:%d\n", pbot->bestItem->x>>FRACBITS, pbot->bestItem->y>>FRACBITS);
+                            B_GetNodeAt(pbot->closestUnseenEnemy->x, pbot->closestUnseenEnemy->y);
                         if( pbot->destNode != temp)
                             B_LLClear(pbot->path);
                         pbot->destNode = temp;
@@ -721,8 +905,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
                         //debug_Printf("at x%d, y%d\n", pbot->wantedItemNode->x>>FRACBITS, pbot->wantedItemNode->y>>FRACBITS);
                         if( B_LLIsEmpty(pbot->path)
                             || !B_NodeReachable(NULL, pmo->x, pmo->y,
-                                                posX2x(pbot->path->first->x),
-                                                posY2y(pbot->path->first->y) )
+                                                posX2x(pbot->path->first->x), posY2y(pbot->path->first->y) )
                                // > (BOTNODEGRIDSIZE<<2))
                             )
                         {
@@ -738,9 +921,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
                         {
                             //debug_Printf("turning towards node at x%d, y%d\n", (pbot->nextItemNode->x>>FRACBITS), (pbot->nextItemNode->y>>FRACBITS));
                             //debug_Printf("it has a distance %d\n", (P_AproxDistance(pmo->x - pbot->nextItemNode->x, pmo->y - pbot->nextItemNode->y)>>FRACBITS));
-                            B_TurnTowardsPoint(p,
-                                               posX2x(pbot->path->first->x),
-                                               posY2y(pbot->path->first->y));
+                            B_TurnTowardsPoint(p, posX2x(pbot->path->first->x), posY2y(pbot->path->first->y));
                             forwardmove = botforwardmove[1];//botspeed];
                         }
                     }
@@ -759,6 +940,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
             blocked = !P_CheckPosition (pmo, px, py)
                  || (((tmr_floorz - pmo->z)>>FRACBITS) > 24)
                  || ((tmr_ceilingz - tmr_floorz) < pmo->height);
+
             //if its time to change strafe directions,
             if( sidemove && ((pmo->flags & MF_JUSTHIT) || blocked))
             {
@@ -807,7 +989,46 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
         if( pbot->weaponchangetimer)
             pbot->weaponchangetimer--;
 
-        p->cmd.forwardmove = forwardmove;
+        if( cv_bot_speed.EV == 10 )  // botskill dependent speed
+        {
+            byte spd = bot_botskill_to_speed[ pbot->skill ];
+            bot_speed_frac = bot_speed_frac_table[ spd ];
+            bot_run_tics = bot_run_tics_table[ spd ];
+        }
+
+        // [WDJ] Limit the running.
+        if( abs(forwardmove) > botforwardmove[0] )
+        {
+            // Running
+            if( pbot->runtimer < bot_run_tics )
+            {
+                pbot->runtimer++;
+                goto cmd_move;
+            }
+
+            // Tired, must walk.
+            forwardmove = forwardmove>>1;  // walk
+            if( pbot->runtimer == bot_run_tics )
+            {
+                pbot->runtimer += 10 * TICRATE;  // rest time
+                goto cmd_move;
+            }
+        }
+       
+        if( pbot->runtimer > 0 )
+        {
+            pbot->runtimer--;
+            // Run time needs to be proportional to bot_run_tics,
+            // so reset timer to constant value.
+            if( pbot->runtimer == bot_run_tics )
+           {
+                pbot->runtimer = (4 * TICRATE) - 2;  // reset hysterisis
+           }
+        }
+
+    cmd_move:
+        // [WDJ] Regulate the run speed.
+        p->cmd.forwardmove = (forwardmove * bot_speed_frac) >> 7;
         p->cmd.sidemove = pbot->straferight ? sidemove : -sidemove;
         if( pbot->closestMissile )
             B_AvoidMissile(p, pbot->closestMissile);
@@ -815,11 +1036,13 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
     else
     {
         // Dead
+#ifdef BOT_VERSION_DETECT
         if( demoversion < 146 )
         {
             cmd->buttons |= BT_USE;	//I want to respawn
         }
         else
+#endif
         {
             // Version 1.46
             // [WDJ] Slow down bot respawn, so they are not so overwhelming.
@@ -827,7 +1050,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
             if( p->damagecount )
             {
                 p->damagecount = 0;
-                pbot->avoidtimer = 6 * TICRATE; // wait
+                pbot->avoidtimer = cv_bot_respawn_time.EV * TICRATE; // wait
             }
             if( --pbot->avoidtimer <= 0 )
                 cmd->buttons |= BT_USE;	//I want to respawn
@@ -848,15 +1071,40 @@ bot_t* B_Create_Bot()
 }
 
 
+
 void B_SpawnBot(bot_t* bot)
 {
+    byte sk;
+
     bot->avoidtimer = 0;
     bot->blockedcount = 0;
     bot->weaponchangetimer = 0;
+    bot->runtimer = 0;
 
     bot->bestItem = NULL;
     bot->lastMobj = NULL;
     bot->destNode = NULL;
 
+    // [WDJ] Bot skill = 0..5, Game skill = 0..4.
+    switch( cv_bot_skill.EV )
+    {
+      case 6: // randmed
+         sk = E_Random() % gameskill;  // random bots, 0 to gameskill-1
+         break;
+      case 7: // randgame
+         sk = (E_Random() % gameskill) + 1;  // random bots, 1 to gameskill
+         break;
+      case 8: // gamemed
+         sk = gameskill;  // bot lower skill levels
+         break;
+      case 9: // gameskill
+         sk = gameskill + 1;  // bot upper skill levels
+         break;
+      default:  // fixed bot skill selection
+         sk = cv_bot_skill.EV;  // 0..5
+         break;
+    }
+    bot->skill = sk; // 0=crippled, 1=baby .. 5=nightmare
+   
     B_LLClear(bot->path);
 }

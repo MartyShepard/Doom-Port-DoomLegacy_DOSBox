@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_random.c 1454 2019-09-11 12:24:43Z wesleyjohnson $
+// $Id: m_random.c 1458 2019-09-11 12:27:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -138,6 +138,12 @@ byte B_Random (void)
     brndindex += 11;
     return rndtable[brndindex];
 }
+
+void B_SetRandIndex(byte rindex)
+{
+    brndindex = rindex;
+}
+
 
 #if 0
 // [WDJ] This mess is one reason we do not want get caught up in

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1399 2018-07-02 03:41:01Z wesleyjohnson $
+// $Id: p_enemy.c 1458 2019-09-11 12:27:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -94,7 +94,6 @@
 void A_Fall(mobj_t *actor);
 static void FastMonster_OnChange(void);
 void A_FaceTarget(mobj_t* actor);
-static int P_IsUnderDamage(mobj_t *actor);
 void CV_monster_OnChange(void);
 
 // enable the solid corpses option : still not finished
@@ -667,7 +666,7 @@ ret_false:
 // the need for crowded conditions, or that a monster should stay on the lift
 // for a while while it goes up or down.
 
-static boolean P_IsOnLift( const mobj_t *actor )
+boolean P_IsOnLift( const mobj_t *actor )
 {
     const sector_t *sec = actor->subsector->sector;
     line_t line;
@@ -707,7 +706,7 @@ static boolean P_IsOnLift( const mobj_t *actor )
 // Returns nonzero if the object is under damage based on their current position.
 // Returns 1 if the damage is moderate (ceiling crusher up),
 //        -1 if it is serious (ceiling crusher down).
-static int P_IsUnderDamage(mobj_t *actor)
+int P_IsUnderDamage(mobj_t *actor)
 {
     const msecnode_t * ts;  // touching sector
     const ceiling_t * cl;   // Crushing ceiling

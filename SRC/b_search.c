@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_search.c 1321 2017-05-23 14:23:52Z wesleyjohnson $
+// $Id: b_search.c 1458 2019-09-11 12:27:47Z wesleyjohnson $
 //
 // Copyright (C) 2002-2016 by DooM Legacy Team.
 //
@@ -174,7 +174,7 @@ SearchNode_t* B_LLRemoveLastNode(LinkedList_t* list)
 void B_NodePushSuccessors(PriorityQ_t* open, SearchNode_t* parent_node, SearchNode_t* dest)
 {
     int cost, heuristic, f;
-    int angle;  // bot angles
+    int angle;  // bot angles, botdirtype_t
 
     SearchNode_t *node;
 

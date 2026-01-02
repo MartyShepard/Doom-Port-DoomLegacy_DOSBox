@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_bot.h 1321 2017-05-23 14:23:52Z wesleyjohnson $
+// $Id: b_bot.h 1458 2019-09-11 12:27:47Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -36,16 +36,9 @@
 
 typedef struct
 {
-    boolean	straferight;
-    byte	lastNumWeapons;	//used to check if got a new weapon
-
-    int		blockedcount,
-                avoidtimer,	//used so if blocked by something, like a barrel will reverse, and try to get around it
-                strafetimer,
-                weaponchangetimer;
-
-    fixed_t	lastMobjX,	//where last enemy was seen
-                lastMobjY;
+    // [WDJ] Ptrs first, for alignment.
+    LinkedList_t  *path;	//path to the best item on the map
+    SearchNode_t  *destNode;	//the closest node to where wants to go
 
     mobj_t	*bestSeenItem,	//best item seen
                 *bestItem,	//best item on map, not neccessarily seen
@@ -56,9 +49,18 @@ typedef struct
                 *lastMobj,	//last enemy
                 *teammate;
 
-    LinkedList_t  *path;	//path to the best item on the map
-    SearchNode_t  *destNode;	//the closest node to where wants to go
+    int		blockedcount,
+                avoidtimer,	// if blocked by something, like a barrel, it will reverse, and try to get around it
+                strafetimer,
+                weaponchangetimer,
+                runtimer;
 
+    fixed_t	lastMobjX,	//where last enemy was seen
+                lastMobjY;
+   
+    boolean	straferight;
+    byte	lastNumWeapons;	//used to check if got a new weapon
+    byte        skill;          // skill of this bot
 } bot_t;
 
 #endif

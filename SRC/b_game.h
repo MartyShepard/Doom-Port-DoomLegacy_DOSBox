@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.h 1453 2019-08-03 07:04:10Z wesleyjohnson $
+// $Id: b_game.h 1458 2019-09-11 12:27:47Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -37,9 +37,9 @@ typedef struct
 {
         int colour;
         char* name;
-} BOTINFOTYPE;
+} bot_info_t;
 
-extern BOTINFOTYPE botinfo[MAXPLAYERS];
+extern bot_info_t  botinfo[MAXPLAYERS];
 
 void B_Register_Commands(void);
 void B_BuildTiccmd(player_t* p, ticcmd_t* cmd);

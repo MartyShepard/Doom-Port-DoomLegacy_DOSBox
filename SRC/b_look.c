@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_look.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
+// $Id: b_look.c 1458 2019-09-11 12:27:47Z wesleyjohnson $
 //
 // Copyright (C) 2002-2016 by DooM Legacy Team.
 //
@@ -52,8 +52,8 @@ extern int max_armor;
 extern thinker_t thinkercap;
 
 //Used with Reachable().
-static mobj_t	*looker, *destMobj;
-static sector_t *last_s;
+static mobj_t	*bot_looker_mobj, *bot_dest_mobj;
+static sector_t *bot_last_sector;
 
 static boolean PTR_QuickReachable (intercept_t *in)
 {
@@ -70,17 +70,17 @@ static boolean PTR_QuickReachable (intercept_t *in)
             return false; //Cannot continue.
        
         //Determine if going to use backsector/frontsector.
-        s = (line->backsector == last_s) ? line->frontsector : line->backsector;
+        s = (line->backsector == bot_last_sector) ? line->frontsector : line->backsector;
         ceilingheight = s->ceilingheight;
         floorheight = s->floorheight;
 
-        if( (((floorheight <= (last_s->floorheight+(37<<FRACBITS)))
-              || (((floorheight <= (last_s->floorheight+(45<<FRACBITS)))
-                   && (last_s->floortype != FLOOR_WATER))))
+        if( (((floorheight <= (bot_last_sector->floorheight+(37<<FRACBITS)))
+              || (((floorheight <= (bot_last_sector->floorheight+(45<<FRACBITS)))
+                   && (bot_last_sector->floortype != FLOOR_WATER))))
              && (((ceilingheight == floorheight) && line->special)
-                 || ((ceilingheight - floorheight) >= looker->height)))) //Does it fit?
+                 || ((ceilingheight - floorheight) >= bot_looker_mobj->height)))) //Does it fit?
         {
-            last_s = s;
+            bot_last_sector = s;
             return true;
         }
         return false;
@@ -88,18 +88,20 @@ static boolean PTR_QuickReachable (intercept_t *in)
     else
     {
         thing = in->d.thing;
-        if( (thing != looker) && (thing != destMobj) && (thing->flags & MF_SOLID) )
+        // Care about solid things that can block our path.
+        // Cannot jump over a solid corpse yet.
+        if( (thing != bot_looker_mobj) && (thing != bot_dest_mobj) && (thing->flags & MF_SOLID) )
              return false;
     }
 
-   return true;
+    return true;
 }
 
 boolean B_Reachable(player_t* p, mobj_t* mo)
 {
-    looker = p->mo;
-    destMobj = mo;
-    last_s = p->mo->subsector->sector;
+    bot_looker_mobj = p->mo;
+    bot_dest_mobj = mo;
+    bot_last_sector = p->mo->subsector->sector;
 
     // Bots shouldn't try to get stuff that's on a 3dfloor they can't get to. SSNTails 06-10-2003
     if(p->mo->subsector == mo->subsector && p->mo->subsector->sector->ffloors)
@@ -124,21 +126,21 @@ boolean B_Reachable(player_t* p, mobj_t* mo)
 }
 
 //Checks TRUE reachability from
-//one actor to another. First mobj (actor) is looker.
+//one actor to another. First mobj (actor) is bot_looker_mobj.
 boolean B_ReachablePoint (player_t *p, sector_t* destSector,
                           fixed_t x, fixed_t y)
 {
 /*  if((destSector->ceilingheight - destSector->floorheight)
-        < p->mo->height) //Where target is, looker can't be.
+        < p->mo->height) //Where target is, bot_looker_mobj can't be.
         return false;
  */
 
     //if (p->mo->subsector->sector == destSector)
     //	return true;
 
-    looker = p->mo;
-    destMobj = NULL;
-    last_s = p->mo->subsector->sector;
+    bot_looker_mobj = p->mo;
+    bot_dest_mobj = NULL;
+    bot_last_sector = p->mo->subsector->sector;
 
     return P_PathTraverse (p->mo->x, p->mo->y, x, y,
                            PT_ADDLINES|PT_ADDTHINGS, PTR_QuickReachable);
@@ -153,84 +155,100 @@ boolean B_ReachablePoint (player_t *p, sector_t* destSector,
 // Very inefficient cause searches of sectors are done multiple times.
 // when a sector has many linedefs between a single sector-sector boundary
 // Must fix this, perhaps use the visited boolean.
-// Maybe should do search through thes switches array instead.
+// Maybe should do search through the switches array instead.
 //
+
+static
+boolean B_Is_Usable_Special_Line( short line_special )
+{
+  return 
+    //edge->special && !(edge->special & ML_REPEAT_SPECIAL)
+    //P_CheckTag(edge) && (!specialsector || !specialsector->ceilingdata))
+    //!(line->flags & ML_TWOSIDED) || (line->flags & ML_BLOCKING)
+    //((edge->special & TriggerType) >> TriggerTypeShift) == SwitchOnce)
+    //|| ((edge->special & TriggerType) >> TriggerTypeShift) == PushOnce)
+    (line_special == 31)   // Door
+    // || (edge->special == 1)
+    || (line_special == 23)    // SW: Lower floor to lowest
+    || (line_special == 102)   // SW: Lower floor to surrounding floor height
+    || (line_special == 103)   // SW: Open Door
+    || (line_special == 71) ;  // SW: Turbo lower floor
+}
 
 boolean B_LookForSpecialLine(player_t* p, fixed_t* x, fixed_t* y)
 {
     int  i, j;
-    sector_t  *insector, *sector;
+    sector_t  *in_sector, *sector2;
     line_t  *edge;
-    msecnode_t  *insectornode;
+    msecnode_t  *in_sector_node;
 
-    insectornode = p->mo->touching_sectorlist;
-    while (insectornode)
+    in_sector_node = p->mo->touching_sectorlist;
+    while (in_sector_node)
     {
-        insector = insectornode->m_sector;
-        for (i = 0; i < insector->linecount; i++)
+        in_sector = in_sector_node->m_sector;
+        for (i = 0; i < in_sector->linecount; i++)
         {
             // for all lines in sector linelist
-            edge = insector->linelist[i];
-            // sector_t * specialsector = (insector == edge->frontsector) ? edge->backsector : edge->frontsector;
-            if (
-                //edge->special && !(edge->special & ML_REPEAT_SPECIAL)
-                //P_CheckTag(edge) && (!specialsector || !specialsector->ceilingdata))
-                //!(line->flags & ML_TWOSIDED) || (line->flags & ML_BLOCKING)
-                //((edge->special & TriggerType) >> TriggerTypeShift) == SwitchOnce)
-                //|| ((edge->special & TriggerType) >> TriggerTypeShift) == PushOnce)
-                (edge->special == 31)
-                // || (edge->special == 1)
-                || (edge->special == 23) || (edge->special == 102)
-                || (edge->special == 103) || (edge->special == 71)
-                ) //switches
-            {
-                *x = (edge->v1->x + edge->v2->x)/2;
-                *y = (edge->v1->y + edge->v2->y)/2;
+            edge = in_sector->linelist[i];
+            // sector_t * specialsector = (in_sector == edge->frontsector) ? edge->backsector : edge->frontsector;
+            if( B_Is_Usable_Special_Line( edge->special ) )  goto ret_edge_center;
 
-                return true;
-            }
-            else if (edge->sidenum[1] != NULL_INDEX)
+            if (edge->sidenum[1] != NULL_INDEX)
             {
                 // its a double sided linedef
-                sector = (edge->frontsector == insector) ?
-                edge->backsector : edge->frontsector;
+                sector2 = (edge->frontsector == in_sector) ? edge->backsector : edge->frontsector;
 
-                for (j = 0; j < sector->linecount; j++)
+                for (j = 0; j < sector2->linecount; j++)
                 {
                     // for all lines in sector linelist
-                    edge = sector->linelist[j];
+                    edge = sector2->linelist[j];
                     // sector_t * specialsector = (sector == edge->frontsector) ? edge->backsector : edge->frontsector;
-                    if (
-                        //edge->special && !(edge->special & ML_REPEAT_SPECIAL))//P_CheckTag(edge) && (!specialsector || !specialsector->ceilingdata))//line!(line->flags & ML_TWOSIDED) || (line->flags & ML_BLOCKING))
-                        //(((edge->special & TriggerType) >> TriggerTypeShift) == SwitchOnce) || (((edge->special & TriggerType) >> TriggerTypeShift) == PushOnce))
-                        //(edge->frontsector == sector)	//if its a pressable switch
-                        (edge->special == 31)	//doors
-                        ||(edge->special == 23) || (edge->special == 102)
-                        || (edge->special == 103) || (edge->special == 71)
-                        ) //switches
-                    {
-                        *x = (edge->v1->x + edge->v2->x)/2;
-                        *y = (edge->v1->y + edge->v2->y)/2;
-
-                        return true;
-                    }
+                    if( B_Is_Usable_Special_Line( edge->special ) )  goto ret_edge_center;
                 }
             }
         }
-        insectornode = insectornode->m_snext;
+        in_sector_node = in_sector_node->m_snext;
     }
 
     return false;
+
+ret_edge_center:
+    *x = (edge->v1->x + edge->v2->x)/2;
+    *y = (edge->v1->y + edge->v2->y)/2;
+    return true;
 }
 
+// id : any identifier
+// on_time, period_time : tics
+// Return periodic value, 0..255
+byte regulate( mobj_t * mo, int id, int on_time, int period_time )
+{
+    // Periodic, individualized for each id and mo.
+    int pr = (gametic + id + (int)mo) % period_time;  // periodic ramp
+    
+    if( mo->health < 5 ) // more desperate
+    {
+        pr -= TICRATE;  // add a second
+    }
+    
+    if( pr < on_time )  return 255;
+    return 0;
+}
+
+typedef enum {
+  WB_SHOT = 0x01,  // shotgun
+  WB_SSG  = 0x02,  // supershotgun
+  WB_CHAIN = 0x04, // chaingun
+  WB_ROCKET = 0x08, // rocket launcher
+  WB_PLASMA = 0x10, // plasma
+  WB_BFG = 0x20    // BFG
+} weapon_bits_e;
 
 //
 // B_LookForThings
 //
 void B_LookForThings (player_t* p)
 {
-    boolean  enemyFound = false;
-
     fixed_t  bestItemDistance = 0;
     fixed_t  bestSeenItemDistance = 0;
     fixed_t  closestEnemyDistance = 0;
@@ -240,22 +258,24 @@ void B_LookForThings (player_t* p)
     fixed_t  furthestTeammateDistance = 0;
     fixed_t  thingDistance = 0;
 
-    double   bestItemWeight = 0.0; //used to determine best object to get
-    double   bestSeenItemWeight = 0.0;
-    double   itemWeight = 0.0;
+    // ItemWeight is usefulness of item, byte 0..10
+    byte  bestItemWeight = 0; //used to determine best object to get
+    byte  bestSeenItemWeight = 0;
+    byte  itemWeight = 0;
+    int   enemy_weight = 0;
 
     mobj_t   *bestSeenItem = NULL;
     mobj_t   *bestItem = NULL;
     mobj_t   *mo;
+    bot_t  * pbot = p->bot;  // player bot
     thinker_t*	 currentthinker;
-
-    p->bot->closestEnemy = NULL;
-    p->bot->closestMissile = NULL;
-    p->bot->closestUnseenEnemy = NULL;
-    p->bot->closestUnseenTeammate = NULL;
-    p->bot->teammate = NULL;
-    p->bot->bestSeenItem = NULL;
-    p->bot->bestItem = NULL;
+   
+    byte item_respawn = cv_itemrespawn.EV || (deathmatch == 2);  // DM_items
+    byte item_getable;
+   
+    byte weapon = 0;
+    byte ammo = 0;
+    byte out_of_ammo = 0;
 
     int health_index =   // 0..5
      (p->health < 40) ? 0:
@@ -264,37 +284,72 @@ void B_LookForThings (player_t* p)
      (p->health < 80) ? 3:
      (p->health < 100) ? 4:  5;
 
-    currentthinker = thinkercap.next;
-    while (currentthinker != &thinkercap)	//search through the list of all thinkers
+    pbot->closestEnemy = NULL;
+    pbot->closestMissile = NULL;
+    pbot->closestUnseenEnemy = NULL;
+    pbot->closestUnseenTeammate = NULL;
+    pbot->teammate = NULL;
+    pbot->bestSeenItem = NULL;
+    pbot->bestItem = NULL;
+
+    // For simpler tests
+    if( p->weaponowned[wp_shotgun] )  weapon |= WB_SHOT;
+    if( p->weaponowned[wp_supershotgun] )  weapon |= WB_SSG;
+    if( p->weaponowned[wp_chaingun] )  weapon |= WB_CHAIN;
+    if( p->weaponowned[wp_missile] )  weapon |= WB_ROCKET;
+    if( p->weaponowned[wp_plasma] )  weapon |= WB_PLASMA;
+    if( p->weaponowned[wp_bfg] )  weapon |= WB_BFG;
+    if( p->ammo[am_shell] >= 2 )  ammo |= WB_SHOT | WB_SSG;
+    if( p->ammo[am_clip] >= 4 )  ammo |= WB_CHAIN;
+    if( p->ammo[am_misl] )  ammo |= WB_ROCKET;
+    if( p->ammo[am_cell] >= 4 )  ammo |= WB_PLASMA | WB_BFG;
+    if((p->readyweapon == wp_fist) || (p->readyweapon == wp_chainsaw))  out_of_ammo = 1;
+
+    //search through the list of all thinkers
+    for( currentthinker = thinkercap.next; currentthinker != &thinkercap; currentthinker = currentthinker->next )
     {
         if (currentthinker->function.acp1 == (actionf_p1)P_MobjThinker)
         {
+            enemy_weight = 0;
             itemWeight = 0;  // initialize to no weight, best items have greatest weight
             mo = (mobj_t *)currentthinker;
             thingDistance = P_AproxDistance (p->mo->x - mo->x, p->mo->y - mo->y);
 
-            if (((mo->flags & MF_COUNTKILL)
-                 || (mo->type == MT_SKULL)
-                 || (mo->type == MT_BARREL))
-                && (mo->flags & MF_SOLID)) // its a monster thats not dead
+
+            if((mo->flags & MF_COUNTKILL) || (mo->type == MT_SKULL) )
             {
-              enemyFound = true;
+                 // Corpse may be solid, so check health.
+                 if( mo->health <= 0 )  continue;
+                 enemy_weight = mo->health | 128;  // estimate of importance
+            }
+            else if( (mo->type == MT_BARREL) || (mo->type == MT_POD) || (mo->flags & MF_TOUCHY) )
+            {
+                // lessen bot fixation with shooting barrels
+                if((thingDistance > (80*FRACUNIT)) && !out_of_ammo)
+                {
+                    if( regulate(p->mo, MT_BARREL, 4*TICRATE, 15*TICRATE ) );  // 0..255
+                        enemy_weight = 64;  // fire 1/4 of time
+                }
             }
             else if (mo->player)
             {
-                if ((p != mo->player) && (mo->flags & MF_SOLID))
+                if( p != mo->player)
                 {
+                    if( mo->health <= 0 )  continue;
+
                     if( deathmatch )
-                        enemyFound = true;
+                    {
+                        enemy_weight = 250;
+                    }
                     else
                     {
                         if (B_Reachable(p, mo))	//i can reach this teammate
                         {
                             if ((thingDistance > furthestTeammateDistance)
-                                && (!p->bot->teammate && !mo->player->bot))
+                                && (!pbot->teammate && !mo->player->bot))
                             {
                                 furthestTeammateDistance = thingDistance;
-                                p->bot->teammate = mo;
+                                pbot->teammate = mo;
                                 //debug_Printf("found a teammate\n");
                             }
                         }
@@ -304,17 +359,16 @@ void B_LookForThings (player_t* p)
                             if (tempNode
                                 && (!closestUnseenTeammateDistance
                                     || ((thingDistance < closestUnseenTeammateDistance)
-                                        && (!p->bot->teammate
+                                        && (!pbot->teammate
                                             || (!mo->player->bot
-                                                && p->bot->teammate->player->bot))))
+                                                && pbot->teammate->player->bot))))
                                 )
                             {
                                 closestUnseenTeammateDistance = thingDistance;
-                                p->bot->closestUnseenTeammate = mo;
+                                pbot->closestUnseenTeammate = mo;
                                 //debug_Printf("found a teammate\n");
                             }
                         }
-
                     }
                 }
             }
@@ -329,10 +383,10 @@ void B_LookForThings (player_t* p)
                         //if its the closest missile and its reasonably close I should try and avoid it
                         if (thingDistance
                             && (!closestMissileDistance || (thingDistance < closestMissileDistance))
-                            && ((thingDistance>>FRACBITS) <= 300))
+                            && (thingDistance <= (300<<FRACBITS)))
                         {
                             closestMissileDistance = thingDistance;
-                            p->bot->closestMissile = mo;
+                            pbot->closestMissile = mo;
                         }
                     }
                     thingDistance = 0;
@@ -341,6 +395,7 @@ void B_LookForThings (player_t* p)
             else if (((mo->flags & MF_SPECIAL)
                       || (mo->flags & MF_DROPPED))) //most likely a pickup
             {
+                item_getable = (mo->flags & MF_DROPPED) || item_respawn;
                 if(EN_heretic)
                 {
                     switch (mo->type)
@@ -387,17 +442,12 @@ void B_LookForThings (player_t* p)
                      case SPR_SHOT:
                         if (!p->weaponowned[wp_shotgun])
                         {
-                            if ((p->weaponowned[wp_chaingun] && p->ammo[am_clip])
-                                || (p->weaponowned[wp_missile] && p->ammo[am_misl])
-                                || (p->weaponowned[wp_plasma] && p->ammo[am_cell])
-                                || (p->weaponowned[wp_supershotgun] && p->ammo[am_shell] >= 2)
-                                )
+                            if( weapon & ammo & (WB_SSG | WB_CHAIN | WB_ROCKET | WB_PLASMA) )
                                 itemWeight = 4;
                             else
                                 itemWeight = 6;
                         }
-                        else if( ((cv_deathmatch.EV == 2)
-                                  || (mo->flags & MF_DROPPED))
+                        else if( item_getable
                                  && (p->ammo[am_shell] < p->maxammo[am_shell])
                                  )
                             itemWeight = 3;
@@ -405,115 +455,91 @@ void B_LookForThings (player_t* p)
                      case SPR_MGUN:
                         if (!p->weaponowned[wp_chaingun])
                         {
-                            if ((p->weaponowned[wp_missile] && p->ammo[am_misl])
-                                || (p->weaponowned[wp_plasma] && p->ammo[am_cell])
-                                || (p->weaponowned[wp_supershotgun] && p->ammo[am_shell] >= 2)
-                                )
+                            if( weapon & ammo & (WB_SSG | WB_ROCKET | WB_PLASMA) )
                                 itemWeight = 5;
                             else
                                 itemWeight = 6;
                         }
-                        else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
+                        else if( item_getable
                                  && (p->ammo[am_clip] < p->maxammo[am_clip]))
                             itemWeight = 3;
                         break;
                      case SPR_LAUN:
                         if (!p->weaponowned[wp_missile])
                         {
-                            if ((p->weaponowned[wp_chaingun] && p->ammo[am_clip])
-                                || (p->weaponowned[wp_plasma] && p->ammo[am_cell])
-                                || (p->weaponowned[wp_supershotgun] && p->ammo[am_shell] >= 2)
-                                )
+                            if( weapon & ammo & (WB_SSG | WB_CHAIN | WB_PLASMA) )
                                 itemWeight = 5;
                             else
                                 itemWeight = 7;
                         }
-                        else if( ((cv_deathmatch.EV == 2)
-                                  || (mo->flags & MF_DROPPED))
+                        else if( item_getable
                                  && (p->ammo[am_misl] < p->maxammo[am_misl]))
                             itemWeight = 3;
                         break;
                      case SPR_PLAS:
                         if (!p->weaponowned[wp_plasma])
                         {
-                            if ((p->weaponowned[wp_chaingun] && p->ammo[am_clip])
-                                || (p->weaponowned[wp_missile] && p->ammo[am_misl])
-                                || (p->weaponowned[wp_supershotgun] && p->ammo[am_shell] >= 2)
-                                )
+                            if( weapon & ammo & (WB_SSG | WB_CHAIN | WB_ROCKET) )
                                 itemWeight = 5;
                             else
                                 itemWeight = 7;
                         }
-                        else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
+                        else if( item_getable
                                  && (p->ammo[am_cell] < p->maxammo[am_cell]))
                             itemWeight = 3;
                         break;
                      case SPR_BFUG:
                         if (!p->weaponowned[wp_bfg])
                         {
-                            if ((p->weaponowned[wp_chaingun] && p->ammo[am_clip])
-                                || (p->weaponowned[wp_missile] && p->ammo[am_misl])
-                                || (p->weaponowned[wp_plasma] && p->ammo[am_cell])
-                                || (p->weaponowned[wp_supershotgun] && p->ammo[am_shell] >= 2)
-                                )
+                            if( weapon & ammo & (WB_SSG | WB_CHAIN | WB_ROCKET | WB_PLASMA) )
                                 itemWeight = 5;
                             else
                                 itemWeight = 7;
                         }
-                        else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
+                        else if( item_getable
                                  && (p->ammo[am_cell] < p->maxammo[am_cell]))
                             itemWeight = 3;
                         break;
                      case SPR_SGN2:
                         if (!p->weaponowned[wp_supershotgun])
                         {
-                            if ((p->weaponowned[wp_chaingun] && p->ammo[am_clip])
-                                || (p->weaponowned[wp_missile] && p->ammo[am_misl])
-                                || (p->weaponowned[wp_plasma] && p->ammo[am_cell])
-                                )
+                            if( weapon & ammo & (WB_CHAIN | WB_ROCKET | WB_PLASMA) )
                                 itemWeight = 5;
                             else
                                 itemWeight = 7;
                         }
-                        else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
+                        else if( item_getable
                                  && (p->ammo[am_shell] < p->maxammo[am_shell]))
                             itemWeight = 3;
                         break;
 
         /////////////////////ammo
                      case SPR_CLIP: case SPR_AMMO:
-                        if (!p->ammo[am_clip] && ((p->readyweapon == wp_fist)
-                                                  || (p->readyweapon == wp_chainsaw))
-                            )
+                        if( (p->ammo[am_clip]==0) && out_of_ammo )
                             itemWeight = 6;
-                        else
-                            itemWeight = (p->ammo[am_clip] < p->maxammo[am_clip]) ? 3 : 0;
+                        else if( p->ammo[am_clip] < p->maxammo[am_clip])
+                            itemWeight = 3;
                         break;
                      case SPR_SHEL: case SPR_SBOX:
-                        if ((p->weaponowned[wp_shotgun] || p->weaponowned[wp_supershotgun]) && !p->ammo[am_shell]
-                            && ((p->readyweapon == wp_fist) || (p->readyweapon == wp_chainsaw))
-                            )
+                        if( (weapon & (WB_SHOT | WB_SSG) & ~ammo )  // shotgun without ammo
+                            && out_of_ammo )
                             itemWeight = 6;
-                        else
-                            itemWeight = (p->ammo[am_shell] < p->maxammo[am_shell]) ? 3 : 0;
+                        else if(p->ammo[am_shell] < p->maxammo[am_shell])
+                            itemWeight = 3;
                         break;
                      case SPR_ROCK: case SPR_BROK:
-                        if (p->weaponowned[wp_missile] && !p->ammo[am_misl]
-                            && ((p->readyweapon == wp_fist)
-                                || (p->readyweapon == wp_chainsaw))
-                            )
+                        if( (weapon & WB_ROCKET & ~ammo )  // launcher without ammo
+                            && out_of_ammo )
                             itemWeight = 6;
-                        else
-                            itemWeight = (p->ammo[am_misl] < p->maxammo[am_misl]) ? 3 : 0;
+                        else if(p->ammo[am_misl] < p->maxammo[am_misl])
+                            itemWeight = 3;
                         break;
                      case SPR_CELL: case SPR_CELP:
-                        if (p->weaponowned[wp_plasma] && !p->ammo[am_cell]
-                            && ((p->readyweapon == wp_fist)
-                                || (p->readyweapon == wp_chainsaw))
-                            )
+                        if( (weapon & WB_PLASMA & ~ammo )  // plasma without ammo
+                            && out_of_ammo )
                             itemWeight = 6;
-                        else
-                            itemWeight = (p->ammo[am_cell] < p->maxammo[am_cell]) ? 3 : 0;
+                        else if(p->ammo[am_cell] < p->maxammo[am_cell])
+                            itemWeight = 3;
                         break;
 
         ///////////////////////keys
@@ -550,8 +576,6 @@ void B_LookForThings (player_t* p)
                 {
 //NON-HERETIC???////////// bonuses/powerups now checks for skill level
                  case SPR_PINV:	//invulnrability always run to get it
-                    if (gameskill > sk_nightmare)
-                        break;
                     if( deathmatch || !p->powers[pw_invulnerability])
                     {
                         // index by gameskill
@@ -560,8 +584,6 @@ void B_LookForThings (player_t* p)
                     }
                     break;
                  case SPR_MEGA: //megasphere
-                    if (gameskill > sk_nightmare)
-                        break;
                     if( deathmatch
                         || (p->health < maxsoul || p->armorpoints < max_armor) )
                     {
@@ -570,8 +592,6 @@ void B_LookForThings (player_t* p)
                     }
                     break;
                  case SPR_PINS:	//invisibility
-                    if (gameskill > sk_nightmare)
-                        break;
                     if( deathmatch || !p->powers[pw_invisibility] )
                     {
                         static const byte  pins_weight[5] = {2, 3, 5, 7, 9};
@@ -579,8 +599,6 @@ void B_LookForThings (player_t* p)
                     }
                     break;
                  case SPR_SOUL:	//soul sphere
-                    if (gameskill > sk_nightmare)
-                        break;
                     if( deathmatch || p->health < maxsoul )
                     {
                         static const byte  soul_weight[5] = {1, 2, 4, 6, 9};
@@ -588,8 +606,6 @@ void B_LookForThings (player_t* p)
                     }
                     break;
                  case SPR_ARM2:	//blue armour, if we have >= maxarmour, its impossible to get
-                    if (gameskill > sk_nightmare)
-                        break;
                     if (p->armorpoints < max_armor)
                     {
                         static const byte arm2_weight[5] = {1, 2, 4, 6, 8};
@@ -597,8 +613,6 @@ void B_LookForThings (player_t* p)
                     }
                     break;
                  case SPR_PSTR:	//berserk pack
-                    if (gameskill > sk_nightmare)
-                        break;
                     if (health_index < 5)
                     {
                         // index by gameskill, health test
@@ -617,8 +631,6 @@ void B_LookForThings (player_t* p)
                     break;
 
                  case SPR_ARM1:	//green armour
-                    if (gameskill > sk_nightmare)
-                        break;
                     if (p->armorpoints < max_armor/2)
                     {
                         static const byte arm1_weight[5] = {1, 2, 3, 4, 5};
@@ -627,8 +639,6 @@ void B_LookForThings (player_t* p)
                     break;
 
                  case SPR_MEDI: case SPR_STIM: //medication  MEDIKIT or STIMPACK
-                    if (gameskill > sk_nightmare)
-                        break;
                     if (health_index < 5)
                     {
                         // index by gameskill, health test
@@ -657,130 +667,103 @@ void B_LookForThings (player_t* p)
                  case SPR_SHOT:
                     if (!p->weaponowned[wp_shotgun])
                     {
-                        if ((p->weaponowned[wp_chaingun] && p->ammo[am_clip])
-                            || (p->weaponowned[wp_missile] && p->ammo[am_misl])
-                            || (p->weaponowned[wp_plasma] && p->ammo[am_cell])
-                            || (p->weaponowned[wp_supershotgun] && p->ammo[am_shell] >= 2)
-                            )
+                        if( weapon & ammo & (WB_SSG | WB_CHAIN | WB_ROCKET | WB_PLASMA) )
                             itemWeight = 4;
                         else
                             itemWeight = 6;
                     }
-                    else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
+                    else if( item_getable
                              && (p->ammo[am_shell] < p->maxammo[am_shell]))
                         itemWeight = 3;
                     break;
                  case SPR_MGUN:
                     if (!p->weaponowned[wp_chaingun])
                     {
-                        if ((p->weaponowned[wp_missile] && p->ammo[am_misl])
-                            || (p->weaponowned[wp_plasma] && p->ammo[am_cell])
-                            || (p->weaponowned[wp_supershotgun] && p->ammo[am_shell] >= 2)
-                            )
+                        if( weapon & ammo & (WB_SSG | WB_ROCKET | WB_PLASMA) )
                             itemWeight = 5;
                         else
                             itemWeight = 6;
                     }
-                    else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
+                    else if( item_getable
                              && (p->ammo[am_clip] < p->maxammo[am_clip]))
                         itemWeight = 3;
                     break;
                  case SPR_LAUN:
                     if (!p->weaponowned[wp_missile])
                     {
-                        if ((p->weaponowned[wp_chaingun] && p->ammo[am_clip])
-                            || (p->weaponowned[wp_plasma] && p->ammo[am_cell])
-                            || (p->weaponowned[wp_supershotgun] && p->ammo[am_shell] >= 2)
-                            )
+                        if( weapon & ammo & (WB_SSG | WB_CHAIN | WB_PLASMA) )
                             itemWeight = 5;
                        else
                             itemWeight = 7;
                     }
-                    else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
+                    else if( item_getable
                              && (p->ammo[am_misl] < p->maxammo[am_misl]))
                        itemWeight = 3;
                     break;
                  case SPR_PLAS:
                     if (!p->weaponowned[wp_plasma])
                     {
-                        if ((p->weaponowned[wp_chaingun] && p->ammo[am_clip])
-                            || (p->weaponowned[wp_missile] && p->ammo[am_misl])
-                            || (p->weaponowned[wp_supershotgun] && p->ammo[am_shell] >= 2)
-                            )
+                        if( weapon & ammo & (WB_SSG | WB_CHAIN | WB_ROCKET) )
                             itemWeight = 5;
                         else
                             itemWeight = 7;
                     }
-                    else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
+                    else if( item_getable
                              && (p->ammo[am_cell] < p->maxammo[am_cell]))
                         itemWeight = 3;
                     break;
                  case SPR_BFUG:
                     if (!p->weaponowned[wp_bfg])
                     {
-                        if ((p->weaponowned[wp_chaingun] && p->ammo[am_clip])
-                            || (p->weaponowned[wp_missile] && p->ammo[am_misl])
-                            || (p->weaponowned[wp_plasma] && p->ammo[am_cell])
-                            || (p->weaponowned[wp_supershotgun] && p->ammo[am_shell] >= 2)
-                            )
+                        if( weapon & ammo & (WB_SSG | WB_CHAIN | WB_ROCKET | WB_PLASMA) )
                             itemWeight = 5;
                         else
                             itemWeight = 7;
                     }
-                    else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
+                    else if( item_getable
                              && (p->ammo[am_cell] < p->maxammo[am_cell]))
                         itemWeight = 3;
                     break;
                  case SPR_SGN2:
                     if (!p->weaponowned[wp_supershotgun])
                     {
-                        if ((p->weaponowned[wp_chaingun] && p->ammo[am_clip])
-                            || (p->weaponowned[wp_missile] && p->ammo[am_misl])
-                            || (p->weaponowned[wp_plasma] && p->ammo[am_cell])
-                            )
+                        if( weapon & ammo & (WB_CHAIN | WB_ROCKET | WB_PLASMA) )
                             itemWeight = 5;
                         else
                             itemWeight = 7;
                     }
-                    else if( ((cv_deathmatch.EV == 2) || (mo->flags & MF_DROPPED))
+                    else if( item_getable
                              && (p->ammo[am_shell] < p->maxammo[am_shell]))
                         itemWeight = 3;
                     break;
 
 /////////////////////ammo
                  case SPR_CLIP: case SPR_AMMO:
-                    if (!p->ammo[am_clip]
-                        && ((p->readyweapon == wp_fist) || (p->readyweapon == wp_chainsaw))
-                        )
+                    if( (p->ammo[am_clip] == 0) && out_of_ammo )
                         itemWeight = 6;
-                    else
-                        itemWeight = (p->ammo[am_clip] < p->maxammo[am_clip]) ? 3 : 0;
+                    else if(p->ammo[am_clip] < p->maxammo[am_clip])
+                        itemWeight = 3;
                     break;
                  case SPR_SHEL: case SPR_SBOX:
-                    if ((p->weaponowned[wp_shotgun] || p->weaponowned[wp_supershotgun]) && !p->ammo[am_shell]
-                        && ((p->readyweapon == wp_fist) || (p->readyweapon == wp_chainsaw))
-                        )
+                    if( (weapon & (WB_SHOT | WB_SSG) & ~ammo )  // shotgun without ammo
+                        && out_of_ammo )
                         itemWeight = 6;
-                    else
-                        itemWeight = (p->ammo[am_shell] < p->maxammo[am_shell]) ? 3 : 0;
+                    else if(p->ammo[am_shell] < p->maxammo[am_shell])
+                        itemWeight = 3;
                     break;
                  case SPR_ROCK: case SPR_BROK:
-                    if (p->weaponowned[wp_missile] && !p->ammo[am_misl]
-                        && ((p->readyweapon == wp_fist)
-                            || (p->readyweapon == wp_chainsaw))
-                        )
+                    if( (weapon & WB_ROCKET & ~ammo )  // launcher without ammo
+                        && out_of_ammo )
                         itemWeight = 6;
-                    else
-                        itemWeight = (p->ammo[am_misl] < p->maxammo[am_misl]) ? 3 : 0;
+                    else if(p->ammo[am_misl] < p->maxammo[am_misl])
+                        itemWeight = 3;
                     break;
                  case SPR_CELL: case SPR_CELP:
-                    if (p->weaponowned[wp_plasma] && !p->ammo[am_cell]
-                        && ((p->readyweapon == wp_fist)
-                            || (p->readyweapon == wp_chainsaw))
-                        )
+                    if( (weapon & (WB_PLASMA | WB_BFG) & ~ammo )  // plasma without ammo
+                        && out_of_ammo )
                         itemWeight = 6;
-                    else
-                        itemWeight = (p->ammo[am_cell] < p->maxammo[am_cell]) ? 3 : 0;
+                    else if(p->ammo[am_cell] < p->maxammo[am_cell])
+                        itemWeight = 3;
                     break;
 
 ///////////////////////keys
@@ -819,6 +802,7 @@ void B_LookForThings (player_t* p)
                          || ((itemWeight == bestSeenItemWeight)
                              && (thingDistance < bestSeenItemDistance))))
                     {
+                        // Select this item.
                         bestSeenItem = mo;
                         bestSeenItemDistance = thingDistance;
                         bestSeenItemWeight = itemWeight;
@@ -846,7 +830,9 @@ void B_LookForThings (player_t* p)
                 }
             }
 
-            if (enemyFound)
+            // Reduce constant firing
+            if( enemy_weight && (enemy_weight > B_Random()))
+//            if( enemy_weight )
             {
                 if (P_CheckSight(p->mo, mo))
                 {
@@ -855,10 +841,10 @@ void B_LookForThings (player_t* p)
                     // otherwise make closest target the closest monster
                     if (thingDistance
                         && (!closestEnemyDistance || (thingDistance < closestEnemyDistance)
-                            || (mo->player && !p->bot->closestEnemy->player)))
+                            || (mo->player && !pbot->closestEnemy->player)))
                     {
                         closestEnemyDistance = thingDistance;
-                        p->bot->closestEnemy = mo;
+                        pbot->closestEnemy = mo;
                     }
                 }
                 else
@@ -866,26 +852,25 @@ void B_LookForThings (player_t* p)
                     SearchNode_t* tempNode = B_GetNodeAt(mo->x, mo->y);
                     if (tempNode
                         && ((!closestUnseenEnemyDistance || (thingDistance < closestUnseenEnemyDistance)
-                             || (mo->player && !p->bot->closestUnseenEnemy->player))))
+                             || (mo->player && !pbot->closestUnseenEnemy->player))))
                     {
                         closestUnseenEnemyDistance = thingDistance;
-                        p->bot->closestUnseenEnemy = mo;
+                        pbot->closestUnseenEnemy = mo;
                     }
                 }
 
-                enemyFound = false;
+                enemy_weight = 0;
                 thingDistance = 0;
             }
         }
-        currentthinker = currentthinker->next;
     }
 
     // if a item has a good weight, get it no matter what.
     // Else only if we have no target/enemy get it.
-    p->bot->bestSeenItem =
+    pbot->bestSeenItem =
      ((bestSeenItemWeight > 5)
-      || (bestSeenItemWeight && !p->bot->closestEnemy)) ?
+      || (bestSeenItemWeight && !pbot->closestEnemy)) ?
          bestSeenItem : NULL;
 
-    p->bot->bestItem = (bestItemWeight) ? bestItem : NULL;
+    pbot->bestItem = (bestItemWeight) ? bestItem : NULL;
 }

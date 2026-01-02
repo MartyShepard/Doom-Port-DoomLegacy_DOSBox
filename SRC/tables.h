@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: tables.h 1093 2014-03-25 23:03:53Z wesleyjohnson $
+// $Id: tables.h 1458 2019-09-11 12:27:47Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -25,6 +25,7 @@
 
 // Binary Angle as fraction of PI*2, unsigned, wrap at 0.
 typedef uint32_t angle_t;
+typedef int32_t  signed_angle_t;  // for angle differences
 
 extern const angle_t ANG45;  // 0x20000000;
 extern const angle_t ANG90;  // 0x40000000;
