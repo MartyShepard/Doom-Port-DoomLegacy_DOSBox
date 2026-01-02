@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
+// $Id: d_clisrv.c 1484 2019-12-13 05:19:05Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -246,6 +246,7 @@ boolean         cl_drone; // client displays, no commands
 static byte     cl_nnode; // net node for this client, pointofview server
 static boolean  cl_packetmissed;
 static tic_t    cl_need_tic;
+static tic_t    cl_prev_tic = 0;  // client tests once per tic
 
 byte            servernode = 255; // server net node, 255=none
 
@@ -565,6 +566,8 @@ no_text_cmd:
 
 // Client state
 typedef enum {
+   CLM_idle,
+   CLM_fatal,
    CLM_searching,
    CLM_server_files,
    CLM_download_req,
@@ -572,10 +575,11 @@ typedef enum {
    CLM_askjoin,
    CLM_wait_join_response,
    CLM_download_savegame,
+   CLM_download_done,
    CLM_connected
 } cl_mode_t;
 
-static cl_mode_t  cl_mode = CLM_searching;
+static cl_mode_t  cl_mode = CLM_idle;
 
 static void CL_ConnectToServer(void);
 static int16_t  Consistency(void);
@@ -770,28 +774,36 @@ static void SV_Send_SaveGame(int to_node)
     SV_Send_State( 1 );  // pause game during download
      
     P_Alloc_savebuffer( 1 );	// large buffer, but no header
-    if(! savebuffer)   return;
+    if(! savebuffer)   goto buffer_err;
 
-    P_Write_Savegame_Header( NULL, 1 );  // Netgame header
-    P_SaveGame();  // fill buffer with game data
+    P_Savegame_Write_header( NULL, 1 );  // Netgame header
+    P_Savegame_Save_game();  // fill buffer with game data
     // buffer will automatically grow as needed.
 
     length = P_Savegame_length();
     if( length < 0 )   return;	// overrun buffer
    
     // then send it !
-    SV_SendData(to_node, savebuffer, length, TAH_MALLOC_FREE, 0);
+    SV_SendData(to_node, "SAVEGAME", savebuffer, length, TAH_MALLOC_FREE, SAVEGAME_FILEID);
     // SendData frees the savebuffer using free() after it is sent.
     // This is the only use of TAH_MALLOC_FREE.
     
     SV_Send_State( was_paused );  // unpause maybe
     paused = was_paused;
+    return;
+
+buffer_err:
+    GenPrintf(EMSG_error, "Send_savegame: cannot allocate large enough buffer\n" );
+    return;   
 }
 
+// Dummy name for a savegame file.
 static const char *tmpsave="$$$.sav";
 
 // By Client.
 // Act upon the received save game from server.
+// Success: cl_mode = CLM_download_done
+// Fail:    cl_mode = CLM_fatal
 static void CL_Load_Received_Savegame(void)
 {
     savegame_info_t   sginfo;  // read header info
@@ -804,7 +816,7 @@ static void CL_Load_Received_Savegame(void)
 
     // Read netgame header.
     sginfo.msg[0] = 0;
-    if( ! P_Read_Savegame_Header( & sginfo, 1 ) )  goto load_failed;
+    if( ! P_Savegame_Read_header( & sginfo, 1 ) )  goto load_failed;
 
     GenPrintf(EMSG_hud, "Loading savegame\n");
 
@@ -817,14 +829,16 @@ static void CL_Load_Received_Savegame(void)
     // load a base level
     playerdeadview = false;
 
-    P_LoadGame(); // read game data in savebuffer, defer error test
+    P_Savegame_Load_game(); // read game data in savebuffer, defer error test
     if( P_Savegame_Closefile( 0 ) < 0 )  goto load_failed;
     // savegame buffer deallocated, and file closed
 
     // done
-    unlink(tmpsave);  // delete file
+    unlink(tmpsave);  // delete file (posix)
     consistency[ BTIC_INDEX( gametic ) ] = Consistency();
     CON_ToggleOff ();
+
+    cl_mode = CLM_download_done;
     return;
 
 cannot_read_file:
@@ -836,6 +850,7 @@ load_failed:
 failed_exit:
     // needed when there are error tests before Closefile.
     P_Savegame_Error_Closefile();  // deallocate savebuffer
+    cl_mode = CLM_fatal;
     return;
 }
 
@@ -844,7 +859,6 @@ failed_exit:
 
 
 // ----- Consistency fail, repair position.
-static tic_t prev_tic = 0;
 
 
 // By Server.
@@ -961,10 +975,10 @@ static void repair_handler( byte nnode )
 #ifdef JOININGAME
      case RQ_SUG_SAVEGAME:
         // Server suggests downloading a savegame from the server.
-        CL_Prepare_Download_SaveGame(tmpsave);
+        CL_Prepare_download_savegame(tmpsave);
         CL_Send_Req_repair( RQ_REQ_SAVEGAME ); // to server
         // Loop here while savegame is downloaded.
-        while( cl_fileneed[0].status != FS_FOUND )
+        while( netfile_download )
         {
             Net_Packet_Handler();
             if( !server && !netgame )
@@ -973,9 +987,9 @@ static void repair_handler( byte nnode )
             Net_AckTicker();
 
             // Operations performed only once every tic.
-            if( prev_tic != I_GetTime() )
+            if( cl_prev_tic != I_GetTime() )
             {
-                prev_tic = I_GetTime();
+                cl_prev_tic = I_GetTime();
 
                 // User response handler
                 I_OsPolling();
@@ -993,7 +1007,12 @@ static void repair_handler( byte nnode )
         }
 
         // Have received the savegame from the server.
-        CL_Load_Received_Savegame();
+        CL_Load_Received_Savegame();  // CLM_download_done, or CLM_fatal
+        if( cl_mode != CLM_download_done )
+        {
+            GenPrintf( EMSG_error, "Client player_repair: savegame failed\n" );
+            goto reset_to_title_exit;
+        }
         CL_Send_Req_repair( RQ_REQ_PLAYER ); // to server
         break;
 
@@ -1486,7 +1505,7 @@ static void CL_ConnectToServer( void )
                 // WARNING: this can be useless in case of server not in GS_LEVEL
                 // but since the network layer don't provide ordered packet ...
                 // This can be repeated, if CL_Send_Join fails.
-                CL_Prepare_Download_SaveGame(tmpsave);
+                CL_Prepare_download_savegame(tmpsave);
 #endif
                 if( CL_Send_Join() )  // join game
                     cl_mode = CLM_wait_join_response;
@@ -1498,16 +1517,24 @@ static void CL_ConnectToServer( void )
             case CLM_download_savegame :
                 M_DrawTextBox( 2, NETFILE_BOX_Y, 38, 6);
                 V_DrawString (30, NETFILE_BOX_Y+8, 0, "Download Savegame");
-                if( cl_fileneed[0].status != FS_FOUND )
+                if( netfile_download )
                     break; // continue loop
 
                 // Have received the savegame from the server.
                 CL_Load_Received_Savegame();
+                if( cl_mode != CLM_download_done )
+                {
+                    goto reset_to_searching;
+                }
+
+                // got samegame
                 gamestate = GS_LEVEL;  // game loaded
                 cl_mode = CLM_connected;
                 // don't break case continue to CLM_connected
 #endif
             case CLM_connected :
+                break;
+            default:
                 break;
         }
 
@@ -1518,9 +1545,9 @@ static void CL_ConnectToServer( void )
         Net_AckTicker();
 
         // Operations performed only once every tic.
-        if( prev_tic != I_GetTime() )
+        if( cl_prev_tic != I_GetTime() )
         {
-            prev_tic = I_GetTime();
+            cl_prev_tic = I_GetTime();
 
             // User response handler
             I_OsPolling();
@@ -1975,7 +2002,7 @@ void D_Quit_NetGame (void)
     DEBFILE("==== Quiting Game, closing connection ====\n" );
 
     // abort send/receive of files
-    CloseNetFile();
+    Close_NetFile();
 
     if( server )
     {

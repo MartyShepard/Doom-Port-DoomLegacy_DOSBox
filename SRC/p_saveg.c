@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
+// $Id: p_saveg.c 1484 2019-12-13 05:19:05Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2017 by DooM Legacy Team.
@@ -1333,7 +1333,7 @@ static void MapMobjID(uint32_t id, mobj_t *p)
 #else
   if (!p)
   {
-    I_Error("P_LoadGame: Tried to assign NULL pointer to an ID.\n"); // NULL ptr always has id == 0
+    I_Error("P_Savegame_Load_game: Tried to assign NULL pointer to an ID.\n"); // NULL ptr always has id == 0
     return;
   }
 
@@ -3633,7 +3633,7 @@ const byte sg_big_endian = 0;
 // Used for savegame file and netgame.
 //   write_netgame : 1 for network passed netgame
 // Write savegame header to savegame buffer.
-void P_Write_Savegame_Header( const char * description, byte write_netgame )
+void P_Savegame_Write_header( const char * description, byte write_netgame )
 {
     int len;
     int l_min, l_sec;
@@ -3709,7 +3709,7 @@ void  term_header_line( char * infodest )
 //   read_netgame : 1 for network passed netgame
 // Returns header info in infop.
 // Returns 1 when header is correct.
-boolean P_Read_Savegame_Header( savegame_info_t * infop, byte read_netgame )
+boolean P_Savegame_Read_header( savegame_info_t * infop, byte read_netgame )
 {
     const char * reason;
 
@@ -3785,7 +3785,7 @@ boolean P_Read_Savegame_Header( savegame_info_t * infop, byte read_netgame )
 // Called from menu via G_DoSaveGame via network Got_SaveGame_cmd,
 // and called from SV_Send_SaveGame by network for JOININGAME.
 // Write game data to savegame buffer.
-void P_SaveGame( void )
+void P_Savegame_Save_game( void )
 {
     xcmd_t xc;
 
@@ -3836,8 +3836,8 @@ void P_SaveGame( void )
       {
         I_OutputMsg("%d  %p\n", k, mobj_ptrmap.map[k].pointer);
         if (mobj_ptrmap.map[k].pointer == NULL)
-          I_Error("P_SaveGame: Hole in mobj_ptrmap!\n");
-        //debug_Printf("P_SaveGame: %d  %p\n", k, mobj_ptrmap.map[k].pointer);
+          I_Error("P_Savegame_Save_game: Hole in mobj_ptrmap!\n");
+        //debug_Printf("P_Savegame_Save_game: %d  %p\n", k, mobj_ptrmap.map[k].pointer);
       }
 #endif
 
@@ -3848,7 +3848,7 @@ void P_SaveGame( void )
    
 // Called from G_DoLoadGame
 // Read game data in savegame buffer.
-boolean P_LoadGame(void)
+boolean P_Savegame_Load_game(void)
 {
     InitPointermap_Load(&mobj_ptrmap, 1024);
     InitPointermap_Load(&mapthg_ptrmap, 64);

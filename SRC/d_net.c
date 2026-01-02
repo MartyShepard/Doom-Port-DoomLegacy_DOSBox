@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1477 2019-10-19 13:42:58Z wesleyjohnson $
+// $Id: d_net.c 1484 2019-12-13 05:19:05Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -954,7 +954,7 @@ void Net_CloseConnection(int nnode)
 
     // No waiting for ack from this net node.
     InitNode(nnode);
-    AbortSendFiles(nnode);
+    Abort_SendFiles(nnode);
 #if 0
 // [WDJ] GCC 4.5.2 Using this label triggers a compiler bug that costs 3K size.
 // An if {}, also costs 3K in program size ! All variations.

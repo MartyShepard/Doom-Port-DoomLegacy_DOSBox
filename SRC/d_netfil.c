@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1374 2017-12-18 17:22:05Z wesleyjohnson $
+// $Id: d_netfil.c 1484 2019-12-13 05:19:05Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -131,14 +131,16 @@
 // sender structure
 typedef struct filetx_s {
     TAH_e    release_tah; // release, access method
-    char     *filename;   // name of the file, or ptr to the data
+    char   * filename;   // name of the file
+    byte   * data;       // data of data transfer
     uint32_t data_size;   // size of data transfer
-    char     fileid;
+    char     fileid;      // fileid from PT_REQUESTFILE
 //  byte     dest_node;    // client node destination (UNUSED)
     struct filetx_s *next; // a queue
 } filetx_t;
 
 // Current transfers (one for each node).
+// One active file/data transfer per node.
 typedef struct {
    filetx_t  *txlist;    // only set by server
    uint32_t   position;  // file and data transfer position
@@ -151,13 +153,37 @@ static transfer_t transfer[MAXNETNODES];
 // read time of file : stat _stmtime
 // write time of file : utime
 
+typedef struct {
+    char    filename[MAX_WADPATH];
+    unsigned char    md5sum[16];
+    // used only for download
+    FILE    *phandle;     // open file (owned)
+    uint32_t bytes_recv;  // to determine when done and for status
+    uint32_t totalsize;
+    filestatus_e status;        // the value returned by recsearch
+} fileneed_t;
+
 // Client receiver structure
-int cl_num_fileneed;
-fileneed_t cl_fileneed[MAX_WADFILES];
+byte netfile_download = 0;  // tested by users
+byte cl_num_fileneed = 0;
+static fileneed_t cl_fileneed[MAX_WADFILES];
 
 const char * downloaddir = "DOWNLOAD";
 
 static void SV_SendFile(byte to_node, char *filename, char fileid);
+
+static
+void update_download_done( void )
+{
+    int i;
+    for( i=cl_num_fileneed; i>=0; i-- )
+    {
+        byte st = cl_fileneed[i].status;
+        if( st > FS_FOUND )  return;
+    }
+    netfile_download = 0;
+}
+
 
 // By server.
 // Fill the serverinfo packet with wad files loaded by the game on the server.
@@ -172,11 +198,13 @@ byte * Put_Server_FileNeed(void)
     p=(byte *)&netbuffer->u.serverinfo.fileneed;
     for(i=0;i<numwadfiles;i++)
     {
-        // Format: filesize int32, filename str0, md5sum 16byte
-        WRITEU32(p,wadfiles[i]->filesize);
+        // Format: filesize uint32, filename str0, md5sum 16byte
+        WRITEU32(p, LE_SWAP32(wadfiles[i]->filesize));
         strcpy(wadfilename,wadfiles[i]->filename);
         nameonly(wadfilename);
         p = write_string(p, wadfilename);
+
+        // char array, is endian safe
         WRITEMEM(p,wadfiles[i]->md5sum,16);
     }
     netbuffer->u.serverinfo.num_fileneed = i;  // numwadfiles
@@ -201,14 +229,14 @@ void CL_Got_Fileneed(int num_fileneed_parm, byte *fileneed_str)
     cl_num_fileneed = num_fileneed_parm;
     for(i=0; i<cl_num_fileneed; i++)  // MAX_WADFILES
     {
-        // Format: filesize int32, filename str0, md5sum 16byte
+        // Format: filesize uint32, filename str0, md5sum 16byte
         fileneed_t * fnp = & cl_fileneed[i];  // client fileneed
 
         // Protect against malicious packet without 0 term.
         if( p >= bufend16 )  goto bad_packet;  // buffer overrun
 
         fnp->status = FS_NOTFOUND;
-        fnp->totalsize = READU32(p);
+        fnp->totalsize = LE_SWAP32( READU32(p) );
         fnp->phandle = NULL;
 
         // [WDJ] String overflow safe
@@ -225,6 +253,7 @@ void CL_Got_Fileneed(int num_fileneed_parm, byte *fileneed_str)
         fnp->filename[MAX_WADPATH-1] = '\0';
         p += fn_len;  // whole, next0 + 1
 
+        // char array, is endian safe
         READMEM(p,fnp->md5sum,16);
     }
     return;
@@ -236,6 +265,7 @@ bad_packet:
 
 #define BUFFSIZE 128
 // By Client
+// Return true while waiting on fileneed files.
 boolean  CL_waiting_on_fileneed( void )
 {
     static byte  stat_cnt2 = 0;
@@ -284,19 +314,25 @@ boolean  CL_waiting_on_fileneed( void )
         GenPrintf(EMSG_info, "Download speed  %4.2f KBPS",
                         ((float)netstat_recv_bps)/1024);
     }
+    netfile_download = waiting;
     return waiting;
 }
 
+// Do not load savegame while any other file download for this client is in progress.
+
 // By Client.
-// First step in join game, fileneed and savegame.
-void CL_Prepare_Download_SaveGame(const char *tmpsave)
+// Prepare to receive a savegame.
+void CL_Prepare_download_savegame(const char *tmpsave)
 {
+    // Savegames always have SAVEGAME_FILEID.
+    strcpy(cl_fileneed[SAVEGAME_FILEID].filename, tmpsave);
+    cl_fileneed[SAVEGAME_FILEID].status = FS_REQUESTED;
+    cl_fileneed[SAVEGAME_FILEID].totalsize = -1;
+    cl_fileneed[SAVEGAME_FILEID].phandle = NULL;
+    memset(cl_fileneed[SAVEGAME_FILEID].md5sum, 0, 16);  // none
+
     cl_num_fileneed = 1;
-    cl_fileneed[0].status = FS_REQUESTED;
-    cl_fileneed[0].totalsize = -1;
-    cl_fileneed[0].phandle = NULL;
-    memset(cl_fileneed[0].md5sum, 0, 16);
-    strcpy(cl_fileneed[0].filename, tmpsave);
+    netfile_download = 1;
 }
 
 
@@ -319,6 +355,7 @@ reqfile_e  Send_RequestFile(void)
         int len;
         char s[1024];
 
+        // Not allowed to download files.
         // Check for missing files.
         s[0]=0;
         for(i=0; i<cl_num_fileneed; i++)
@@ -371,8 +408,9 @@ reqfile_e  Send_RequestFile(void)
 
     // prepare to download
     I_mkdir(downloaddir,0755);
+
     // Make up one or more request packet to get files from the server.
-    fcnt = 0;
+    fcnt = 0;  // used as fileid, and index to cl_fileneed
     do{
         // Format: one or more file requests.
         //   byte    fileid;  // 0xFF = terminate
@@ -394,7 +432,7 @@ reqfile_e  Send_RequestFile(void)
                 if( nxt_bcnt > MAX_NETBYTE_LEN-1 )  break;
                 bcnt = nxt_bcnt;
 
-                WRITECHAR(p,fcnt);  // fileid
+                WRITECHAR(p,fcnt);  // fileid, 0..n
                 p = write_string(p, filetmp);
 
                 // put it in download dir 
@@ -410,10 +448,11 @@ reqfile_e  Send_RequestFile(void)
         availablefreespace = I_GetDiskFreeSpace();
         // debug_Printf("free byte %d\n",availablefreespace);
         if(totalfreespaceneeded > availablefreespace)  goto insufficient_space;
-	   
+
         if( ! HSendPacket(servernode, true, 0, p - netbuffer->u.bytepak.b) )
             return RFR_send_fail;
-       
+
+        netfile_download = 1;
     }while( fcnt<cl_num_fileneed );
     return RFR_success;
 
@@ -436,7 +475,9 @@ void Got_RequestFilePak(byte nnode)
 {
     char *p = (char *)netbuffer->u.bytepak.b;
 
-    while((byte)*p!=0xFF)
+    // format: REPEAT( byte fileid, string0 filename ), 0xFF
+    // The requester determines a fileid for each filename.
+    while((byte)*p!=0xFF)  // fileid
     {
         SV_SendFile(nnode, p+1, *p);
         p++; // skip fileid
@@ -546,24 +587,37 @@ boolean  CL_Load_ServerFiles(void)
     return true;
 }
 
+
+
 // By Server.
 // A little optimization to test if there is a file in the queue.
 // Tested by caller of Filetx_Ticker, as enable.
 // Only the server can enable it.
 int Filetx_file_cnt = 0;
 
+// append filetx to txlist
+static
+void  append_to_txlist( byte to_node, filetx_t * ftp )
+{
+    // Use indirect ptr to treat head and link the same.
+    filetx_t ** txlpp = & transfer[to_node].txlist;
+    while( *txlpp ) txlpp= &((*txlpp)->next);  // find end of txlist
+    *txlpp = ftp;  // head or next link
+
+    Filetx_file_cnt++;
+}
+
 // By Server.
-// Send a file to client.
+// Send a file to client, using client fileid.
 //   to_node : the client node.
+//   filename : wad file to send
+//   fileid : fileid from PT_REQUESTFILE
 static void SV_SendFile(byte to_node, char *filename, char fileid)
 {
-    filetx_t **q,*p;
+    filetx_t *p;
     int i;
     char * tx_filename;
     char  wadfilename[MAX_WADPATH];
-
-    q=&transfer[to_node].txlist;
-    while(*q) q=&((*q)->next);  // find end of txlist
 
     p = (filetx_t *)malloc(sizeof(filetx_t));
     if(!p)  goto memory_err;
@@ -572,7 +626,6 @@ static void SV_SendFile(byte to_node, char *filename, char fileid)
     if(! tx_filename)  goto memory_err;
 
     p->filename = tx_filename;  // filename buffer owner
-    *q = p;  // append filetx to txlist
 
     strncpy(tx_filename, filename, MAX_WADPATH-1);
     tx_filename[MAX_WADPATH-1] = '\0';
@@ -604,7 +657,6 @@ static void SV_SendFile(byte to_node, char *filename, char fileid)
         // not found
         // don't inform client (probably hacker)
         DEBFILE(va("Client %d request %s : not found\n", to_node, filename));
-        *q=NULL;  // remove filetx from txlist
         free(tx_filename);
         free(p);
     }
@@ -614,80 +666,85 @@ static void SV_SendFile(byte to_node, char *filename, char fileid)
 send_found:   
     GenPrintf( EMSG_ver, "Sending file %s to %d.\n", filename, to_node );
     DEBFILE(va("Sending file %s to %d (id=%d)\n", filename, to_node, fileid));
+
     p->release_tah=TAH_FILE;
     // size initialized at file open 
     //p->size=size;
-    p->fileid=fileid;
+    p->fileid=fileid;  // client supplied id for this file
+    p->data = NULL;
     p->next=NULL; // end of list
+    append_to_txlist( to_node, p );
 
-    Filetx_file_cnt++;
     return;
  
 memory_err:
-    I_Error("SV_SendFile: Memory exhausted\n");
+    I_Error("SendFile: cannot allocate file buffer.\n");
 }
 
 // By Server.
-void SV_SendData(byte to_node, byte *data, uint32_t size, TAH_e tah, char fileid)
+//  to_node : dest node
+//  data : data buffer
+//  size : size of data buffer
+//  tah : how data buffer was allocated
+//  fileid : always 0
+void SV_SendData(byte to_node, const char * name, byte *data, uint32_t size, TAH_e tah, char fileid)
 {
-    filetx_t **q,*p;
-
-    q=&transfer[to_node].txlist;
-    while(*q) q=&((*q)->next);  // find end of list
+    filetx_t *p;
 
     p=(filetx_t *)malloc(sizeof(filetx_t));
     if(!p)  goto memory_err;
 
-    *q = p;  // owner of filetx
     p->release_tah=tah;
-    p->filename = (char *)data;
+    p->filename= (char*) name; // lose const, but tah makes it not freed.
+    p->data = data;
     p->data_size=size;
     p->fileid=fileid;
     p->next=NULL; // end of list
+    append_to_txlist( to_node, p );
 
-    DEBFILE(va("Sending ram %x( size:%d) to %d (id=%d)\n",
+    DEBFILE(va("SendData %s (size:%d) to %d (id=%d)\n",
                p->filename, size, to_node, fileid));
 
-    Filetx_file_cnt++;
     return;
 
 memory_err:
-    I_Error("SendData: Memory exhausted\n");
+    I_Error("SendData: cannot allocate data buffer.\n");
 }
 
 // By Server.
 // Close and release the current transfer of the net node.
 //  nnode : net node,  0..(MAXNETNODES-1)
-static void SV_EndSend(byte nnode)
+static void SV_End_SendFile(byte nnode)
 {
     transfer_t * tnnp = & transfer[nnode];
-    filetx_t *p = tnnp->txlist;  // the transfer list
+    filetx_t   * ftxp = tnnp->txlist;  // the transfer list
    
-    if( ! p )  // cannot ensure who can call and what state they are in
+    if( ! ftxp )  // cannot ensure who can call and what state they are in
         return;
 
     // By Server.
     // Deallocation
-    switch (p->release_tah) {
+    switch (ftxp->release_tah)
+    {
     case TAH_FILE:
         if( tnnp->currentfile )
         {
             fclose( tnnp->currentfile );
         }
-        free(p->filename);
+        free(ftxp->filename);
         break;
     case TAH_Z_FREE:
-        Z_Free(p->filename);
+        Z_Free(ftxp->data);
         break;
     case TAH_MALLOC_FREE:
-        free(p->filename);
+        free(ftxp->data);
         break;
     case TAH_NOTHING:
         break;
     }
     tnnp->currentfile = NULL;  // transfer file, and fake file
-    tnnp->txlist = p->next;  // remove filetx from the list
-    free(p);
+    tnnp->txlist = ftxp->next;  // remove filetx from the list
+    free(ftxp);
     // Master transfer status
     Filetx_file_cnt--;
 }
@@ -700,7 +757,7 @@ void Filetx_Ticker(void)
     byte       nn;  // net node num
 
     TAH_e      access_tah;
-    uint32_t   size;
+    uint32_t   send_size;
     int        tcnt;
     int        packet_cnt;
     FILE * fp;  // (ref) tnnp current file
@@ -753,7 +810,7 @@ found:
                     perror("FileTx");
                     I_SoftError("FileTx: Cannot open file %s\n",
                                  ftxp->filename);
-                    SV_EndSend(nn);
+                    SV_End_SendFile(nn);
                     continue;
                 }
 
@@ -775,31 +832,33 @@ found:
         }
 
         pak=&netbuffer->u.filetxpak;
-        size = software_MAXPACKETLENGTH - (FILETX_HEADER_SIZE+PACKET_BASE_SIZE);
-        if( ftxp->data_size - tnnp->position < size )
-            size = ftxp->data_size - tnnp->position;
+        send_size = software_MAXPACKETLENGTH - (FILETX_HEADER_SIZE+PACKET_BASE_SIZE);
+        if( send_size > ftxp->data_size - tnnp->position )
+            send_size = ftxp->data_size - tnnp->position;
+
         if(access_tah == TAH_FILE)
         {
-            if( fread(pak->data,size,1, tnnp->currentfile) != 1 )
+            if( fread(pak->data, send_size, 1, tnnp->currentfile) != 1 )
                 goto file_read_err;
         }
         else
         {
-            memcpy(pak->data, &ftxp->filename[ tnnp->position ], size);
+            memcpy(pak->data, &ftxp->data[ tnnp->position ], send_size);
         }
         pak->position = tnnp->position;
         // put flag so receiver know the totalsize
-        if( tnnp->position + size == ftxp->data_size )
+        if( tnnp->position + send_size >= ftxp->data_size )
         {
             // End of send file flag.
             pak->position |= 0x80000000;
         }
         pak->position = LE_SWAP32_FAST(pak->position);
-        pak->size     = LE_SWAP16_FAST(size);
+        pak->size     = LE_SWAP16_FAST(send_size);
         pak->fileid   = ftxp->fileid;
         netbuffer->packettype=PT_FILEFRAGMENT;
+
         // Reliable SEND
-        if (!HSendPacket(nn,true,0,FILETX_HEADER_SIZE+size ) )
+        if( !HSendPacket(nn, true, 0, FILETX_HEADER_SIZE + send_size ) )
         { // not sent for some odd reason
             // retry at next call
             if(access_tah == TAH_FILE)
@@ -810,12 +869,13 @@ found:
             // exit the while (can't send this one why should i send the next ?
             break;
         }
+
         // Record each fragment of file transfer.
-        tnnp->position += size;
-        if(tnnp->position == ftxp->data_size)
+        tnnp->position += send_size;
+        if(tnnp->position >= ftxp->data_size)
         {
             // All sent
-            SV_EndSend(nn);
+            SV_End_SendFile(nn);
         }
     } // while
     return;
@@ -824,13 +884,13 @@ found:
 file_size_err:
     perror("FileTx");
     I_SoftError("FileTx: Error getting filesize of %s\n", ftxp->filename);
-    SV_EndSend(nn);
+    SV_End_SendFile(nn);
     goto reject;
 
 file_read_err:
     perror("FileTx");
     I_SoftError("Filetx: Read err on %s at %d of %d bytes\n",
-                 ftxp->filename, tnnp->position, size);
+                 ftxp->filename, tnnp->position, send_size);
     goto reject;
 
 transfer_not_found:
@@ -843,6 +903,8 @@ reject:
 }
 
 
+// By Client.
+// Incoming file fragments from server.
 // Called by Net_Packet_Handler, unknown_host_handler.
 void Got_Filetxpak(void)
 {
@@ -855,7 +917,7 @@ void Got_Filetxpak(void)
 
     if(filenum>=cl_num_fileneed)
     {
-        DEBFILE(va("filefragment not needed %d>%d\n",filenum,cl_num_fileneed));
+        DEBFILE(va("filefragment fileid %d >= requested %d\n",filenum,cl_num_fileneed));
         goto reject;
     }
 
@@ -863,6 +925,8 @@ void Got_Filetxpak(void)
     if( fnp->status == FS_REQUESTED )
     {
         if(fnp->phandle)  goto file_already_open;
+
+        // Open the file.
         fname = fnp->filename;
         fp = fopen( fname,"wb" );
         fnp->phandle = fp;  // owner of open file
@@ -876,10 +940,10 @@ void Got_Filetxpak(void)
     if( fnp->status == FS_DOWNLOADING )
     {
         // Swap file position and size on big_endian machines.
-        netbuffer->u.filetxpak.position	= LE_SWAP32_FAST(netbuffer->u.filetxpak.position);
-        netbuffer->u.filetxpak.size	= LE_SWAP16_FAST(netbuffer->u.filetxpak.size);
+        netbuffer->u.filetxpak.position = LE_SWAP32(netbuffer->u.filetxpak.position);
+        netbuffer->u.filetxpak.size     = LE_SWAP16(netbuffer->u.filetxpak.size);
 
-        // use a special trick to know when file is finished (not always used)
+        // File is finished only when have received all parts of it, in any order.
         // WARNING: filepak can arrive out of order so don't stop now !
         if( netbuffer->u.filetxpak.position & 0x80000000 ) 
         {
@@ -915,6 +979,7 @@ void Got_Filetxpak(void)
             fnp->phandle = NULL;
             fnp->status = FS_FOUND;
             GenPrintf(EMSG_hud, "\rDownloading %s ... (done)\n", fname);
+            update_download_done();
         }
     }
     else
@@ -948,25 +1013,28 @@ reject:
     return;
 }
 
-// By Server, Client, to cleanup sending files.
-// nnode:  0..(MAXNETNODES-1)
+// By Server, to cleanup sending files.
+// By Client, does nothing useful.
+//   nnode:  0..(MAXNETNODES-1)
 // Called by Net_CloseConnection, CloseNetFile
-void AbortSendFiles(byte nnode)
+void Abort_SendFiles(byte nnode)
 {
     while(transfer[nnode].txlist)
     {
         // By Server, only server have txlist set.
-        SV_EndSend(nnode);
+        SV_End_SendFile(nnode);
     }
 }
 
-void CloseNetFile(void)
+// By Server, Client
+// Called by D_Quit_NetGame
+void Close_NetFile(void)
 {
     int i;
 
     // Abort sending.
     for( i=0;i<MAXNETNODES;i++)
-        AbortSendFiles(i);
+        Abort_SendFiles(i);
 
     // Abort receiving a file.
     for( i=0; i<MAX_WADFILES; i++ )
@@ -982,6 +1050,8 @@ void CloseNetFile(void)
 
     // Remove FILEFRAGMENT from ackpaks.
     Net_AbortPacketType(PT_FILEFRAGMENT);
+   
+    netfile_download = 0;
 }
 
 // functions cut and pasted from doomatic :)

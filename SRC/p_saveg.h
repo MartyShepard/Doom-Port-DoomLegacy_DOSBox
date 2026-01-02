@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.h 1376 2017-12-18 17:28:23Z wesleyjohnson $
+// $Id: p_saveg.h 1484 2019-12-13 05:19:05Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -64,7 +64,7 @@ void  P_Savegame_Error_Closefile( void );
 size_t  P_Savegame_length( void );
 
 // Write savegame header to savegame buffer.
-void   P_Write_Savegame_Header( const char * description, byte write_netgame );
+void   P_Savegame_Write_header( const char * description, byte write_netgame );
 
 typedef struct {
    char * name;	// description
@@ -79,10 +79,10 @@ typedef struct {
 // Read savegame header from savegame buffer.
 // Returns header info in infop, as pointers into savebuffer.
 // Returns 1 when header is correct.
-boolean P_Read_Savegame_Header( savegame_info_t * infop, byte read_netgame );
+boolean P_Savegame_Read_header( savegame_info_t * infop, byte read_netgame );
 
-void    P_SaveGame (void);
-boolean P_LoadGame (void);
+void    P_Savegame_Save_game (void);
+boolean P_Savegame_Load_game (void);
 
 extern byte*		savebuffer;
 extern byte*            save_p; 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.h 1280 2016-11-29 18:55:27Z wesleyjohnson $
+// $Id: d_netfil.h 1484 2019-12-13 05:19:05Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -69,24 +69,14 @@ typedef enum {
     FS_SECURITY  // rejected for security reasons
 } filestatus_e;
 
-typedef struct {
-    char    filename[MAX_WADPATH];
-    unsigned char    md5sum[16];
-    // used only for download
-    FILE    *phandle;     // open file (owned)
-    uint32_t bytes_recv;  // to determine when done and for status
-    uint32_t totalsize;
-    filestatus_e status;        // the value returned by recsearch
-} fileneed_t;
-
-extern int cl_num_fileneed;
-extern fileneed_t cl_fileneed[MAX_WADFILES];
+extern byte netfile_download;  // user test
+extern byte cl_num_fileneed;
 
 void D_NetFileInit(void);
 
 byte * Put_Server_FileNeed(void);
 void CL_Got_Fileneed(int num_fileneed_parm, byte *fileneed_str);
-void CL_Prepare_Download_SaveGame(const char *tmpsave);
+void CL_Prepare_download_savegame(const char *tmpsave);
 boolean  CL_waiting_on_fileneed( void );
 
 // Check file list in wadfiles return.
@@ -101,8 +91,11 @@ typedef enum {
 checkfiles_e  CL_CheckFiles(void);
 boolean  CL_Load_ServerFiles(void);
 
+// For SendData
+#define SAVEGAME_FILEID   0
+
 //void SV_SendFile(byte to_node, char *filename, char fileid);
-void SV_SendData(byte to_node, byte *data, uint32_t size, TAH_e tah, char fileid);
+void SV_SendData(byte to_node, const char * name, byte *data, uint32_t size, TAH_e tah, char fileid);
 
 extern int Filetx_file_cnt;  // to enable call of Filetx_Ticker
 void Filetx_Ticker(void);
@@ -119,8 +112,8 @@ reqfile_e  Send_RequestFile(void);
 void Got_RequestFilePak(byte nnode);
 
 
-void AbortSendFiles(byte nnode);
-void CloseNetFile(void);
+void Abort_SendFiles(byte nnode);
+void Close_NetFile(void);
 
 #if 0
 // Unused

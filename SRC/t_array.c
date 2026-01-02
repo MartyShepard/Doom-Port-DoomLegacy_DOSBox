@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: t_array.c 1238 2016-06-14 17:09:21Z wesleyjohnson $
+// $Id: t_array.c 1484 2019-12-13 05:19:05Z wesleyjohnson $
 //
 // Copyright(C) 2000 James Haley
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -78,7 +78,7 @@ void T_Add_FSArray(fs_array_t *array)
 
 static void * initsave_levelclear = NULL;  // indicates when PU_LEVEL cleared
   
-// call from P_SetupLevel and P_SaveGame
+// call from P_SetupLevel and P_Savegame_Save_game
 // Clears added array values but not base of fs_arraylist
 void T_Init_FSArrayList(void)
 {

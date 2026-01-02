@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1476 2019-10-16 09:58:06Z wesleyjohnson $
+// $Id: command.c 1484 2019-12-13 05:19:05Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1374,6 +1374,7 @@ finish:
         cvar->flags &= ~CV_SHOWMODIF_ONCE;
     }
     DEBFILE(va("%s set to %s\n", cvar->name, cvar->string));
+
     cvar->state |= CS_MODIFIED;
     cvar->EV = ival;  // user setting of active value
 
@@ -1472,7 +1473,7 @@ buff_overrun:
 }
 
 
-// Called by SV_Send_ServerConfig, P_SaveGame.
+// Called by SV_Send_ServerConfig, P_Savegame_Save_game.
 void CV_SaveNetVars(xcmd_t * xc)
 {
     char buf[32];
