@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1484 2019-12-13 05:19:05Z wesleyjohnson $
+// $Id: d_clisrv.c 1486 2019-12-13 05:21:09Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -191,15 +191,23 @@ const int  NETWORK_VERSION = 25; // separate version number for network protocol
 # error Not enough NUM_SERVERTIC_CMD
 #endif
 
+// Used to signal network errors to higher level functions.
+// Beware that server may also have a client.
 typedef enum {
-   NS_idle,
-   NS_searching_server,
-   NS_waiting,
-   NS_active,
-   NS_shutdown
+   NETS_idle,
+   NETS_fatal,
+   NETS_shutdown,
+// Have network.
+   NETS_open,      // Normal network.
+   NETS_internal,  // Self server network.
+// Client
+   NETS_no_server, // Client lost the server.
+   NETS_connecting,// Client connecting to the server
+   NETS_active     // Client has server connection.
 } network_state_e;
 
-static network_state_e  network_state = NS_idle;
+static network_state_e  network_state = NETS_idle;
+static byte  quit_netgame_status = 0;  // to avoid repeating shutdown
 
 #define PREDICTIONQUEUE         BACKUPTICS
 #define PREDICTIONMASK          (PREDICTIONQUEUE-1)
@@ -213,23 +221,56 @@ byte     num_player_slots = 0;  // for messages with slots
 // Server specific vars.
 // player=255 when unused
 // nnode =255 when unused
-// node_in_game[]=false when net node is unused
+// nnode_state[] = NOS_idle, when net node is unused
 // The netnodes are counted, 0..32
 static byte     player_to_nnode[MAXPLAYERS];
 
-#if 0
-static tic_t    cl_maketic[MAXNETNODES];  // unused
-#endif
+// Server net node state for
+// tracking client nodes.
+typedef enum {
+  NOS_idle,  // node is unused
+  NOS_fatal, // something bad
+  NOS_shutdown,  // node is shutting down
+  NOS_invalid,   // invalid node
+// Recognized nodes.
+  NOS_recognized,
+// node during join procedure
+  NOS_join,         // node join procedure
+  NOS_join_file,    // downloading file
+  NOS_join_savegame,// downloading savegame
+  NOS_join_sg_loaded,  // downloading done
+  NOS_join_timeout,
+// node with a player
+  NOS_client,
+// repair a client
+  NOS_repair,          // node is being repaired
+  NOS_repair_player,   // update player
+  NOS_repair_pl_done,  // player update done
+  NOS_repair_savegame, // downloading savegame
+  NOS_repair_sg_loaded,   // downloading done
+  NOS_repair_timeout,
+// waiting players
+  NOS_wait_game_start, // waiting for next game start
+// node normal play
+  NOS_active,
+// FOR CLIENT USE ONLY.  Server must not use on itself.
+  NOS_server
+} nnode_state_e;
 
+// [WDJ] Used to be OR with nnode_to_player to indicate DRONE node.
+// No longer done that way to keep player number clean, as it is used for indexing
+// and the DRONE bit conflicted with 255=idle player.
+// #define DRONE               0x80    // bit set in consoleplayer
+// DRONE has playerpernode=0
 
 // Server net node state
+static byte     nnode_state[MAXNETNODES];  // nnode_state_e
 // [0]=main player [1]=splitscreen player
 static byte     nnode_to_player[2][MAXNETNODES];  // 255= unused
 static byte     playerpernode[MAXNETNODES]; // used specialy for splitscreen
 static byte     nodewaiting[MAXNETNODES];  // num of players waiting to join
 static byte     num_waiting_players;
 static byte     consistency_faults[MAXNETNODES];
-static byte     node_in_game[MAXNETNODES];  // set false as nodes leave game
 static tic_t    nettics[MAXNETNODES];     // what tic the client have received
 static tic_t    nextsend_tic[MAXNETNODES]; // what server sent to client
 
@@ -243,12 +284,13 @@ tic_t localgametic;
 
 // Client specific.
 boolean         cl_drone; // client displays, no commands
-static byte     cl_nnode; // net node for this client, pointofview server
+static byte     cl_nnode; // net node for this client, assigned by server
 static boolean  cl_packetmissed;
 static tic_t    cl_need_tic;
 static tic_t    cl_prev_tic = 0;  // client tests once per tic
 
-byte            servernode = 255; // server net node, 255=none
+// server net node, 251=none (to not match invalid node)
+byte            servernode = 251;
 
 // Index for netcmds and textcmds
 #define BTIC_INDEX( tic )  ((tic)%BACKUPTICS)
@@ -388,6 +430,7 @@ static void D_Clear_ticcmd(int tic)
 }
 
 
+// Execute NetXCmd
 void ExtraDataTicker(void)
 {
     int btic = BTIC_INDEX( gametic );
@@ -414,6 +457,7 @@ void ExtraDataTicker(void)
         // set extra termination byte at end of buffer (text[MAXTEXTCMD+1])
         endbuf = & textbuf->text[MAXTEXTCMD]; // last char
         endbuf[0] = 0;  // Protect against malicious strings.
+
         // Commands can have 0 strings, 1 string, or 2 strings.
         // Inventory has just a byte number.
         xcmd.curpos = (byte*)&(textbuf->text[0]);  // start of command
@@ -683,9 +727,9 @@ static void SV_SendPacket_All( boolean reliable, size_t size_packet, const char 
     int nn;
     for(nn=1; nn<MAXNETNODES; nn++)
     {
-        if(node_in_game[nn])
+        if( nnode_state[nn] >= NOS_recognized )
         {
-            HSendPacket(nn, reliable, 0, size_packet);
+            HSendPacket(nn, reliable, 0, size_packet);  // ignore failures
             if( msg )	   
                 debug_Printf( "%s[ %d ]\n", msg, nn );
         }
@@ -981,6 +1025,8 @@ static void repair_handler( byte nnode )
         while( netfile_download )
         {
             Net_Packet_Handler();
+            if( network_state < NETS_open )
+                goto reset_to_title_exit;  // connection closed by cancel or timeout
             if( !server && !netgame )
                 goto reset_to_title_exit;  // connection closed by cancel or timeout
 
@@ -1111,7 +1157,7 @@ static boolean  D_WaitPlayer_Ticker()
         for(nn=0; nn<MAXNETNODES; nn++)
         {
             // Only counting nodes with players.
-            if(node_in_game[nn])
+            if( nnode_state[nn] >= NOS_client )
             {
                 if( playerpernode[nn] > 0 )
                 {
@@ -1338,7 +1384,8 @@ void CL_Update_ServerList( boolean internetsearch )
         if( ! I_NetOpenSocket() )  return;  // failed to get socket
         netgame = true;
         multiplayer = true;
-        network_state = NS_searching_server;
+        network_state = NETS_open;
+        quit_netgame_status = 0;
     }
 
     // Search for local servers.
@@ -1383,6 +1430,11 @@ static void CL_ConnectToServer( void )
     int  i;
     tic_t   askinfo_tic = 0;  // to repeat askinfo
 
+    if( network_state < NETS_open )
+         goto reset_to_title_exit;  // connection closed by cancel or timeout
+
+    network_state = NETS_connecting;
+   
     cl_mode = CLM_searching;
     D_WaitPlayer_Setup();
 
@@ -1539,6 +1591,8 @@ static void CL_ConnectToServer( void )
         }
 
         Net_Packet_Handler();
+        if( network_state < NETS_connecting )  // Need client to server.
+            goto reset_to_searching;  // connection closed by cancel or timeout
         if( !server && !netgame )
             goto reset_to_searching;  // connection closed by cancel or timeout
 
@@ -1573,9 +1627,11 @@ static void CL_ConnectToServer( void )
         }
     } while ( cl_mode != CLM_connected );
 
+    network_state = NETS_active;
+
     DEBFILE(va("Synchronization Finished\n"));
 
-    consoleplayer&= ~DRONE;
+    // [WDJ] consoleplayer no longer has DRONE bit
     displayplayer = consoleplayer;
     consoleplayer_ptr = displayplayer_ptr = &players[consoleplayer];
     return;
@@ -1606,6 +1662,7 @@ void Command_connect(void)
         return;
     }
     server = false;
+    quit_netgame_status = 0;
 
     if( strcasecmp(COM_Argv(1),"self")==0 )
     {
@@ -1634,7 +1691,8 @@ void Command_connect(void)
             I_NetOpenSocket();
             netgame = true;
             multiplayer = true;
-        
+            network_state = NETS_open;
+
             if( strcasecmp(COM_Argv(1),"any")==0 )
             {
                 // Connect to first lan server found.
@@ -1650,6 +1708,7 @@ void Command_connect(void)
             {
                 CONS_Printf("There is no server identification with this network driver\n");
                 D_CloseConnection();
+                network_state = NETS_idle;
                 return;
             }
         }
@@ -1672,9 +1731,8 @@ static void CL_RemovePlayer(int playernum)
         if( playerpernode[nnode] == 0 )
         {
             // No more players at this node.	   
-            node_in_game[player_to_nnode[playernum]] = false;
             Net_CloseConnection(player_to_nnode[playernum]);
-            Reset_NetNode(nnode);
+            Reset_NetNode(nnode);  // node_state
         }
     }
 
@@ -1724,7 +1782,8 @@ void CL_Reset (void)
     if( servernode < MAXNETNODES )
     {
         // Close connection to server
-        node_in_game[servernode]=false;
+        // Client keeps nnode_state for server.	
+        nnode_state[servernode] = NOS_idle;
         Net_CloseConnection(servernode);
     }
     D_CloseConnection();         // netgame=false
@@ -1875,6 +1934,7 @@ void D_Init_ClientServer (void)
 {
   DEBFILE(va("==== %s debugfile ====\n", VERSION_BANNER));
 
+    network_state = NETS_idle;
     cl_drone = false;
 
     // drone server generating the left view of three screen view
@@ -1911,6 +1971,7 @@ void D_Init_ClientServer (void)
     Register_NetXCmd(XD_KICK, Got_NetXCmd_KickCmd);
     Register_NetXCmd(XD_ADDPLAYER, Got_NetXCmd_AddPlayer);
     Register_NetXCmd(XD_ADDBOT, Got_NetXCmd_AddBot);	//added by AC for acbot
+
     CV_RegisterVar (&cv_allownewplayer);
     CV_RegisterVar (&cv_maxplayers);
 
@@ -1924,14 +1985,11 @@ void D_Init_ClientServer (void)
 // nnode: 0..(MAXNETNODES-1)
 static void Reset_NetNode(byte nnode)
 {
-    node_in_game[nnode] = false;
+    nnode_state[nnode] = NOS_idle;
     nnode_to_player[0][nnode] = 255;
     nnode_to_player[1][nnode] = 255;
     nettics[nnode]=gametic;
     nextsend_tic[nnode]=gametic;
-#if 0
-    cl_maketic[nnode]=maketic;
-#endif
     nodewaiting[nnode]=0;
     playerpernode[nnode]=0;
 }
@@ -1968,7 +2026,8 @@ void SV_ResetServer( void )
 
     if( dedicated )
     {
-        node_in_game[0]=true;
+        // [WDJ] FIXME, why dedicated required node_in_game[0].
+        nnode_state[0] = NETS_internal;
         serverplayer = 255;  // no server player
     }
     else
@@ -1978,26 +2037,27 @@ void SV_ResetServer( void )
         servernode=0;  // server to self
 
     num_player_slots = 0;
+    quit_netgame_status = 0;
 
     DEBFILE(va("==== Server Reset ====\n"));
 }
 
 //
 // D_Quit_NetGame
+// Server or Client
 // Called before quitting to leave a net game
 // without hanging the other players
 //
 void D_Quit_NetGame (void)
 {
-    byte nn; // net node num
-
     if (!netgame)
         return;
 
-    // [WDJ] This can tight loop when the network fails.
-    if( network_state == NS_shutdown )
+    // [WDJ] Avoid the tight loop when the network fails.
+    if( quit_netgame_status > 0 )
         return;
-    network_state = NS_shutdown;
+
+    quit_netgame_status = 1;
      
     DEBFILE("==== Quiting Game, closing connection ====\n" );
 
@@ -2008,25 +2068,27 @@ void D_Quit_NetGame (void)
     {
         // Server sends shutdown to all clients.
         netbuffer->packettype=PT_SERVERSHUTDOWN;
+        byte nn; // net node num
         for(nn=0; nn<MAXNETNODES; nn++)
         {
-            if( node_in_game[nn] )
-                HSendPacket(nn,true,0,0);
+            if( nnode_state[nn] >= NOS_recognized )
+                HSendPacket(nn,true,0,0);  // ignore failures
         }
         // Close registration with the Master Server.
         if ( serverrunning && cv_internetserver.value )
              MS_UnregisterServer(); 
     }
-    else
+    else  // Client not server
     if( (servernode < MAXNETNODES)
-       && node_in_game[servernode] )
+       && (nnode_state[servernode] == NOS_server) )  // client keeps nnode_state for server
     {
         // Client sends quit to server.
         netbuffer->packettype=PT_CLIENTQUIT;
-        HSendPacket(servernode,true,0,0);
+        HSendPacket(servernode,true,0,0);  // ignore failure
     }
 
     D_CloseConnection();
+    network_state = NETS_shutdown;
 
     DEBFILE("==== Log finish ====\n" );
 #ifdef DEBUGFILE
@@ -2039,17 +2101,19 @@ void D_Quit_NetGame (void)
 }
 
 // Add a node to the game (player will follow at map change or at savegame....)
-void SV_AddNode(byte nnode)
+static
+void SV_AddNode(byte nnode, byte set_nnode_state)
 {
     nettics[nnode]       = gametic;
     nextsend_tic[nnode]  = gametic;
-#if 0
-    cl_maketic[nnode]    = maketic;
-#endif
-    // Because the server connects to itself and sets node_in_game[0],
-    // do not interfere with node_in_game[0] here.
-    if(nnode)
-       node_in_game[nnode]=true;
+
+    // [WDJ] nnode_state is client state maintained by server.
+    // This includes the client on the server.  It will not start up correctly
+    // if the nnode_state is not kept correctly.
+    // This used to be blocked for nnode==0 because the server was setting
+    // node_in_game to get packets working.  This bypass is no longer done.
+    if( nnode_state[nnode] < NOS_client )
+        nnode_state[nnode] = set_nnode_state;
 }
 
 // Get a free player node.  Obey the rules.
@@ -2220,6 +2284,8 @@ boolean SV_AddWaitingPlayers(void)
 
             // Message from server to everyone, to add the player.
             Send_NetXCmd_p2(XD_ADDPLAYER, nnode, addplayer_param);
+            // XD_ADDPLAYER commands will stay in the cmd buffers.
+            // When cl_mode==CLM_connected is achieved, they will be transmitted and acted upon.
 
             DEBFILE(va("Server added player %d net node %d\n",
                        newplayernum, nnode));
@@ -2259,14 +2325,18 @@ boolean SV_SpawnServer( void )
 {
     D_DisableDemo();
 
+    quit_netgame_status = 0;
+
     if( serverrunning == false )
     {
         GenPrintf(EMSG_hud, "Starting Server ...\n");
         serverrunning = true;
         SV_ResetServer();
+        network_state = NETS_internal;  // Self server network.
         if( netgame )
         {
             I_NetOpenSocket();
+            network_state = NETS_open;
             // Register with the Master Server.
             if( cv_internetserver.value )
             {
@@ -2397,9 +2467,11 @@ static void client_join_handler( byte nnode )
     nodewaiting[nnode] = num_to_join;
     num_waiting_players += num_to_join;
 
-    if(!node_in_game[nnode])
+    if( nnode_state[nnode] < NOS_join )
     {
-        SV_AddNode(nnode);
+        // The nnode is new to this server.
+        SV_AddNode(nnode, NOS_join);
+
         if(!SV_Send_ServerConfig(nnode))
         {
             // TODO : fix this !!!
@@ -2431,7 +2503,7 @@ static void client_join_handler( byte nnode )
 //   client_pn : the client player num that sent the quit
 static void client_quit_handler( byte nnode, byte client_pn )
 {
-    // node_in_game will made false during the execution of kick command.
+    // Set nnode_state to NOS_shutdown at the end of the kick command.
     // This allows the sending of some packets to the quiting client
     // and to have them ack back.
     nodewaiting[nnode]= 0;
@@ -2455,7 +2527,7 @@ static void client_quit_handler( byte nnode, byte client_pn )
         }
     }
     Net_CloseConnection(nnode);
-    node_in_game[nnode]=false;
+    nnode_state[nnode] = NOS_shutdown;
 }
 
 
@@ -2504,12 +2576,14 @@ static void server_cfg_handler( byte nnode )
     {
         // Clients not on the server, update to server time.
         maketic = gametic = cl_need_tic = LE_SWAP32(netbuffer->u.servercfg.gametic);
+        // Client keeps nnode_state for server, but not other clients.
+        if( servernode < MAXNETNODES )
+            nnode_state[servernode] = NOS_server;  // recognized
     }
 
 #ifdef CLIENTPREDICTION2
     localgametic = gametic;
 #endif
-    node_in_game[servernode]=true;
 
     // Handle a player on the server.
     serverplayer = netbuffer->u.servercfg.serverplayer;
@@ -2517,7 +2591,7 @@ static void server_cfg_handler( byte nnode )
         player_to_nnode[serverplayer] = servernode;
 
     num_player_slots = netbuffer->u.servercfg.num_player_slots;
-    cl_nnode = netbuffer->u.servercfg.clientnode;
+    cl_nnode = netbuffer->u.servercfg.clientnode;  // assigned by server
 
     GenPrintf(EMSG_hud, "Join accepted, wait next map change ...\n");
     DEBFILE(va("Server accept join gametic=%d, client net node=%d\n",
@@ -2552,6 +2626,7 @@ static void server_cfg_handler( byte nnode )
 // PT_SERVERSHUTDOWN from Server.
 static void server_shutdown_handler()
 {
+    network_state = NETS_no_server;
     if( cl_mode != CLM_searching )
     {
         M_SimpleMessage("Server has Shutdown\n\nPress Esc");
@@ -2564,69 +2639,13 @@ static void server_shutdown_handler()
 // PT_NODE_TIMEOUT
 static void server_timeout_handler()
 {
+    network_state = NETS_no_server;
     if( cl_mode != CLM_searching )
     {
         M_SimpleMessage("Server Timeout\n\nPress Esc");
         CL_Reset();
         D_StartTitle();
     }
-}
-
-
-// By Client, Server.
-// Invoked by anyone trying to join !
-static void unknown_host_handler( byte nnode )
-{
-    // Packet can be from client trying to join server,
-    // or from a server responding to a join request.
-    if( nnode != servernode )
-    {
-        // Client trying to Join.
-        DEBFILE(va("Received packet from unknown host %d\n",nnode));
-    }
-
-    // The commands that are allowd by an unknown host.
-    switch(netbuffer->packettype)
-    {
-     case PT_ASKINFO:  // client has asked server for info
-        if( server )
-            server_askinfo_handler( nnode );
-        break;
-     case PT_SERVERREFUSE : // negative response of client join request
-        server_refuse_handler( nnode );
-        break;
-     case PT_SERVERCFG :    // positive response of client join request
-        server_cfg_handler( nnode );
-        break;
-     // handled in d_netfil.c
-     case PT_FILEFRAGMENT :
-        if( !server )
-            Got_Filetxpak();
-        break;
-     case PT_REQUESTFILE :
-        if( server )
-            Got_RequestFilePak(nnode);
-        break;
-     case PT_NODE_TIMEOUT:
-     case PT_CLIENTQUIT:
-        if( server )
-            Net_CloseConnection(nnode);
-        break;
-     case PT_SERVERTICS:
-        if( nnode == servernode )
-        {
-            // do not remove my own server
-            // (we have just to get a out of order packet)
-            break;
-        }
-        // Server tic from unknown source.
-        // Fall through to default.
-     default:
-        DEBFILE(va("Unknown packet received (%d) from unknown host !\n",
-                   netbuffer->packettype));
-        Net_CloseConnection(nnode);  // a temp connection
-        break; // ignore it
-    } // switch
 }
 
 
@@ -2672,7 +2691,7 @@ static void TicCmdCopy(ticcmd_t * dst, ticcmd_t * src, int n)
 // By Server
 // PT_TEXTCMD, PT_TEXTCMD2
 //   nnode : the network client
-//   client_pn : playernum of client
+//   client_pn : playernum of client, always valid
 // Called by Net_Packet_Handler
 static void net_textcmd_handler( byte nnode, byte client_pn )
 {
@@ -2682,6 +2701,7 @@ static void net_textcmd_handler( byte nnode, byte client_pn )
     tic_t tic;
     textbuf_t *  textbuf;
 
+    // NetXCmd that come from clients, and some from the server.
     // Move textcmd from netbuffer to a textbuf.
 
     // Check if tic that we are making isn't too large,
@@ -2727,7 +2747,7 @@ drop_packet:
 // By Server
 // PT_CLIENTCMD, PT_CLIENT2CMD, PT_CLIENTMIS, PT_CLIENT2MIS,
 // PT_NODEKEEPALIVE, PT_NODEKEEPALIVEMIS from Client.
-//  client_pn: the player that sent the cmd, set bit 0x80 when DRONE
+//  client_pn: the player that sent the cmd
 static void client_cmd_handler( byte netcmd, byte nnode, byte client_pn )
 {
     tic_t  start_tic, end_tic;
@@ -2758,8 +2778,9 @@ static void client_cmd_handler( byte netcmd, byte nnode, byte client_pn )
     nettics[nnode] = end_tic;
 
     // Don't do any tic cmds for drones, just update their nettics.
-    if( (client_pn >= MAXPLAYERS) // invalid player num, or DRONE
-//       || (client_pn & DRONE)   // DRONE bit set is also > MAXPLAYERS
+    if( playerpernode[nnode] == 0 )  // DRONE
+        return;    
+    if( (client_pn >= MAXPLAYERS) // invalid player num, or old message with DRONE bit
        || netcmd==PT_NODEKEEPALIVE || netcmd==PT_NODEKEEPALIVEMIS)
        return;
 
@@ -2916,116 +2937,186 @@ static void servertic_handler( byte nnode )
 static void Net_Packet_Handler(void)
 {
     byte client_pn;
-    byte nnode;
+    byte nnode, nodestate, packettype;
 
     while ( HGetPacket() )
     {
         nnode = doomcom->remotenode;
-        // ---- Universal Handling ----------
-        switch(netbuffer->packettype) {
-         case PT_CLIENTJOIN:
-            if( server )
-                client_join_handler( nnode );
-            continue;
-         case PT_SERVERSHUTDOWN:
-            if( !server && (nnode == servernode) )
-                server_shutdown_handler();
-            continue;
-         case PT_NODE_TIMEOUT:
-            if( !server && (nnode == servernode) )
+        nodestate = (nnode < MAXNETNODES)?  nnode_state[nnode] : NOS_invalid;
+        packettype = netbuffer->packettype;
+
+        // [WDJ] Run-time messages are given priority in speed of handling.
+
+        // ---- SERVER handling packets of known clients nodes.
+        if( server && (nodestate >= NOS_recognized))
+        {
+            // [WDJ] pn no longer has DRONE bit.
+            client_pn = nnode_to_player[0][nnode];  // the player
+            // Every message type must handle the invalid client_pn individually.
+
+            // Messages handled by server, for known client nodes.
+            switch(packettype)
             {
-                server_timeout_handler();
+             case PT_CLIENTCMD  :
+             case PT_CLIENT2CMD :
+             case PT_CLIENTMIS  :
+             case PT_CLIENT2MIS :
+             case PT_NODEKEEPALIVE :
+             case PT_NODEKEEPALIVEMIS :
+                // updates nettics for invalid client_pn
+                client_cmd_handler( packettype, nnode, client_pn );
                 continue;
-            }
-            break; // There are other PT_NODE_TIMEOUT handler.
-         case PT_SERVERINFO:
-            server_info_handler( nnode );
-            continue;
-        }
-
-        if(!node_in_game[nnode])
-        {
-            unknown_host_handler( nnode );
-            continue; //while
-        }
-
-        // Known nodes only.
-        client_pn = nnode_to_player[0][nnode];  // the player
-#ifdef PARANOIA
-        if(!(client_pn & DRONE) && (client_pn>=MAXPLAYERS))
-        {
-            I_SoftError("Net_Packet_Handler: recognized node %d,  with bad player_num %d",
-                nnode, client_pn);
-            return;
-        }
-#endif
-
-
-        switch(netbuffer->packettype)
-        {
-            // ---- Server Handling Client packets ----------
-            case PT_CLIENTCMD  :
-            case PT_CLIENT2CMD :
-            case PT_CLIENTMIS  :
-            case PT_CLIENT2MIS :
-            case PT_NODEKEEPALIVE :
-            case PT_NODEKEEPALIVEMIS :
-                if(server)
-                     client_cmd_handler(netbuffer->packettype, nnode, client_pn );
-                break;
-            case PT_TEXTCMD2 : // splitscreen special
+             case PT_TEXTCMD2 : // splitscreen special
                 client_pn = nnode_to_player[1][nnode];
                 // fall through
-            case PT_TEXTCMD :
-                if(server)
+             case PT_TEXTCMD :
+                if( client_pn >= MAXPLAYERS )  // unused = 255
                 {
-                    if( client_pn >= MAXPLAYERS )  // unused = 255
-                    {
-                        // Do not ACK the packet from a strange client_pn.
-                        Net_Cancel_Packet_Ack(nnode);
-                        break;
-                    }
-                    net_textcmd_handler( nnode, client_pn );
+                    // Do not ACK the packet from a strange client_pn.
+                    Net_Cancel_Packet_Ack(nnode);
+                    continue;
                 }
+                net_textcmd_handler( nnode, client_pn );  // always valid client_pn
+                continue;
+             case PT_NODE_TIMEOUT:
+             case PT_CLIENTQUIT:
+                // still closes the connection when invalid client_pn
+                client_quit_handler( nnode, client_pn );
+                continue;
+             default:
                 break;
-            case PT_REPAIR:
-                repair_handler( nnode );  // server and client
-                break;
-            case PT_STATE:
-                if( !server )
-                    state_handler();  // to client
-                break;
-            case PT_NODE_TIMEOUT:
-            case PT_CLIENTQUIT:
-                if(server)
-                    client_quit_handler( nnode, client_pn );
-                break;
-
-            // ---- CLIENT Handling Server packets ----------
-            case PT_SERVERTICS :
+            }
+        }
+           
+        // ---- CLIENT Handling Server packets.
+        if( (nnode == servernode) && (cl_mode >= CLM_server_files) )  // from the known server
+        {
+            // Messages from the server, for known server.
+            switch(packettype)
+            {
+             case PT_SERVERTICS :
                 servertic_handler( nnode );
-                break;
-            case PT_SERVERCFG :
-                break;
-            case PT_FILEFRAGMENT :
+                continue;
+             case PT_FILEFRAGMENT :
                 if( !server )
                     Got_Filetxpak();
-                break;
-            case PT_NETWAIT:
+                continue;
+             case PT_NETWAIT:
                 if( !server )
                 {
                     // Updates of wait for players, from the server.
-                    num_netplayer = netbuffer->u.netwait.num_netplayer;
                     wait_netplayer = netbuffer->u.netwait.wait_netplayer;
                     wait_tics = LE_SWAP16( netbuffer->u.netwait.wait_tics );
                     set_random_state( & netbuffer->u.netwait.rs, NULL ); // to sync P_Random
                 }
+                continue;
+             case PT_STATE:
+                if( !server )
+                    state_handler();  // to client
+                continue;
+             case PT_REPAIR:
+                repair_handler( nnode );  // from server
+                continue;
+             default:
                 break;
-            default:
-                DEBFILE(va("Unknown packet type: type %d node %d\n",
-                           netbuffer->packettype, nnode));
-                break;
-        } // end switch
+            } // end switch
+        }
+
+        // Infrequent messages from server.
+        if( nnode == servernode )
+        {
+            // Any Client that knows the server.
+            // These messages are recognized, but application is limited.
+            switch(packettype)
+            {
+             case PT_SERVERSHUTDOWN:
+                if( ! server )
+                    server_shutdown_handler();  // only client not on server
+                continue;
+             case PT_NODE_TIMEOUT:  // from server
+                // must be before PT_NODE_TIMEOUT from client.
+                if( ! server )
+                    server_timeout_handler();  // only client not on server
+                continue;
+            }
+        }
+       
+        // Infrequent messages, from anybody.
+        if( server )
+        {
+            if( (nnode != servernode) && (nodestate < NOS_recognized) )
+            {
+                // Client trying to Join.
+                DEBFILE(va("Received packet from unknown host %d\n",nnode));
+            }
+
+            // Can only be handled by a server.
+            switch(packettype)
+            {
+             case PT_ASKINFO:  // client has asked server for info
+                server_askinfo_handler( nnode );
+                continue;
+             case PT_REQUESTFILE :
+                Got_RequestFilePak(nnode);
+                continue;
+             case PT_CLIENTJOIN:
+                client_join_handler( nnode );
+                continue;
+             case PT_NODE_TIMEOUT:  // from client
+             case PT_CLIENTQUIT:
+                Net_CloseConnection(nnode);
+                continue;
+             case PT_REPAIR:
+                if( nodestate >= NOS_recognized )
+                    repair_handler( nnode );  // from client
+                continue;
+            }
+        }
+
+        // Prospective Client, Client handling of server messages.
+        if( cl_mode != CLM_connected )  // Protect against rogue interference.
+        {
+            // Messages to client before connected. They change client state.
+            switch(packettype)
+            {
+             case PT_SERVERINFO:
+                server_info_handler( nnode );
+                continue;
+             case PT_SERVERREFUSE : // negative response of client join request
+                server_refuse_handler( nnode );
+                continue;
+             case PT_SERVERCFG :    // positive response of client join request
+                server_cfg_handler( nnode );
+                continue;
+             case PT_FILEFRAGMENT :
+                // handled in d_netfil.c
+                if( !server )
+                    Got_Filetxpak();
+                continue;
+             case PT_SERVERTICS:
+                // do not remove my own server
+                // (we have just to get a out of order packet)
+                if( nnode == servernode )  continue;
+                break;  // kill it
+            }
+        }
+
+        switch(packettype)
+        {
+         case PT_SERVERCFG :  // server cfg at wrong time
+            continue;  // ignore
+        }
+
+        // Packet not accepted.
+        if((nnode >= MAXNETNODES) || (nnode_state[nnode] < NOS_recognized))
+        {
+            DEBFILE(va("Unknown packet received (%d) from unknown host !\n", packettype));
+            Net_CloseConnection(nnode);  // a temp connection
+            continue;
+        }
+
+        DEBFILE(va("Unknown packet type: type %d node %d\n", packettype, nnode));
+       
     } // end while
 }
 
@@ -3130,7 +3221,10 @@ static void CL_Send_ClientCmd (void)
         HSendPacket (servernode,false,0,packetsize);
     }
 
-    if( cl_mode == CLM_connected )
+//    if( cl_mode == CLM_connected )
+    // [WDJ] Server also needs to send NetXCmd, even without serverplayer.
+    // How this used to work is a mystery.
+    if( (server || (cl_mode = CLM_connected)) && (network_state > NETS_open) )
     {
         // send extra data if needed
         if( localtextcmd[0].len ) // text len
@@ -3172,7 +3266,7 @@ static void SV_Send_Tics (void)
     // x is computed using nextsend_tic[n], max packet size and maketic.
     for(nnode=1; nnode<MAXNETNODES; nnode++)
     {
-        if( ! node_in_game[nnode] )  continue;
+        if( nnode_state[nnode] < NOS_recognized )  continue;
 
         // Send a packet to each client node in this game.
         // They may be different, with individual status.
@@ -3352,7 +3446,7 @@ void SV_Maketic(void)
 
     for(nnode=0; nnode<MAXNETNODES; nnode++)
     {
-        if(playerpernode[nnode] == 0)  continue;
+        if(playerpernode[nnode] == 0)  continue;  // not in use or DRONE
        
         player = nnode_to_player[0][nnode];
         if((netcmds[btic][player].angleturn & TICCMD_RECEIVED) == 0)
@@ -3435,7 +3529,7 @@ void TryRunTics (tic_t realtics)
     {
         // Server is waiting for network players.
         // To wait, execution must not reach G_Ticker.
-        if( !server && !netgame )
+        if( network_state < NETS_open )
             goto error_ret;  // connection closed by cancel or timeout
        
         if( realtics <= 0 )
@@ -3498,8 +3592,8 @@ static void SV_Send_Tic_Update( int count )
     for( nn=0; nn<MAXNETNODES; nn++)
     {
         // Max of gametic and nettics[].
-        if(node_in_game[nn]
-           && nettics[nn]<next_tic_send )
+        if( (nnode_state[nn] >= NOS_recognized)
+            && (nettics[nn] < next_tic_send) )
         {
            next_tic_send = nettics[nn];
         }
