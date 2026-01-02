@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1453 2019-08-03 07:04:10Z wesleyjohnson $
+// $Id: b_game.c 1462 2019-09-27 06:58:56Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -59,8 +59,16 @@
 // [WDJ] New Bot code is not compatible with old versions, is not old demo compatible.
 // #define BOT_VERSION_DETECT
 
+consvar_t  cv_bot_random = { "botrandom", "1333", CV_NETVAR | CV_SAVE, CV_Unsigned };
+
 static void CV_botrandom_OnChange( void );
-consvar_t  cv_bot_random = { "botrandom", "0", CV_NETVAR | CV_SAVE | CV_CALL, CV_Unsigned, CV_botrandom_OnChange };
+consvar_t  cv_bot_randseed = { "botrandseed", "0", CV_NETVAR | CV_SAVE | CV_CALL, CV_Unsigned, CV_botrandom_OnChange };
+
+CV_PossibleValue_t botgen_cons_t[]={ {0,"Plain"}, {1,"Seed"}, {2,"Seed Random"}, {3,"Cfg Random"}, {4,"Sys Random"}, {0,NULL}};
+consvar_t  cv_bot_gen = { "botgen", "0", CV_NETVAR | CV_SAVE | CV_CALL, botgen_cons_t, CV_botrandom_OnChange };
+
+CV_PossibleValue_t botskin_cons_t[]={ {0,"Color"}, {1,"Skin"}, {0,NULL}};
+consvar_t  cv_bot_skin = { "botskin", "0", CV_NETVAR | CV_SAVE | CV_CALL, botskin_cons_t };
 
 CV_PossibleValue_t botrespawn_cons_t[]={
   {5,"MIN"},
@@ -96,6 +104,7 @@ CV_PossibleValue_t botspeed_cons_t[]={
   {10,"botskill"},
   {0,NULL}};
 consvar_t  cv_bot_speed = { "botspeed", "botskill", CV_NETVAR | CV_SAVE | CV_CALL, botspeed_cons_t, CV_botspeed_OnChange };
+
 
 // [WDJ] Tables just happened to be this way for now, they may change later.
 static byte bot_botskill_to_speed[ 6 ] = { 0, 1, 2, 3, 4, 5 };
@@ -206,51 +215,67 @@ int botcolors[NUMSKINCOLORS] =
    10 // = Bleached Bone
 };
 
+// Random number source for bot generation.
+uint32_t  B_Gen_Random( void )
+{
+    uint32_t r;
+    switch( cv_bot_gen.EV )
+    {
+     case 0:  // Plain
+        r = B_Random();
+        break;       
+     case 1:  // Seed
+        r = B_Random() + cv_bot_randseed.value;
+        break;       
+     case 2:  // Seed Random
+        r = E_Random() + cv_bot_randseed.value;
+        break;       
+     case 3:  // Cfg Random
+        r = E_Random() + cv_bot_random.value;
+        break;       
+     case 4:  // Sys Random
+        r = rand();
+        break;       
+    }
+    return r;
+}
+
 void B_Init_Names()
 {
-    int botNum, i, j;
+    int br, i, j;
+    uint16_t color_used = 0;
+    char * bname;
+
+    CV_ValueIncDec( &cv_bot_random, 7237 ); // add a prime
 
     for (i=0; i< MAXPLAYERS; i++)
     {
-#if 1
         // Give each prospective bot a unique name.
-        char * bname;
         do
         {
-            botNum = (( cv_bot_random.value )?
-                    (B_Random() + cv_bot_random.value)
-                  : E_Random()
-                )%NUM_BOT_NAMES;
-            bname = botnames[botNum];
-            for( j = 0; j < i; j++ );
+            br = B_Gen_Random() % NUM_BOT_NAMES;
+            bname = botnames[br];
+            for( j = 0; j < i; j++ )
             {
                 if( botinfo[j].name == bname )  break;
             }
         } while ( j < i );  // when j==i then did not find any duplicates
         botinfo[i].name = bname;
-#else
-        // [WDJ] This tests botinfo[botNum] before it has been set.
-        // I don't know exactly what it was trying to accomplish.
-        boolean duplicateBot;
-        do
+
+        // Assign a skin color.  Make them unique until have used all colors.
+        j = NUMSKINCOLORS;
+        br = B_Gen_Random();
+        for(;;)
         {
-            botNum = B_Random()%NUM_BOT_NAMES;
-            botinfo[i].name = botnames[botNum];
-            duplicateBot = false;
-            for( j = 0; j < i; j++ );
-            {
-                if( (j != botNum) && (botinfo[j].name == botinfo[botNum].name) )
-                {
-                   duplicateBot = true;
-                   break;
-                }
-            }
-        } while (duplicateBot);
-#endif
-        botinfo[i].colour = (( cv_bot_random.value )?
-                (B_Random() + cv_bot_random.value)
-              : E_Random()
-            )% NUMSKINCOLORS;
+            br = br % NUMSKINCOLORS;
+            if( ((1<<br) & color_used) == 0 )  break;
+            br++;
+            if( --j < 0 )  color_used = 0;
+        }
+        botinfo[i].colour = br;
+        color_used |= (1<<br);
+
+        botinfo[i].skinrand = B_Gen_Random();
     }
 }
 
@@ -263,7 +288,7 @@ static void CV_botrandom_OnChange( void )
     if( demoversion < 148 )  return;
 #endif
 
-    B_SetRandIndex( cv_bot_random.value );
+    B_SetRandIndex( cv_bot_randseed.value );
     // Only re-init after initial loading of config.
     if( bot_init_done )
        B_Init_Names();
@@ -755,7 +780,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
             }
             else if( pbot->closestEnemy && (pbot->closestEnemy->health > 0))
             {
-	        // Target exists and is still alive.
+                // Target exists and is still alive.
                 // Prepare to attack the enemy.
                 player_t * enemyp = pbot->closestEnemy->player;
                 weapontype_t  enemy_readyweapon =
@@ -856,7 +881,7 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* netcmd)
                 }
                 else
                 {
-		    byte br = B_Random();
+                    byte br = B_Random();
                     pbot->lastMobj = NULL;
 
                     if( pbot->bestItem && (br & 0x01) )  // do not obsess if cannot get to it

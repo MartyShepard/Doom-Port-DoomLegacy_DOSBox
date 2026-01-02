@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
+// $Id: d_clisrv.c 1462 2019-09-27 06:58:56Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -160,6 +160,8 @@
 #include "t_script.h"
 
 #include "b_game.h"	//added by AC for acbot
+#include "r_things.h"
+  // skins
 
 
 //
@@ -2031,14 +2033,20 @@ void Got_NetXCmd_AddBot(xcmd_t * xc)  //added by AC for acbot
 {
     // [WDJ] Having error due to sign extension of byte read (signed char).
     unsigned int newplayernum=READBYTE(xc->curpos);  // unsigned
-    //int node = 0;
-    //int i = 0;
     newplayernum&=0x7F;  // remove flag bit, and any sign extension
+
+    bot_info_t * bip = & botinfo[newplayernum];
+    player_t * pl = & players[newplayernum];
+
     playeringame[newplayernum]=true;
-    strcpy(player_names[newplayernum], botinfo[newplayernum].name);
-    players[newplayernum].skincolor = botinfo[newplayernum].colour;
+    strcpy(player_names[newplayernum], bip->name);
+    players[newplayernum].skincolor = bip->colour;
+    if( cv_bot_skin.EV && (numskins > 1))
+    {
+        SetPlayerSkin_by_index( pl, (bip->skinrand % (numskins-1)) + 1 );
+    }
     G_AddPlayer(newplayernum);
-    players[newplayernum].bot = B_Create_Bot();
+    pl->bot = B_Create_Bot();
     if( newplayernum+1>doomcom->numplayers )
         doomcom->numplayers=newplayernum+1;
 

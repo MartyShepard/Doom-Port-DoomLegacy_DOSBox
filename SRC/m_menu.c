@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1458 2019-09-11 12:27:47Z wesleyjohnson $
+// $Id: m_menu.c 1462 2019-09-27 06:58:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2308,8 +2308,10 @@ menuitem_t BotOptionMenu[]=
 {
     {IT_STRING | IT_CVAR,0,"Bot skill"           ,&cv_bot_skill          ,0},
     {IT_STRING | IT_CVAR,0,"Bot speed"           ,&cv_bot_speed          ,0},
+    {IT_STRING | IT_CVAR,0,"Bot skin"            ,&cv_bot_skin           ,0},
     {IT_STRING | IT_CVAR,0,"Bot respawn"         ,&cv_bot_respawn_time   ,0},
-    {IT_STRING | IT_CVAR,0,"Bot random"          ,&cv_bot_random         ,0},
+    {IT_STRING | IT_CVAR,0,"Bot seed"            ,&cv_bot_randseed       ,0},
+    {IT_STRING | IT_CVAR,0,"Bot gen"             ,&cv_bot_gen            ,0},
 };
 
 menu_t  BotDef =
@@ -5790,8 +5792,11 @@ void M_Init (void)
     CV_RegisterVar(&cv_bots);
     CV_RegisterVar(&cv_bot_skill);
     CV_RegisterVar(&cv_bot_speed);
-    CV_RegisterVar(&cv_bot_random);
+    CV_RegisterVar(&cv_bot_skin);
     CV_RegisterVar(&cv_bot_respawn_time);
+    CV_RegisterVar(&cv_bot_random);
+    CV_RegisterVar(&cv_bot_randseed);
+    CV_RegisterVar(&cv_bot_gen);
     CV_RegisterVar(&cv_nextmap );
     CV_RegisterVar(&cv_nextepmap );
     CV_RegisterVar(&cv_deathmatch_menu);

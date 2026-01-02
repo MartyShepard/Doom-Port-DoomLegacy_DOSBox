@@ -7360,4 +7360,16 @@ the autoexec.cfg with the executable is executed.
 The local file can exec the system autoexec file when preferable
 (exec autoexec.cfg).
 
+*** w108_bot_gen
+patchfile = w108_49_bot_gen.patch
+- commit revision 1462
+Improve the Bot generation options.
+Create a bot random number that is persistent in config.
+Create options for bot generation, using B_Random, E_Random, Random Seed,
+Config Random, and System Random.
+
+Fix the bot generation duplicate name detection.
+Make the bot generation color selection use all colors before repeating.
+Add bot skins, and a bot skin control to the menu.
+
 

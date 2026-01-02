@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1458 2019-09-11 12:27:47Z wesleyjohnson $
+// $Id: p_local.h 1462 2019-09-27 06:58:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -258,8 +258,11 @@ mobj_t *P_SPMAngle ( mobj_t* source, mobjtype_t type, angle_t angle );
 extern  consvar_t cv_bots;
 extern  consvar_t cv_bot_skill;
 extern  consvar_t cv_bot_speed;
+extern  consvar_t cv_bot_skin;
 extern  consvar_t cv_bot_respawn_time;
 extern  consvar_t cv_bot_random;
+extern  consvar_t cv_bot_randseed;
+extern  consvar_t cv_bot_gen;
 
 //
 // P_ENEMY
