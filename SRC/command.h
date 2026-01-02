@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.h 1474 2019-10-15 12:34:14Z wesleyjohnson $
+// $Id: command.h 1475 2019-10-15 12:34:52Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -150,7 +150,7 @@ typedef enum
 
 typedef enum
 {
-    CS_CONFIG   = 0x03, // the config file source, 2 bits
+    CS_CONFIG   = 0x07, // the config file source, 3 bits
     CS_PUSHED   = 0x08, // a value from another config has been pushed
     CS_EV_PARAM = 0x40, // A command line param is in EV.
     CS_MODIFIED = 0x80, // this bit is set when cvar is modified
@@ -163,6 +163,7 @@ typedef enum
     CFG_main,     // the main config file
     CFG_drawmode, // the drawmode config file
     CFG_other,    // some other config value
+    CFG_netvar,   // pushed by network setting
 // Searches
 //    CFG_all = 0x40,  // match all
     CFG_null = 0x4f, // match none
@@ -233,7 +234,6 @@ extern byte command_EV_param;
 //   str : a reference to a string, it will by copied.
 void  CV_Set_cvar_string( consvar_t * cvar, const char * str );
 void  CV_Free_cvar_string( consvar_t * cvar );
-void  CV_Set_cv_str_value( consvar_t * cvar, const char * valstr, byte call_enable, byte user_enable );
 
 // If a OnChange func tries to change other values,
 // this function should be used.

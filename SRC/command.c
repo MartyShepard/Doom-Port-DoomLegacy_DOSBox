@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
+// $Id: command.c 1475 2019-10-15 12:34:52Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -115,9 +115,9 @@ typedef struct cmdalias_s
     struct cmdalias_s   *next;
     char    *name;
     char    *value;     // the command string to replace the alias
-} cmdalias_t;
+} cmd_alias_t;
 
-static cmdalias_t *com_alias; // aliases list
+static cmd_alias_t *com_alias; // aliases list
 
 
 // =========================================================================
@@ -525,7 +525,7 @@ const char * COM_CompleteCommand (const char *partial, int skips)
 static void COM_ExecuteString (const char *text, boolean script, byte cfg )
 {
     xcommand_t  *cmd;
-    cmdalias_t *a;
+    cmd_alias_t *a;
 
     COM_TokenizeString (text, script);
 
@@ -580,7 +580,7 @@ static void COM_ExecuteString (const char *text, boolean script, byte cfg )
 //
 static void COM_Alias_f (void)
 {
-    cmdalias_t  *a;
+    cmd_alias_t  *a;
     char        cmd[1024];
     int         i;
     COM_args_t  carg;
@@ -593,7 +593,7 @@ static void COM_Alias_f (void)
         return;
     }
 
-    a = Z_Malloc (sizeof(cmdalias_t), PU_STATIC, NULL);
+    a = Z_Malloc (sizeof(cmd_alias_t), PU_STATIC, NULL);
     a->next = com_alias;
     com_alias = a;
 
@@ -685,6 +685,7 @@ static void COM_Wait_f (void)
     else
         com_wait = 1;   // 1 frame
 }
+
 
 // [WDJ] Categorized help.
 typedef struct {
@@ -975,6 +976,12 @@ fail_cleanup:
 static char       *cv_null_string = "";
 byte    command_EV_param = 0;
 
+static byte  OnChange_user_enable = 0;
+
+static byte  CV_Pop_Config( consvar_t * cvar );
+static void  CV_set_str_value( consvar_t * cvar, const char * valstr, byte call_enable, byte user_enable );
+
+
 //  Search if a variable has been registered
 //  returns true if given variable has been registered
 //
@@ -1029,8 +1036,6 @@ static consvar_t * CV_FindNetVar (uint16_t netid)
 }
 
 
-static byte OnChange_user_enable = 0;
-
 //  Register a variable, that can be used later at the console
 //
 void CV_RegisterVar (consvar_t *cvar)
@@ -1069,16 +1074,16 @@ void CV_RegisterVar (consvar_t *cvar)
 
 #ifdef PARANOIA
     if ((cvar->flags & CV_NOINIT) && !(cvar->flags & CV_CALL))
-        I_Error("variable %s have CV_NOINIT without CV_CALL\n");
+        I_Error("variable %s has CV_NOINIT without CV_CALL\n");
     if ((cvar->flags & CV_CALL) && !cvar->func)
-        I_Error("variable %s have cv_call flags without func");
+        I_Error("variable %s has CV_CALL without func");
 #endif
-    CV_Set_cv_str_value( cvar, cvar->defaultvalue,
+    CV_set_str_value( cvar, cvar->defaultvalue,
                      ((cvar->flags & CV_NOINIT) == 0), // call_enable
                      1 );  // user_enable, default is a user setting
    
 
-    // CV_Set_cv_str_value will have set this bit
+    // CV_set_str_value will have set this bit
     cvar->state &= ~CS_MODIFIED;
 }
 
@@ -1136,8 +1141,8 @@ void  CV_Free_cvar_string_param( consvar_t * cvar, char * str )
 #ifdef COMMAND_RECOVER_STRING
     // Check if is in bounds of allocated cvar strings.
     if( cvar_string_min
-	&& str >= cvar_string_min
-	&& str <= cvar_string_max )
+        && str >= cvar_string_min
+        && str <= cvar_string_max )
     {
         // was allocated
         Z_Free( str );
@@ -1208,12 +1213,28 @@ update:
 }
 
 
+// Do the CV_CALL, with validity tests, and enforcing user_enable rules.
+static
+void  CV_cvar_call( consvar_t *cvar, byte user_enable )
+{
+    // Call the CV_CALL func to restore state dependent upon this setting.
+    // Set the 'on change' code.
+    if((cvar->flags & CV_CALL) && (cvar->func))
+    {
+        // Handle recursive OnChange calls. Propagate a valid user_enable.
+        byte cfg = cvar->state & CS_CONFIG;
+        OnChange_user_enable = user_enable && ((cfg >= CFG_main) && (cfg <= CFG_drawmode));
+        cvar->func();
+    }
+}
+
+
 // Set variable value, for user settings, save games, and network settings.
-// When enabled, it also changes the user saved value in string.
-// Also updates value and EV.
+// Updates value and EV.
 //  call_enable : when 0, blocks CV_CALL
-//  user_enable : enable setting the string value (user save value)
-void  CV_Set_cv_str_value( consvar_t * cvar, const char * valstr, byte call_enable, byte user_enable )
+//  user_enable : enable setting the string value which gets saved in config files.
+static
+void  CV_set_str_value( consvar_t * cvar, const char * valstr, byte call_enable, byte user_enable )
 {
     char  value_str[64];  // print %d cannot exceed 64
     CV_PossibleValue_t * pv0, * pv;
@@ -1223,7 +1244,7 @@ void  CV_Set_cv_str_value( consvar_t * cvar, const char * valstr, byte call_enab
 #ifdef PARANOIA
     if( valstr == NULL )
     {
-        I_SoftError( "CV_Set_cv_str_value passed NULL string: %s\n", cvar->name );
+        I_SoftError( "CV_set_str_value passed NULL string: %s\n", cvar->name );
         return;
     }
 #endif
@@ -1299,6 +1320,7 @@ void  CV_Set_cv_str_value( consvar_t * cvar, const char * valstr, byte call_enab
 
             // If valstr is not a number, then it cannot be used as a PossibleValue.
             if( ! is_a_number )  goto error;
+
             // check as PossibleValue number
             for( pv = pv0; pv->strvalue; pv++)
             {
@@ -1353,13 +1375,10 @@ finish:
     DEBFILE(va("%s set to %s\n", cvar->name, cvar->string));
     cvar->state |= CS_MODIFIED;
     cvar->EV = ival;  // user setting of active value
+
     // raise 'on change' code
-    if( call_enable
-        && (cvar->flags & CV_CALL) && (cvar->func) )
-    {
-        OnChange_user_enable = user_enable;
-        cvar->func ();
-    }
+    if( call_enable )
+        CV_cvar_call( cvar, user_enable );
     return;
 
 error: // not found
@@ -1381,20 +1400,25 @@ void CV_Restore_User_Settings( void )
     // Check for modified cvar
     for (cvar=consvar_vars; cvar; cvar = cvar->next)
     {
+        if((cvar->state & CS_CONFIG) > CFG_other )
+        {
+            // Undo a push of NETVAR
+            CV_Pop_Config( cvar );  // CV_CALL
+            cvar->state &= ~CS_EV_PARAM;
+            continue;
+        }
+
         if( cvar->flags & CV_VALUE )
         {
             cvar->value = atoi( cvar->string );
         }
+
         if( (cvar->EV != (byte)cvar->value)
             || (cvar->value >> 8)
-            || (cvar->state & CS_EV_PARAM) )
+            || (cvar->state & CS_EV_PARAM) )  // command line param in EV
         {
             cvar->EV = cvar->value;  // user setting of active value
-            // Use func to restore state dependent upon this setting.
-            // raise 'on change' code
-            if( cvar->flags & CV_CALL )
-                cvar->func();
-
+            CV_cvar_call( cvar, 1 );
             cvar->state &= ~CS_EV_PARAM;
         }
     }
@@ -1411,21 +1435,34 @@ void CV_Restore_User_Settings( void )
 void Got_NetXCmd_NetVar(xcmd_t * xc)
 {
     byte * bp = xc->curpos;	// macros READ,SKIP want byte*
+    char *svalue = (char *)bp;
 
     consvar_t *cvar = CV_FindNetVar(READU16(bp));
-    char *svalue = (char *)bp;
 
     while( *(bp++) ) {  // find 0 term
        if( bp > xc->endpos )  goto buff_overrun;  // bad string
     }
     xc->curpos = bp;	// return updated ptr only once
+
     if(cvar==NULL)
     {
         CONS_Printf("\2Netvar not found\n");
         return;
     }
 
-    CV_Set_cv_str_value(cvar, svalue, 1, 0);  // CALL, temp
+    if( cvar->flags & (CV_FLOAT | CV_VALUE | CV_STRING))
+    {
+        // Netvar value will not fit in EV, so use NETVAR push.
+        CV_Put_Config_string( cvar, CFG_netvar, svalue );
+        // Current config is netvar setting (not saved).
+    }
+    else
+    {
+        // Put netvar value in EV.
+        CV_set_str_value(cvar, svalue, 1, 0);  // CV_CALL, temp
+        // Current config is netvar setting (not saved).
+        // Not visible to menu. Menu displays the string.
+    }
     return;
 
 buff_overrun:
@@ -1451,16 +1488,16 @@ void CV_SaveNetVars(xcmd_t * xc)
 
         // Command line settings goto network games and savegames.
         // CV_STRING do not have temp values.
-        if( cvar->flags & CV_VALUE )
-        {
-            // May be too large for EV, send the value.
-            sprintf (buf, "%d", cvar->value);
-            vp = buf;
-        }
-        else if( cvar->state & CS_EV_PARAM )
+        if( cvar->state & CS_EV_PARAM )  // command line param in EV
         {
             // Send the EV param value instead.
             sprintf (buf, "%d", cvar->EV);
+            vp = buf;
+        }
+        else if( cvar->flags & CV_VALUE )
+        {
+            // Value has precedence over the string.
+            sprintf (buf, "%d", cvar->value);
             vp = buf;
         }
         else
@@ -1481,7 +1518,7 @@ buff_overrun:
     return;
 }
 
-// Only used for server state.
+// Client: Receive server netvars state.  Server config.
 void CV_LoadNetVars(xcmd_t * xc)
 {
     consvar_t  *cvar;
@@ -1503,6 +1540,8 @@ buff_overrun:
 
 #define SET_BUFSIZE 128
 
+// PUBLIC
+
 // Sets a var to a string value.
 // called by CV_Var_Command to handle "<varname> <value>" entered at the console
 void CV_Set (consvar_t *cvar, const char *str_value)
@@ -1511,11 +1550,8 @@ void CV_Set (consvar_t *cvar, const char *str_value)
 #ifdef PARANOIA
     if(!cvar)
         I_Error("CV_Set : no variable\n");
-#if 0
-    // CV_Set will be called to set the value, after pushing the string.
-    if(!cvar->string)
-        I_Error("CV_Set : %s no string set ?!\n", cvar->name);
-#endif
+
+    // Not an error if cvar does not have string.
 #endif
 
     if( cvar->string )
@@ -1542,7 +1578,7 @@ void CV_Set (consvar_t *cvar, const char *str_value)
         }
 
         // Change user settings too, but want only one CV_CALL.
-        CV_Set_cv_str_value(cvar, str_value, 0, 1); // no CALL, user
+        CV_set_str_value(cvar, str_value, 0, 1); // no CALL, user
 
         // send the value of the variable
         byte buf[SET_BUFSIZE], *p; // macros want byte*
@@ -1551,11 +1587,14 @@ void CV_Set (consvar_t *cvar, const char *str_value)
         WRITEU16(p, cvar->netid);
         p = write_stringn(p, str_value, SET_BUFSIZE-2-1);
         Send_NetXCmd(XD_NETVAR, buf, (p - buf));
+        // NetXCmd will set as netvar, CV_CALL, not user.
+        // This NetXCmd is also used by savegame restore, so it cannot block server.
         return;
       }
     }
 
-    CV_Set_cv_str_value(cvar, str_value, 1, 1);  // CALL, user
+    // Single player
+    CV_set_str_value(cvar, str_value, 1, 1);  // CALL, user
 }
 
 
@@ -1576,8 +1615,7 @@ void CV_SetParam (consvar_t *cvar, int value)
     command_EV_param = 1;  // flag to undo these later
     cvar->EV = value;   // temp setting, during game play
     cvar->state |= CS_EV_PARAM;
-    if( cvar->flags & CV_CALL )
-        cvar->func();
+    CV_cvar_call( cvar, 0 );  // not user
 }
 
 // If a OnChange func tries to change other values,
@@ -1804,24 +1842,15 @@ restore_cvar:
     cvar->string = pp->string;  // move string, as pushed cvar will be released
     pp->string = NULL;  // because the string in the pushed record will be freed.
 
-#if 0   
-    // This is not a perfect test.
-    // Pop during a demo, may change the demo setting.
-    // But it is most likely to happen to settings that the demos do not record.
-    if( !(cvar->state & CS_EV_PARAM)
-        && (cvar->EV == (cvar->value & 0xFF)) )  // not overridden
-        cvar->EV = pp->value;
-#else
-    // If a pop occurs during a demo or other usage,
-    // then the user is trying to override a setting, and should succeed in doing so.
+    // If this happens during a demo or other usage, protections have already been applied.
     cvar->EV = pp->value;
-#endif
-
     cvar->value = pp->value;
     cvar->state = pp->state;
 
     release_pushed_cvar( pp );
     update_pushed_cvar( cvar );
+   
+    CV_cvar_call( cvar, 1 );  // Pop brings user settings back into force.
     return 1;
 }
 
@@ -1902,20 +1931,14 @@ update_cvar:
     cvar->string = temp_cvar->string; // move the string
     temp_cvar->string = NULL;
 
-#if 0
-    // This is not a perfect test.
-    if( !(cvar->state & CS_EV_PARAM)
-        && (cvar->EV == (cvar->value & 0xFF)) )  // not overridden
-        cvar->EV = temp_cvar->value;
-#else
-    // If this happened during a demo or other usage,
-    // then the user was probably trying to change the value, and should succeed.
-    cvar->EV = temp_cvar->value;
-#endif
-
+    // If this happens during a demo or other usage, protections have already been applied.
     cvar->value = temp_cvar->value;
+    cvar->EV = temp_cvar->value;
     // preserve CS_PUSHED
     cvar->state = (cvar->state & ~CS_CONFIG) | cfg | (temp_cvar->state & CS_MODIFIED);
+
+    // Current cvar always does CV_CALL.
+    CV_cvar_call( cvar, 1 );  // user_enable detected in new config.
     return;
 }
 
@@ -1951,16 +1974,17 @@ void  CV_Put_Config_string( consvar_t * cvar, byte cfg, const char * str )
     if( (cvar->state & CS_CONFIG) > cfg )
     {
         // Create as pushed cvar value.
-        // kill any effects that the current cvar would perform.
+        // Kill any effects that only the current cvar should perform.
+        // Pushed cvar does not save these flags, flags will be gotten from parent.
         new_cvar.flags &= ~( CV_CALL | CV_NETVAR | CV_SHOWMODIF | CV_SHOWMODIF_ONCE );
     }
    
     // Copy the new value into the temp cvar.
-    CV_Set_cv_str_value( &new_cvar, str, 0, 1 );
+    CV_set_str_value( &new_cvar, str, 0, 1 );
 
     // Create the cvar value, even if it is pushed and not current.
     // This will steal the string value from temp_cvar.  Do not need to Z_Free it.
-    CV_Put_Config_cvar( cvar, cfg, &new_cvar );
+    CV_Put_Config_cvar( cvar, cfg, &new_cvar );  // does CV_CALL
 }
 
 
@@ -2117,7 +2141,7 @@ show_value:
         if( cvar->value == atoi(cvar->string) )  goto std_show_str;
         tval = cvar->value;
     }
-    else if( (cvar->state & CS_EV_PARAM)
+    else if( (cvar->state & CS_EV_PARAM)  // command line param in EV
         || (cvar->EV != (byte)cvar->value) )
     {
         tval = cvar->EV;
