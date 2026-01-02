@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1466 2019-10-01 02:37:37Z wesleyjohnson $
+// $Id: m_menu.c 1477 2019-10-19 13:42:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1125,6 +1125,7 @@ void M_Connect( int choice )
     // do not call menuexitfunc 
     M_Clear_Menus(false);
 
+    // Invoke Command_connect
     COM_BufAddText(va("connect node %d\n",
                       serverlist[choice-FIRSTSERVERLINE].server_node));
     setup_net_savegame();
@@ -1177,7 +1178,7 @@ void M_DrawConnectMenu( void )
         V_DrawString (currentMenu->x, sly, 0, serverlist[i].info.servername);
         p = va("%d", serverlist[i].info.trip_time);  // ping time
         V_DrawString (currentMenu->x + 200 - V_StringWidth(p), sly, 0, p);
-        p = va("%d/%d  %d", serverlist[i].info.numberofplayer,
+        p = va("%d/%d  %d", serverlist[i].info.num_active_players,
                             serverlist[i].info.maxplayer,
                             serverlist[i].info.deathmatch);
         V_DrawString (currentMenu->x + 250 - V_StringWidth(p), sly, 0, p);
@@ -2965,7 +2966,7 @@ void M_ChangecontrolResponse(event_t* ev)
             found = 0;
             if (setupcontrols[control][0] == KEY_NULL)
                 found++;
-           if (setupcontrols[control][1] == KEY_NULL)
+            if (setupcontrols[control][1] == KEY_NULL)
                 found++;
 
             if( (controls_player == 0) && (control == gc_menuesc)

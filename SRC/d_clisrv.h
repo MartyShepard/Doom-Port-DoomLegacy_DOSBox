@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1468 2019-10-04 08:58:11Z wesleyjohnson $
+// $Id: d_clisrv.h 1477 2019-10-19 13:42:58Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -155,7 +155,7 @@ typedef struct {
 typedef struct {
    byte        starttic;
    byte        numtics;
-   byte        numplayers;
+   byte        numplayerslots;
    ticcmd_t    cmds[NUM_SERVERTIC_CMD];
      // number of cmds used is (numtics*numplayers)
      // normaly [BACKUPTIC][MAXPLAYERS] but too large
@@ -208,20 +208,21 @@ typedef struct {
 } state_pak_t;
 
 // [WDJ] As of 9/2016 there are 37 CV_NETVAR.
-#define NETCVAR_BUFF_LEN  4096
+// Ver 1.48 (10/2019) there are 49 CV_NETVAR.
+#define NETVAR_BUFF_LEN  4096
 typedef struct {
    byte        version;    // exe from differant version don't work
    uint32_t    subversion; // contain build version and maybe crc
 
    // server lunch stuffs
    byte        serverplayer;
-   byte        totalplayernum;
+   byte        num_player_slots;  // message player slots
    tic_t       gametic;
    byte        clientnode;
    byte        gamestate;
    
    uint32_t    playerdetected; // playeringame vector in bit field
-   byte        netcvarstates[NETCVAR_BUFF_LEN];
+   byte        netvar_buf[NETVAR_BUFF_LEN];
 } serverconfig_pak_t;
 
 typedef struct {
@@ -248,12 +249,13 @@ typedef struct {
 
 #define MAXSERVERNAME 32
 #define FILENEED_BUFF_LEN  4096
+// [WDJ] Do not change this, so older server version can be identified.
 typedef struct {
     byte       version;
     uint32_t   subversion;
-    byte       numberofplayer;
-    byte       maxplayer;
-    byte       deathmatch;
+    byte       num_active_players;  // num of players using the server
+    byte       maxplayer;   // control var
+    byte       deathmatch;  // control var
     tic_t      trip_time;   // askinfo time in packet, ping time in list
     float      load;        // unused for the moment
     char       mapname[8];
@@ -360,6 +362,7 @@ extern boolean   server;
 extern uint16_t  software_MAXPACKETLENGTH;
 extern boolean   acceptnewnode;
 extern byte      servernode;  // the server net node, 255=none
+extern byte      num_server_slots;
 
 extern boolean   cl_drone;  // is a drone client
 
@@ -393,6 +396,7 @@ void CV_LoadNetVars(xcmd_t * xc);
 void    NetUpdate (void);
 void    D_PredictPlayerPosition(void);
 
+byte    SV_get_player_num( void );
 boolean SV_AddWaitingPlayers(void);
 void    SV_StartSinglePlayerServer(void);
 boolean SV_SpawnServer( void );

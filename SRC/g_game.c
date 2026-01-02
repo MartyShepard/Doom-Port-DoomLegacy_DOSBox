@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1466 2019-10-01 02:37:37Z wesleyjohnson $
+// $Id: g_game.c 1477 2019-10-19 13:42:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -443,8 +443,11 @@ tic_t           demostarttime;              // for comparative timing purposes
 
 boolean         netgame;                // only true if packets are broadcast
 boolean         multiplayer;
-boolean         playeringame[MAXPLAYERS];
+// players and bots
+byte            playeringame[MAXPLAYERS];  // player active
+byte            player_state[MAXPLAYERS];  // from where, and pending player
 player_t        players[MAXPLAYERS];
+byte            num_game_players = 0;         // number of actual players
 
 // [WDJ] Whenever assign to these must update the _ptr too.
 // They are not changed anywhere as often as players[] appears in IF stmts.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: g_game.h 1477 2019-10-19 13:42:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -82,10 +82,20 @@ void  set_team_name( int team_num, const char * str );
 char * get_team_name( int team_num );
 
 extern  player_t  players[MAXPLAYERS];
-extern  boolean   playeringame[MAXPLAYERS];
+extern  byte      playeringame[MAXPLAYERS];
+typedef enum {
+  PS_player = 1,
+  PS_from_server = 2,  // server told us
+  PS_from_savegame = 3,  // savegame told us
+  PS_bot = 8,
+  PS_added = 16,
+} player_state_e;
+extern byte       player_state[MAXPLAYERS];
+
 //added:11-02-98: yeah now you can change it!
 // changed to 2d array 19990220 by Kin
 extern char       player_names[MAXPLAYERS][MAXPLAYERNAME];
+extern byte       num_game_players;  // number of actual players
 
 
 

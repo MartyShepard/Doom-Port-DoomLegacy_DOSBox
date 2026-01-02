@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
+// $Id: b_game.c 1477 2019-10-19 13:42:58Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -328,8 +328,7 @@ void Command_AddBot(void)
         return;
     }
 
-    while ((pn < MAXPLAYERS) && playeringame[pn])  // find free player slot
-       pn++;
+    pn = SV_get_player_num();
 
     if( pn >= MAXPLAYERS )
     {

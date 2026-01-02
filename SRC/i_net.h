@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_net.h 1377 2017-12-18 17:29:50Z wesleyjohnson $
+// $Id: i_net.h 1477 2019-10-19 13:42:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -52,36 +52,48 @@
 #define MAXPACKETLENGTH  1450 // For use in a LAN
 #define INETPACKETLENGTH 512 // For use on the internet
 
+#ifdef SMIF_PC_DOS
+#define DOSNET_SUPPORT
+#endif
+
 extern uint16_t  hardware_MAXPACKETLENGTH;
 extern uint32_t  net_bandwidth; // in byte/sec
 
 // [WDJ] Can simplify doomcom when drop support for DOS net.
+// Referenced by external DosDoom driver, fields cannot be moved.
 // Fixed as stdint sizes.
 typedef struct
 {
     // Supposed to be DOOMCOM_ID
     uint32_t            id;
 
+#ifdef DOSNET_SUPPORT   
     // (DOSNET) DOOM executes an int to execute commands.
     int16_t             intnum;
     // (DOSNET) Communication between DOOM and the driver.
     // Is CMD_SEND or CMD_GET.
     uint16_t            command;
+#endif
     // Index to net_nodes:
     // Send: to node
     // Get:  from node (set to -1 = no packet).
+    // Used by TCP, UDP.
     int16_t             remotenode;
 
     // Number of bytes in doomdata to be sent
     uint16_t            datalength;
 
+#ifdef DOSNET_SUPPORT   
     // Info common to all nodes.
     // Console is always node 0.
     uint16_t            num_player_netnodes;
     // Flag: 1 = no duplication, 2-5 = dup for slow nets.
     uint16_t            unused_ticdup;
+#endif
     // Number of extratics in each packet.
+    // Used by TCP, UDP
     uint16_t            extratics;
+#ifdef DOSNET_SUPPORT   
     // deathmatch type 0=coop, 1=deathmatch 1 ,2 = deathmatch 2.
     uint16_t            unused_deathmatch;
     // Flag: -1 = new game, 0-5 = load savegame
@@ -104,8 +116,10 @@ typedef struct
     int16_t             unused_angleoffset;
     // 1 = drone
     uint16_t            unused_drone;
+#endif
 
     // The packet data to be sent.
+    // Used by all net ports.
     char                data[MAXPACKETLENGTH];
 
 } doomcom_t;

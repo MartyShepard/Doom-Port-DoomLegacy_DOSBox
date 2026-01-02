@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
+// $Id: d_clisrv.c 1477 2019-10-19 13:42:58Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -207,24 +207,29 @@ static network_state_e  network_state = NS_idle;
 // Server state
 boolean  server = true; // false when Client connected to other server
 boolean  serverrunning = false;
-byte     serverplayer;  // 255= no server player (same as -1)
+byte     serverplayer = 255;  // 255= no server player (same as -1)
+byte     num_player_slots = 0;  // for messages with slots
 
 // Server specific vars.
 // player=255 when unused
-// nodeingame[]=false when net node is unused
+// nnode =255 when unused
+// node_in_game[]=false when net node is unused
+// The netnodes are counted, 0..32
 static byte     player_to_nnode[MAXPLAYERS];
 
 #if 0
 static tic_t    cl_maketic[MAXNETNODES];  // unused
 #endif
 
+
 // Server net node state
 static byte     nnode_to_player[MAXNETNODES];  // 255= unused
 static byte     nnode_to_player2[MAXNETNODES]; // splitscreen player, 255= unused
 static byte     playerpernode[MAXNETNODES]; // used specialy for splitscreen
-static byte     nodewaiting[MAXNETNODES];
+static byte     nodewaiting[MAXNETNODES];  // num of players waiting to join
+static byte     num_waiting_players;
 static byte     consistency_faults[MAXNETNODES];
-static boolean  nodeingame[MAXNETNODES];  // set false as nodes leave game
+static byte     node_in_game[MAXNETNODES];  // set false as nodes leave game
 static tic_t    nettics[MAXNETNODES];     // what tic the client have received
 static tic_t    nextsend_tic[MAXNETNODES]; // what server sent to client
 
@@ -627,10 +632,10 @@ static void SV_Send_ServerInfo(int to_node, tic_t reqtime)
     netbuffer->u.serverinfo.subversion = LE_SWAP32(NETWORK_VERSION);
     // return back the time value so client can compute their ping
     netbuffer->u.serverinfo.trip_time = LE_SWAP32(reqtime);
-    netbuffer->u.serverinfo.numberofplayer = doomcom->numplayers;
+    netbuffer->u.serverinfo.num_active_players = num_game_players;
     netbuffer->u.serverinfo.maxplayer = cv_maxplayers.value;
     netbuffer->u.serverinfo.load = 0;        // unused for the moment
-    netbuffer->u.serverinfo.deathmatch = cv_deathmatch.EV;  // and command line
+    netbuffer->u.serverinfo.deathmatch = cv_deathmatch.EV;  // menu setting
     strncpy(netbuffer->u.serverinfo.servername, cv_servername.string, MAXSERVERNAME);
     if(game_map_filename[0])
     {
@@ -667,17 +672,17 @@ static boolean SV_Send_ServerConfig(int to_node)
     netbuffer->u.servercfg.subversion      = LE_SWAP32(NETWORK_VERSION);
 
     netbuffer->u.servercfg.serverplayer    = serverplayer;
-    netbuffer->u.servercfg.totalplayernum  = doomcom->numplayers;
+    netbuffer->u.servercfg.num_player_slots= num_player_slots;
     netbuffer->u.servercfg.playerdetected  = LE_SWAP32(playermask);
     netbuffer->u.servercfg.gametic         = LE_SWAP32(gametic);
     netbuffer->u.servercfg.clientnode      = to_node;
     netbuffer->u.servercfg.gamestate       = gamestate;
 
     xc.playernum = 0;
-    xc.curpos = netbuffer->u.servercfg.netcvarstates;
-    xc.endpos = xc.curpos + NETCVAR_BUFF_LEN - 1;
+    xc.curpos = netbuffer->u.servercfg.netvar_buf;
+    xc.endpos = xc.curpos + NETVAR_BUFF_LEN - 1;
     CV_SaveNetVars( &xc );
-    // curpos is 1 past last cvar (if none then is at netcvarstates)
+    // curpos is 1 past last cvar (if none then is at netvar_buf)
 
     return HSendPacket(to_node, true, 0, xc.curpos - ((byte *)&netbuffer->u));
 }
@@ -689,7 +694,7 @@ static void SV_SendPacket_All( boolean reliable, size_t size_packet, const char 
     int nn;
     for(nn=1; nn<MAXNETNODES; nn++)
     {
-        if(nodeingame[nn])
+        if(node_in_game[nn])
         {
             HSendPacket(nn, reliable, 0, size_packet);
             if( msg )	   
@@ -720,7 +725,7 @@ static void set_random_state( random_state_t * rs, const char * msg )
             GenPrintf( EMSG_warn, "%s: gametic %i, update P_random index %i to %i\n",
                  msg, gametic, rp, rs->p_rand_index );
             P_Rand_SetIndex( rs->p_rand_index ); // to sync P_Random
-	}
+        }
     }
     else
     {
@@ -868,8 +873,10 @@ static void SV_Send_player_repair( int pn, byte to_node )
     netbuffer->u.repair.repair_type = RQ_PLAYER;
     netbuffer->u.repair.pos.id_num = pn;
     if( ! playeringame[pn] )  return;
+
     mo = players[pn].mo;
     if( ! mo )  return;
+
     netbuffer->u.repair.pos.angle = mo->angle;
     netbuffer->u.repair.pos.x = mo->x;
     netbuffer->u.repair.pos.y = mo->y;
@@ -890,8 +897,10 @@ static void CL_player_repair( void )
 
     pn = netbuffer->u.repair.pos.id_num;
     if( ! playeringame[pn] )  return;
+
     mo = players[pn].mo;
     if( ! mo )  return;
+
     mo->angle = netbuffer->u.repair.pos.angle;
     mo->x = netbuffer->u.repair.pos.x;
     mo->y = netbuffer->u.repair.pos.y;
@@ -922,7 +931,7 @@ static void SV_Send_Pos_repair( byte repair_type, byte to_node )
 
     SV_Send_player_repair( nnode_to_player[ to_node ], to_node );
    
-    if( nnode_to_player2[ to_node ] < 255 )
+    if( nnode_to_player2[ to_node ] < MAXPLAYERS )
     {
         SV_Send_player_repair( nnode_to_player2[ to_node ], to_node );
     }
@@ -1097,7 +1106,7 @@ static boolean  D_WaitPlayer_Ticker()
         for(nn=0; nn<MAXNETNODES; nn++)
         {
             // Only counting nodes with players.
-            if(nodeingame[nn])
+            if(node_in_game[nn])
             {
                 if( playerpernode[nn] > 0 )
                 {
@@ -1640,6 +1649,7 @@ static void Reset_NetNode(byte nnode);
 // Called by Kick cmd.
 static void CL_RemovePlayer(int playernum)
 {
+    player_t * player = & players[playernum];
     int i;
     if( server && !demoplayback )
     {
@@ -1648,35 +1658,45 @@ static void CL_RemovePlayer(int playernum)
             playerpernode[nnode]--;
         if( playerpernode[nnode] == 0 )
         {
-            nodeingame[player_to_nnode[playernum]] = false;
+            // No more players at this node.	   
+            node_in_game[player_to_nnode[playernum]] = false;
             Net_CloseConnection(player_to_nnode[playernum]);
             Reset_NetNode(nnode);
         }
     }
 
+    playeringame[playernum] = false;
+    player_state[playernum] = 0;
+    player_to_nnode[playernum] = 255;
+   
     // we should use a reset player but there is not such function
+    // Reduce the player slots in the messages.  Count the players.
+    num_player_slots = 1;
+    num_game_players = 0;
     for(i=0;i<MAXPLAYERS;i++)
     {
         players[i].addfrags += players[i].frags[playernum];
         players[i].frags[playernum] = 0;
-        players[playernum].frags[i] = 0;
+        player->frags[i] = 0;
+
+        // count remaining players
+        if( playeringame[i] )
+        {
+            num_player_slots = i+1;
+            num_game_players++;
+        }
     }
-    players[playernum].addfrags = 0;
+    player->addfrags = 0;
 
     // remove avatar of player
-    if( players[playernum].mo )
+    if( player->mo )
     {
-        players[playernum].mo->player = NULL;
-        P_RemoveMobj (players[playernum].mo);
+        player->mo->player = NULL;
+        P_RemoveMobj( player->mo );
     }
-    players[playernum].mo = NULL;
-    playeringame[playernum] = false;
-    player_to_nnode[playernum] = -1;
-    while(playeringame[doomcom->numplayers-1]==0
-          && doomcom->numplayers>1)
-    {
-        doomcom->numplayers--;
-    }
+    player->mo = NULL;
+   
+//    B_Destroy_Bot( player );
 }
 
 // By Client and non-specific code, to reset client connect.
@@ -1691,15 +1711,17 @@ void CL_Reset (void)
     if( servernode < MAXNETNODES )
     {
         // Close connection to server
-        nodeingame[servernode]=false;
+        node_in_game[servernode]=false;
         Net_CloseConnection(servernode);
     }
     D_CloseConnection();         // netgame=false
     multiplayer = false;
     servernode=0;  // server to self
     server=true;
+#ifdef DOSNET_SUPPORT
     doomcom->num_player_netnodes=1;
-    doomcom->numplayers=1;
+#endif
+    num_player_slots = 1;
     SV_StopServer();
     SV_ResetServer();
 
@@ -1888,7 +1910,7 @@ void D_Init_ClientServer (void)
 // nnode: 0..(MAXNETNODES-1)
 static void Reset_NetNode(byte nnode)
 {
-    nodeingame[nnode] = false;
+    node_in_game[nnode] = false;
     nnode_to_player[nnode] = 255;
     nnode_to_player2[nnode] = 255;
     nettics[nnode]=gametic;
@@ -1922,7 +1944,8 @@ void SV_ResetServer( void )
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
         playeringame[i]=false;
-        player_to_nnode[i] = -1;
+        player_state[i] = 0;
+        player_to_nnode[i] = 255;
     }
 
     cl_nnode=0;
@@ -1931,7 +1954,7 @@ void SV_ResetServer( void )
 
     if( dedicated )
     {
-        nodeingame[0]=true;
+        node_in_game[0]=true;
         serverplayer = 255;  // no server player
     }
     else
@@ -1940,7 +1963,7 @@ void SV_ResetServer( void )
     if(server)
         servernode=0;  // server to self
 
-    doomcom->numplayers=0;
+    num_player_slots = 0;
 
     DEBFILE(va("==== Server Reset ====\n"));
 }
@@ -1973,7 +1996,7 @@ void D_Quit_NetGame (void)
         netbuffer->packettype=PT_SERVERSHUTDOWN;
         for(nn=0; nn<MAXNETNODES; nn++)
         {
-            if( nodeingame[nn] )
+            if( node_in_game[nn] )
                 HSendPacket(nn,true,0,0);
         }
         // Close registration with the Master Server.
@@ -1982,7 +2005,7 @@ void D_Quit_NetGame (void)
     }
     else
     if( (servernode < MAXNETNODES)
-       && nodeingame[servernode] )
+       && node_in_game[servernode] )
     {
         // Client sends quit to server.
         netbuffer->packettype=PT_CLIENTQUIT;
@@ -2009,10 +2032,25 @@ void SV_AddNode(byte nnode)
 #if 0
     cl_maketic[nnode]    = maketic;
 #endif
-    // Because the server connects to itself and sets nodeingame[0],
-    // do not interfere with nodeingame[0] here.
+    // Because the server connects to itself and sets node_in_game[0],
+    // do not interfere with node_in_game[0] here.
     if(nnode)
-       nodeingame[nnode]=true;
+       node_in_game[nnode]=true;
+}
+
+// Get a free player node.  Obey the rules.
+byte  SV_get_player_num( void )
+{
+    // The server player_state determines availability.
+    byte pn = 0;
+    while( player_state[pn] )  // find free player slot
+    {
+       pn++;
+       if( pn >= MAXPLAYERS )  return  251;
+    }
+    
+    player_state[pn] = PS_added; // pending
+    return pn;
 }
 
 // Xcmd XD_ADDPLAYER
@@ -2027,10 +2065,15 @@ void Got_NetXCmd_AddPlayer(xcmd_t * xc)
 
     newplayernum&=0x7F;  // remove flag bit, and any sign extension
 
-    playeringame[newplayernum]=true;
+    // Make play engine player data.
+    // Do not set playeringame until player is created.
     G_AddPlayer(newplayernum);
-    if( newplayernum+1 > doomcom->numplayers )
-        doomcom->numplayers=newplayernum+1;
+    playeringame[newplayernum]=true;  // enable this player
+    player_state[newplayernum]= PS_player;
+    if( newplayernum+1 > num_player_slots )
+        num_player_slots = newplayernum+1;
+    num_game_players++;
+   
     // [WDJ] Players are 1..MAXPLAYERS to the user.
     GenPrintf(EMSG_hud, "Player %d is in the game (node %d)\n", (newplayernum+1), nnode);
 
@@ -2078,7 +2121,6 @@ void Got_NetXCmd_AddBot(xcmd_t * xc)  //added by AC for acbot
     bot_info_t * bip = & botinfo[newplayernum];
     player_t * pl = & players[newplayernum];
 
-    playeringame[newplayernum]=true;
     strcpy(player_names[newplayernum], bip->name);
     players[newplayernum].skincolor = bip->colour;
     if( cv_bot_skin.EV && (numskins > 1))
@@ -2087,8 +2129,12 @@ void Got_NetXCmd_AddBot(xcmd_t * xc)  //added by AC for acbot
     }
     G_AddPlayer(newplayernum);
     pl->bot = B_Create_Bot();
-    if( newplayernum+1>doomcom->numplayers )
-        doomcom->numplayers=newplayernum+1;
+
+    playeringame[newplayernum]=true;  // enable this player
+    player_state[newplayernum]= PS_bot;
+    if( newplayernum+1 > num_player_slots )
+        num_player_slots = newplayernum+1;
+    num_game_players++;
 
     multiplayer=1;
 
@@ -2101,39 +2147,34 @@ void Got_NetXCmd_AddBot(xcmd_t * xc)  //added by AC for acbot
 boolean SV_AddWaitingPlayers(void)
 {
     boolean  newplayer_added = false;  // return
-    byte nnode, nn;
+    byte nnode;
     byte newplayernum, addplayer_param;
 
-    newplayernum=0;
+    if( num_waiting_players == 0 )  return 0;
+
+    // The code below always clears the nodewaiting queues.
+    num_waiting_players = 0;
+   
     for(nnode=0; nnode<MAXNETNODES; nnode++)
     {
         // splitscreen can allow 2 player in one node
         for(; nodewaiting[nnode]>0; nodewaiting[nnode]--)
         {
-            newplayer_added = true;
-
             // Search for a free playernum.
-            // We can't use playeringame since it is not updated here.
-            //while(newplayernum<MAXPLAYERS && playeringame[newplayernum])
-            //    newplayernum++;
-            for( ;newplayernum<MAXPLAYERS; newplayernum++)
-            {
-                for(nn=0; nn<MAXNETNODES; nn++)
-                {
-                    if( nnode_to_player[nn]  == newplayernum
-                        || nnode_to_player2[nn] == newplayernum )
-                        break;
-                }
-                if( nn == MAXNETNODES )
-                    break;  // found an unused player number
-            }
+            // New players will have playeringame set as a result of XCmd AddPlayer.
+            newplayernum = SV_get_player_num();
             
 #ifdef PARANOIA
             // Should never happen because we check the number of players
             // before accepting the join.
-            if(newplayernum==MAXPLAYERS)
+            if(newplayernum >= MAXPLAYERS)
                 I_Error("SV_AddWaitingPlayers: Reached MAXPLAYERS\n");
 #endif
+            // Before NetCmd to avoid race condition.
+            if( num_player_slots == 0 )
+                num_player_slots++;  //we must send the change to other players
+
+            // Commit
             player_to_nnode[newplayernum] = nnode;
 
             if( playerpernode[nnode]<1 )
@@ -2149,13 +2190,11 @@ boolean SV_AddWaitingPlayers(void)
             playerpernode[nnode]++;
 
             Send_NetXCmd_p2(XD_ADDPLAYER, nnode, addplayer_param);
-            if( doomcom->numplayers==0 )
-                doomcom->numplayers++;  //we must send the change to other players
             
             DEBFILE(va("Server added player %d net node %d\n",
                        newplayernum, nnode));
-            // use the next free slot (we can't put playeringame[j]=true here)
-            newplayernum++; 
+
+            newplayer_added = true;
         }
     }
 
@@ -2213,7 +2252,10 @@ boolean SV_SpawnServer( void )
             CL_ConnectToServer();
     }
 
-    return SV_AddWaitingPlayers();
+    if( num_waiting_players )
+        return SV_AddWaitingPlayers();
+
+    return 0;
 }
 
 // Called by D_Init_ClientServer, G_StopDemo, CL_Reset, SV_StartSinglePlayerServer,
@@ -2282,6 +2324,7 @@ static void server_askinfo_handler( byte nnode )
 //   nnode: net node that is joining
 static void client_join_handler( byte nnode )
 {
+    byte num_to_join;
 #ifdef JOININGAME
     boolean newnode=false;
 #endif
@@ -2294,13 +2337,14 @@ static void client_join_handler( byte nnode )
            va("Incompatible client\nServer %i Net %i\nLegacy %i Net %i",
                VERSION, NETWORK_VERSION, netbuffer->u.clientcfg.version, LE_SWAP32(netbuffer->u.clientcfg.subversion) )
 #else
-	   // Too long
+           // Too long
            va("Different DOOM versions cannot play a net game!\n (server version %s)",
                VERSION_BANNER)
 #endif
         );
         return;
     }
+
     // nnode==0 is self, which is always accepted.
     if(!cv_allownewplayer.value && nnode!=0 )
     {
@@ -2308,18 +2352,22 @@ static void client_join_handler( byte nnode )
           "The server is not accepting people for the moment");
         return;
     }
+
+    num_to_join = netbuffer->u.clientcfg.num_node_players - playerpernode[nnode];
    
     // TODO; compute it using nodewaiting and playeringame
-    if( (doomcom->numplayers + 1) > cv_maxplayers.value)
+    if( (num_game_players + num_waiting_players + num_to_join) > cv_maxplayers.value )
     {
         SV_Send_Refuse(nnode,
-           va("Maximum of player reached (max:%d)", cv_maxplayers.value));
+           va("Maximum players reached (max:%d)", cv_maxplayers.value));
         return;
     }
    
     // Client authorized to join.
-    nodewaiting[nnode] = netbuffer->u.clientcfg.num_node_players - playerpernode[nnode];
-    if(!nodeingame[nnode])
+    nodewaiting[nnode] = num_to_join;
+    num_waiting_players += num_to_join;
+
+    if(!node_in_game[nnode])
     {
         SV_AddNode(nnode);
         if(!SV_Send_ServerConfig(nnode))
@@ -2333,8 +2381,9 @@ static void client_join_handler( byte nnode )
         newnode = true;
 #endif
     }
+
 #ifdef JOININGAME
-    if( nodewaiting[nnode] )
+    if( num_to_join )
     {
         if( (gamestate == GS_LEVEL) && newnode)
         {
@@ -2352,7 +2401,7 @@ static void client_join_handler( byte nnode )
 //   netconsole : the player
 static void client_quit_handler( byte nnode, int netconsole )
 {
-    // nodeingame will made false during the execution of kick command.
+    // node_in_game will made false during the execution of kick command.
     // This allows the sending of some packets to the quiting client
     // and to have them ack back.
     nodewaiting[nnode]= 0;
@@ -2375,7 +2424,7 @@ static void client_quit_handler( byte nnode, int netconsole )
         }
     }
     Net_CloseConnection(nnode);
-    nodeingame[nnode]=false;
+    node_in_game[nnode]=false;
 }
 
 
@@ -2429,33 +2478,39 @@ static void server_cfg_handler( byte nnode )
 #ifdef CLIENTPREDICTION2
     localgametic = gametic;
 #endif
-    nodeingame[servernode]=true;
+    node_in_game[servernode]=true;
 
     // Handle a player on the server.
     serverplayer = netbuffer->u.servercfg.serverplayer;
     if (serverplayer < MAXPLAYERS)  // 255 = no player
         player_to_nnode[serverplayer] = servernode;
 
-    doomcom->numplayers = netbuffer->u.servercfg.totalplayernum;
+    num_player_slots = netbuffer->u.servercfg.num_player_slots;
     cl_nnode = netbuffer->u.servercfg.clientnode;
 
     GenPrintf(EMSG_hud, "Join accepted, wait next map change ...\n");
     DEBFILE(va("Server accept join gametic=%d, client net node=%d\n",
                gametic, cl_nnode));
 
-    uint32_t  playerdet = LE_SWAP32(netbuffer->u.servercfg.playerdetected);
-    for(j=0;j<MAXPLAYERS;j++)
+    // No need for the server to update itself from message from server.
+    if( ! server )
     {
-        playeringame[j]=( playerdet & (1<<j) ) != 0;
+        // Client
+        uint32_t  playerdet = LE_SWAP32(netbuffer->u.servercfg.playerdetected);
+        for(j=0;j<MAXPLAYERS;j++)
+        {
+            playeringame[j] = (( playerdet & (1<<j) ) != 0);
+            player_state[j] = (playeringame[j])? PS_from_server : 0;
+        }
+
+        xc.playernum = 0;
+        xc.curpos = netbuffer->u.servercfg.netvar_buf;
+        xc.endpos = xc.curpos + NETVAR_BUFF_LEN - 1;
+        CV_LoadNetVars( &xc );
     }
 
-    xc.playernum = 0;
-    xc.curpos = netbuffer->u.servercfg.netcvarstates;
-    xc.endpos = xc.curpos + NETCVAR_BUFF_LEN - 1;
-    CV_LoadNetVars( &xc );
-
 #ifdef JOININGAME
-    cl_mode = ( netbuffer->u.servercfg.gamestate == GS_LEVEL ) ?
+    cl_mode = ( !server && (netbuffer->u.servercfg.gamestate == GS_LEVEL) ) ?
        CLM_download_savegame : CLM_connected;
 #else
     cl_mode = CLM_connected;
@@ -2599,11 +2654,11 @@ static void net_textcmd_handler( byte nnode, int netconsole )
 
     // Check if tic that we are making isn't too large,
     // else we cannot send it :(
-    // Note: doomcom->numplayers+1 is "+1" because doomcom->numplayers
+    // Note: num_player_slots+1 is "+1" because numplayers
     // can change within this time and sent time.
     tc_limit = software_MAXPACKETLENGTH
          - ( nbtc_len + 2 + SERVER_TIC_BASE_SIZE
-            + ((doomcom->numplayers+1) * sizeof(ticcmd_t)) );
+            + ((num_player_slots+1) * sizeof(ticcmd_t)) );
 
     // Search for a tic that has enough space in the ticcmd.
     tic = maketic;
@@ -2765,7 +2820,7 @@ static void servertic_handler( byte nnode )
     endbuffer = (byte*)&ticp[NUM_SERVERTIC_CMD];  // after last content
 
     // After the nettics are the net textcmds
-    k = netbuffer->u.serverpak.numplayers * netbuffer->u.serverpak.numtics;
+    k = netbuffer->u.serverpak.numplayerslots * netbuffer->u.serverpak.numtics;
     if( k >= NUM_SERVERTIC_CMD )  goto exceed_buffer;
     txtp = (byte *)&netbuffer->u.serverpak.cmds[k];
     // txtp uses cmd space for text
@@ -2778,8 +2833,8 @@ static void servertic_handler( byte nnode )
         // Copy the tics
         btic = BTIC_INDEX( ti );
         // btic limited to BACKUPTICS-1
-        TicCmdCopy(netcmds[btic], ticp, netbuffer->u.serverpak.numplayers);
-        ticp += netbuffer->u.serverpak.numplayers;
+        TicCmdCopy(netcmds[btic], ticp, netbuffer->u.serverpak.numplayerslots);
+        ticp += netbuffer->u.serverpak.numplayerslots;
 
         // Copy the incoming textcmds.
         num_txt = *(txtp++);  // num_textcmd field, number of txtcmd
@@ -2850,7 +2905,7 @@ static void Net_Packet_Handler(void)
             continue;
         }
 
-        if(!nodeingame[nnode])
+        if(!node_in_game[nnode])
         {
             unknown_host_handler( nnode );
             continue; //while
@@ -3066,7 +3121,7 @@ static void SV_Send_Tics (void)
     // x is computed using nextsend_tic[n], max packet size and maketic.
     for(nnode=1; nnode<MAXNETNODES; nnode++)
     {
-        if( ! nodeingame[nnode] )  continue;
+        if( ! node_in_game[nnode] )  continue;
 
         // Send a packet to each client node in this game.
         // They may be different, with individual status.
@@ -3102,7 +3157,7 @@ static void SV_Send_Tics (void)
         for(ti=start_tic; ti<end_tic; ti++)
         {
             // All of the ticcmd
-            packsize += sizeof(ticcmd_t) * doomcom->numplayers;
+            packsize += sizeof(ticcmd_t) * num_player_slots;
             // All of the textcmd
             packsize += TotalTextCmdPerTic(ti);
 
@@ -3126,7 +3181,7 @@ static void SV_Send_Tics (void)
                     {
                         I_Error("Too many players: cannot send %d data for %d players to net node %d\n"
                                 "Well sorry nobody is perfect....\n",
-                                packsize, doomcom->numplayers, nnode);
+                                packsize, num_player_slots, nnode);
                     }
                     else
                     {
@@ -3143,15 +3198,15 @@ static void SV_Send_Tics (void)
         netbuffer->packettype = PT_SERVERTICS;
         netbuffer->u.serverpak.starttic = start_tic;
         netbuffer->u.serverpak.numtics = (end_tic - start_tic); // num tics
-        netbuffer->u.serverpak.numplayers = LE_SWAP16_FAST(doomcom->numplayers);
+        netbuffer->u.serverpak.numplayerslots = num_player_slots;
         bufpos=(char *)&netbuffer->u.serverpak.cmds;
        
         // All the ticcmd_t, start_tic..(end_tic-1)
         for(ti=start_tic; ti<end_tic; ti++)
         {
             int btic = BTIC_INDEX( ti );
-            TicCmdCopy((ticcmd_t*) bufpos, netcmds[btic], doomcom->numplayers);
-            bufpos += doomcom->numplayers * sizeof(ticcmd_t);
+            TicCmdCopy((ticcmd_t*) bufpos, netcmds[btic], num_player_slots);
+            bufpos += num_player_slots * sizeof(ticcmd_t);
         }
 
         // All the textcmd, start_tic..(end_tic-1)
@@ -3392,7 +3447,7 @@ static void SV_Send_Tic_Update( int count )
     for( nn=0; nn<MAXNETNODES; nn++)
     {
         // Max of gametic and nettics[].
-        if(nodeingame[nn]
+        if(node_in_game[nn]
            && nettics[nn]<next_tic_send )
         {
            next_tic_send = nettics[nn];

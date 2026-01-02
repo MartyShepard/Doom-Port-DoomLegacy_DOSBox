@@ -7499,5 +7499,27 @@ patchfile = w108_62_netvar_read.patch
 Broke the netvar readback with cvar_call patch.
 Messes up netvar on netgames, and savegames.
 
+*** w108_addplayer
+patchfile = w108_63_addplayer_read.patch
+- commit revision 1477
+Create an addplayer function to enforce rules on
+finding a player slot.
+Add a player_state to hold information on pending player joins.
+The previous method did not work with bots joining, as they
+do have net nodes.
+Create some variables to remove dependence on doomcom.
+Make most of doomcom conditional on DOSDOOM.
 
+*** w108_botnet
+patchfile = w108_64_botnet.patch
+- commit revision 1478
+Fix bot create and destroy to work better with network play.
+When a bot is created, the server bot info is used, and the client bot
+info is ignored.
+This does not fix everything, still has some problems.
 
+*** w108_botsave
+patchfile = w108_65_botsave.patch
+- commit revision 1479
+Fix savegames to save bot personal information.
+This is used in join netgames.
