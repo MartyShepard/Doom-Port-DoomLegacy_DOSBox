@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 1434 2019-04-26 10:35:00Z wesleyjohnson $
+// $Id: m_misc.c 1456 2019-09-11 12:26:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -723,14 +723,14 @@ boolean Write_PCXfile ( const char * file_name, int width, int height, byte* dat
     pcx->xmin = 0;
     pcx->ymin = 0;
     // [WDJ] The PCX format must be little-endian, must swap when big-endian
-    pcx->xmax = LE_SWAP16(width-1);
-    pcx->ymax = LE_SWAP16(height-1);
-    pcx->hres = LE_SWAP16(width);
-    pcx->vres = LE_SWAP16(height);
+    pcx->xmax = (uint16_t)( LE_SWAP16(width-1) );
+    pcx->ymax = (uint16_t)( LE_SWAP16(height-1) );
+    pcx->hres = (uint16_t)( LE_SWAP16(width) );
+    pcx->vres = (uint16_t)( LE_SWAP16(height) );
     memset (pcx->palette,0,sizeof(pcx->palette));
     pcx->color_planes = 1;              // chunky image
-    pcx->bytes_per_line = LE_SWAP16(width);
-    pcx->palette_type = LE_SWAP16(1);   // Color (2=grey scale)
+    pcx->bytes_per_line = (uint16_t)( LE_SWAP16(width) );
+    pcx->palette_type = (uint16_t)( LE_SWAP16(1) );   // Color (2=grey scale)
     memset (pcx->filler,0,sizeof(pcx->filler));
 
 
@@ -798,8 +798,8 @@ boolean  Write_TGA( const char * filename, int width, int height, int bitpp, byt
 
     memset(&tga_hdr, 0, sizeof(tga_hdr));
     // TGA format is little-endian
-    tga_hdr.width = LE_SWAP16(width);
-    tga_hdr.height = LE_SWAP16(height);
+    tga_hdr.width = (uint16_t)( LE_SWAP16(width) );
+    tga_hdr.height = (uint16_t)( LE_SWAP16(height) );
     tga_hdr.image_pix_size = bitpp;  // normal, 24 bits per pixel
     tga_hdr.image_type = 2;  // Uncompressed, RGB
     tga_hdr.image_descriptor = 0x20;  // bit 5, origin in upper left-hand corner

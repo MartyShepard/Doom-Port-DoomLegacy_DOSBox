@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1455 2019-09-11 12:25:21Z wesleyjohnson $
+// $Id: r_data.c 1456 2019-09-11 12:26:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1587,13 +1587,13 @@ void R_Load_Textures (void)
         // Texture struct allocation is dependent upon number of patches.
         texture = textures[i] =
             Z_Malloc (sizeof(texture_t)
-                      + sizeof(texpatch_t)*(LE_SWAP16(mtexture->patchcount)-1),
+                      + sizeof(texpatch_t)*((uint16_t)(LE_SWAP16(mtexture->patchcount))-1),
                       PU_STATIC, 0);
 
         // get texture info from texture lump
-        texture->width  = LE_SWAP16(mtexture->width);
-        texture->height = LE_SWAP16(mtexture->height);
-        texture->patchcount = LE_SWAP16(mtexture->patchcount);
+        texture->width  = (uint16_t)( LE_SWAP16(mtexture->width) );
+        texture->height = (uint16_t)( LE_SWAP16(mtexture->height) );
+        texture->patchcount = (uint16_t)( LE_SWAP16(mtexture->patchcount) );
         texture->texture_model = (mtexture->masked)? TM_masked : TM_none; // hint
 
         // Sparc requires memmove, becuz gcc doesn't know mtexture is not aligned.
@@ -1611,7 +1611,7 @@ void R_Load_Textures (void)
             // get texture patch info from texture lump
             texpatch->originx = LE_SWAP16(mpatch->originx);
             texpatch->originy = LE_SWAP16(mpatch->originy);
-            texpatch->patchnum = patch_to_num[LE_SWAP16(mpatch->patchnum)];
+            texpatch->patchnum = patch_to_num[ (uint16_t)( LE_SWAP16(mpatch->patchnum) )];
             if (texpatch->patchnum == -1)
             {
                 I_Error ("R_Load_Textures: Missing patch in texture %s\n",
