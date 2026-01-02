@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
+// $Id: t_func.c 1483 2019-12-13 05:18:26Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -813,7 +813,11 @@ void SF_SkinColor(void)
            (players[playernum].mo->tflags & ~MFT_TRANSLATION6)
            | (players[playernum].mo->player->skincolor);
 
-        CV_SetValue (&cv_playercolor[0], colour);
+        // Test for netplay and splitscreen usage.
+        if( playernum == displayplayer )
+            CV_SetValue (&cv_playercolor[0], colour);  // affects user config value
+        else  if( playernum == displayplayer2 )
+            CV_SetValue (&cv_playercolor[1], colour);  // affects user config value
     }
 
     t_return.value.i = players[playernum].skincolor;
@@ -1131,7 +1135,12 @@ void SF_PlayerPitch(void)
 
     if(t_argc == 2)
     {
-        localaiming[0] = FixedToAngle(fixedvalue(t_argv[1]));
+        angle_t new_angle = FixedToAngle(fixedvalue(t_argv[1]));
+        // Test for netplay and splitscreen usage.
+        if( playernum == displayplayer )
+            localaiming[0] = new_angle;
+        else if( playernum == displayplayer2 )
+            localaiming[1] = new_angle;
     }
 
     t_return.value.f = AngleToFixed(players[playernum].aiming);
@@ -1490,14 +1499,20 @@ void SF_ObjAngle(void)
         if(t_argc > 1)
         {
             // set angle
+            angle_t new_angle = FixedToAngle(fixedvalue(t_argv[1]));
             //iori: now able to change the player's angle, not just mobj's
+            // Test for netplay and splitscreen usage.
             if(mo == consoleplayer_ptr->mo)
             {
-                localangle[0] = FixedToAngle(fixedvalue(t_argv[1]));
+                localangle[0] = new_angle;
+            }
+            else if(displayplayer2_ptr && (mo == displayplayer2_ptr->mo))
+            {
+                localangle[1] = new_angle;
             }
             else
             {
-                mo->angle = FixedToAngle(fixedvalue(t_argv[1]));
+                mo->angle = new_angle;
             }
         }
         t_return.value.f = (int)AngleToFixed(mo->angle);
