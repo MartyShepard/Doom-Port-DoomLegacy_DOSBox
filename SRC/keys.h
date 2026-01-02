@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: keys.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: keys.h 1465 2019-10-01 02:36:54Z wesleyjohnson $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
@@ -21,6 +21,14 @@
 
 #ifndef KEYS_H
 #define KEYS_H
+
+enum aux_controller_e
+{
+  MOUSEBUTTONS =  8,
+  MAXJOYSTICKS =  4,  // "Only" 4 joysticks per machine.
+  JOYBUTTONS   = 16,  // Max number of buttons for a joystick.
+  JOYHATBUTTONS = 4,  // Four hat directions.
+};
 
 /// These are the key event codes posted by the keyboard handler, and closely match the SDLKey symbols.
 /// 0-127 are ASCII codes. The codes KEY_NUMKB- are reserved for virtual keys.
@@ -104,6 +112,7 @@ enum key_input_e
   KEY_RWIN,
   KEY_MODE, // altgr
   KEY_unused3,
+
   // other function keys
   KEY_HELP = 315,
   KEY_PRINT,
@@ -114,22 +123,22 @@ enum key_input_e
   KEY_NUMKB, // all real keyboard codes are under this value
 
   // mouse and joystick buttons are handled as 'virtual' keys
-  MOUSEBUTTONS =  8,
-  MAXJOYSTICKS = 4,   // "Only" 4 joysticks per machine.
-  JOYBUTTONS   = 16,  // Max number of buttons for a joystick.
-  JOYHATBUTTONS = 4,  // Four hat directions.
+  //MOUSEBUTTONS =  8,
+  //MAXJOYSTICKS = 4,   // "Only" 4 joysticks per machine.
+  //JOYBUTTONS   = 16,  // Max number of buttons for a joystick.
+  //JOYHATBUTTONS = 4,  // Four hat directions.
 
   KEY_MOUSE1          = KEY_NUMKB, // mouse buttons, including the wheel
   KEY_MOUSEWHEELUP    = KEY_MOUSE1 + 3, // usually
   KEY_MOUSEWHEELDOWN,
-  KEY_DBLMOUSE1       = KEY_MOUSE1     + MOUSEBUTTONS, // double clicks
+  KEY_MOUSE1DBL      = KEY_MOUSE1     + MOUSEBUTTONS, // double clicks
 
-  KEY_2MOUSE1         = KEY_DBLMOUSE1  + MOUSEBUTTONS, // second mouse buttons
-  KEY_2MOUSEWHEELUP   = KEY_2MOUSE1 + 3,
-  KEY_2MOUSEWHEELDOWN,
-  KEY_DBL2MOUSE1      = KEY_2MOUSE1    + MOUSEBUTTONS,
+  KEY_MOUSE2         = KEY_MOUSE1DBL  + MOUSEBUTTONS, // second mouse buttons
+  KEY_MOUSE2WHEELUP  = KEY_MOUSE2 + 3,
+  KEY_MOUSE2WHEELDOWN,
+  KEY_MOUSE2DBL      = KEY_MOUSE2    + MOUSEBUTTONS,
 
-  KEY_JOY0BUT0 = KEY_DBL2MOUSE1 + MOUSEBUTTONS, // joystick buttons
+  KEY_JOY0BUT0 = KEY_MOUSE2DBL + MOUSEBUTTONS, // joystick buttons
   KEY_JOY0BUT1,
   KEY_JOY0BUT2,
   KEY_JOY0BUT3,
@@ -198,13 +207,13 @@ enum key_input_e
   KEY_JOY3BUT15,
   KEY_JOYLAST = KEY_JOY3BUT15,
 
-#ifdef DBL_JOY_BUTTONS     
+#ifdef JOY_BUTTONS_DOUBLE     
   // duplicate all joy, all buttons, KEY_JOY0BUT0 .. KEY_JOY3BUT15
-  KEY_DBLJOY0BUT0,
-  KEY_DBLJOY1BUT0 = KEY_DBLJOY0BUT0 + JOYBUTTONS,
-  KEY_DBLJOY2BUT0 = KEY_DBLJOY0BUT0 + JOYBUTTONS,
-  KEY_DBLJOY3BUT0 = KEY_DBLJOY0BUT0 + JOYBUTTONS,
-  KEY_DBLJOYLAST = KEY_DBLJOY0BUT0 + JOYBUTTONS - 1,
+  KEY_JOY0BUT0DBL,
+  KEY_JOY1BUT0DBL = KEY_JOY0BUT0DBL + JOYBUTTONS,
+  KEY_JOY2BUT0DBL = KEY_JOY0BUT0DBL + JOYBUTTONS,
+  KEY_JOY3BUT0DBL = KEY_JOY0BUT0DBL + JOYBUTTONS,
+  KEY_JOYLASTDBL  = KEY_JOY0BUT0DBL + JOYBUTTONS - 1,
 #endif
 
   // number of total 'button' inputs, includes keyboard keys, plus virtual

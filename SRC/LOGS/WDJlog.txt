@@ -7372,8 +7372,8 @@ Fix the bot generation duplicate name detection.
 Make the bot generation color selection use all colors before repeating.
 Add bot skins, and a bot skin control to the menu.
 
-*** w108_bot_gen
-patchfile = w108_49_bot_gen.patch
+*** w108_skygen
+patchfile = w108_49_skygen.patch
 - commit revision 1463
 Alternatives to the sky stretch, for normal sized sky textures.
 This is a work-in-progress.  Wanted to get it into the 1.48 release,
@@ -7397,3 +7397,36 @@ patchfile = w108_50_texture_get_patch.patch
 The SkyGen needs to generate the texture before it extends it.
 This fails with OpenGL, because of the tricks with the hardware render cache.
 Fix R_GenerateTexture to only get the ordinary texture patches.
+
+*** w108_keynames
+patchfile = w108_51_keynames.patch
+- commit revision 1465
+Change some of the KEY_x names, to a more reasonable pattern.
+KEY_2MOUSE ==> KEY_MOUSE2
+KEY_DBLMOUSE1 ==> KEY_MOUSE1DBL
+
+Simplify the key name descriptions that appear in the menu.
+"2nd mouse b 2" ==>  "mouse2 b2"
+It is now (Device, button, action).
+Actions like double_click are appended on the end.
+
+Fix the double click detection code.
+Provide a double click control, to adjust the detection.
+
+This affects saved config file controller assignments, for mouse2.
+Will have to re-enter them.
+
+*** w108_gamepad
+patchfile = w108_52_gamepad.patch
+- commit revision 1466
+Extend the joystick key definitions to handle gamepad, like the XBOX style gamepad.
+This has two joysticks, 10 buttons, and 2 triggers.
+Added joystick/gamepad controls that can be defined (menuesc, pause, automap).
+Detect some of the gamepad keys for menus, game start, and other necessary operations.
+This allows using a gamepad without a keyboard,
+for vanilla Doom and Heretic maps at least.
+Feature Request 93: contains code submitted by Leonardo Montenegro.
+
+
+
+

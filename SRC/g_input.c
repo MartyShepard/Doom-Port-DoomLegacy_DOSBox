@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: g_input.c 1465 2019-10-01 02:36:54Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -84,6 +84,13 @@ consvar_t  cv_mouse_motion = {"mousemotion","0", CV_SAVE|CV_CALL, mouse_motion_c
 #endif
 consvar_t  cv_grabinput = {"grabinput","1", CV_SAVE|CV_CALL, CV_OnOff, CV_mouse_OnChange };
 
+// A normal double click is approx. 6 tics from previous click.
+CV_PossibleValue_t double_cons_t[]={{1,"MIN"},{40,"MAX"},{0,NULL}};  // double click threshold
+consvar_t  cv_mouse_double   = {"mousedouble","8",CV_SAVE, double_cons_t};
+#ifdef JOY_BUTTONS_DOUBLE
+consvar_t  cv_joy_double     = {"joydouble",  "8",CV_SAVE, double_cons_t};
+#endif
+
 #if defined( __DJGPP__ )	
 CV_PossibleValue_t usejoystick_cons_t[] = { {0, "Off"}
 , {1, "4 BUttons"}
@@ -104,6 +111,7 @@ CV_PossibleValue_t usejoystick_cons_t[] = { {0, "Off"}
 consvar_t cv_usejoystick = { "use_joystick", "0", CV_SAVE | CV_CALL, usejoystick_cons_t, I_InitJoystick };
 #endif
 
+
 // Called for cv_grabinput, cv_mouse_motion
 void  CV_mouse_OnChange( void )
 {
@@ -114,11 +122,12 @@ void  CV_mouse_OnChange( void )
 int  mousex, mousey;
 int  mouse2x, mouse2y;
 
-boolean   gamekeydown[NUMINPUTS]; // Current state of the keys: true if the key is currently down.
-boolean gamekeytapped[NUMINPUTS]; // True if the key has been pressed since the last G_BuildTiccmd. Useful for impulse-style controls.
+// [WDJ] When boolean, the compiler uses 4 bytes for one bit of information.
+byte  gamekeydown[NUMINPUTS]; // Current state of the keys: true if the key is currently down.
+byte  gamekeytapped[NUMINPUTS]; // True if the key has been pressed since the last G_BuildTiccmd. Useful for impulse-style controls.
 
-#if defined( __DJGPP__ )
 // joystick values are repeated
+#if defined( __DJGPP__ )	
 int             joyxmove;
 int             joyymove;
 #endif
@@ -129,44 +138,55 @@ int  gamecontrol2[num_gamecontrols][2];        // secondary splitscreen player
 
 
 // FIXME: this can be simplified to two bytes
+// [WDJ] Got it down to 3 bytes.
 typedef struct {
-    int dtime;
-    boolean state;
-    int clicks;
+  byte  dtime;   // 0..21
+  byte  key_down;
+  byte  clicks;  // 0..2
 } dclick_t;
 
 // FIXME: only one mouse, only one joy
-static  dclick_t  mousedclicks[MOUSEBUTTONS];
-#ifdef DBL_JOY_BUTTONS
-static  dclick_t  joydclicks[JOYBUTTONS];
+static  dclick_t  mouse_dclick[MOUSEBUTTONS];
+#ifdef JOY_BUTTONS_DOUBLE
+static  dclick_t  joy_dclick[JOYBUTTONS];
 #endif
+
+static tic_t  clicktic = 0;  // gametic of last button check
+static unsigned int  click_delta;  // tics since last button check, limited 120
 
 //
 //  General double-click detection routine for any kind of input.
 //
-static boolean G_CheckDoubleClick(boolean state, dclick_t *dt)
+static boolean G_CheckDoubleClick(int key_id, dclick_t *dt, byte double_click_threshold )
 {
-    if (state != dt->state && dt->dtime > 1 )
+    // [WDJ] This is only called for each event, so time cannot be determined by counting.
+    byte key_down = gamekeydown[ key_id ];
+    // Limited to 120 tics since last click, anything > 40 tics is a timeout.
+    dt->dtime += click_delta;  // + 0..120, must not overflow
+    // This is called infrequently, so check timeouts first.
+    // A normal double click is approx. 6 tics from previous click.
+    if( dt->dtime > double_click_threshold )     // 1..40
     {
-        dt->state = state;
-        if (state)
-            dt->clicks++;
-        if (dt->clicks == 2)
-        {
-            dt->clicks = 0;
-            return true;
-        }
-        else
-            dt->dtime = 0;
+        dt->dtime = 121;  // timeout (with room to add 120)
+        dt->clicks = 0;
+        dt->key_down = false;
     }
-    else
+
+    // Check new state.
+    if( (key_down != dt->key_down) && (dt->dtime > 1) )
     {
-        dt->dtime ++;
-        if (dt->dtime > 20)
+        dt->key_down = key_down;
+        if( key_down )
         {
-            dt->clicks = 0;
-            dt->state = false;
+            dt->clicks++;
+            if(dt->clicks == 2)
+            {
+                dt->clicks = 0;
+                dt->dtime = 0;
+                return true;
+            }
         }
+        dt->dtime = 0;
     }
     return false;
 }
@@ -189,10 +209,10 @@ void  G_MapEventsToControls (event_t *ev)
     {
       case ev_keydown:
         if (ev->data1 < NUMINPUTS)
-          {
+        {
             gamekeydown[ev->data1] = true;
             gamekeytapped[ev->data1] = true; // reset in G_BuildTiccmd
-          }
+        }
         break;
 
       case ev_keyup:
@@ -225,17 +245,23 @@ void  G_MapEventsToControls (event_t *ev)
         break;
     }
 
+    // [WDJ] Only called for events, so click time needs to be based upon gametic.
+    // This is overflow safe, it wraps.
+    click_delta = (gametic - clicktic) / NEWTICRATERATIO;  // must be 35 tic/sec based.
+    if( click_delta > 120 )  click_delta = 120;
+    clicktic = gametic;
+
     // ALWAYS check for mouse & joystick double-clicks
     // even if no mouse event
     // FIXME: first MOUSE only
     for (i=0;i<MOUSEBUTTONS;i++)
-      gamekeydown[KEY_DBLMOUSE1+i] = G_CheckDoubleClick(gamekeydown[KEY_MOUSE1+i], &mousedclicks[i]);
+      gamekeydown[KEY_MOUSE1DBL+i] = G_CheckDoubleClick( KEY_MOUSE1+i, &mouse_dclick[i], cv_mouse_double.value );
 
-#ifdef DBL_JOY_BUTTONS     
+#ifdef JOY_BUTTONS_DOUBLE
     // joystick doubleclicks
     // FIXME: JOY0 only
     for (i=0;i<JOYBUTTONS;i++)
-      gamekeydown[KEY_DBLJOY0BUT0+i] = G_CheckDoubleClick(gamekeydown[KEY_JOY0BUT0+i], &joydclicks[i]);
+      gamekeydown[KEY_JOY0BUT0DBL+i] = G_CheckDoubleClick( KEY_JOY0BUT0+i, &joy_dclick[i], cv_joy_double.value );
 #endif
 }
 
@@ -327,101 +353,102 @@ static keyname_t keynames[] =
   {KEY_MOUSE1+5,"mouse 6"},
   {KEY_MOUSE1+6,"mouse 7"},
   {KEY_MOUSE1+7,"mouse 8"},
-  {KEY_2MOUSE1,  "2nd mouse 2"},    //BP: sorry my mouse handler swap button 1 and 2
-  {KEY_2MOUSE1+1,"2nd mouse 1"},
-  {KEY_2MOUSE1+2,"2nd mouse 3"},
-  {KEY_2MOUSEWHEELUP,"2nd mwheel up"},
-  {KEY_2MOUSEWHEELDOWN,"2nd mwheel down"},
-  {KEY_2MOUSE1+5,"2nd mouse 6"},
-  {KEY_2MOUSE1+6,"2nd mouse 7"},
-  {KEY_2MOUSE1+7,"2nd mouse 8"},
+  {KEY_MOUSE2,  "mouse2 2"},    //BP: sorry my mouse handler swap button 1 and 2
+  {KEY_MOUSE2+1,"mouse2 1"},
+  {KEY_MOUSE2+2,"mouse2 3"},
+  {KEY_MOUSE2WHEELUP,"m2 mwheel up"},
+  {KEY_MOUSE2WHEELDOWN,"m2 mwheel down"},
+  {KEY_MOUSE2+5,"mouse2 6"},
+  {KEY_MOUSE2+6,"mouse2 7"},
+  {KEY_MOUSE2+7,"mouse2 8"},
 
-  {KEY_DBLMOUSE1,   "mouse 1 d"},
-  {KEY_DBLMOUSE1+1, "mouse 2 d"},
-  {KEY_DBLMOUSE1+2, "mouse 3 d"},
-  {KEY_DBLMOUSE1+3, "mouse 4 d"},
-  {KEY_DBLMOUSE1+4, "mouse 5 d"},
-  {KEY_DBLMOUSE1+5, "mouse 6 d"},
-  {KEY_DBLMOUSE1+6, "mouse 7 d"},
-  {KEY_DBLMOUSE1+7, "mouse 8 d"},
-  {KEY_DBL2MOUSE1,  "2nd mouse 2 d"},
-  {KEY_DBL2MOUSE1+1,"2nd mouse 1 d"},
-  {KEY_DBL2MOUSE1+2,"2nd mouse 3 d"},
-  {KEY_DBL2MOUSE1+3,"2nd mouse 4 d"},
-  {KEY_DBL2MOUSE1+4,"2nd mouse 5 d"},
-  {KEY_DBL2MOUSE1+5,"2nd mouse 6 d"},
-  {KEY_DBL2MOUSE1+6,"2nd mouse 7 d"},
-  {KEY_DBL2MOUSE1+7,"2nd mouse 8 d"},
+  {KEY_MOUSE1DBL,   "mouse 1 d"},
+  {KEY_MOUSE1DBL+1, "mouse 2 d"},
+  {KEY_MOUSE1DBL+2, "mouse 3 d"},
+  {KEY_MOUSE1DBL+3, "mouse 4 d"},
+  {KEY_MOUSE1DBL+4, "mouse 5 d"},
+  {KEY_MOUSE1DBL+5, "mouse 6 d"},
+  {KEY_MOUSE1DBL+6, "mouse 7 d"},
+  {KEY_MOUSE1DBL+7, "mouse 8 d"},
+  {KEY_MOUSE2DBL,  "mouse2 2 d"},
+  {KEY_MOUSE2DBL+1,"mouse2 1 d"},
+  {KEY_MOUSE2DBL+2,"mouse2 3 d"},
+  {KEY_MOUSE2DBL+3,"mouse2 4 d"},
+  {KEY_MOUSE2DBL+4,"mouse2 5 d"},
+  {KEY_MOUSE2DBL+5,"mouse2 6 d"},
+  {KEY_MOUSE2DBL+6,"mouse2 7 d"},
+  {KEY_MOUSE2DBL+7,"mouse2 8 d"},
 
-  {KEY_JOY0BUT0, "Joy 0 b 0"},
-  {KEY_JOY0BUT1, "Joy 0 b 1"},
-  {KEY_JOY0BUT2, "Joy 0 b 2"},
-  {KEY_JOY0BUT3, "Joy 0 b 3"},
-  {KEY_JOY0BUT4, "Joy 0 b 4"},
-  {KEY_JOY0BUT5, "Joy 0 b 5"},
-  {KEY_JOY0BUT6, "Joy 0 b 6"},
-  {KEY_JOY0BUT7, "Joy 0 b 7"},
-  {KEY_JOY0BUT8, "Joy 0 b 8"},
-  {KEY_JOY0BUT9, "Joy 0 b 9"},
-  {KEY_JOY0BUT10, "Joy 0 b 10"},
-  {KEY_JOY0BUT11, "Joy 0 b 11"},
-  {KEY_JOY0BUT12, "Joy 0 b 12"},
-  {KEY_JOY0BUT13, "Joy 0 b 13"},
-  {KEY_JOY0BUT14, "Joy 0 b 14"},
-  {KEY_JOY0BUT15, "Joy 0 b 15"},
+  {KEY_JOY0BUT0, "Joy0 b0"},
+  {KEY_JOY0BUT1, "Joy0 b1"},
+  {KEY_JOY0BUT2, "Joy0 b2"},
+  {KEY_JOY0BUT3, "Joy0 b3"},
+  {KEY_JOY0BUT4, "Joy0 b4"},
+  {KEY_JOY0BUT5, "Joy0 b5"},
+  {KEY_JOY0BUT6, "Joy0 b6"},
+  {KEY_JOY0BUT7, "Joy0 b7"},
+  {KEY_JOY0BUT8, "Joy0 b8"},
+  {KEY_JOY0BUT9, "Joy0 b9"},
+  {KEY_JOY0BUT10, "Joy0 b10"},
+  {KEY_JOY0BUT11, "Joy0 b11"},
+  {KEY_JOY0BUT12, "Joy0 b12"},
+  {KEY_JOY0BUT13, "Joy0 b13"},
+  {KEY_JOY0BUT14, "Joy0 b14"},
+  {KEY_JOY0BUT15, "Joy0 b15"},
 
-  {KEY_JOY1BUT0, "Joy 1 b 0"},
-  {KEY_JOY1BUT1, "Joy 1 b 1"},
-  {KEY_JOY1BUT2, "Joy 1 b 2"},
-  {KEY_JOY1BUT3, "Joy 1 b 3"},
-  {KEY_JOY1BUT4, "Joy 1 b 4"},
-  {KEY_JOY1BUT5, "Joy 1 b 5"},
-  {KEY_JOY1BUT6, "Joy 1 b 6"},
-  {KEY_JOY1BUT7, "Joy 1 b 7"},
-  {KEY_JOY1BUT8, "Joy 1 b 8"},
-  {KEY_JOY1BUT9, "Joy 1 b 9"},
-  {KEY_JOY1BUT10, "Joy 1 b 10"},
-  {KEY_JOY1BUT11, "Joy 1 b 11"},
-  {KEY_JOY1BUT12, "Joy 1 b 12"},
-  {KEY_JOY1BUT13, "Joy 1 b 13"},
-  {KEY_JOY1BUT14, "Joy 1 b 14"},
-  {KEY_JOY1BUT15, "Joy 1 b 15"},
+  {KEY_JOY1BUT0, "Joy1 b0"},
+  {KEY_JOY1BUT1, "Joy1 b1"},
+  {KEY_JOY1BUT2, "Joy1 b2"},
+  {KEY_JOY1BUT3, "Joy1 b3"},
+  {KEY_JOY1BUT4, "Joy1 b4"},
+  {KEY_JOY1BUT5, "Joy1 b5"},
+  {KEY_JOY1BUT6, "Joy1 b6"},
+  {KEY_JOY1BUT7, "Joy1 b7"},
+  {KEY_JOY1BUT8, "Joy1 b8"},
+  {KEY_JOY1BUT9, "Joy1 b9"},
+  {KEY_JOY1BUT10, "Joy1 b10"},
+  {KEY_JOY1BUT11, "Joy1 b11"},
+  {KEY_JOY1BUT12, "Joy1 b12"},
+  {KEY_JOY1BUT13, "Joy1 b13"},
+  {KEY_JOY1BUT14, "Joy1 b14"},
+  {KEY_JOY1BUT15, "Joy1 b15"},
 
-  {KEY_JOY2BUT0, "Joy 2 b 0"},
-  {KEY_JOY2BUT1, "Joy 2 b 1"},
-  {KEY_JOY2BUT2, "Joy 2 b 2"},
-  {KEY_JOY2BUT3, "Joy 2 b 3"},
-  {KEY_JOY2BUT4, "Joy 2 b 4"},
-  {KEY_JOY2BUT5, "Joy 2 b 5"},
-  {KEY_JOY2BUT6, "Joy 2 b 6"},
-  {KEY_JOY2BUT7, "Joy 2 b 7"},
-  {KEY_JOY2BUT8, "Joy 2 b 8"},
-  {KEY_JOY2BUT9, "Joy 2 b 9"},
-  {KEY_JOY2BUT10, "Joy 2 b 10"},
-  {KEY_JOY2BUT11, "Joy 2 b 11"},
-  {KEY_JOY2BUT12, "Joy 2 b 12"},
-  {KEY_JOY2BUT13, "Joy 2 b 13"},
-  {KEY_JOY2BUT14, "Joy 2 b 14"},
-  {KEY_JOY2BUT15, "Joy 2 b 15"},
+  {KEY_JOY2BUT0, "Joy2 b0"},
+  {KEY_JOY2BUT1, "Joy2 b1"},
+  {KEY_JOY2BUT2, "Joy2 b2"},
+  {KEY_JOY2BUT3, "Joy2 b3"},
+  {KEY_JOY2BUT4, "Joy2 b4"},
+  {KEY_JOY2BUT5, "Joy2 b5"},
+  {KEY_JOY2BUT6, "Joy2 b6"},
+  {KEY_JOY2BUT7, "Joy2 b7"},
+  {KEY_JOY2BUT8, "Joy2 b8"},
+  {KEY_JOY2BUT9, "Joy2 b9"},
+  {KEY_JOY2BUT10, "Joy2 b10"},
+  {KEY_JOY2BUT11, "Joy2 b11"},
+  {KEY_JOY2BUT12, "Joy2 b12"},
+  {KEY_JOY2BUT13, "Joy2 b13"},
+  {KEY_JOY2BUT14, "Joy2 b14"},
+  {KEY_JOY2BUT15, "Joy2 b15"},
 
-  {KEY_JOY3BUT0, "Joy 3 b 0"},
-  {KEY_JOY3BUT1, "Joy 3 b 1"},
-  {KEY_JOY3BUT2, "Joy 3 b 2"},
-  {KEY_JOY3BUT3, "Joy 3 b 3"},
-  {KEY_JOY3BUT4, "Joy 3 b 4"},
-  {KEY_JOY3BUT5, "Joy 3 b 5"},
-  {KEY_JOY3BUT6, "Joy 3 b 6"},
-  {KEY_JOY3BUT7, "Joy 3 b 7"},
-  {KEY_JOY3BUT8, "Joy 3 b 8"},
-  {KEY_JOY3BUT9, "Joy 3 b 9"},
-  {KEY_JOY3BUT10, "Joy 3 b 10"},
-  {KEY_JOY3BUT11, "Joy 3 b 11"},
-  {KEY_JOY3BUT12, "Joy 3 b 12"},
-  {KEY_JOY3BUT13, "Joy 3 b 13"},
-  {KEY_JOY3BUT14, "Joy 3 b 14"},
-  {KEY_JOY3BUT15, "Joy 3 b 15"},
+  {KEY_JOY3BUT0, "Joy3 b0"},
+  {KEY_JOY3BUT1, "Joy3 b1"},
+  {KEY_JOY3BUT2, "Joy3 b2"},
+  {KEY_JOY3BUT3, "Joy3 b3"},
+  {KEY_JOY3BUT4, "Joy3 b4"},
+  {KEY_JOY3BUT5, "Joy3 b5"},
+  {KEY_JOY3BUT6, "Joy3 b6"},
+  {KEY_JOY3BUT7, "Joy3 b7"},
+  {KEY_JOY3BUT8, "Joy3 b8"},
+  {KEY_JOY3BUT9, "Joy3 b9"},
+  {KEY_JOY3BUT10, "Joy3 b10"},
+  {KEY_JOY3BUT11, "Joy3 b11"},
+  {KEY_JOY3BUT12, "Joy3 b12"},
+  {KEY_JOY3BUT13, "Joy3 b13"},
+  {KEY_JOY3BUT14, "Joy3 b14"},
+  {KEY_JOY3BUT15, "Joy3 b15"},
 };
 
+// Index gamecontrols_e
 char *gamecontrolname[num_gamecontrols] =
 {
     "nothing",        //a key/button mapped to gc_null has no effect
@@ -739,14 +766,16 @@ void Command_BindJoyaxis_f()
   }
 
   j.joynum  = atoi( carg.arg[1] );
-  if(j.joynum < 0 || j.joynum >= num_joysticks) {
+  if(j.joynum < 0 || j.joynum >= num_joysticks)
+  {
     CONS_Printf("Attempting to bind/release non-existent joystick %d.\n", j.joynum);
     return;
   }
 
   j.axisnum = (carg.num >= 3) ? atoi( carg.arg[2] ) : -1;
 #if !defined( __DJGPP__ )
-  if(j.axisnum < -1 || j.axisnum >= I_JoystickNumAxes(j.joynum)) {
+  if(j.axisnum < -1 || j.axisnum >= I_JoystickNumAxes(j.joynum))
+  {
     CONS_Printf("Attempting to bind/release non-existent axis %d.\n", j.axisnum);
     return;
   }
@@ -761,13 +790,15 @@ void Command_BindJoyaxis_f()
     int num_keep_bindings = 0;
     joybinding_t keep_bindings[MAX_JOYBINDINGS];
 
-    if(num_joybindings == 0) {
+    if(num_joybindings == 0)
+    {
       CONS_Printf("No bindings to unset.\n");
       return;
     }
 
     unsigned int i;
-    for(i=0; i<num_joybindings; i++) {
+    for(i=0; i<num_joybindings; i++)
+    {
       joybinding_t temp = joybindings[i];
       if((j.joynum == temp.joynum) &&
          (j.axisnum == -1 || j.axisnum == temp.axisnum))
@@ -777,7 +808,8 @@ void Command_BindJoyaxis_f()
     }
 
     // We have the new bindings.
-    if (num_keep_bindings == num_joybindings) {
+    if (num_keep_bindings == num_joybindings)
+    {
       CONS_Printf("No bindings matched the parameters.\n");
       return;
     }
@@ -797,15 +829,18 @@ void Command_BindJoyaxis_f()
     else
       j.scale = 1.0f;
 
-    if(j.action < 0 || j.action >= num_joyactions) {
+    if(j.action < 0 || j.action >= num_joyactions)
+    {
       CONS_Printf("Attempting to bind non-existent action %d.\n", (int)(j.action));
       return;
     }
 
     // Overwrite existing binding, if any. Otherwise just append.
-    for(i=0; i<num_joybindings; i++) {
+    for(i=0; i<num_joybindings; i++)
+    {
       joybinding_t j2 = joybindings[i];
-      if(j2.joynum == j.joynum && j2.axisnum == j.axisnum) {
+      if(j2.joynum == j.joynum && j2.axisnum == j.axisnum)
+      {
         joybindings[i] = j;
         CONS_Printf("Joystick binding modified.\n");
         return;

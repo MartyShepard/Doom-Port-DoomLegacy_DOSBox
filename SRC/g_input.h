@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: g_input.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: g_input.h 1465 2019-10-01 02:36:54Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -137,6 +137,10 @@ extern consvar_t   cv_mouse2_invert;
 extern consvar_t   cv_mouse2_sens_x;
 extern consvar_t   cv_mouse2_sens_y;
 
+extern consvar_t   cv_mouse_double;
+#ifdef JOY_BUTTONS_DOUBLE     
+extern consvar_t   cv_joy_double;
+#endif
 extern int             mousex;
 extern int             mousey;
 extern int             mouse2x;
@@ -149,8 +153,8 @@ extern int             dclicktime2;
 extern int             dclickstate2;
 extern int             dclicks2;
 
-extern boolean gamekeydown[NUMINPUTS];
-extern boolean gamekeytapped[NUMINPUTS];
+extern byte  gamekeydown[NUMINPUTS];
+extern byte  gamekeytapped[NUMINPUTS];
 
 // two key codes (or virtual key) per game control
 extern  int     gamecontrol[num_gamecontrols][2];

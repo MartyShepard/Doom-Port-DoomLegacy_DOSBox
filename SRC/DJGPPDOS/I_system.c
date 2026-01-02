@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: I_system.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: I_system.c 1465 2019-10-01 02:36:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -641,7 +641,7 @@ void I_ShutdownMouse2()
     for(i=0;i<MOUSEBUTTONS;i++)
     {
         event.type=ev_keyup;
-        event.data1=KEY_2MOUSE1+i;
+        event.data1=KEY_MOUSE2+i;
         D_PostEvent(&event);
     }
 
@@ -809,7 +809,7 @@ void I_GetEvent (void)
                        event.type=ev_keydown;
                     else
                        event.type=ev_keyup;
-                    event.data1=KEY_2MOUSE1+i;
+                    event.data1=KEY_MOUSE2+i;
                     D_PostEvent(&event);
                 }
         }

@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01465 ]: w108 51 key name and double click
 [01464 ]: w108 50 texture get patch
           DOS: Sky Crash Fixed. Using fix from future commit 1472
 					
