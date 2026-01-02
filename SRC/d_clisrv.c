@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1478 2019-10-19 13:43:25Z wesleyjohnson $
+// $Id: d_clisrv.c 1480 2019-12-13 05:15:32Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1815,8 +1815,8 @@ void Command_Kick(void)
 
 void Got_NetXCmd_KickCmd(xcmd_t * xc)
 {
-    int pnum=READBYTE(xc->curpos);  // unsigned player num
-    int msg =READBYTE(xc->curpos);  // unsigned kick message
+    byte pnum=READBYTE(xc->curpos);  // unsigned player num
+    byte msg =READBYTE(xc->curpos);  // unsigned kick message
 
     GenPrintf(EMSG_hud, "\2%s ", player_names[pnum]);
 
@@ -1835,7 +1835,8 @@ void Got_NetXCmd_KickCmd(xcmd_t * xc)
                GenPrintf(EMSG_hud, "left the game\n");
                break;
     }
-    if( pnum==consoleplayer )
+
+    if( pnum == (byte)consoleplayer )
     {
         CL_Reset();
         D_StartTitle();
@@ -2054,13 +2055,14 @@ byte  SV_get_player_num( void )
 }
 
 // Xcmd XD_ADDPLAYER
+// Sent by server to all client.
 void Got_NetXCmd_AddPlayer(xcmd_t * xc)
 {
     static uint32_t sendconfigtic = 0xffffffff;
 
     // [WDJ] Having error due to sign extension of byte read (signed char).
     byte nnode = READBYTE(xc->curpos);  // unsigned
-    unsigned int newplayernum = READBYTE(xc->curpos);  // unsigned
+    byte newplayernum = READBYTE(xc->curpos);  // unsigned
     boolean splitscreenplayer = newplayernum&0x80;
 
     newplayernum&=0x7F;  // remove flag bit, and any sign extension
@@ -2070,10 +2072,10 @@ void Got_NetXCmd_AddPlayer(xcmd_t * xc)
     G_AddPlayer(newplayernum);
     playeringame[newplayernum]=true;  // enable this player
     player_state[newplayernum]= PS_player;
-    if( newplayernum+1 > num_player_slots )
+    if( num_player_slots < newplayernum+1 )
         num_player_slots = newplayernum+1;
     num_game_players++;
-   
+
     // [WDJ] Players are 1..MAXPLAYERS to the user.
     GenPrintf(EMSG_hud, "Player %d is in the game (node %d)\n", (newplayernum+1), nnode);
 
@@ -2132,7 +2134,7 @@ void Got_NetXCmd_AddBot(xcmd_t * xc)  //added by AC for acbot
         GenPrintf(EMSG_warn, "Bot %s: player slot %i already in use.\n", botname, newplayernum );
         return;
     }
-   
+
     G_AddPlayer(newplayernum);
 
     B_Create_Bot( pl );

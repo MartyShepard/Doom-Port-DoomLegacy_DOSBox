@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1478 2019-10-19 13:43:25Z wesleyjohnson $
+// $Id: b_game.c 1480 2019-12-13 05:15:32Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -314,7 +314,7 @@ static void CV_botrandom_OnChange( void )
     // The random number generatators will be updated.
     if( ! server )
         return;
-   
+
     // [WDJ] Updating the random number generators in the middle of a game, ugh.
     if( netgame )
         SV_Send_State( 1 );  // pause everybody
@@ -1206,6 +1206,6 @@ void B_SpawnBot(bot_t* bot)
          break;
     }
     bot->skill = sk; // 0=crippled, 1=baby .. 5=nightmare
-   
+
     B_LLClear(bot->path);
 }

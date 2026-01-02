@@ -7523,3 +7523,66 @@ patchfile = w108_65_botsave.patch
 - commit revision 1479
 Fix savegames to save bot personal information.
 This is used in join netgames.
+
+*** w108_netbyte
+patchfile = w108_66_netbyte.patch
+- commit revision 1480
+Cleanup of some network code.
+Use byte vars for byte message fields to avoid sign-extension for big-endian machines.
+Better checking of network messages for erroneous fields.
+
+*** w108_pind
+patchfile = w108_67_pind.patch
+- commit revision 1481
+Use pind for player-index, where [0]=main player, and [1]=splitscreen player.
+Make structures that are duplicated for the splitscreen player, into an
+array indexed by pind.
+Make network structures for player1 and player2 into one structure indexed by pind.
+Make cv_consvar that exist for both players into an array [2], and
+in the code access it by pind.
+
+*** w108_player2
+patchfile = w108_68_player2.patch
+- commit revision 1482
+Add cv_autoaim, cv_crosshair, cv_weaponpref for player2, using pind.
+Add a player menu for the consvar that exist for player1 and player2.
+Update the network Send for NameColor and Weaponpref.
+
+*** w108_fs_player2
+patchfile = w108_69_fs_player2.patch
+- commit revision 1483
+Update some fragglescript functions that modify the player,
+for network and multiplayer.
+
+*** w108_netfil
+patchfile = w108_70_netfil.patch
+- commit revision 1484
+Some cleanup of the network file operations.
+Remove grunge and kluges.
+Fix some endian problems.
+Easier to maintain communication with higher level network operations.
+
+*** w108_progdir
+patchfile = w108_71_fs_player2.patch
+- commit revision 1485
+Fix segfault of progdir in strcmp, for some operating systems that
+fail to return the progdir.
+
+*** w108_netstate
+patchfile = w108_72_netstate.patch
+- commit revision 1486
+Revise Network state.
+Remove node_in_game, replacing it with nnode_state.
+This gives the network server proper tracking of the client network state.
+Do not co-mingle this with the client tracking the server state,
+because there may be a client on the server.
+Remove kluges that were present to work around such situations.
+Revise the Client connection state with error and states.
+Rewrite the Net_packet_handler and unknown_node_handler,
+to use this new state.
+
+*** w108_netstate
+patchfile = w108_73_netfunc.patch
+- commit revision 1487
+Clean up the network functions that had kluges.
+

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
+// $Id: d_netcmd.c 1480 2019-12-13 05:15:32Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -427,13 +427,25 @@ void Send_NameColor2(void)
 
 void Got_NetXCmd_NameColor(xcmd_t * xc)
 {
-    player_t * p = &players[xc->playernum];
-    char * pname = player_names[xc->playernum];
+    int  pn = xc->playernum;
     char * lcp = (char*)xc->curpos; // local cp
+    char * pname;
+    player_t * p;
+    byte  sk;
+   
+    if( pn >= MAXPLAYERS )
+    {
+        GenPrintf( EMSG_error, "NameColor: invalid player num %i\n", pn );       
+        return;
+    }
+
+    pname = player_names[pn];
+    p = &players[pn];
 
     // Format:  color byte, player_name str0, skin_name str0.
     // color
-    p->skincolor = READBYTE(lcp) % NUMSKINCOLORS;
+    sk = READBYTE(lcp); // unsigned read
+    p->skincolor = sk % NUMSKINCOLORS;
 
     // a copy of color
     if (p->mo)
@@ -469,12 +481,12 @@ void Got_NetXCmd_NameColor(xcmd_t * xc)
     {
         if( EV_legacy >= 128 )
         {
-            SetPlayerSkin(xc->playernum, lcp);
+            SetPlayerSkin(pn, lcp);
             SKIPSTRING(lcp);
         }
         else
         {
-            SetPlayerSkin(xc->playernum, lcp);
+            SetPlayerSkin(pn, lcp);
             lcp += (SKINNAMESIZE + 1);
         }
     }
@@ -486,9 +498,10 @@ void Send_WeaponPref(void)
 {
     char buf[NUMWEAPONS + 2];
 
-    if (strlen(cv_weaponpref.string) != NUMWEAPONS)
+    int wplen = strlen(cv_weaponpref.string);
+    if( wplen != NUMWEAPONS)
     {
-        CONS_Printf("weaponpref must have %d characters", NUMWEAPONS);
+        CONS_Printf("weaponpref invalid length: %d, should be %d\n", wplen, NUMWEAPONS);
         return;
     }
     // Format: original_weapon_switch  byte,
@@ -982,7 +995,7 @@ void Command_ExitGame_f(void)
 void Got_NetXCmd_UseArtifact(xcmd_t * xc)
 {
     // Format: artifact  byte.
-    int art = READBYTE(xc->curpos);
+    byte art = READBYTE(xc->curpos);
     P_PlayerUseArtifact(&players[xc->playernum], art);
 }
 
