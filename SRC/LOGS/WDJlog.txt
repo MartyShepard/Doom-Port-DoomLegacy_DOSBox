@@ -7333,4 +7333,18 @@ significant changes to bots.
 patchfile = w108_45_hardskill.patch
 - commit revision 1459
 A new table for skill levels had a bad entry for the hard skill level.
+This fixes bug 0xxx (not entered yet).
 
+*** w108_blockmap
+patchfile = w108_46_blockmap.patch
+- commit revision 1460
+Loading strg.wad Map20 would fail due to blockmap overflow.
+The previous blockmap overflow detection failed due to blockmap
+compression by zennode.  It will reuse an empty blocklist that it
+put as the first blockmap list.  This compression also puts some
+of the other blockmap lists out of order, making the nearby test fail.
+The new code will check for reuse of the first list, then try
+blockmap overflow correction.
+If that fails it will find the 0xFFFF at the end of a list, and
+the 0 at the beginning of the next list.
+This fixes bug 0654.

@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01460 ]: w108 46 blockmap compressed
 [01459 ]: w108 45 hardskill
 [01458 ]: w108 44 bots overhaul
 [01457 ]: w108 43 version 1.48

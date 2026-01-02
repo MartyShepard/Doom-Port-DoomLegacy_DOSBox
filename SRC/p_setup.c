@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.c 1456 2019-09-11 12:26:00Z wesleyjohnson $
+// $Id: p_setup.c 1460 2019-09-23 08:42:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1319,6 +1319,9 @@ void P_LoadBlockMap (int lump)
   uint32_t firstlist, lastlist;  // blockmap block list bounds
   uint32_t overflow_corr = 0;
   uint32_t prev_bme = 0;  // for detecting overflow wrap
+#ifdef TRACE_BLOCKMAPHEAD
+  uint32_t head_bmi = 0;
+#endif
   int i;
    
   // [WDJ] when zennode has not been run, this code will corrupt Zone memory.
@@ -1360,35 +1363,161 @@ void P_LoadBlockMap (int lump)
       uint32_t  bme = (uint16_t)( LE_SWAP16(wadblockmaplump[i]) );  // offset
       // upon overflow, the bme will wrap to low values
       if ( (bme < firstlist)  // too small to be valid
-           && (bme < 0x1000) && (prev_bme > 0xf000))  // wrapped
+           && (bme < 0x2000) && (prev_bme > 0xE000))  // wrapped
       {
           // first or repeated overflow
           overflow_corr += 0x00010000;
           GenPrintf(EMSG_warn,"Correct blockmap offset[%i...] overflow by adding 0x%X\n",
                    i, overflow_corr );
       }
-      prev_bme = bme;  // uncorrected
-      // correct for overflow, or else try without correction
-      if ( overflow_corr )
+
+      if( bme == firstlist )
       {
+          // Use the first list. Zennode compress will put a common empty list as first list.
+      }
+      else if( overflow_corr )
+      {
+          // correct for overflow
+          byte  have_corrected = 0;
           uint32_t bmec = bme + overflow_corr;
-          // First entry of list is 0, but high odds of hitting one randomly.
-          // Check for valid blockmap offset, and offset overflow
-          if ( bmec <= lastlist
-               && wadblockmaplump[bmec] == 0      // valid start list
-               && ((bmec - blockmaphead[i-1]) < 1000))  // reasonably close sequentially
+          uint32_t bmi = blockmaphead[i-1];
+
+          prev_bme = bme;  // uncorrected
+
+          if( bmec <= lastlist )
           {
-              bme = bmec;
+              uint32_t wbmec = (uint16_t)( LE_SWAP16(wadblockmaplump[bmec]) );
+              uint32_t wbm3 = (bmec > 0)? (uint16_t)( LE_SWAP16(wadblockmaplump[bmec-1]) ) : 0xFFFF;
+              if( (wbm3 == 0xFFFF) && (wbmec == 0) ) // valid start list
+              {
+#ifdef TRACE_BLOCKMAPHEAD
+                  if((bmec - bmi) > 0x1000)  // indexes are reasonably close sequentially
+                  {
+                      // Except that zennode will compress, scattering the entries.
+                      GenPrintf( EMSG_warn, " Blockmap difference from previous head:  prev_blockmaphead=%X, bme_diff=%X, bmec_diff=%X\n", bmi, (bmi-bme), (bmec-bmi) );
+                  }
+#endif		 
+
+                  bme = bmec;  // accept corrected blockmap list head
+                  have_corrected = 1;
+              }
+              else
+              {
+                  uint32_t wbm4 = (uint16_t)( LE_SWAP16(wadblockmaplump[bmec-1]) );
+                  GenPrintf( EMSG_warn, " Corrected blockmap offset does not point to list: prev=%X wadblockmaplump[%X]=%X next=%X\n", wbm3, bmec-1, wbmec, wbm4 );
+              }
+          }
+          else
+          {
+              GenPrintf( EMSG_warn, "  Corrected blockmap offset=%X, exceeds blockmap bounds %X.\n", bmec, lastlist);
+          }
+
+          if( ! have_corrected )  // not accepted above
+          {
+              uint32_t wbm1 = (uint16_t)( LE_SWAP16(wadblockmaplump[bmi]) );  // prev
+              uint32_t max_list_diff = 1000;
+              uint32_t list_head = 0;
+#ifdef TRACE_BLOCKMAPHEAD
+              uint32_t headcnt = 0;
+#endif
+              byte  fatal_error_bme = 0;
+
+              GenPrintf( EMSG_warn, "Corrected blockmap offset is suspicious: bme=%X bmec=%X\n", bme, bmec );
+              GenPrintf( EMSG_warn, "   prev blockmaphead[%i]=%X   prev_head_diff=%X\n", i-1, blockmaphead[i-1], (bmec - blockmaphead[i-1]) );
+
+              list_head = blockmaphead[i-1];
+              for( bmi = blockmaphead[i-1]+1; bmi <= lastlist; bmi++ )
+              {
+                  uint32_t wbm2 = (uint16_t)( LE_SWAP16(wadblockmaplump[bmi]) );
+                  if(wbm2 > (0xFFFF/2))
+                  {
+                      // Blockmap list entry suspicious large
+                      GenPrintf( EMSG_warn, "Blockmap list entry suspicious large: %X\n", wbm2 );
+                  }
+
+                  if(wbm1 == 0xFFFF)  // prev was end-of-list
+                  {
+                      if( wbm2 == 0 )
+                      {
+                          // Head of list
+                          list_head = bmi;
+#ifdef TRACE_BLOCKMAPHEAD
+                          if( (headcnt < 1) || ((headcnt < 8) && (bmi > head_bmi)) || (((bmi - bme)&0xFF) == 0) )
+                          {
+                              GenPrintf( EMSG_warn, "Found blockmaphead: wadblockmaplump[%X]   bme_diff=%X\n", bmi, (bmi - bme));
+                              if( bmi > head_bmi )  head_bmi = bmi;
+                          }
+#endif
+
+#ifdef TRACE_BLOCKMAPHEAD
+                          headcnt++;
+#endif
+                          if( ! have_corrected )
+                          {
+                              GenPrintf( EMSG_warn, "Using next blockmaphead: wadblockmaplump[%X]   bme_diff=%X\n", bmi, (bmi - bme));
+                              have_corrected = 1;
+                              bmec = bmi;
+                              break;
+                          }
+                      }
+                      else
+                      {
+                          // After 0xFFFF must be 0.
+                          GenPrintf( EMSG_warn, "Corrupt blockmaphead: wadblockmaplump[%X] = %X\n", bmi, wbm2 );
+                          fatal_error_bme = 1;
+                      }
+                  }
+                  else if( wbm2 == 0xFFFF )
+                  {
+                      // End of blockmap list
+                      GenPrintf( EMSG_warn, " list_length=%X\n", (bmi - list_head));
+                  }
+                  else if( wbm1 == 0 )
+                  {
+                      // first entry of list
+                  }
+                  else if((wbm2 - wbm1) > max_list_diff )
+                  {
+                      // Blockmap list entry large diff
+                      max_list_diff = wbm2 - wbm1;
+                      GenPrintf( EMSG_warn, "Blockmap list large diff: %X   wadblockmaplump[%X] = %X  %X\n",  wbm2 - wbm1, bmi-1, wbm1, wbm2 );
+                      if((wbm2 - wbm1) > (0xFFFF/2) )
+                          fatal_error_bme = 1;
+                  }
+
+                  wbm1 = wbm2;
+              }
+
+#ifdef TRACE_BLOCKMAPHEAD
+              if( headcnt > 4 )
+              {
+                  GenPrintf( EMSG_debug, "Found %i possible blockmaphead.\n", headcnt );
+              }
+#endif
+
+              if( have_corrected )
+                  bme = bmec;
+
+              if( fatal_error_bme || ( ! have_corrected ))
+              {
+//	          I_Error("Blockmap corrupted.\n");
+                  break;
+              }
           }
       }
-     
+      else
+      {
+          prev_bme = bme;  // uncorrected
+      }
+      
       if ( bme > lastlist )
-          I_Error("Blockmap offset[%i]= %i, exceeds bounds.\n", i, bme);
+          I_Error("Blockmap offset[%i]= %X, exceeds bounds.\n", i, bme);
       if ( bme < firstlist
-           || wadblockmaplump[bme] != 0 )  // not start list
-          I_Error("Bad blockmap offset[%i]= %i.\n", i, bme);
+           || ((uint16_t)(LE_SWAP16(wadblockmaplump[bme]))) != 0 )  // not start list
+          I_Error("Bad blockmap offset[%i]= %X.\n", i, bme);
       blockmaphead[i] = bme;
   }
+
   // read blockmap lists
   for (i=firstlist ; i<count ; i++)  // for all list entries in wad blockmap
   {
