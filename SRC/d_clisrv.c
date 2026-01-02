@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1466 2019-10-01 02:37:37Z wesleyjohnson $
+// $Id: d_clisrv.c 1467 2019-10-04 08:57:38Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -705,7 +705,7 @@ static void CL_Send_State( byte server_pause )
 {
     netbuffer->packettype=PT_STATE;
     netbuffer->u.state.gametic = LE_SWAP32_FAST(gametic);
-    netbuffer->u.state.p_rand_index = P_GetRandIndex(); // to sync P_Random
+    netbuffer->u.state.p_rand_index = P_Rand_GetIndex(); // to sync P_Random
     netbuffer->u.state.server_pause = server_pause;
 
     SV_SendPacket_All( true, sizeof(state_pak_t), NULL );
@@ -723,12 +723,12 @@ static void state_handler( void )
         // Gametic cannot be fixed directly, need game commands.        
         // It may just be behind by a tic or two.
     }
-    else if( P_GetRandIndex() != netbuffer->u.state.p_rand_index )
+    else if( P_Rand_GetIndex() != netbuffer->u.state.p_rand_index )
     {
         // Same gametic, but different P_Random index.
         GenPrintf( EMSG_warn, "PT_STATE: gametic %i, update P_random index %i to %i\n",
-                 gametic, P_GetRandIndex(), netbuffer->u.state.p_rand_index );
-        P_SetRandIndex( netbuffer->u.state.p_rand_index ); // to sync P_Random
+                 gametic, P_Rand_GetIndex(), netbuffer->u.state.p_rand_index );
+        P_Rand_SetIndex( netbuffer->u.state.p_rand_index ); // to sync P_Random
     }
     paused = netbuffer->u.state.server_pause;
 
@@ -880,7 +880,7 @@ static void SV_Send_Pos_repair( byte repair_type, byte to_node )
 {
     netbuffer->packettype = PT_REPAIR;
     netbuffer->u.repair.gametic = LE_SWAP32_FAST(gametic);
-    netbuffer->u.repair.p_rand_index = P_GetRandIndex(); // to sync P_Random
+    netbuffer->u.repair.p_rand_index = P_Rand_GetIndex(); // to sync P_Random
        
 #ifdef JOININGAME
     if( repair_type == RQ_SUG_SAVEGAME )
@@ -924,7 +924,7 @@ static void repair_handler( byte nnode )
     {
         // Server repairs client.
         gametic = LE_SWAP32_FAST(netbuffer->u.repair.gametic);
-        P_SetRandIndex( netbuffer->u.repair.p_rand_index ); // to sync P_Random
+        P_Rand_SetIndex( netbuffer->u.repair.p_rand_index ); // to sync P_Random
     }
    
     switch( msg_type )
@@ -1014,7 +1014,7 @@ static void SV_Send_NetWait( void )
     netbuffer->u.netwait.num_netplayer = num_netplayer;
     netbuffer->u.netwait.wait_netplayer = wait_netplayer;
     netbuffer->u.netwait.wait_tics = LE_SWAP16( wait_tics );
-    netbuffer->u.netwait.p_rand_index = P_GetRandIndex(); // to sync P_Random
+    netbuffer->u.netwait.p_rand_index = P_Rand_GetIndex(); // to sync P_Random
 #ifdef WAITPLAYER_DEBUG
     debug_Printf( "WaitPlayer update: num_netnodes=%d num_netplayer=%d  wait_netplayer=%d  wait_tics=%d\n",
                num_netnodes, num_netplayer, wait_netplayer, wait_tics );
@@ -2887,7 +2887,7 @@ static void Net_Packet_Handler(void)
                     num_netplayer = netbuffer->u.netwait.num_netplayer;
                     wait_netplayer = netbuffer->u.netwait.wait_netplayer;
                     wait_tics = LE_SWAP16( netbuffer->u.netwait.wait_tics );
-                    P_SetRandIndex( netbuffer->u.netwait.p_rand_index ); // to sync P_Random
+                    P_Rand_SetIndex( netbuffer->u.netwait.p_rand_index ); // to sync P_Random
                 }
                 break;
             default:
@@ -2918,8 +2918,8 @@ static int16_t Consistency(void)
             ret += players[pn].mo->x;
         }
     }
-    DEBFILE(va("pos = %d, rnd %d\n",ret,P_GetRandIndex()));
-    ret+=P_GetRandIndex();
+    DEBFILE(va("pos = %d, rnd %d\n",ret,P_Rand_GetIndex()));
+    ret+=P_Rand_GetIndex();
 
     return ret;
 }

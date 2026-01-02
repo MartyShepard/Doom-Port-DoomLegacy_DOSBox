@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
+// $Id: p_saveg.c 1467 2019-10-04 08:57:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2017 by DooM Legacy Team.
@@ -3323,7 +3323,7 @@ void P_ArchiveMisc()
     WRITEU32(save_p, pig);
 
     WRITEU32(save_p, leveltime);
-    WRITEBYTE(save_p, P_GetRandIndex());
+    WRITEBYTE(save_p, P_Rand_GetIndex());
     SG_Writebuf();
 }
 
@@ -3352,7 +3352,7 @@ boolean P_UnArchiveMisc()
 
     // get the time
     leveltime = READU32(save_p);
-    P_SetRandIndex(READBYTE(save_p));
+    P_Rand_SetIndex(READBYTE(save_p));
 
     return true;
 }

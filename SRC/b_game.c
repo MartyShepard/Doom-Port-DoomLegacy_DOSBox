@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1463 2019-09-29 07:36:51Z wesleyjohnson $
+// $Id: b_game.c 1467 2019-10-04 08:57:38Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -289,7 +289,7 @@ static void CV_botrandom_OnChange( void )
     if( demoversion < 148 )  return;
 #endif
 
-    B_SetRandIndex( cv_bot_randseed.value );
+    B_Rand_SetIndex( cv_bot_randseed.value );
     // Only re-init after initial loading of config.
     if( bot_init_done )
        B_Init_Names();

@@ -6513,6 +6513,7 @@ directories.  If one of these is detected, the default dir
 will not be searched.  This is to avoid long searches due
 to the depth of wad search, and to avoid searching the users
 home directory, or exposing it to wad loading searches.
+Fix Bug 0640.
 
 *** W107_command_menu
 patchfile = w107_83_command_menu.patch
@@ -6819,7 +6820,7 @@ Left in a fixed up version of the levelflats animation, (disabled) just in case.
 *** w108_v1473
 patchfile = w108_9_v1473.patch
 - commit revision 1421
-Bump version to 147.3 due to significant operation changes in the
+Bump version to 1.47.3 due to significant operation changes in the
 next series of patches.
 
 *** w108_unload
@@ -7426,6 +7427,44 @@ Detect some of the gamepad keys for menus, game start, and other necessary opera
 This allows using a gamepad without a keyboard,
 for vanilla Doom and Heretic maps at least.
 Feature Request 93: contains code submitted by Leonardo Montenegro.
+
+*** w108_setrandom
+patchfile = w108_53_setrandom.patch
+- commit revision 1467
+Get and Set functions for P_Random, B_Random, and E_Random.
+Rename to be like:  P_Rand_SetIndex();
+
+*** w108_network
+patchfile = w108_54_network.patch
+- commit revision 1468
+Network version 25.
+Include B_Random and E_Random in the SV_Send_State message.
+This changes some message formating.
+Fix the message for Server Refuse Connection, to be shorter,
+so it will display properly at the client.
+
+*** w108_savegame
+patchfile = w108_55_savegame.patch
+- commit revision 1469
+Savegame changes for version 1.48.
+Include the B_Random and E_Random in the savegame.
+
+*** w108_botnet
+patchfile = w108_56_botnet.patch
+- commit revision 1470
+Prevent problems by updating the network when the B_Random
+is altered by bot random number settings.
+The bots seem to work in COOP network play now, but not deathmatch.
+
+*** w108_minmax
+patchfile = w108_57_minmax.patch
+- commit revision 1471
+Fix compile on WIN32.
+The file that originally defined MAXINT is obsolete.
+Change uses of MAXINT to INT_MAX, MININT to INT_MIN, and MAXSHORT to
+SHRT_MAX.
+
+
 
 
 

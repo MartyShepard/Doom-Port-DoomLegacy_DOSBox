@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01467 ]: w108 53 setrandom
 [01466 ]: w108 52 gamepad
 [01465 ]: w108 51 key name and double click
 [01464 ]: w108 50 texture get patch

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_random.c 1458 2019-09-11 12:27:47Z wesleyjohnson $
+// $Id: m_random.c 1467 2019-10-04 08:57:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -113,13 +113,13 @@ void M_ClearRandom (void)
 }
 
 // for savegame and join in game
-byte P_GetRandIndex(void)
+byte P_Rand_GetIndex(void)
 {
     return prndindex;
 }
 
 // load game
-void P_SetRandIndex(byte rindex)
+void P_Rand_SetIndex(byte rindex)
 {
     prndindex = rindex;
 }
@@ -139,7 +139,12 @@ byte B_Random (void)
     return rndtable[brndindex];
 }
 
-void B_SetRandIndex(byte rindex)
+byte B_Rand_GetIndex(void)
+{
+    return brndindex;
+}
+
+void B_Rand_SetIndex(byte rindex)
 {
     brndindex = rindex;
 }
@@ -238,8 +243,18 @@ int  E_SignedRandom( int range )
     return ((int)( E_Random() % (range + range + 1) )) - range;
 }
 
-// True for the percentage of the calls.
-#define E_RandomPercent( per )   (E_Random() < ((unsigned int)(per * (0.01f * 0xFFFF))))
+uint32_t  E_Rand_Get( uint32_t * rs )
+{
+    if( rs )
+        *rs = rng_stir;
+    return rng1;
+}
+
+void E_Rand_Set( uint32_t rn, uint32_t rs )
+{
+    rng1 = rn;
+    rng_stir = rs;
+}
 
 //#define TEST_ERANDOM
 #ifdef TEST_ERANDOM
