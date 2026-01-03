@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1494 2020-01-05 22:09:38Z wesleyjohnson $
+// $Id: d_net.c 1496 2020-01-05 22:11:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1055,6 +1055,7 @@ static char *packettypename[NUMPACKETTYPE]={
     "WAITINFO",
     "CLIENTREADY",
     "REPAIR",
+    "CONTROL",
 };
 
 static void DebugPrintpacket(char *header)

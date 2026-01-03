@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomstat.h 1452 2019-08-03 07:03:27Z wesleyjohnson $
+// $Id: doomstat.h 1496 2020-01-05 22:11:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -261,13 +261,13 @@ extern boolean         nosoundfx; // had clash with WATCOM i86.h nosound() funct
 // =========================
 //
 
+extern  byte    paused;         // Game Pause, multiple bits
+
 // Depending on view size - no status bar?
 // Note that there is no way to disable the
 //  status bar explicitely.
 extern  boolean statusbaractive;
-
 extern  boolean menuactive;     // Menu overlayed?
-extern  boolean paused;         // Game Pause?
 
 extern  boolean nodrawers;
 extern  boolean noblit;

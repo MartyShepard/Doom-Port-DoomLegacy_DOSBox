@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 1489 2019-12-16 06:33:11Z wesleyjohnson $
+// $Id: g_game.h 1496 2020-01-05 22:11:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -243,6 +243,8 @@ boolean G_CheckDemoStatus (void);
 void G_ExitLevel (void);
 void G_SecretExitLevel (void);
 void G_NextLevel (void);
+void G_DoCompleted( void );
+void G_Start_Intermission( void );
 
 void G_Ticker (void);
 boolean G_Responder (event_t*   ev);

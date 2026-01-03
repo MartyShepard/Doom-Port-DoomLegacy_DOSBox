@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: wi_stuff.h 1496 2020-01-05 22:11:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -59,6 +59,8 @@ void WI_Start(wb_start_t *  wb_start);
 void WI_Load_Data(void);
 void WI_Release_Data(void);
 
+// Network timeout for next level
+void WI_Init_NoState(void);
 
 boolean teamingame(int teamnum);
 
@@ -68,6 +70,7 @@ void WI_Draw_Ranking(const char *title, int x, int y, fragsort_t *fragtable,
                     int scorelines, boolean large, int white, int colwidth);
 
 // For startup wait, and deathmatch wait.
+extern int  wait_game_start_timer;  // subject to network sync
 void WI_Draw_wait( int net_nodes, int net_players, int wait_players, int wait_tics );
 
 

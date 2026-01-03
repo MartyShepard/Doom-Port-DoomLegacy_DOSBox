@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1492 2019-12-19 07:51:00Z wesleyjohnson $
+// $Id: d_clisrv.h 1496 2020-01-05 22:11:50Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -227,6 +227,7 @@ typedef struct {
    tic_t       gametic;
    byte        clientnode;
    byte        gamestate;
+   byte        command;   // CTRL_ command
    
    uint32_t    playerdetected; // playeringame vector in bit field
    byte        netvar_buf[NETVAR_BUFF_LEN];
@@ -261,6 +262,9 @@ typedef struct {
     byte       command;  // net_control_command_e
     byte       player_num;  // player num (may be 255)
     byte       player_state;  // the state to put the player into
+    byte       gamemap, gameepisode;  // current map
+    tic_t      gametic;
+    uint16_t   data;
 } control_pak_t;
 
 #define MAXSERVERNAME 32

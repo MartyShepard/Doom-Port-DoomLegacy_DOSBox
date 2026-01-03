@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1489 2019-12-16 06:33:11Z wesleyjohnson $
+// $Id: g_game.c 1496 2020-01-05 22:11:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -433,7 +433,7 @@ boolean         modifiedgame;                  // Set if homebrew PWAD stuff has
 // Engine state
 gamestate_e     gamestate = GS_NULL;
 gameaction_e    gameaction;
-boolean         paused;
+byte            paused;                 // multiple pause bits
 boolean         gameplay_msg = false;   // enable game play message control
 
 boolean         timingdemo;             // if true, exit with report on completion
@@ -1365,9 +1365,6 @@ void G_DoLoadLevel (boolean resetplayer)
 
     gamestate = GS_LEVEL;
 
-    if( server )
-        SV_Add_waiting_players();
-
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
         if( resetplayer || (playeringame[i] && players[i].playerstate == PST_DEAD))
@@ -1596,6 +1593,11 @@ void G_Ticker (void)
         {
             case ga_completed:
                 G_DoCompleted ();
+                G_Start_Intermission();
+                // This must be after G_Start_Intermission because it overrides
+                // wait_game_start_timer that is set to default for deathmatch.	   
+                if( server )
+                    SV_Add_waiting_players();
                 break;
             case ga_worlddone:
                 G_DoWorldDone ();
@@ -1900,9 +1902,11 @@ void G_InitPlayer (int player)
 void G_PlayerFinishLevel (int player)
 {
     player_t*  p;
+    mobj_t * pmo;
     int        i;
 
     p = &players[player];
+    pmo = p->mo;
     for(i=0; i<p->inventorySlotNum; i++)
     {
         if( p->inventory[i].count>1) 
@@ -1919,7 +1923,8 @@ void G_PlayerFinishLevel (int player)
     else
         p->weaponinfo = doomweaponinfo;
     p->cards = 0;
-    p->mo->flags &= ~MF_SHADOW;         // cancel invisibility
+    if( pmo )
+        pmo->flags &= ~MF_SHADOW;       // cancel invisibility
     p->extralight = 0;                  // cancel gun flashes
     p->fixedcolormap = 0;               // cancel ir gogles
     p->damagecount = 0;                 // no palette changes
@@ -1933,7 +1938,8 @@ void G_PlayerFinishLevel (int player)
 
     if(p->chickenTics)
     {
-        p->readyweapon = p->mo->special1; // Restore weapon
+        if( pmo )
+            p->readyweapon = pmo->special1; // Restore weapon
         p->chickenTics = 0;
     }
     p->rain1 = NULL;
@@ -2361,7 +2367,7 @@ void G_SecretExitLevel (void)
 
 void G_DoCompleted (void)
 {
-    int             i;
+    int  i;
 
     gameaction = ga_nothing;
 
@@ -2373,6 +2379,13 @@ void G_DoCompleted (void)
 
     if (automapactive)
         AM_Stop ();
+
+    automapactive = false;
+}
+
+void G_Start_Intermission( void )
+{
+    int  i;
 
     if (gamemode != doom2_commercial)
     {
@@ -2501,11 +2514,10 @@ void G_DoCompleted (void)
         wminfo.plyr[i].addfrags = players[i].addfrags;
     }
 
-    gamestate = GS_INTERMISSION;
-    automapactive = false;
-
     if (statcopy)
         memcpy (statcopy, &wminfo, sizeof(wminfo));
+
+    gamestate = GS_INTERMISSION;
 
     WI_Start (&wminfo);
 }
@@ -2692,7 +2704,7 @@ void G_DoLoadGame (int slot)
     //added:27-02-98: reset the game version
     G_setup_VERSION();
 
-    paused        = false;
+    paused        = 0;
     automapactive = false;
 
     // dearchive all the modifications
@@ -2816,7 +2828,7 @@ void G_DoSaveGame (int   savegameslot, const char* savedescription)
 // Called by cht_Responder on clev, CheatWarpFunc
 void G_DeferedInitNew (skill_e skill, const char* mapname, boolean StartSplitScreenGame)
 {
-    paused = false;
+    paused = 0;
     
     if( demoplayback )
         COM_BufAddText ("stopdemo\n");  // invokes G_CheckDemoStatus
@@ -2854,7 +2866,7 @@ void G_InitNew (skill_e skill, const char* mapname, boolean resetplayer)
 
     if (paused)
     {
-        paused = false;
+        paused = 0;
         S_ResumeSound ();
     }
 

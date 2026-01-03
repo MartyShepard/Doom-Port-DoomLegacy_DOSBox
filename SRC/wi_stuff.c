@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
+// $Id: wi_stuff.c 1496 2020-01-05 22:11:50Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -401,7 +401,10 @@ static int              cnt_items[MAXPLAYERS];
 static int              cnt_secret[MAXPLAYERS];
 static int              cnt_time;
 static int              cnt_par;
-static int              cnt_pause;
+
+// timers
+       int              wait_game_start_timer = 0;  // subject to network sync
+static int              effect_timer;
 
 
 //
@@ -908,24 +911,13 @@ void WI_Draw_wait( int net_nodes, int net_players, int wait_players, int wait_ti
 
 
 // used for write introduce next level
-static void WI_Init_NoState(void)
+void WI_Init_NoState(void)
 {
     state = NoState;
     accelerate_stage = 0;
     cnt = 10;
 }
 
-static void WI_update_NoState(void) {
-
-    WI_update_AnimatedBack();
-
-    if (--cnt==0)
-    {
-        WI_Release_Data();
-        G_NextLevel();
-    }
-
-}
 
 static boolean          snl_pointeron = false;
 
@@ -942,8 +934,6 @@ static void WI_Init_ShowNextLoc(void)
 
 static void WI_update_ShowNextLoc(void)
 {
-    WI_update_AnimatedBack();
-
     if (!--cnt || accelerate_stage)
         WI_Init_NoState();
     else
@@ -1017,7 +1007,8 @@ static void WI_Init_DeathmatchStats(void)
     state = StatCount;
     accelerate_stage = 0;
 
-    cnt_pause = TICRATE*DM_WAIT;
+    memset( dm_frags, 0, sizeof(dm_frags) );  // for new players
+    memset( dm_totals, 0, sizeof(dm_totals) );
 
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
@@ -1036,21 +1027,6 @@ static void WI_Init_DeathmatchStats(void)
     WI_Init_AnimatedBack();
 }
 
-// Called by WI_Ticker
-static void WI_update_DeathmatchStats(void)
-{
-    WI_update_AnimatedBack();
-
-    if( paused )
-        return;
-    if (cnt_pause>0)   cnt_pause--;
-    if (cnt_pause==0)
-    {
-        S_StartSound(sfx_slop);
-
-        WI_Init_NoState();
-    }
-}
 
 
 //  Quick-patch for the Cave party 19-04-1998 !!
@@ -1469,14 +1445,14 @@ static void WI_Init_NetgameStats(void)
     accelerate_stage = 0;
     ng_state = 1;
 
-    cnt_pause = TICRATE;
+    effect_timer = TICRATE;
 
     for (i=0 ; i<MAXPLAYERS ; i++)
     {
+        cnt_kills[i] = cnt_items[i] = cnt_secret[i] = cnt_frags[i] = 0;
+
         if (!playeringame[i])
             continue;
-
-        cnt_kills[i] = cnt_items[i] = cnt_secret[i] = cnt_frags[i] = 0;
 
         cnt_playfrags += ST_PlayerFrags(i);
     }
@@ -1493,8 +1469,6 @@ static void WI_update_NetgameStats(void)
 
     int  i, cnt_target;
     boolean     stillticking = false;
-
-    WI_update_AnimatedBack();
 
     if (accelerate_stage && ng_state != 10)
     {
@@ -1633,10 +1607,10 @@ static void WI_update_NetgameStats(void)
     }
     else if (ng_state & 1)
     {
-        if (!--cnt_pause)
+        if ( --effect_timer == 0 )
         {
             ng_state++;
-            cnt_pause = TICRATE;
+            effect_timer = TICRATE;
         }
         goto done;
     }
@@ -1745,16 +1719,13 @@ static void WI_Init_Stats(void)
     sp_state = 1;
     cnt_kills[0] = cnt_items[0] = cnt_secret[0] = -1;
     cnt_time = cnt_par = -1;
-    cnt_pause = TICRATE;
+    effect_timer = TICRATE;
 
     WI_Init_AnimatedBack();
 }
 
 static void WI_update_Stats(void)
 {
-
-    WI_update_AnimatedBack();
-
     if (accelerate_stage && sp_state != 10)
     {
         accelerate_stage = 0;
@@ -1851,10 +1822,10 @@ static void WI_update_Stats(void)
     }
     else if (sp_state & 1)
     {
-        if (!--cnt_pause)
+        if ( --effect_timer == 0 )
         {
             sp_state++;
-            cnt_pause = TICRATE;
+            effect_timer = TICRATE;
         }
         goto done;
     }
@@ -1957,7 +1928,7 @@ static void WI_checkForAccelerate(void)
 
 
 
-// Updates stuff each tick
+// Updates stuff each client tick.
 void WI_Ticker(void)
 {
     // counter for general background animation
@@ -1973,13 +1944,15 @@ void WI_Ticker(void)
     }
 
     WI_checkForAccelerate();
+    WI_update_AnimatedBack();
 
     switch (state)
     {
       case StatCount:
         if( deathmatch )
-            WI_update_DeathmatchStats();
-        else if (multiplayer)  // coop
+	    break;
+
+        if (multiplayer)  // coop
             WI_update_NetgameStats();
         else
             WI_update_Stats();
@@ -1989,11 +1962,14 @@ void WI_Ticker(void)
         WI_update_ShowNextLoc();
         break;
 
-      case NoState:
-        WI_update_NoState();
+      case NoState:  // transition to next level
+        if( --cnt == 0 )
+        {
+            WI_Release_Data();
+            G_NextLevel();
+        }
         break;
     }
-
 }
 
 // [WDJ] Patch lists.
@@ -2048,14 +2024,16 @@ void WI_Load_Data(void)
     byte  j;
     byte  wb_epsd;
 
+    if( wbs == NULL )  return;
 
-    if( (info_interpic == NULL) || (wbs == NULL) )  return;
+    // To support entering Intermission without entering level.
+    if( info_interpic == NULL )   info_interpic = "";
    
     // [WDJ] Lock the interpic graphics against release by other users.
 
     wb_epsd = wbs->epsd;
     // choose the background of the intermission
-    if (*info_interpic)
+    if (*info_interpic)  // if not empty string
         strcpy(bgname, info_interpic);
     else if (gamemode == doom2_commercial)
         strcpy(bgname, "INTERPIC");
@@ -2234,8 +2212,6 @@ void WI_Drawer (void)
                 WI_Draw_TeamsStats();
             else
                 WI_Draw_DeathmatchStats();
-
-            WI_Draw_wait( 0, 0, 0, cnt_pause );
         }
         else if (multiplayer)  // coop
             WI_Draw_NetgameStats();
@@ -2251,6 +2227,9 @@ void WI_Drawer (void)
         WI_Draw_NoState();
         break;
     }
+   
+    if( wait_game_start_timer )
+        WI_Draw_wait( 0, 0, 0, wait_game_start_timer );
 }
 
 
@@ -2291,14 +2270,19 @@ static void WI_Init_Variables( wb_start_t * wb_start)
 
 void WI_Start(wb_start_t * wb_start)
 {
-
     WI_Init_Variables(wb_start);
     WI_Load_Data();
 
     if( deathmatch )
+    {
         WI_Init_DeathmatchStats();
+        wait_game_start_timer = TICRATE*DM_WAIT;
+    }
     else if (multiplayer)  // coop
+    {
         WI_Init_NetgameStats();
+        // wait_game_start_timer will be set by network
+    }
     else
         WI_Init_Stats();
 }
