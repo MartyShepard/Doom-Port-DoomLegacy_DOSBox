@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1496 2020-01-05 22:11:50Z wesleyjohnson $
+// $Id: d_clisrv.c 1497 2020-01-05 22:12:35Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -3534,9 +3534,13 @@ drop_packet:
 // Detected a consistency fault.
 //  nnode : the client node
 //  client_pn : the client player num
-static void SV_consistency_fault( byte nnode, byte client_pn )
+//  fault_tic : tick with consistency fault
+//  btic : BTIC_INDEX for this network message
+static void SV_consistency_fault( byte nnode, byte client_pn, tic_t fault_tic, int btic )
 {
     byte confault = ++consistency_faults[nnode];  // failure count
+    uint16_t sv_con = consistency[btic];
+    uint16_t cl_con = LE_SWAP16(netbuffer->u.clientpak.consistency);
 
     // No consistency fault during intermission, because of joining players who don't have position yet.
     if( gamestate == GS_INTERMISSION )
@@ -3549,12 +3553,13 @@ static void SV_consistency_fault( byte nnode, byte client_pn )
         Send_NetXCmd_p2(XD_KICK, client_pn, KICK_MSG_CON_FAIL);
 #else
         // Debug message instead.
-        GenPrintf(EMSG_warn, "Kick player %d at tic %d, consistency failure\n",
-            client_pn, start_tic);
+//        GenPrintf(EMSG_warn, "Kick player %d at tic %d, consistency failure\n",
+//            client_pn, start_tic);
 #endif
-        DEBFILE(va("Kick player %d at tic %d, consistency %d != %d\n",
-            client_pn, start_tic, consistency[btic],
-            LE_SWAP16_FAST(netbuffer->u.clientpak.consistency)));
+        GenPrintf(EMSG_warn, "Kick player %d at tic %d, consistency failure ( server=%X client=%X )\n",
+            client_pn, fault_tic, sv_con, cl_con );
+        DEBFILE(va("Kick player %d at tic %d, consistency failure ( server=%i client=%i )\n",
+            client_pn, fault_tic, sv_con, cl_con ));
 
     }
 #ifdef JOININGAME
@@ -3625,7 +3630,7 @@ static void client_cmd_handler( byte netcmd, byte nnode, byte client_pn )
         if(consistency[btic] != LE_SWAP16_FAST(netbuffer->u.clientpak.consistency))
         {
             // Failed the consistency check.
-            SV_consistency_fault( nnode, client_pn );
+            SV_consistency_fault( nnode, client_pn, start_tic, btic );
             return;  // packet contents lost when other messages sent
         }
         else if( consistency_faults[nnode] > 0 )

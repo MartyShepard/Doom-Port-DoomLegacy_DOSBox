@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1496 2020-01-05 22:11:50Z wesleyjohnson $
+// $Id: d_net.c 1497 2020-01-05 22:12:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1058,6 +1058,20 @@ static char *packettypename[NUMPACKETTYPE]={
     "CONTROL",
 };
 
+static char * control_name[]={
+    "state",  // no node command
+    "normal",
+    "download_savegame",
+    "wait_game_start",
+    "game_start",
+    "wait_timer",
+};
+
+static void DebugPrintRand( random_state_t * rs )
+{
+    fprintf(debugfile, "     P_rand index %i, B_rand_index %i, E_rand1 %4X E_rand2 %4X\n", rs->p_rand_index, rs->b_rand_index, rs->e_rand1, rs->e_rand2 );
+}
+
 static void DebugPrintpacket(char *header)
 {
   fprintf(debugfile, "%-12s (node %d,ackreq %d,ackret %d,size %d) type(%d) : %s\n",
@@ -1074,19 +1088,20 @@ static void DebugPrintpacket(char *header)
       (unsigned int)netbuffer->u.askinfo.send_time );
     break;
    case PT_CLIENTJOIN:
-    fprintf(debugfile, "    number %d mode %d\n",
-      netbuffer->u.clientcfg.localplayers,
-      netbuffer->u.clientcfg.mode  );
+    fprintf(debugfile, "    number_players %d mode %d flags %X\n",
+      netbuffer->u.clientcfg.num_node_players,
+      netbuffer->u.clientcfg.mode,
+      netbuffer->u.clientcfg.flags );
     break;
    case PT_SERVERTICS:
-    fprintf(debugfile, "    firsttic %d ply %d tics %d ntxtcmd %d\n    ",
+    fprintf(debugfile, "    firsttic %d plyslots %d tics %d ntxtcmd %d\n    ",
       ExpandTics (netbuffer->u.serverpak.starttic),
-      netbuffer->u.serverpak.num_player_slot,
+      netbuffer->u.serverpak.numplayerslots,
       netbuffer->u.serverpak.numtics,
-      (int)(&((char *)netbuffer)[doomcom->datalength] - (char *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.num_player_slot*netbuffer->u.serverpak.numtics]) );
+      (int)(&((char *)netbuffer)[doomcom->datalength] - (char *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numplayerslots*netbuffer->u.serverpak.numtics]) );
     fprintfstring(
-      (byte *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.num_player_slot*netbuffer->u.serverpak.numtics],
-      &((char *)netbuffer)[doomcom->datalength] - (char *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.num_player_slot*netbuffer->u.serverpak.numtics] );
+      (byte *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numplayerslots*netbuffer->u.serverpak.numtics],
+      &((char *)netbuffer)[doomcom->datalength] - (char *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numplayerslots*netbuffer->u.serverpak.numtics] );
     break;
    case PT_CLIENTCMD:
    case PT_CLIENT2CMD:
@@ -1106,18 +1121,19 @@ static void DebugPrintpacket(char *header)
     fprintfstring(netbuffer->u.textcmdpak.text,netbuffer->u.textcmdpak.len);
     break;
    case PT_SERVERCFG:
-    fprintf(debugfile, "    playermask %x players %d clientnode %d serverplayer %d gametic %lu gamestate %d\n",
+    fprintf(debugfile, "    playermask %x plyslots %d clientnode %d serverplayer %d gametic %lu gamestate %d command %s\n",
       (unsigned int)netbuffer->u.servercfg.playerdetected,
-      netbuffer->u.servercfg.totalplayernum,
+      netbuffer->u.servercfg.num_player_slots,
       netbuffer->u.servercfg.clientnode,
       netbuffer->u.servercfg.serverplayer,
       (unsigned long)netbuffer->u.servercfg.gametic,
-      netbuffer->u.servercfg.gamestate );
+      netbuffer->u.servercfg.gamestate,
+      control_name[netbuffer->u.servercfg.command] );
     break;
    case PT_SERVERINFO :
     fprintf(debugfile, "    '%s' player %i/%i, map %s, filenum %d, time %u \n",
       netbuffer->u.serverinfo.servername,
-      netbuffer->u.serverinfo.numberofplayer,
+      netbuffer->u.serverinfo.num_active_players,
       netbuffer->u.serverinfo.maxplayer,
       netbuffer->u.serverinfo.mapname,
       netbuffer->u.serverinfo.num_fileneed,
@@ -1129,8 +1145,8 @@ static void DebugPrintpacket(char *header)
       netbuffer->u.stringpak.str );
     break;
    case PT_REPAIR :
-    fprintf(debugfile, "    repairtype %d, P_Random index %d, tic %i,\n (id_num %d, angle %x, x %i.%i, y %i.%i, z %i.%i, momx %i.%i, momy %i.%i, momz %i,%i\n",
-      netbuffer->u.repair.repair_type, netbuffer->u.repair.p_rand_index, netbuffer->u.repair.gametic,
+    fprintf(debugfile, "    repairtype %d, tic %i,\n (id_num %d, angle %x, x %i.%i, y %i.%i, z %i.%i, momx %i.%i, momy %i.%i, momz %i,%i\n",
+      netbuffer->u.repair.repair_type, netbuffer->u.repair.gametic,
       netbuffer->u.repair.pos.id_num, netbuffer->u.repair.pos.angle,
       netbuffer->u.repair.pos.x >> 16, netbuffer->u.repair.pos.x & 0xFFFF,
       netbuffer->u.repair.pos.y >> 16, netbuffer->u.repair.pos.y & 0xFFFF,
@@ -1138,10 +1154,19 @@ static void DebugPrintpacket(char *header)
       netbuffer->u.repair.pos.momx >> 16, netbuffer->u.repair.pos.momx & 0xFFFF,
       netbuffer->u.repair.pos.momy >> 16, netbuffer->u.repair.pos.momy & 0xFFFF,
       netbuffer->u.repair.pos.momz >> 16, netbuffer->u.repair.pos.momz & 0xFFFF );
+    DebugPrintRand( &netbuffer->u.repair.rs );
     break;
    case PT_STATE :
-    fprintf(debugfile, "    tic %i, P_Random index %d, sever_pause %d\n",
-      netbuffer->u.state.gametic, netbuffer->u.state.p_rand_index, netbuffer->u.state.server_pause );
+    fprintf(debugfile, "    tic %i, sever_pause %d\n",
+      netbuffer->u.state.gametic, netbuffer->u.state.server_pause );
+    DebugPrintRand( &netbuffer->u.repair.rs );
+    break;
+   case PT_CONTROL :
+    fprintf(debugfile, "    %s: tic %i, gameepisode %d, gamemap %d, data %i, player %d player_state %d\n",
+      control_name[netbuffer->u.control.command], netbuffer->u.control.gametic,
+      netbuffer->u.control.gameepisode, netbuffer->u.control.gamemap,
+      netbuffer->u.control.data,
+      netbuffer->u.control.player_num, netbuffer->u.control.player_state );
     break;
    case PT_FILEFRAGMENT :
     fprintf(debugfile, "    fileid %d datasize %d position %lu\n",
@@ -1149,13 +1174,15 @@ static void DebugPrintpacket(char *header)
       netbuffer->u.filetxpak.size,
       (unsigned long)netbuffer->u.filetxpak.position );
     break;
+   case PT_NETWAIT :
+    DebugPrintRand( &netbuffer->u.netwait.rs );
+    break;
    case PT_REQUESTFILE :
    case PT_NODE_TIMEOUT :
    case PT_ACKS :
    default : // write as a raw packet
     fprintfstring(netbuffer->u.bytepak.b, (char *)netbuffer + doomcom->datalength - (char *)netbuffer->u.bytepak.b);
     break;
-
   }
 }
 #endif
@@ -1204,8 +1231,8 @@ boolean HSendPacket(int to_node, boolean reliable, byte acknum,
     doomcom->remotenode = to_node;
     if(doomcom->datalength <= 0)   goto empty_packet;
 
-#ifdef DOSNET_SUPPORT
-    doomcom->numplayers = netbuffer->u.serverpak.numplayerslots/*num_player_slot*/; //Marty: Is this right?
+#ifdef DOSNET_SUPPORT_NOT_USED
+    doomcom->numplayers = num_player_slot;
 #endif
 
     // Include any pending return_ack, player nodes only.

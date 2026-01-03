@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01497 ]: w108_83 network debug
 [01496 ]: w108_82 network wait
 [01495 ]: w108_81 network hash
 [01494 ]: w108_80 dnet clean
