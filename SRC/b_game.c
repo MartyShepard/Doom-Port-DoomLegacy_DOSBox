@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1504 2020-03-17 02:31:22Z wesleyjohnson $
+// $Id: b_game.c 1505 2020-03-17 02:32:01Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -222,6 +222,25 @@ int botcolors[NUMSKINCOLORS] =
    10 // = Bleached Bone
 };
 
+#if 1
+// By Server, for bots.
+//  skinrand : the botinfo skinrand value
+static
+char * bot_skinname( int skinrand )
+{
+    if( cv_bot_skin.EV && (numskins > 1) )
+    {
+        skinrand = (skinrand % (numskins-1)) + 1;
+    }
+    else
+    {
+        skinrand = 0; // marine
+    }
+    return skins[skinrand]->name;
+}
+#endif
+
+
 // Random number source for bot generation.
 uint32_t  B_Gen_Random( void )
 {
@@ -350,6 +369,35 @@ void B_Init_Bots()
 // bot commands
 //
 
+// By Server
+void B_Send_bot_NameColor( byte pn )
+{
+    // From botinfo sources
+    bot_info_t * bip = & botinfo[pn];
+    Send_NameColor_pn( pn, botnames[bip->name_index], bip->colour, bot_skinname(bip->skinrand), 2 );  // server channel
+}
+
+// By Server.
+// Send name, color, skin of all bots.
+void B_Send_all_bots_NameColor( void )
+{
+    byte pn;
+
+    for( pn=0; pn<MAXPLAYERS; pn++ )
+    {
+        if( playeringame[pn] && players[pn].bot )
+        {
+#if 1
+            B_Send_bot_NameColor( pn );
+#else
+            // From player, which requires that bot have set the namecolor of player already.
+            Send_NameColor_player( pn, 2 );  // server channel
+#endif
+        }
+    }
+}
+
+
 void Command_AddBot(void)
 {
     byte buf[10];
@@ -371,11 +419,13 @@ void Command_AddBot(void)
 
     bot_info_t * bip = & botinfo[pn];
     byte * b = &buf[0];
+    // AddBot format: pn, color, name:string0
     WRITEBYTE( b, pn );
-    WRITEBYTE( b, bip->name_index );
     WRITEBYTE( b, bip->colour );
-    WRITEU16( b, LE_SWAP16( bip->skinrand ) );
-    SV_Send_NetXCmd(XD_ADDBOT, buf, 5);  // as server
+    b = write_stringn(b, botnames[bip->name_index], MAXPLAYERNAME);
+    SV_Send_NetXCmd(XD_ADDBOT, buf, (b - buf));  // as server
+
+    // Cannot send NameColor XCmd before the bot exists.
 }
 
 // Only call after console player and splitscreen players have grabbed their player slots.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1504 2020-03-17 02:31:22Z wesleyjohnson $
+// $Id: d_clisrv.c 1505 2020-03-17 02:32:01Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -3624,8 +3624,8 @@ void Got_NetXCmd_AddPlayer(xcmd_t * xc)
         DEBFILE(va("Spawning player[%i] pind=%i at this node.\n", newplayernum, pind));
     }
 
-    // the new player send there config
-    // and the old player send there config to the new one
+    // the new player send their config
+    // and the existing players send their config to the new node
     // WARNING : this can cause a bottleneck in the txtcmd
     //           this can also produce consistency failure if packet get lost
     //           because everybody knows the actual config except the joiner
@@ -3636,6 +3636,8 @@ void Got_NetXCmd_AddPlayer(xcmd_t * xc)
     {
         sendconfigtic=gametic;
         D_Send_PlayerConfig();
+        if( server )
+            B_Send_all_bots_NameColor();
     }
 }
 
@@ -3643,35 +3645,54 @@ void Got_NetXCmd_AddPlayer(xcmd_t * xc)
 static
 void Got_NetXCmd_AddBot(xcmd_t * xc)  //added by AC for acbot
 {
-    bot_info_t bi;
+    char * lcp = (char*)xc->curpos; // local cp
+    char * botname; // bot name, so messages have correct name.
+    int name_len;
+    byte colour;
 
     // [WDJ] Having error due to sign extension of byte read (signed char).
-    byte newplayernum = READBYTE(xc->curpos);  // unsigned
-    bi.name_index = READBYTE(xc->curpos);
-    bi.colour = READBYTE(xc->curpos);
-    bi.skinrand = LE_SWAP16( READU16(xc->curpos) );
-
+    byte newplayernum = READBYTE(lcp);  // unsigned
     newplayernum&=0x7F;  // remove flag bit, and any sign extension
 
-    player_t * pl = & players[newplayernum];
-    char * botname = botnames[bi.name_index];
+    if( EV_legacy < 148 )
+    {
+        // name and color from botinfo tables
+        botname = botnames[botinfo[newplayernum].name_index];  // strings from a table
+        colour = botinfo[newplayernum].colour;
+        name_len = strlen( botname );
+    }
+    else
+    {
+        // Ver 1.48
+        colour = READBYTE(lcp);
+        botname = lcp;  // bot name, so messages have correct name.
 
+        // [WDJ] String overflow safe
+        name_len = strlen( lcp );
+        lcp += name_len + 1;  // string and term
+    }
+   
+    xc->curpos = (byte*)lcp;  // NetXCmd reading done
+    
     if( playeringame[newplayernum] )
     {
-        GenPrintf(EMSG_warn, "Bot %s: player slot %i already in use.\n", botname, newplayernum );
+        GenPrintf(EMSG_warn, "Bot %i: player slot already in use.\n", (newplayernum+1) );
         return;
     }
 
     G_AddPlayer(newplayernum);
 
+    player_t * pl = & players[newplayernum];
     B_Create_Bot( pl );
 
-    strcpy(player_names[newplayernum], botname);
-    pl->skincolor = bi.colour;
-    if( cv_bot_skin.EV && (numskins > 1))
-    {
-        SetPlayerSkin_by_index( pl, (bi.skinrand % (numskins-1)) + 1 );
-    }
+    // [WDJ] AddBot sends the name and color because the server has that information,
+    // and it is desirable to set those attributes correctly for the first draw.
+    // Update bot name and color.
+    P_SetPlayer_color( pl, colour );
+    if( name_len > MAXPLAYERNAME-1 ) // dest protection
+        name_len = MAXPLAYERNAME-1;  // sizeof player_names
+    memcpy( & player_names[newplayernum], botname, (name_len + 1));  // [MAXPLAYERNAME]
+    player_names[newplayernum][MAXPLAYERNAME-1] = '\0';  // safe
 
     playeringame[newplayernum]=true;  // enable this player
     player_state[newplayernum]= PS_bot;
@@ -3682,6 +3703,12 @@ void Got_NetXCmd_AddBot(xcmd_t * xc)  //added by AC for acbot
     multiplayer=1;
 
     GenPrintf(EMSG_hud, "Bot %s has entered the game\n", botname);
+
+    if( server )
+    {
+        // Bot exists, so now can send the bot info.
+        B_Send_bot_NameColor( newplayernum );
+    }
 }
 
 // By Server.
@@ -3759,6 +3786,8 @@ void SV_Add_waiting_players( void )
 
     // Update gametic and random state.
     SV_Send_State( paused | network_wait_pause );
+    SendPacket( BROADCAST_NODE, PT_REQ_CLIENTCFG );  // req all nodes to send client cfg
+    B_Send_all_bots_NameColor();  // Bot NameColor to everybody, by NetXCmd
 
     // Invoke the next level wait timer.
     wait_game_start_timer = TICRATE*GAME_START_WAIT;
@@ -4604,6 +4633,10 @@ static void Net_Packet_Handler(void)
                 continue;
              case PT_SERVERCFG :    // positive response of client join request
                 server_cfg_handler( nnode );
+                continue;
+             case PT_REQ_CLIENTCFG : // request client config
+                D_Send_PlayerConfig();  // Client players, via NetXCmd to everybody
+                    // client players only, does not cover bots
                 continue;
              case PT_FILEFRAGMENT :
                 // handled in d_netfil.c

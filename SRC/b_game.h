@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.h 1478 2019-10-19 13:43:25Z wesleyjohnson $
+// $Id: b_game.h 1505 2020-03-17 02:32:01Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -48,6 +48,8 @@ void B_BuildTiccmd(player_t* p, ticcmd_t* cmd);
 void B_Init_Bots(void);
 void B_Init_Nodes(void);
 void Command_AddBot(void);
+void B_Send_bot_NameColor( byte pn );
+void B_Send_all_bots_NameColor(void);
 void B_Regulate_Bots( int req_numbots );
 
 void B_forget_stuff( bot_t * bot );

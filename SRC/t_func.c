@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1483 2019-12-13 05:18:26Z wesleyjohnson $
+// $Id: t_func.c 1505 2020-03-17 02:32:01Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -808,16 +808,28 @@ void SF_SkinColor(void)
             goto done;
         }
 
-        players[playernum].skincolor = colour;
-        players[playernum].mo->tflags =
-           (players[playernum].mo->tflags & ~MFT_TRANSLATION6)
-           | (players[playernum].mo->player->skincolor);
+        P_SetPlayer_color( &players[playernum], colour );
 
         // Test for netplay and splitscreen usage.
+#if 1
+        // Would automatically trigger a NetXCmd to other clients, but is that necessary ?
+        // Should not affect user settings.
+        if( playernum == displayplayer )
+        {
+            cv_playercolor[0].EV = colour;
+//            Send_NameColor_pind( 0 );
+	}
+        else  if( playernum == displayplayer2 )
+        {
+            cv_playercolor[1].EV = colour;
+//            Send_NameColor_pind( 1 );
+	}
+#else
         if( playernum == displayplayer )
             CV_SetValue (&cv_playercolor[0], colour);  // affects user config value
         else  if( playernum == displayplayer2 )
             CV_SetValue (&cv_playercolor[1], colour);  // affects user config value
+#endif
     }
 
     t_return.value.i = players[playernum].skincolor;

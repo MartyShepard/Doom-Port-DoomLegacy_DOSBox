@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1478 2019-10-19 13:43:25Z wesleyjohnson $
+// $Id: p_local.h 1505 2020-03-17 02:32:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -203,6 +203,7 @@ extern fixed_t jumpgravity;  // variable by fragglescipt
 
 void   P_ResetCamera (player_t* player);
 void   P_PlayerThink (player_t* player);
+void   P_SetPlayer_color( player_t * player, byte color );
 
 // client prediction
 void   CL_ResetSpiritPosition (mobj_t *mobj);

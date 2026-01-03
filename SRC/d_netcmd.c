@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1504 2020-03-17 02:31:22Z wesleyjohnson $
+// $Id: d_netcmd.c 1505 2020-03-17 02:32:01Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -219,7 +219,7 @@ void Send_WeaponPref2(void)
 }
 
 // Has CV_CFG1 where does not have support for insert into drawmode config file.
-// these two are just meant to be saved to the config
+// these are just meant to be saved to the config
 consvar_t cv_playername[2] = {
   { "name", NULL, CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, NULL, Send_NameColor1 },
   { "name2", "big b", CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, NULL, Send_NameColor2 }
@@ -237,18 +237,18 @@ consvar_t cv_skin[2] = {
 };
 
 consvar_t cv_autoaim[2] = {
-  { "autoaim",  "1", CV_SAVE | CV_CALL | CV_NOINIT, CV_OnOff, Send_WeaponPref1 },
-  { "autoaim2", "1", CV_SAVE | CV_CALL | CV_NOINIT, CV_OnOff, Send_WeaponPref2 }
+  { "autoaim",  "1", CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, CV_OnOff, Send_WeaponPref1 },
+  { "autoaim2", "1", CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, CV_OnOff, Send_WeaponPref2 }
 };
 
 consvar_t cv_weaponpref[2] = {
-  { "weaponpref", "014576328", CV_SAVE | CV_STRING | CV_CALL | CV_NOINIT, NULL, Send_WeaponPref1 },
-  { "weaponpref2", "014576328", CV_SAVE | CV_STRING | CV_CALL | CV_NOINIT, NULL, Send_WeaponPref2 },
+  { "weaponpref", "014576328", CV_SAVE | CV_STRING | CV_CALL | CV_NOINIT | CV_CFG1, NULL, Send_WeaponPref1 },
+  { "weaponpref2", "014576328", CV_SAVE | CV_STRING | CV_CALL | CV_NOINIT | CV_CFG1, NULL, Send_WeaponPref2 },
 };
 
 consvar_t cv_originalweaponswitch[2] = {
-  { "originalweaponswitch", "0", CV_SAVE | CV_CALL | CV_NOINIT, CV_OnOff, Send_WeaponPref1 },
-  { "originalweaponswitch2", "0", CV_SAVE | CV_CALL | CV_NOINIT, CV_OnOff, Send_WeaponPref2 }
+  { "originalweaponswitch", "0", CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, CV_OnOff, Send_WeaponPref1 },
+  { "originalweaponswitch2", "0", CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, CV_OnOff, Send_WeaponPref2 }
 };
    
 
@@ -434,29 +434,53 @@ byte *  write_stringn( byte *dst, const char* src, int num )
 // [WDJ] Currently, these are being sent without cv_splitscreen knowledge,
 // so when not splitscreen, they may be mysterious settings to other nodes.
 
+
+#if 0
+// By Server
+//   pn : player pid
+void Send_NameColor_player( byte pn, byte pind )
+{
+    player_t * plp = & players[pn];
+    const char * skinname = ( skins[plp->skin] )? skins[plp->skin]->name : NULL;
+    Send_NameColor_pn( pn, player_names[pn], plp->skincolor, skinname, pind );
+}
+#endif
+
+
 // By Client.
 //  name, color, or skin has changed
 //  pind : player index, [0]=main player, [1]=splitscreen player
 static
-void Send_NameColor_pind( byte pind )
+void  Send_NameColor_pind( byte pind )
+{
+    byte pn = localplayer[pind];
+    if( pn < MAXPLAYERS )
+        Send_NameColor_pn( pn, cv_playername[pind].string, cv_playercolor[pind].EV, cv_skin[pind].string, pind );
+}
+
+// Server, Client
+//   playername : player name
+//   skinname : skin name, NULL if not skins
+//   textcmd_pind : textcmd channel index, [0]=main player, [1]=splitscreen player, [2]=server (bots)
+void  Send_NameColor_pn( byte pn, const char * playername, byte color, const char * skinname, byte textcmd_pind )
 {
     byte buf[MAXPLAYERNAME + 1 + SKINNAMESIZE + 1];
     byte *p;
-    consvar_t * skinp;
 
     p = buf;
     // Format:  color byte, player_name str0, skin_name str0.
-    WRITEBYTE(p, cv_playercolor[pind].value);
-    p = write_stringn(p, cv_playername[pind].string, MAXPLAYERNAME);
+    WRITEBYTE(p, color);
+    p = write_stringn(p, playername, MAXPLAYERNAME);
 
-    // check if player has the skin loaded (cv_skin may have
-    //  the name of a skin that was available in the previous game)
-    skinp = & cv_skin[pind];
-    skinp->value = R_SkinAvailable(skinp->string);
-    char * svstr = (skinp->value)? skinp->string : DEFAULTSKIN;
-    p = write_stringn(p, svstr, SKINNAMESIZE);
+    // Send the skin by name.
+    // Check if player has the skin loaded
+    // (it may be the name of a skin that was available in the previous game).
+    if( (! skinname) || (! R_SkinAvailable( skinname )) )
+        skinname = DEFAULTSKIN;
+    p = write_stringn(p, skinname, SKINNAMESIZE);
 
-    Send_NetXCmd_pind(XD_NAMEANDCOLOR, buf, (p - buf), pind);
+    // Automatic routing, for Clients, and Bots.
+    Send_NetXCmd_auto(XD_NAMEANDCOLOR, buf, (p - buf), textcmd_pind, pn);
 }
 
 void Got_NetXCmd_NameColor(xcmd_t * xc)
@@ -479,12 +503,7 @@ void Got_NetXCmd_NameColor(xcmd_t * xc)
     // Format:  color byte, player_name str0, skin_name str0.
     // color
     sk = READBYTE(lcp); // unsigned read
-    p->skincolor = sk % NUMSKINCOLORS;
-
-    // a copy of color
-    if (p->mo)
-        p->mo->tflags = (p->mo->tflags & ~MFT_TRANSLATION6)
-                        | ((p->skincolor) << MFT_TRANSSHIFT);
+    P_SetPlayer_color( p, sk );
 
     // Players 0..(MAXPLAYERS-1) are init as Player 1 ..
     // name

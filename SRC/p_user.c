@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1502 2020-03-17 02:30:10Z wesleyjohnson $
+// $Id: p_user.c 1505 2020-03-17 02:32:01Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1605,4 +1605,16 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
 
 ret_fail:   
     return(false);
+}
+
+
+void P_SetPlayer_color( player_t * player, byte color )
+{
+    color = color % NUMSKINCOLORS;
+    player->skincolor = color;
+
+    // a copy of color, in proper position for use with color tables
+    mobj_t *  pmo = player->mo;
+    if( pmo )
+        pmo->tflags = (pmo->tflags & ~MFT_TRANSLATION6) | (color << MFT_TRANSSHIFT);
 }
