@@ -7790,3 +7790,99 @@ any client that should join the netgame.
 The server now uses this NetXCmd to update the bots in clients, the
 same as players.
 
+
+
+
+*** w108_sendtic1
+patchfile = w108_92_sendtic1.patch
+- commit revision 1506
+Make conditional wait_game_start code, using WAIT_GAME_START_INTERMISSION.
+Move send and handler code together, for client tic, and sever tic.
+Repair mistakes in w108_neterrcode, like some missed HSendPacket calls,
+and applying LE_SWAP twice, that made download savegame fail.
+Some minor cleanup.
+
+*** w108_sendtic2
+patchfile = w108_93_sendtic2.patch
+- commit revision 1507
+Eliminate special network commands for splitscreen.
+This is now handled by the new client ticcmd format.
+Revise update_player_count for wider usage.
+
+*** w108_sendtic3
+patchfile = w108_94_sendtic3.patch
+- commit revision 1508
+Eliminate problems with too many ticcmds and textcmds for one packet.
+This format can now handle 32 players, without errors.
+
+The Version 1.48 server tic packet format allows it to use multiple packets
+to send all ticcmds and all textcmd for the selected tic range.
+All of textcmds can be handled in each tic.  They are no longer
+limited by the size of a single packet.
+Logic for tic range now attempts to limit size to 2 packets worth.
+Sequence field allows for a maximum number of 8 sequence packets,
+which should be enough.
+Each sequence packet can be stored independently of the others,
+regardless of packet arrival order.
+
+The new server tic format has a player bit field, directly
+indicating within the packet, to which players the ticcmds belong.
+This no longer sends ticcmds for players that have dropped from
+the game, which reduces the size of packets when there are many players
+with some dropping out.
+
+*** w108_netstat
+patchfile = w108_95_netstat.patch
+- commit revision 1509
+Fix display of coop netgame stats.
+Previous display used a face (with player colors), which was too large
+for the listing, so they overlapped badly.
+Moved the face out of the list, and gave it a color bar to identify
+the local player.
+The coop listings now show the player name and player color, similar to the
+deathmatch listings.
+
+*** w108_random1
+patchfile = w108_96_random1.patch
+- commit revision 1510
+
+Expand the PP_Random usage to include Legacy specific uses of P_Random,
+and Heretic uses of P_Random.  Give the P_Random uses names like in PrBoom.
+These are only used when the enable is uncommented (such as in
+SYNC_DEBUG, or when need to debug P_Random usage).
+Legacy uses of P_Random have been identified, and are listed
+separately in the enum listing.  Some are marked FIXME, see next patch.
+Heretic uses of P_Random use names that start with "ph_".
+
+Some other minor changes to Random debugging were made too.
+Included some debugging changes used by SYNC_DEBUG in the mainline code,
+for the documentation, and to make general debugging easier.
+
+*** w108_random2
+patchfile = w108_97_random2.patch
+- commit revision 1511
+Fixes uses of P_Random by Legacy specific code to make them
+netgame safe.
+Uses of P_Random would cause problems in netgames,
+when they were enabled by cvar that were not NETVAR, as they would
+upset the P_Random sync.
+
+Added a new N_Random, which is not netgame synced, nor demo synced.
+This is for uses within Legacy that do not affect game sync.
+
+P_Random cannot be used where it is conditional on a cvar that is
+not a NETVAR.
+
+*** w108_itemrespawn
+patchfile = w108_98_itemrespawn.patch
+- commit revision 1512
+The netgame kicking due to consistency has finally been traced back
+to an inconsistent cv_itemrespawn.  The deathmatch setup was not
+updating the itemrespawn in the client.  Thus after the one player
+got an armor and it had respawned, a second player could get the
+respawned armor, but the client had not respawned any armor.
+When shot, the player died sooner in the client, which had bad side-effects.
+Deathmatch code had been relying on cv_itemrespawn being updated due
+to being a NETVAR, and that did not work.
+Changed the deathmatch setup of itemrespawn to be directly done
+in each client.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1500 2020-03-17 02:28:33Z wesleyjohnson $
+// $Id: d_netfil.c 1506 2020-04-04 08:48:20Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -199,7 +199,7 @@ byte * Put_Server_FileNeed(void)
     for(i=0;i<numwadfiles;i++)
     {
         // Format: filesize uint32, filename str0, md5sum 16byte
-        WRITEU32(p, LE_SWAP32(wadfiles[i]->filesize));
+        WRITEU32(p, wadfiles[i]->filesize);
         strcpy(wadfilename,wadfiles[i]->filename);
         nameonly(wadfilename);
         p = write_string(p, wadfilename);
@@ -236,7 +236,7 @@ void CL_Got_Fileneed(int num_fileneed_parm, byte *fileneed_str)
         if( p >= bufend16 )  goto bad_packet;  // buffer overrun
 
         fnp->status = FS_NOTFOUND;
-        fnp->totalsize = LE_SWAP32( READU32(p) );
+        fnp->totalsize = READU32(p);
         fnp->phandle = NULL;
 
         // [WDJ] String overflow safe
@@ -456,7 +456,8 @@ reqfile_e  Send_RequestFile(void)
         // debug_Printf("free byte %d\n",availablefreespace);
         if(totalfreespaceneeded > availablefreespace)  goto insufficient_space;
 
-        if( ! HSendPacket(cl_servernode, true, 0, p - netbuffer->u.bytepak.b) )
+        byte errcode = HSendPacket(cl_servernode, true, 0, p - netbuffer->u.bytepak.b);
+        if( errcode >= NE_fail )
             return RFR_send_fail;
 
         netfile_download = 1;
@@ -866,7 +867,8 @@ found:
         netbuffer->packettype=PT_FILEFRAGMENT;
 
         // Reliable SEND
-        if( !HSendPacket(nn, true, 0, FILETX_HEADER_SIZE + send_size ) )
+        byte errcode = HSendPacket(nn, true, 0, FILETX_HEADER_SIZE + send_size );
+        if( errcode >= NE_fail )
         { // not sent for some odd reason
             // retry at next call
             if(access_tah == TAH_FILE)
