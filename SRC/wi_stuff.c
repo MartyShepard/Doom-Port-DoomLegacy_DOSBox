@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1496 2020-01-05 22:11:50Z wesleyjohnson $
+// $Id: wi_stuff.c 1509 2020-04-04 08:49:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1628,14 +1628,14 @@ done:
 }
 
 
+#define NETGAME_STAT_148
 
 // Called by WI_Drawer
 static void WI_Draw_NetgameStats(void)
 {
     // Hardware or software render.
-    int  i, x, y;
+    int  i, x, y, y10;
     int  pwidth, ngsx;
-    byte*       colormap;   //added:08-02-98: remap STBP0 to player color
 
     // all WI is draw screen0, scale
     WI_Slam_Background();
@@ -1676,6 +1676,19 @@ static void WI_Draw_NetgameStats(void)
     }
 
 
+#ifdef NETGAME_STAT_148
+    char  buf[33];
+    const byte namex = 4;
+    byte name_width = ngsx - namex;
+    if( name_width > 32 ) name_width = 32;
+
+    byte colornum;
+    if( EN_heretic )
+        colornum = 230;
+    else
+        colornum = 0x78;
+#endif
+   
     pwidth = V_patch(percent)->width;
     //added:08-02-98: p[i] replaced by stpb (see WI_Load_Data for more)
     for (i=0 ; i<MAXPLAYERS ; i++)
@@ -1683,26 +1696,55 @@ static void WI_Draw_NetgameStats(void)
         if (!playeringame[i])
             continue;
 
+        byte skin_color = players[i].skincolor;
+        int ds_att = 0;
         x = ngsx;
-        colormap = (players[i].skincolor) ?
-             SKIN_TO_SKINMAP( players[i].skincolor ) // skins 1..
+        y10 = y+10;
+
+#ifdef NETGAME_STAT_148
+        byte color = (skin_color) ?
+           SKIN_TO_SKINMAP(skin_color)[ colornum ]
+         : reg_colormaps[ colornum ];  // default green skin
+
+        V_DrawScaledFill( namex,y10, ngsx-namex,10, color );  // color bar
+       
+        if (i == me)
+        {
+//            V_DrawScaledFill (namex, y10+2, ngsx-namex+10,6, color);  // me, mark
+            V_DrawScaledFill (namex, NG_STATSY+2, 42,10, color);  // me, shoulder banner under face
+            V_DrawScaledPatch(namex+4, (NG_STATSY + 8 - V_patch(pl_face)->height), pl_face);  // face
+	    ds_att = V_WHITEMAP;
+	}
+       
+        // draw name, truncate to colwidth
+        memset(buf, ' ', 32);  // to defeat string centering
+        snprintf(buf, 31, "%s", player_names[i] );
+        buf[name_width] = 0;  // truncate to column width
+        V_DrawString(namex+1, y10+1, ds_att, buf);
+#else
+     // previous to 1.48
+        byte*  colormap;   //added:08-02-98: remap STBP0 to player color
+        colormap = (skin_color) ?
+             SKIN_TO_SKINMAP( skin_color ) // skins 1..
            : & reg_colormaps[0]; // no translation table for green guy
 
+     // color patch is too large, face is too large, much overlap
         V_DrawMappedPatch(x - (V_patch(stpb)->width), y, stpb, colormap);
 
         if (i == me)
             V_DrawScaledPatch(x - (V_patch(stpb)->width), y, pl_face);
+#endif
 
         x += NG_SPACINGX;
-        WI_Draw_Percent(x-pwidth, y+10, cnt_kills[i]);
+        WI_Draw_Percent(x-pwidth, y10, cnt_kills[i]);
         x += NG_SPACINGX;
-        WI_Draw_Percent(x-pwidth, y+10, cnt_items[i]);
+        WI_Draw_Percent(x-pwidth, y10, cnt_items[i]);
         x += NG_SPACINGX;
-        WI_Draw_Percent(x-pwidth, y+10, cnt_secret[i]);
+        WI_Draw_Percent(x-pwidth, y10, cnt_secret[i]);
         x += NG_SPACINGX;
 
         if (dofrags)
-            WI_Draw_Num(x, y+10, cnt_frags[i], -1);
+            WI_Draw_Num(x, y10, cnt_frags[i], -1);
 
         y += WI_SPACINGY;
     }
