@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: i_net.h 1477 2019-10-19 13:42:58Z wesleyjohnson $
+// $Id: i_net.h 1499 2020-03-17 02:27:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -130,18 +130,27 @@ extern doomcom_t *doomcom;
 // Report network errors with global because so many callers ignore it,
 // and it is difficult to pass back up through so many layers.
 // This also allows for simpler error returns in the functions.
+// This fits in a byte.
 typedef enum {
    NE_success = 0,
-   NE_empty = -1,
+   // warnings
+   NE_queued = 1,
+   // These values are greater than MAX_CON_NETNODE.
+   NE_empty = 200,   // no packet (Get)
+   NE_not_netgame,   // still happens often
    // some doomatic errors
-   NE_congestion = -401,
-   NE_network_reset = -402,
-   NE_network_unreachable = -403,
-   NE_unknown_net_error = -404,
-   NE_node_unconnected = -405,
-   NE_nodes_exhausted = -406,
-   NE_not_netgame = -410,
-   NE_fail = -499
+   NE_fail,  // generic
+   NE_refused_again, // refused, try again
+   NE_network_reset,
+   // Fatal errors
+   NE_fatal,
+   NE_network_unreachable,
+   NE_unknown_net_error,
+   NE_node_unconnected,
+   NE_nodes_exhausted,
+   NE_queue_full,
+   NE_empty_packet,  // debugging, should never happen
+   NE_network_down
 } network_error_e;
 
 // This is only set on error, it does not indicate success.
@@ -150,18 +159,18 @@ extern network_error_e  net_error;
 
 // Indirections, to be instantiated by the network driver
 // Return packet into doomcom struct.
-// Return true when got packet.  Error in net_error.
-extern boolean (*I_NetGet) (void);
+// Return 0 when got packet, else net_error.  Error in net_error.
+extern byte  (*I_NetGet) (void);
 // Send packet from within doomcom struct.
-// Return true when packet has been sent.  Error in net_error.
-extern boolean (*I_NetSend) (void);
+// Return 0 when got packet, else net_error.  Error in net_error.
+extern byte  (*I_NetSend) (void);
 // Return true if network is ready to send.
 extern boolean (*I_NetCanSend) (void);
 // Close the net node connection.
-extern void    (*I_NetFreeNode) (int nodenum);
+extern void    (*I_NetFreeNode) (byte nodenum);
 // Open a net node connection with a specified address.
-// Return the net node number, or network_error_e.  Error in net_error.
-extern int     (*I_NetMakeNode) (char *address);
+// Return the net node number, or network_error_e > MAXNETNODES.   Error in net_error.
+extern byte    (*I_NetMakeNode) (char *address);
 // Open the network socket.
 // Return true if the socket is open.
 extern boolean (*I_NetOpenSocket) (void);

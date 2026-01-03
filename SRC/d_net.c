@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1497 2020-01-05 22:12:35Z wesleyjohnson $
+// $Id: d_net.c 1499 2020-03-17 02:27:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -97,40 +97,40 @@ FILE*       debugfile = NULL;
 #define     MAXREBOUND 8
 static netbuffer_t reboundstore[MAXREBOUND];
 static uint16_t    reboundsize[MAXREBOUND];
-static int         rebound_head,rebound_tail;
+static byte        rebound_head, rebound_tail;
 
 // Network interfaces (i_net.h)
 uint32_t    net_bandwidth;
 uint16_t    hardware_MAXPACKETLENGTH;
 network_error_e  net_error;
 
-boolean (*I_NetGet) (void);
-boolean (*I_NetSend) (void);
+byte    (*I_NetGet) (void);
+byte    (*I_NetSend) (void);
 boolean (*I_NetCanSend) (void);
 void    (*I_NetCloseSocket) (void);
-void    (*I_NetFreeNode) (int nodenum);
-int     (*I_NetMakeNode) (char *address);
+void    (*I_NetFreeNode) (byte nodenum);
+byte    (*I_NetMakeNode) (char *address);
 boolean (*I_NetOpenSocket) (void);
 
 // ---- Internal network, for single player game.
 
-boolean Internal_Get(void)
+byte  Internal_Get(void)
 {
     doomcom->remotenode = -1;
     // I_Error("Get without netgame\n");
     net_error = NE_not_netgame;
-    return  false;
+    return  net_error;
 }
 
 // Function for I_NetSend().
-boolean Internal_Send(void)
+byte  Internal_Send(void)
 {
     I_SoftError("Send without netgame\n");
     net_error = NE_not_netgame;
-    return  false;
+    return  net_error;
 }
 
-void Internal_FreeNode(int nodenum)
+void Internal_FreeNode( byte nodenum )
 {
 }
 
@@ -426,6 +426,7 @@ static void Remove_ackpak( ackpak_t * ackpakp )
     }
 
     dnp = & net_nodes[dnode];  // dest node of the ackpak
+
     // Stats
     fixed_t trueping = (I_GetTime() - ackpakp->senttime) << FRACBITS;
 
@@ -625,7 +626,7 @@ void Net_Send_AcksPacket(int to_node)
     // Send an packet with the ack queue.
     netbuffer->packettype = PT_ACKS;
     memcpy(netbuffer->u.bytepak.b, net_nodes[to_node].acktosend, MAXACKTOSEND);
-    HSendPacket(to_node,false,0,MAXACKTOSEND);
+    HSendPacket( to_node, 0, 0, MAXACKTOSEND );
 }
 
 // Receive the special packet with only acks.
@@ -735,8 +736,7 @@ void Net_AckTicker(void)
         ackpakp->senttime = curtime;
         ackpakp->resent_cnt++;
         ackpakp->acknum_at_xmit = np->next_ackreq_num;
-        HSendPacket( nn, false, ackpakp->acknum,
-                     ackpakp->length - PACKET_BASE_SIZE );
+        HSendPacket( nn, 0, ackpakp->acknum, ackpakp->length - PACKET_BASE_SIZE );
         stat_retransmits++; // for stat
     }
 
@@ -802,7 +802,7 @@ void Net_Cancel_Packet_Ack(int nnode)
     {
         // Put at the queue tail, all the intervening ack num.
         // If nxtack==cancel_acknum already, then only the return_ack needs
-        // to updated.
+        // to be updated.
         // Leaving a hole in the queue would indicate missing packets, and it
         // would wait for them, never sending the later ACK.
         // This assumes they all fit, since they were just all removed.
@@ -923,6 +923,7 @@ void Net_AbortPacketType(byte packettype)
 
 
 // Server
+// Client also calls this to close connection to server.
 // Remove a node, clear all ack from this node and reset askret
 //   nnode : the net node number, 0..(MAX_CON_NETNODE-1)
 //   forceclose : do not wait for ACK, close now
@@ -1187,17 +1188,160 @@ static void DebugPrintpacket(char *header)
 }
 #endif
 
+// Generic print for network errors.
+void  network_error_print( byte errcode, const char * who )
+{
+    const char * errtext = "unknown net error";
+    switch( errcode )
+    {
+     case NE_fail: errtext = "network operation failed";
+        break;
+     case NE_refused_again: errtext = "operation refused, try again";
+        break;
+     case NE_network_reset: errtext = "network reset";
+        break;
+     case NE_network_unreachable: errtext = "network unreachable";
+        break;
+     case NE_node_unconnected: errtext = "network node unconnected";
+        break;
+     case NE_nodes_exhausted: errtext = "network nodes exhausted";
+        break;
+     case NE_not_netgame: errtext = "not netgame";
+        break;
+     case NE_fatal: errtext = "fatal network error";
+        break;
+     default:
+        break;
+    }
+    GenPrintf(EMSG_warn, "Network: %s, %s\n", who, errtext );
+}
+
+//#define PACKETQUEUE
+#ifdef PACKETQUEUE
+
+// Over 128 is severe congestion, over 64 requires throttling.
+byte net_congestion = 0;
+
+#define MAXQUEUENUM   128
+typedef struct packet_queue_s {
+    struct packet_queue_s * link;
+    byte to_node;
+    byte flags;
+    byte acknum;
+    unsigned int packetlength ;
+    byte data;  // variable length netbuffer copy
+} packet_queue_t;
+byte packet_queue_num = 0;
+byte packet_queue_max = 0;
+packet_queue_t * packet_queue = NULL;  // malloc
+
+void calc_congestion( void )
+{
+    // start throttling at 1/4 full buffer.
+    int c = (int)packet_queue_num * 64 / (MAXQUEUENUM/4);
+    net_congestion = (c>255)? 255 : c;  // limit to 255
+}
+
+// Queue up the packet until it can be sent.
+// Makes HSendPacket calls much simpler.
+// Avoids clumbsy error handling when network has slowdown.
+// Rarely invoked, does not need to be fast.
+// Return NE_xx
+byte  NetQueue_put( byte to_node, byte flags, byte acknum, int packetlength )
+{
+    packet_queue_t * pq;
+    int  netbuffer_length = packetlength + PACKET_BASE_SIZE;
+
+    if( packet_queue_num >= MAXQUEUENUM )  goto queue_full;
+
+    pq = malloc( sizeof(packet_queue_t) +  netbuffer_length );
+    if( pq == NULL )    goto queue_full;
+
+    if( packet_queue )
+    {
+        // Append to end of list.
+        packet_queue_t * pq_end = packet_queue;
+        while( pq_end->link )   pq_end = pq_end->link;  // end of list
+        pq_end->link = pq;
+    }
+    else
+    {
+        // end of list is the head
+        packet_queue = pq;
+    }
+    pq->link = NULL;
+    pq->to_node = to_node;
+    pq->flags = flags;
+    pq->acknum = acknum;
+    pq->packetlength = packetlength;
+    memcpy( &pq->data, netbuffer, netbuffer_length );
+
+    // stats and warnings
+    packet_queue_num ++;
+    if( packet_queue_num > packet_queue_max )
+    {
+        packet_queue_max = packet_queue_num;
+        GenPrintf(EMSG_warn, "Packet Queue max %i\n", packet_queue_max );
+    }
+    calc_congestion();
+    return NE_queued;
+
+queue_full:
+    return NE_queue_full;
+}
+
+// Do not call when there is something in the netbuffer.
+byte  NetQueue_send( void )
+{
+    byte q_net_error = 0;
+
+    while( packet_queue )
+    {
+        packet_queue_t * pq = packet_queue;
+        int  netbuffer_length = pq->packetlength + PACKET_BASE_SIZE;
+        memcpy( netbuffer, &pq->data, netbuffer_length );
+        // Recursive call, so do not allow SP_queue.
+        q_net_error = HSendPacket( pq->to_node, pq->flags & ~SP_queue, pq->acknum, pq->packetlength );
+        if( q_net_error > 0 )
+            return q_net_error;
+
+        // successfully sent, clear it from the queue
+        packet_queue = pq->link;  // unlink
+        free( pq );
+
+        if( packet_queue_num > 0 )
+        {
+            packet_queue_num --;
+        }
+        calc_congestion();
+    }
+
+    return NE_success;
+}
+#endif
+
+
 //
 // HSendPacket
 //
 //  packetlength: number of bytes in u part of packet
 //  acknum: retransmit of a packet with this acknum
-// Return true when packet is sent.
-boolean HSendPacket(int to_node, boolean reliable, byte acknum,
-                    int packetlength)
+//  flags: SP_ flags
+// Return network_error_e (NE_xx).
+byte  HSendPacket(byte to_node, byte flags, byte acknum, int packetlength)
 {
+    byte errcode;
 
+#ifdef PACKETQUEUE
+    // Check if anything is in queue already.
+    if( (flags & SP_queue) && packet_queue_num )  goto queue_first;
+#endif
+
+// PACKET_BASE_SIZE is not 0, so datalength cannot be 0.
+// #define   PACKET_BASE_SIZE_ZERO
     doomcom->datalength = packetlength + PACKET_BASE_SIZE;
+
+    // Node 0 is always self.
     if(to_node == 0)
     {
         // Send packet to self.
@@ -1206,7 +1350,7 @@ boolean HSendPacket(int to_node, boolean reliable, byte acknum,
 #ifdef PARANOIA
             CONS_Printf("Full rebound buf\n");
 #endif
-            goto fail_ret;
+            goto cannot_send;
         }
         memcpy(&reboundstore[rebound_head],netbuffer,doomcom->datalength);
         reboundsize[rebound_head]=doomcom->datalength;
@@ -1218,18 +1362,20 @@ boolean HSendPacket(int to_node, boolean reliable, byte acknum,
             DebugPrintpacket("SENDLOCAL");
         }
 #endif
-        return true;
+        return NE_success;
     }
 
 //    if (demoplayback)
-//        return true;
+//        return NE_success;
 
     if (!netgame)   goto not_netgame;
 
     // Do this before Save_packet_acknum() because that function will
     // backup the current packet.
     doomcom->remotenode = to_node;
+#ifdef PACKET_BASE_SIZE_ZERO
     if(doomcom->datalength <= 0)   goto empty_packet;
+#endif
 
 #ifdef DOSNET_SUPPORT_NOT_USED
     doomcom->numplayers = num_player_slot;
@@ -1240,25 +1386,28 @@ boolean HSendPacket(int to_node, boolean reliable, byte acknum,
        Get_return_ack(to_node)  // ack a previous packet
        : 0;  // broadcast, no ack
 
-    if(reliable)
+    if( flags & SP_reliable )
     {
         // Packet sent with an ack_req, and retransmitted if necessary.
         if( I_NetCanSend && !I_NetCanSend() )
         {
             // Network cannot transmit right now.
+            DEBFILE("HSendPacket : Out of bandwidth\n");
             // Enhancement for slow networks, not required.
             if( netbuffer->packettype < PT_CANFAIL )
             {
                 // High priority, deferred transmit.
                 netbuffer->ack_req = Save_packet_acknum(true);
+                if( netbuffer->ack_req == 0 )
+                    goto cannot_send;  // out of ack packets
+                return NE_queued;  // in ack
             }
-
-            DEBFILE("HSendPacket : Out of bandwidth\n");
-            goto fail_ret;
+            goto cannot_send;
         }
         // Save packet, issue an acknum.
         netbuffer->ack_req = Save_packet_acknum(false);
-        if( netbuffer->ack_req == 0 )  goto fail_ret;
+        if( netbuffer->ack_req == 0 )
+            goto cannot_send;  // out of ack packets
     }
     else
     {
@@ -1269,44 +1418,76 @@ boolean HSendPacket(int to_node, boolean reliable, byte acknum,
     netbuffer->checksum = Netbuffer_Checksum();
     stat_sendbytes += (net_packetheader_length + doomcom->datalength); // for stat
 
-#if 1
-    return I_NetSend();
-#else
+#if 0
     // DEBUG
     // simulate internet :)
-    if( rand()<RAND_MAX/5 )
+    if( rand() > RAND_MAX/5 )
     {
+        // Simulate a failure.
+#ifdef DEBUGFILE
+        if (debugfile)
+            DebugPrintpacket("SENDLOST");
+#endif
+        return NE_success;  // indicates sent, but gets lost
+    }
 #ifdef DEBUGFILE
         if (debugfile)
             DebugPrintpacket("SEND");
 #endif
-        return I_NetSend();
-    }
-#ifdef DEBUGFILE
-    else
+#endif
+
+    errcode = I_NetSend();   
+    if( errcode >= NE_fail )   goto ret_errcode;
+    return NE_success;
+
+cannot_send:
+#ifdef PACKETQUEUE   
+    if( flags & SP_queue )
     {
-        if (debugfile)
-            DebugPrintpacket("SENDLOST");
+        // Queue for later send.
+        errcode = NetQueue_put( to_node, flags, acknum, packetlength );
+        goto ret_errcode;  // may be NE_queued, which does not print out
     }
 #endif
-    return true;  // indicates sent, but gets lost
+    goto ret_fail;
+
+#ifdef PACKETQUEUE   
+queue_first:
+    // Queue this message first, to prevent reversing message order.
+    errcode = NetQueue_put( to_node, flags, acknum, packetlength );
+    if( errcode == NE_queue_full )  goto ret_errcode;
+    // Send all queued messages.  This calls HSendPacket.
+    errcode = NetQueue_send();
+    // Report errors on the state of the network.
+    goto ret_errcode;
 #endif
+
 
 // Rare errors
 not_netgame:
     I_SoftError ("HSendPacket: not in netgame\n");
-    goto fail_ret;
+    errcode = NE_not_netgame;
+    goto ret_errcode;
 
+#ifdef PACKET_BASE_SIZE_ZERO
 empty_packet:
     DEBFILE("HSendPacket: abort send of empty packet\n");
 #ifdef DEBUGFILE
     if (debugfile)
         DebugPrintpacket("SENDEMPTY");
 #endif
-    goto fail_ret;
+    errcode = NE_empty_packet;
+    goto ret_errcode;
+#endif
 
-fail_ret:
-    return false;
+ret_fail:
+    errcode = NE_fail;
+ret_errcode:
+    // report some errcode, sometimes not an error
+    if( (flags & SP_error_handler) && (errcode >= NE_fail) )
+        network_error_print( errcode, "HSendPacket" );
+
+    return errcode;
 }
 
 //
@@ -1336,7 +1517,9 @@ boolean HGetPacket (void)
 
     if (!netgame)   goto fail_ret;
 
-    if( ! I_NetGet() )   goto fail_ret;  // no packet
+    byte errcode = I_NetGet();
+    if( errcode == NE_empty )   return false;  // no packet
+    if( errcode >= NE_fail )   goto ret_errcode;  // some other error
 
     stat_getbytes += (net_packetheader_length + doomcom->datalength); // for stat
 
@@ -1376,6 +1559,10 @@ bad_checksum:
     DEBFILE("HGetPacket: Bad packet checksum\n");
     goto fail_ret;
 
+ret_errcode:
+    // report some errcode, sometimes not an error
+    if( errcode >= NE_fail )
+        network_error_print( errcode, "HSendPacket" );
 fail_ret:
     return false;
 }

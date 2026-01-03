@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1495 2020-01-05 22:10:12Z wesleyjohnson $
+// $Id: i_tcp.c 1499 2020-03-17 02:27:41Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -635,10 +635,11 @@ static byte get_freenode( void )
 // Function for I_NetFreeNode().
 // IPX or inet.
 static
-void SOCK_FreeNode(int nnode)
+void SOCK_FreeNode( byte nnode )
 {
+    // MAX_CON_NETNODE is preallocated.
     // can't disconnect to self :)
-    if( nnode == 0 )
+    if( (nnode == 0) || (nnode >= MAXNETNODES) )
         return;
 
 #ifdef DEBUGFILE
@@ -659,10 +660,10 @@ void SOCK_FreeNode(int nnode)
 // Function for I_NetGet().
 // IPX or inet.  Server and client.
 // Return packet into doomcom struct.
-// Return true when got packet.  Error in net_error.
+// Return 0 when got packet, else net_error.  Error in net_error.
 // Called by: HGetPacket
 static
-boolean  SOCK_Get(void)
+byte  SOCK_Get(void)
 {
     uint32_t errno2;
     byte  nnode;  // index to net_nodes[]
@@ -739,7 +740,7 @@ boolean  SOCK_Get(void)
 return_node:
     doomcom->remotenode = nnode; // good packet from a game player
     doomcom->datalength = rcnt;
-    return true;
+    return NE_success;
 
     // Rare errors
 recv_err:
@@ -751,7 +752,7 @@ recv_err:
     if(errno2 == EWOULDBLOCK || errno2 == EAGAIN)   // no message
 #endif
     {
-        net_error = NE_empty;
+        net_error = NE_empty;   // no packet
         goto no_packet;
     }
 
@@ -808,7 +809,7 @@ no_nodes:
 
 no_packet:
     doomcom->remotenode = -1;  // no packet
-    return false;
+    return net_error;
 }
 
 
@@ -847,8 +848,8 @@ boolean SOCK_CanSend(void)
 // Function for I_NetSend().
 // IPX or inet.
 // Send packet from within doomcom struct.
-// Return true when packet has been sent.  Error in net_error.
-boolean  SOCK_Send(void)
+// Return 0 when got packet, else net_error.  Error in net_error.
+byte  SOCK_Send(void)
 {
     uint32_t errno2;
     byte  nnode = doomcom->remotenode;
@@ -877,7 +878,7 @@ boolean  SOCK_Send(void)
 
 //    DEBFILE(va("send to %s\n",SOCK_AddrToStr(&clientaddress[doomcom->remotenode])));
     if( cnt < 0 )  goto send_err;
-    return true;
+    return NE_success;
    
     // Rare error.
 send_err:
@@ -891,7 +892,7 @@ send_err:
     if( errno2 == ECONNREFUSED || errno2 == EWOULDBLOCK || errno2 == EAGAIN )
 #endif
     {
-        net_error = NE_congestion;  // silent
+        net_error = NE_refused_again;  // silent
         goto err_return;
     }
 
@@ -937,7 +938,7 @@ node_unconnected:
     goto err_return;
 
 err_return:
-    return false;
+    return net_error;
 }
 
 
@@ -1319,11 +1320,11 @@ void I_Shutdown_TCP_Driver(void)
 //   hostname : string with network address of remote server
 //      example "192.168.127.34:5034"
 //      example "doomservers.net"
-// Return the net node number, or network_error_e.
+// Return the net node number, or network_error_e > MAXNETNODES.
 static
-int SOCK_NetMakeNode (char *hostname)
+byte  SOCK_NetMakeNode (char *hostname)
 {
-    int newnode;
+    byte newnode;
     mysockaddr_t  newaddr;
     char * namestr;  // owned copy of hostname string
     char *portchar;
@@ -1398,11 +1399,11 @@ clean_ret:
 
     // Rare errors.
 abort_makenode:
-    newnode = NE_fail;
+    newnode = NE_fail;  //  > MAXNETNODES
     goto clean_ret;
 
 no_nodes:
-    newnode = NE_nodes_exhausted;
+    newnode = NE_nodes_exhausted;  //  > MAXNETNODES
     goto clean_ret;
 }
 

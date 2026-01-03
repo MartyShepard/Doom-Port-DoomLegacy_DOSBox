@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01499 ]: w108_85 net errorcode
+          DOS: Compile fix
+          DJGPPDOS_NATIVE/i_net.c:87: error: `nodenum' undeclared.. why?
+					
 [01498 ]: w108_84 net splitplayer
 [01497 ]: w108_83 network debug
 [01496 ]: w108_82 network wait

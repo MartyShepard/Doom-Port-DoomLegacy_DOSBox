@@ -7673,9 +7673,120 @@ patchfile = w108_84_netsplit.patch
 - commit revision 1498
 Simplify the handling of splitplayer changes being passed to the network code.
 
+*** w108_neterrcode
+patchfile = w108_85_neterrcode.patch
+- commit revision 1499
+Upgrade the network error codes to include errors from d_clisrv.
+Return this error code from HSendPacket so that callers can distinguish
+network errors from wait and retry problems.
+Try to handle network congestion in HSendPacket, instead of duplicating
+that in every caller.
+While network congestion and hitting buffering limits is not a big problem
+in modern networks, it was in the older ports.
+As long as it CAN return an error, it must be handled,
+and it is a nuisance in every HSendPacket usage.
 
+*** w108_netclean
+patchfile = w108_86_netclean.patch
+- commit revision 1500
+Cleanup some of the net code, improved comments.
+Add/move some NOS values.
+Move some declarations around.
+Note that the client node numbering is independent of the sever viewpoint.
+Rename severnode, to cl_servernode, because it can only be used by the client.
 
+*** w108_netrepair2
+patchfile = w108_87_netrepair2.patch
+- commit revision 1501
+Replaced some net repair code with common code from other efforts (not
+committed yet).  This involves some new message types.
 
+Repair will now repair all players, not just the [0] player of the client.
+Provided reporting of any difference, for diagnostic purposes.
 
+It is not that net repair is necessary, as networks don't have that
+many errors anymore.  But it is the only diagnostic tool that can tell
+us WHY the client is having consistency errors.  Network play is still
+having major problems with keeping consistency.  Invoking the network
+repair does not seem to fix the problem, thus we need more diagnostic
+reporting to identify what is happening.  This diagnostic code will
+be left in permantly.
 
+*** w108_netrepair2
+patchfile = w108_88_angleturn.patch
+- commit revision 1502
+This option is TICCMD_148, which is now enabled.
+The netcode had some flags in the lower bits of angleturn.
+These add noise to the angle input, as they were not masked out again.
+They also create difficulty in detecting errors in ticcmd net packets.
+The ticcmd_t type is already being padded to 8 bytes by the compiler,
+so it did not take any more room to add ticflags to the ticcmd.
+
+*** w108_netpad
+patchfile = w108_89_netpad.patch
+- commit revision 1503
+The compiler has been padding the structures used for network packets,
+in order to align 16 and 32 bit int fields.
+This has resulted in erratic message mangling.
+The packet size has often been calculated from expected field sizes,
+which did not take into account the added padding.
+Simply using the packing attribute did not work, as the Mingw32
+compiler seems to ignore it.
+
+All the network packet structures have been manually padded, so
+that there will not be any surprises.
+Any 16 or 32 bit field has been manually aligned to 4 bytes.
+Such 16 and 32 bit fields can only be used in structures when
+the structure alignment guarantees their alignment will be maintained.
+
+New types, N16_t and N32_t, have been created, which are unaligned.
+They appear to be byte arrays to the compiler so it will
+not attempt to align them.  Functions have been created that
+will store 16 and 32 bit int values into them, using the best
+technique available for the machine, as detected.
+This makes this safe, even for a SPARC, which cannot do unaligned
+int reads and writes.
+
+Optional, repeated, and other unaligned structures must use only
+unaligned types,
+which for now are byte, char, N16_t, and N32_t.
+
+*** w108_netxcmd
+patchfile = w108_90_netxcmd.patch
+- commit revision 1504
+Revise the NetXCmd channel structure to accomodate future needs.
+
+NetXCmd are also used by the server, and the server NetXCmd
+previously were using the player 0 textcmd channel.
+This caused several problems, and required that textcmd channel 0
+always be transmitted.
+
+Server NetXCmd now signal themselves, with pind=2, or by using SERVER_PID.
+SV_Send_NetXCmd handles server NetXCmd, routing them through the server
+functions, directly to the BTIC textcmd buffers.
+
+This now gives the capability of this server channel being used for bots.
+There are no local textcmd buffers for bots, so they could not send textcmd.
+
+The player textcmd buffers maintained for each tic, have been combined into one
+textcmd buffer for all players, by saving the player number with the textcmd.
+The server textcmd use the SERVER_PID player number, so they can be
+identified, with additional tests and protections applied.
+It being that textcmd are rare, and are simply executed sequentially
+anyway, there was no good reason to keep these separate buffers
+duplicated for each BTIC.  It was rare for any player to have a
+textcmd, and even more rare for one player to have more than one.
+Having one combined buffer also simplifed transmitting to clients too.
+
+Demos still will put textcmd using player 0, and this is still supported.
+
+*** w108_namecolor
+patchfile = w108_91_namecolor.patch
+- commit revision 1505
+Expand the NameColor NetXCmd to also include the bots maintained by the
+server.  This provides the ability to send a NetXCmd over the server
+NetXCmd channel, to update the bot names, color, and skins, in
+any client that should join the netgame.
+The server now uses this NetXCmd to update the bots in clients, the
+same as players.
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1498 2020-01-05 22:13:26Z wesleyjohnson $
+// $Id: d_clisrv.c 1499 2020-03-17 02:27:41Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -342,6 +342,15 @@ static byte consistency_sg_bit[4]    = { 0, 0x02, 0x14, 0xAA };  // bit on when 
 // of 512 octet is like 0.1)
 uint16_t  software_MAXPACKETLENGTH;
 
+// Handle errors from HSendPacket consistently.
+static void  generic_network_error_handler( byte errcode, const char * who )
+{
+    if( errcode == NE_not_netgame )  return;  // known problem during join
+    if( errcode >= NE_fail )
+        network_error_print( errcode, who );     
+}
+
+
 // By Client, Server
 int ExpandTics (int low)
 {
@@ -670,14 +679,43 @@ static void Net_Packet_Handler(void);
 static void SV_Reset_NetNode(byte nnode);
 static boolean SV_Add_Join_Waiting(void);
 static byte SV_update_player_counts(void);
-static void SV_SendPacket_All( boolean reliable, size_t size_packet, const char * msg );
 
 
+// By Server
+// Broadcast to all connected nodes
+//   flags: SP_ for HSendPacket
+static void SV_SendPacket_All( sendpacket_flag_e flags, size_t size_packet, const char * msg )
+{
+    int nn;
+    for(nn=1; nn<MAXNETNODES; nn++)
+    {
+        if( nnode_state[nn] >= NOS_recognized )
+        {
+            HSendPacket( nn, flags, 0, size_packet );  // ignore failures
+            if( msg )	   
+                debug_Printf( "%s[ %d ]\n", msg, nn );
+        }
+    }
+}
+
+// Server, Client
 // send a simple packet
-static boolean  SendPacket( byte nnode, byte packettype )
+//   nnode : client node, cl_servernode, BROADCAST_NODE
+// Return  NE_xx
+static byte  SendPacket( byte nnode, byte packettype )
 {
     netbuffer->packettype = packettype;
-    return HSendPacket( nnode, true, 0, 0 );
+
+    if( nnode == BROADCAST_NODE )  // only by server
+    {
+        SV_SendPacket_All( SP_reliable|SP_queue|SP_error_handler, 0, NULL );
+        return NE_success;
+    }
+
+    if( nnode < MAXNETNODES )
+        return HSendPacket( nnode, SP_reliable|SP_queue|SP_error_handler, 0, 0 );
+
+    return NE_fail;
 }
 
 
@@ -712,7 +750,8 @@ static boolean  CL_Send_Join( void )
         (cl_drone)? 0
       : ( (cv_splitscreen.value)? 2 : 1 );
 
-    return HSendPacket(servernode,true,0,sizeof(clientconfig_pak_t));
+    byte errcode = HSendPacket( servernode, SP_reliable|SP_queue|SP_error_handler, 0, sizeof(clientconfig_pak_t) );
+    return  (errcode < NE_fail);
 }
 
 
@@ -746,7 +785,7 @@ static void SV_Send_ServerInfo(int to_node, tic_t reqtime)
 
     p=Put_Server_FileNeed();
 
-    HSendPacket(to_node, false, 0, p-((byte *)&netbuffer->u));
+    HSendPacket( to_node, 0, 0, p - ((byte *)&netbuffer->u) );  // msg lost when too busy
 }
 
 
@@ -784,7 +823,8 @@ static boolean SV_Send_ServerConfig( byte to_node, byte command )
     CV_SaveNetVars( &xc );
     // curpos is 1 past last cvar (if none then is at netvar_buf)
 
-    return HSendPacket(to_node, true, 0, xc.curpos - ((byte *)&netbuffer->u));
+    byte errcode = HSendPacket( to_node, SP_reliable|SP_queue|SP_error_handler, 0, xc.curpos - ((byte *)&netbuffer->u) );
+    return  (errcode < NE_fail);
 }
 
 
@@ -820,8 +860,11 @@ static void SV_Send_control( byte nnode, byte ctrl_command, byte player_num, uin
     }
     else if( nnode < MAXNETNODES )
     {
-        if( ! HSendPacket(nnode, true, 0, sizeof(control_pak_t)) )
-            GenPrintf(EMSG_warn, "Control message not sent\n" );  // should not happen
+        byte errcode = HSendPacket( nnode, SP_reliable|SP_queue, 0, sizeof(control_pak_t) );
+        if( errcode >= NE_fail )
+        {
+            generic_network_error_handler( errcode, "Control msg" );  // should not happen
+        }
     }
 }
 
@@ -889,21 +932,6 @@ static void control_msg_handler( void )
 }
 
 
-// By Server
-// Broadcast to all connected nodes
-static void SV_SendPacket_All( boolean reliable, size_t size_packet, const char * msg )
-{
-    int nn;
-    for(nn=1; nn<MAXNETNODES; nn++)
-    {
-        if( nnode_state[nn] >= NOS_recognized )
-        {
-            HSendPacket(nn, reliable, 0, size_packet);  // ignore failures
-            if( msg )	   
-                debug_Printf( "%s[ %d ]\n", msg, nn );
-        }
-    }
-}
 
 // Send: Fill in the fields
 static void get_random_state( random_state_t * rs )
@@ -1242,7 +1270,8 @@ static void SV_Send_player_repair( byte pind, byte to_node )
     netbuffer->u.repair.pos.momy = LE_SWAP32( mo->momy );
     netbuffer->u.repair.pos.momz = LE_SWAP32( mo->momz );
 
-    if( ! HSendPacket(to_node, true, 0, sizeof(repair_pak_t)) )  // reliable
+    byte errcode = HSendPacket( to_node, SP_reliable, 0, sizeof(repair_pak_t) );
+    if( errcode >= NE_fail )
     {
         nnode_state[to_node] = NOS_fatal;
         fail_msg = "Send fail";       
@@ -1338,9 +1367,11 @@ static void SV_Send_repair( byte repair_type, byte to_node )
     }
 
     // simple messages
-    if( ! HSendPacket(to_node, true, 0, sizeof(repair_pak_t)) )
+    byte errcode = HSendPacket( to_node, SP_reliable|SP_queue, 0, sizeof(repair_pak_t) );
+    if( errcode >= NE_fail )
     {
         nnode_state[to_node] = NOS_fatal;
+        generic_network_error_handler( errcode, "Send Repair" );
     }
     return;
 }
@@ -1357,8 +1388,12 @@ static void CL_Send_Req_repair( repair_type_e repair_type )
     netbuffer->u.repair.gametic = LE_SWAP32(gametic);
     get_random_state( & netbuffer->u.repair.rs ); // to sync P_Random
 
-    if( ! HSendPacket(servernode, true, 0, sizeof(repair_pak_t)) )  // reliable
+    byte errcode = HSendPacket( servernode, SP_reliable|SP_queue, 0, sizeof(repair_pak_t) );
+    if( errcode >= NE_fail )
+    {
         network_state = NETS_fatal;
+        generic_network_error_handler( errcode, "Send Repair" );
+    }
 }
 
 
@@ -1730,7 +1765,7 @@ static void CL_Send_AskInfo( byte to_node )
     netbuffer->packettype = PT_ASKINFO;
     netbuffer->u.askinfo.version = VERSION;
     netbuffer->u.askinfo.send_time = LE_SWAP32(I_GetTime());
-    HSendPacket(to_node, false, 0, sizeof(askinfo_pak_t));
+    HSendPacket( to_node, 0, 0, sizeof(askinfo_pak_t) );  // msg lost when too busy
 }
 
 
@@ -2054,7 +2089,7 @@ static void CL_ConnectToServer( void )
                 }
 
                 // got savegame
-                if( ! SendPacket( servernode, PT_CLIENTREADY ) )
+                if( SendPacket( servernode, PT_CLIENTREADY ) >= NE_fail )
                     goto reset_to_searching;
 
                 gamestate = GS_LEVEL;  // game loaded
@@ -3063,7 +3098,7 @@ static void SV_Send_Refuse(int to_node, char *reason)
     netbuffer->u.stringpak.str[MAX_STRINGPAK_LEN-1] = 0;
 
     netbuffer->packettype = PT_SERVERREFUSE;
-    HSendPacket(to_node, true, 0, strlen(netbuffer->u.stringpak.str)+1);  // ignore failure
+    HSendPacket( to_node, SP_reliable|SP_queue, 0, strlen(netbuffer->u.stringpak.str)+1 );  // ignore failure
     Net_CloseConnection(to_node, 0);
 }
 
@@ -3419,8 +3454,13 @@ static void Send_localtextcmd_pind( byte pind )
     netbuffer->packettype = PT_TEXTCMD_pind[pind];
     memcpy(&netbuffer->u.textcmdpak, ltcp, tc_len);
     // all extra data have been sent
-    if( HSendPacket(servernode, true, 0, tc_len)) // send can fail for some reasons...
-        ltcp->len = 0;  // text len
+    byte errcode = HSendPacket( servernode, SP_reliable|SP_queue, 0, tc_len ); // send can fail for some reasons...
+    if( errcode >= NE_fail )
+    {
+        generic_network_error_handler( errcode, "LocalTextCmd msg" );  // should not happen
+        return;
+    }
+    ltcp->len = 0;  // text len
 }
 
 // By Server, Client
@@ -4029,7 +4069,7 @@ static void CL_Send_ClientCmd (void)
         netbuffer->packettype = PT_NODEKEEPALIVE_options[cmd_options];
 //        packetsize = sizeof(clientcmd_pak_t)-sizeof(ticcmd_t)-sizeof(int16_t);
         packetsize = offsetof(clientcmd_pak_t, consistency);
-        HSendPacket (servernode,false,0,packetsize);
+        HSendPacket( servernode, 0, 0, packetsize );  // msg lost when too busy
     }
     else
     if( gamestate != GS_NULL )
@@ -4049,7 +4089,7 @@ static void CL_Send_ClientCmd (void)
         else
             packetsize = sizeof(clientcmd_pak_t);
         
-        HSendPacket (servernode,false,0,packetsize);
+        HSendPacket( servernode, 0, 0, packetsize );  // msg lost when too busy
     }
 }
 
@@ -4197,8 +4237,7 @@ static void SV_Send_Tics (void)
         }
 
         packsize = bufpos - (char *)&(netbuffer->u);
-
-        HSendPacket(nnode, false, 0, packsize);
+        HSendPacket( nnode, 0, 0, packsize );  // msg lost when too busy
 
         // Record next tic for this net node.
         // Extratic causes redundant transmission of tics.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.h 1487 2019-12-13 05:21:38Z wesleyjohnson $
+// $Id: d_net.h 1499 2020-03-17 02:27:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -75,9 +75,17 @@ extern uint64_t  stat_sendbytes;        // realtime updated
 void    Net_AckTicker(void);
 boolean Net_AllAckReceived(void);
 
+typedef enum {
+  SP_reliable = 0x01,
+  SP_queue  = 0x02,
+  SP_error_handler  = 0x08,
+} sendpacket_flag_e;
+
 // if reliable return true if packet sent, 0 else
-boolean HSendPacket(int to_node, boolean reliable, byte acknum, int packetlength);
+// Return network_error_e (NE_xx).
+byte  HSendPacket(byte to_node, byte flags, byte acknum, int packetlength);
 boolean HGetPacket (void);
+void  network_error_print( byte errcode, const char * who );
 // Returns true when a network connection is made.
 boolean D_Startup_NetGame(void);
 void    D_CloseConnection( void );
