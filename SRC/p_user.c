@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
+// $Id: p_user.c 1511 2020-04-04 08:50:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -285,8 +285,8 @@ void P_CalcHeight (player_t* player)
 
 
 
-byte  EN_move_doom = 0;
-byte  EN_cmd_abs_angle = 1;  // legacy absolute angle commands
+static byte  EN_move_doom = 0;
+static byte  EN_cmd_abs_angle = 1;  // legacy absolute angle commands
 
 // local version control
 void DemoAdapt_p_user( void )

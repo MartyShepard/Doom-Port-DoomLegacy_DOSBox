@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1505 2020-03-17 02:32:01Z wesleyjohnson $
+// $Id: p_local.h 1511 2020-04-04 08:50:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -445,6 +445,9 @@ extern byte  EN_mbf_telefrag;
 // Heretic, Hexen
 extern byte  EN_inventory;   // Heretic, Hexen
 
+// Use Legacy N_Random, instead of some P_Random.
+extern byte  EN_nrandom;
+
 
 typedef enum {
  // Boom values
@@ -467,6 +470,7 @@ extern byte  boom_detect;
 extern byte  legacy_detect;
 
 void  DemoAdapt_p_user( void );
+void  DemoAdapt_p_mobj( void );
 void  DemoAdapt_p_enemy( void );
 void  DemoAdapt_p_floor( void );
 void  DemoAdapt_bots( void );

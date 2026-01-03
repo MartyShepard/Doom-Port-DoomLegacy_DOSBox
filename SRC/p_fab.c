@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
+// $Id: p_fab.c 1511 2020-04-04 08:50:49Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -44,6 +44,7 @@
   // MT_xxx
 #include "r_data.h"
   // TRANSLU_xxx
+
 
 #ifdef DOORDELAY_CONTROL
 // [WDJ] 1/15/2009 support control of door and event delay
@@ -88,6 +89,7 @@ void Translucency_OnChange(void);
 CV_PossibleValue_t translucency_cons_t[]={{0,"Off"}, {1,"Auto"}, {2,"Boom"}, {3, "Legacy"}, {4, "All"}, {0,NULL}};
 consvar_t cv_translucency  = {"translucency" ,"1",CV_CALL|CV_SAVE, translucency_cons_t, Translucency_OnChange};
 
+
 //
 // Action routine, for the ROCKET thing.
 // This one adds trails of smoke to the rocket.
@@ -114,8 +116,10 @@ void A_SmokeTrailer (mobj_t* actor)
     th->momz = FRACUNIT;
 
     // Legacy use of P_Random, enabled by EV_legacy.
-    // Do not use P_Random during Doom and Boom demos.
-    th->tics -= (EV_legacy ? PP_Random(pL_smoketrail) : A_Random() ) & 3;
+    // Do not use extra P_Random during Doom and Boom demos.
+    // [WDJ] Legacy cannot interact with smoke, but the thought of some obscure
+    // interaction in the future makes me continue to use P_Random.
+    th->tics -= (EV_legacy ? PP_Random(pL_smoketrail) : N_Random() ) & 3;
     if (th->tics < 1)
         th->tics = 1;
 }

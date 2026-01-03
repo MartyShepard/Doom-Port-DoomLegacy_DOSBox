@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_henemy.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
+// $Id: p_henemy.c 1511 2020-04-04 08:50:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1547,6 +1547,7 @@ void A_MakePod(mobj_t *actor)
     { // Too many generated pods
         return;
     }
+
     x = actor->x;
     y = actor->y;
     mo = P_SpawnMobj(x, y, ONFLOORZ, MT_POD);

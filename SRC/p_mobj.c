@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
+// $Id: p_mobj.c 1511 2020-04-04 08:50:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -154,6 +154,8 @@ byte  EN_catch_respawn_0;  // enable catch Nightmare respawn at (0,0)
   // ! comp[comp_respawn]
 
 
+
+
 // [WDJ] Voodoo doll 4/30/2009
 // #define VOODOO_DEBUG
 
@@ -238,8 +240,6 @@ void P_SpawnVoodoo( int playernum, mapthing_t * mthing )
 
 // protos.
 CV_PossibleValue_t viewheight_cons_t[] = { {16, "MIN"}, {56, "MAX"}, {0, NULL} };
-CV_PossibleValue_t maxsplats_cons_t[] = { {1, "MIN"}, {MAXLEVELSPLATS, "MAX"}, {0, NULL} };
-
 consvar_t cv_viewheight = { "viewheight", VIEWHEIGHTS, CV_VALUE, viewheight_cons_t, NULL };
 
 // Needed by MBF, so use it elsewhere too.
@@ -247,7 +247,10 @@ consvar_t cv_viewheight = { "viewheight", VIEWHEIGHTS, CV_VALUE, viewheight_cons
 
 //Fab:26-07-98:
 consvar_t cv_gravity = { "gravity", "1", CV_NETVAR | CV_FLOAT | CV_SHOWMODIF };
+
+// Local options
 consvar_t cv_splats = { "splats", "1", CV_SAVE, CV_OnOff };
+CV_PossibleValue_t maxsplats_cons_t[] = { {1, "MIN"}, {MAXLEVELSPLATS, "MAX"}, {0, NULL} };
 consvar_t cv_maxsplats = { "maxsplats", "512", CV_SAVE, maxsplats_cons_t, NULL };
 
 static const fixed_t FloatBobOffsets[64] = {
@@ -1975,8 +1978,8 @@ mobj_t * P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
     else
     {
         // Boom, MBF demo assumes MAXPLAYERS=4, but Legacy MAXPLAYERS=32.
- 	// FIXME: demo
-       mobj->lastlook = PP_Random(pr_lastlook) % MAXPLAYERS;  // Boom, MBF
+        // FIXME: demo
+        mobj->lastlook = PP_Random(pr_lastlook) % MAXPLAYERS;  // Boom, MBF
     }
 
     // do not set the state with P_SetMobjState,
@@ -3053,7 +3056,10 @@ void P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z)
 static mobj_t *bloodthing;
 static fixed_t bloodspawnpointx, bloodspawnpointy;
 
+   
 #ifdef WALLSPLATS
+static byte  EN_bloodsplat_prandom;    // optional blood splat use of prandom
+
 boolean PTR_BloodTraverse(intercept_t * in)
 {
     line_t *li;
@@ -3067,8 +3073,8 @@ boolean PTR_BloodTraverse(intercept_t * in)
         li = in->d.line;
 
         // Legacy use of P_Random, not in Doom, enabled by EV_legacy, enabled by cv_splats, which is NOT NETVAR.
-        // FIXME
-        byte rbs = PP_SignedRandom(pL_bloodtrav);
+        // Use N_Random to avoid sync loss during netgames.
+        byte rbs = EN_bloodsplat_prandom ? PP_Random(pL_bloodtrav) : N_Random();
         z = bloodthing->z + ( rbs << (FRACBITS - 3));
         if (!(li->flags & ML_TWOSIDED))
             goto hitline;
@@ -3178,9 +3184,9 @@ void P_SpawnBloodSplats(fixed_t x, fixed_t y, fixed_t z, int damage, fixed_t mom
     //uses 'bloodthing' set by P_SpawnBlood()
     for (i = 0; i < numsplats; i++)
     {
-        // FIXME: make cv_splats a netvar, or dont use P_Random
         // Legacy use of P_Random, not in Doom, enabled by EV_legacy, enabled by cv_splats, which is NOT NETVAR.
-        byte rbs = PP_Random(pL_bloodsplat);
+        // Use N_Random to avoid sync loss during netgames.
+        byte rbs = EN_bloodsplat_prandom ? PP_Random(pL_bloodsplat) : N_Random();
 
         // find random angle between 0-180deg centered on damage angle
         anglesplat = angle + (((rbs - 128) * FINEANGLES / 512 * anglemul) << ANGLETOFINESHIFT);
@@ -3674,3 +3680,19 @@ mapthing_t * P_Traverse_Extra_Mapthing( mapthing_t * prev )
     return NULL;
 }
 
+
+// local version control
+void DemoAdapt_p_mobj( void )
+{
+#ifdef WALLSPLATS
+    // [WDJ] Blood Splats use of P_Random.
+    // Do not use extra P_Random during Doom and Boom demos.
+    // The bloodsplats are controlled by cv_splat, which is NOT NETVAR,
+    // so must refuse use of P_Random during netgames
+    // (otherwise P_Random goes out of sync for any player with cv_splats different than server).
+    // Ver 1.48, To avoid problems with netgame, do not use P_Random for bloodsplat.
+    // This means that blood splats will be different on each client.
+    // This is tolerable as long as cannot interact with them.
+    EN_bloodsplat_prandom = EV_legacy && (EV_legacy < 148) && ! netgame;
+#endif
+}

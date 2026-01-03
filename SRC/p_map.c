@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
+// $Id: p_map.c 1511 2020-04-04 08:50:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -676,7 +676,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
         // more heretic stuff
         if (tm_thing->flags2 & MF2_RIP)
         {
-	    // Heretic
+            // Heretic
             damage = ((PP_Random(ph_ripdam) & 3) + 2) * tm_thing->info->damage;
             S_StartObjSound(tm_thing, sfx_ripslop);
             if( P_DamageMobj (thing, tm_thing, tm_thing->target, damage) )
@@ -778,7 +778,7 @@ static boolean PIT_CheckThing (mobj_t* thing)
     // It looks like a mistake.
     if ( !(tm_thing->flags & MF_SOLID) )
       goto ret_blocked;  // A non-solid moving thing is blocked by a solid.
-   
+
     // [WDJ] This z-checking code is for DoomLegacy versions 113..131.
     // After version 132, the heretic z-checking code was added (PASSMOBJ),
     // which is more specific.

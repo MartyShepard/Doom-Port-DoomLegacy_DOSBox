@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_random.h 1510 2020-04-04 08:50:24Z wesleyjohnson $
+// $Id: m_random.h 1511 2020-04-04 08:50:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -241,6 +241,10 @@ int   PP_SignedRandom( byte pr );
 # define  PP_Random(pr)  P_Random()
 # define  PP_SignedRandom(pr)  P_SignedRandom()
 #endif
+
+// New Legacy stuffs, unsynced.
+byte N_Random(void);
+int  N_SignedRandom(void);
 
 // M_Random: music, st_stuff, wi_stuff
 // Returns a number from 0 to 255.
