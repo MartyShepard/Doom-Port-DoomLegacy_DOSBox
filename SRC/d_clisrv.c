@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1492 2019-12-19 07:51:00Z wesleyjohnson $
+// $Id: d_clisrv.c 1493 2020-01-05 22:08:37Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -360,6 +360,20 @@ int ExpandTics (int low)
     return 0;
 }
 
+static void D_Clear_ticcmd(int tic)
+{
+    int i;
+    int btic = BTIC_INDEX( tic );
+
+    for(i=0;i<MAXPLAYERS;i++)
+    {
+        textcmds[btic][i].len = 0;  // textlen
+        netcmds[btic][i].angleturn = 0; //&= ~TICCMD_RECEIVED;
+    }
+    DEBFILE(va("Clear tic %5d [%2d]\n", tic, btic));
+}
+
+
 // -----------------------------------------------------------------
 //  Some extra data function for handle textcmd buffer
 // -----------------------------------------------------------------
@@ -378,6 +392,25 @@ void Register_NetXCmd(netxcmd_e cmd_id, void (*cmd_f) (xcmd_t * xc))
    netxcmd_func[cmd_id] = cmd_f;
 }
 
+// [WDJ] Server NetXCmd use client text cmd channel [0], thus client_pn=0.
+// This is because those text buffers already exist, and are sent anyway.
+// The server NetXCmd do not use the client_pn.
+// Only the client NetXCmd need to indicate the player performing the action.
+// Server NetXCmd need to transit the network logic, even when there
+// is no server player. This used to be done by unexplained kluges.
+// Version 1.48 logic makes sending server NetXCmd over
+// text cmd channel [0] less mysterious and much less fragile.
+
+// The NetXCmd must be executed in all clients during a specific gametic.
+// The current system has all movement commands and NetXCmd for one tick
+// in the servertick message.  Once it is received the client game tick can advance.
+// The alternative of a separate server command path would require considerable
+// effort to get those NetXCmd executed during a specific gametic.
+// It would be necessary to inform clients that a separate text command message was
+// expected for that gametic.  The separate text commands would have to be collected
+// before the client could execute that gametic.
+// Variations in message arrival order would also be a serious problem.
+
 // Command sent over text cmd channel.  Default as main player.
 //  cmd_id :  X command, XD_
 //  param : parameter strings
@@ -392,11 +425,13 @@ void Send_NetXCmd(byte cmd_id, void *param, int nparam)
 //  param : parameter strings
 //  param_len : number of parameter strings
 //  pind : player index, [0]=main player, [1]=splitscreen player
+//         Server NetXCmd will use the default, pind=0.
 void Send_NetXCmd_pind(byte cmd_id, void *param, int param_len, byte pind)
 {
    if(demoplayback)
        return;
 
+   // Save the NetXCmd in a localtextcmd buffer.
    textbuf_t * ltcbp = &localtextcmd[pind];
    int textlen = ltcbp->len;
    if( (textlen + 1 + param_len) > MAXTEXTCMD)  // with XD_ and param
@@ -431,21 +466,6 @@ void Send_NetXCmd_p2(byte cmd_id, byte param1, byte param2)
     buf[1] = param2;
     Send_NetXCmd(cmd_id, &buf, 2);  // always main player
 }
-
-
-static void D_Clear_ticcmd(int tic)
-{
-    int i;
-    int btic = BTIC_INDEX( tic );
-
-    for(i=0;i<MAXPLAYERS;i++)
-    {
-        textcmds[btic][i].len = 0;  // textlen
-        netcmds[btic][i].angleturn = 0; //&= ~TICCMD_RECEIVED;
-    }
-    DEBFILE(va("Clear tic %5d [%2d]\n", tic, btic));
-}
-
 
 // Execute NetXCmd
 void ExtraDataTicker(void)
@@ -502,7 +522,7 @@ void ExtraDataTicker(void)
                            (xcmd.curpos - &(textbuf->text[0])),
                            xcmd.cmd, textlen);
                 D_Clear_ticcmd(btic);
-                return;
+                break;
             }
         }
     }
@@ -3229,26 +3249,6 @@ static void server_timeout_handler()
 }
 
 
-// used at txtcmds received to check packetsize bound
-static int TotalTextCmdPerTic(int tic)
-{
-    int i,total=1; // num of textcmds in the tic (ntextcmd byte)
-
-    int btic = BTIC_INDEX( tic );
-
-    for(i=0;i<MAXPLAYERS;i++)
-    {
-        if( (i==0) || playeringame[i] )
-        {
-            int textlen = textcmds[btic][i].len;
-            if( textlen )
-               total += textlen + 2; // "+2" for size and playernum
-        }
-    }
-
-    return total;
-}
-
 // Copy an array of ticcmd_t, swapping between host and network byte order.
 //
 static void TicCmdCopy(ticcmd_t * dst, ticcmd_t * src, int n)
@@ -3268,6 +3268,79 @@ static void TicCmdCopy(ticcmd_t * dst, ticcmd_t * src, int n)
     }
 }
 
+
+
+// --- Text command
+// Client NetXCmd: XD_NAMEANDCOLOR, XD_WEAPONPREF, XD_USEARTIFACT, XD_SAY
+// Server NetXCmd: XD_PAUSE, XD_KICK, XD_ADDPLAYER, XD_ADDBOT,
+//    XD_MAP, XD_EXITLEVEL, XD_LOADGAME, XD_SAVEGAME
+
+// By Server, Client.
+// Send accumulated client textcmd to server.  Also server textcmd.
+// Called by Send_localtextcmd
+static void Send_localtextcmd_pind( byte pind )
+{
+    static byte PT_TEXTCMD_pind[2] = {PT_TEXTCMD, PT_TEXTCMD2};
+
+    textbuf_t * ltcp = &localtextcmd[pind];
+    int tc_len = ltcp->len+1;  // text len + cmd
+    netbuffer->packettype = PT_TEXTCMD_pind[pind];
+    memcpy(&netbuffer->u.textcmdpak, ltcp, tc_len);
+    // all extra data have been sent
+    if( HSendPacket(servernode, true, 0, tc_len)) // send can fail for some reasons...
+        ltcp->len = 0;  // text len
+}
+
+// By Server, Client
+// Called by NetUpdate
+static void Send_localtextcmd( void )
+{
+    // [WDJ] Server also needs to send NetXCmd, even without serverplayer.
+    // How this used to work is a mystery.
+    if( server || ((cl_mode == CLM_connected) && (network_state >= NETS_open)) )
+    {
+        // send extra data if needed
+        if( localtextcmd[0].len ) // text len
+        {
+            Send_localtextcmd_pind(0);
+        }
+        
+        // send extra data if needed for player 2 (splitscreen)
+        if( localtextcmd[1].len ) // text len
+        {
+            Send_localtextcmd_pind(1);
+        }
+    }
+    else
+    {
+        // Clear NetXCmd that would overflow the buffers.
+        localtextcmd[0].len = 0;
+        localtextcmd[1].len = 0;
+    }
+}
+
+// By Server
+// used at txtcmds received to check packetsize bound
+// Called by: SV_Send_Tics, net_textcmd_handler.
+static int TotalTextCmdPerTic( int tic )
+{
+    int i,total=1; // num of textcmds in the tic (ntextcmd byte)
+
+    int btic = BTIC_INDEX( tic );
+
+    for(i=0;i<MAXPLAYERS;i++)
+    {
+        if( (i==0) || playeringame[i] )
+        {
+            int textlen = textcmds[btic][i].len;
+            if( textlen )
+               total += textlen + 2; // "+2" for size and playernum
+        }
+    }
+
+    return total;
+}
+
 // By Server
 // PT_TEXTCMD, PT_TEXTCMD2
 //   nnode : the network client
@@ -3281,7 +3354,11 @@ static void net_textcmd_handler( byte nnode, byte client_pn )
     tic_t tic;
     textbuf_t *  textbuf;
 
-    // NetXCmd that come from clients, and some from the server.
+    // Handle NetXCmd that come from clients, and some from the server.
+    // Server textcmd are sent with client_pn=0, and they must always go through.
+    // The server places them into tick messages here, which are sent to all clients,
+    // so even if placement is arbitrary here, all clients will execute them uniformly.
+
     // Move textcmd from netbuffer to a textbuf.
 
     // Check if tic that we are making isn't too large,
@@ -3645,6 +3722,11 @@ static void Net_Packet_Handler(void)
             // Can only be handled by a server.
             switch(packettype)
             {
+             case PT_TEXTCMD :
+                // Server to server use of client channel for server NetXCmd, with no players.
+                // No valid player num for this nnode.
+                net_textcmd_handler( nnode, 0 );
+                continue;
              case PT_ASKINFO:  // client has asked server for info
                 // May have been sent to BROADCAST_NODE, but nnode is sender.
                 server_askinfo_handler( nnode );
@@ -3765,23 +3847,9 @@ static int16_t Consistency(void)
 }
 
 
-// By Server, Client.
-static void Send_localtextcmd( byte pind )
-{
-    static byte PT_TEXTCMD_pind[2] = {PT_TEXTCMD, PT_TEXTCMD2};
 
-    textbuf_t * ltcp = &localtextcmd[pind];
-    int tc_len = ltcp->len+1;  // text len + cmd
-    netbuffer->packettype = PT_TEXTCMD_pind[pind];
-    memcpy(&netbuffer->u.textcmdpak, ltcp, tc_len);
-    // all extra data have been sent
-    if( HSendPacket(servernode, true, 0, tc_len)) // send can fail for some reasons...
-        ltcp->len = 0;  // text len
-}
-
-
-// By Server, Client.
-// send the client packet to the server
+// By Client.
+// Send the client packet to the server
 // Called by NetUpdate, 
 static void CL_Send_ClientCmd (void)
 {
@@ -3839,30 +3907,6 @@ static void CL_Send_ClientCmd (void)
         
         HSendPacket (servernode,false,0,packetsize);
     }
-
-//    if( cl_mode == CLM_connected )
-    // [WDJ] Server also needs to send NetXCmd, even without serverplayer.
-    // How this used to work is a mystery.
-    if( (server || (cl_mode == CLM_connected)) && (network_state > NETS_open) )
-    {
-        // send extra data if needed
-        if( localtextcmd[0].len ) // text len
-        {
-            Send_localtextcmd(0);
-        }
-        
-        // send extra data if needed for player 2 (splitscreen)
-        if( localtextcmd[1].len ) // text len
-        {
-            Send_localtextcmd(1);
-        }
-    }
-    else
-    {
-        // Clear XCmds that would overflow the buffers.
-        localtextcmd[0].len = 0;
-        localtextcmd[1].len = 0;
-    }
 }
 
 
@@ -3886,6 +3930,9 @@ static void SV_Send_Tics (void)
     for(nnode=1; nnode<MAXNETNODES; nnode++)
     {
         if( nnode_state[nnode] < NOS_recognized )  continue;
+
+        // For each node create a packet with x tics and send it.
+        // x is computed using nextsend_tic[n], max packet size and maketic.
 
         // Send a packet to each client node in this game.
         // They may be different, with individual status.
@@ -3985,6 +4032,7 @@ static void SV_Send_Tics (void)
                 // Format:
                 //  byte: playernum
                 //  textbuf_t: textcmd
+                // Force text cmd channel [0] for server NetXCmd.		
                 if((pn==0) || playeringame[pn])
                 {
                     int textlen = textcmds[btic][pn].len;
@@ -4165,7 +4213,8 @@ void TryRunTics (tic_t realtics)
         // Others must wait for load game to set gamestate to GS_LEVEL.
     }
 
-    if (cl_need_tic > gametic)
+    // Server keeps forcing (cl_need_tic = maketic) in SV_Send_Tic_Update, kluge.
+    if( cl_need_tic > gametic )
     {
         if (demo_ctrl == DEMO_seq_advance)  // and not disabled
         {
@@ -4176,10 +4225,10 @@ void TryRunTics (tic_t realtics)
         // Run the count * tics
         while (cl_need_tic > gametic)
         {
-            DEBFILE(va("==== Runing tic %u (local %d)\n",gametic, localgametic));
+            DEBFILE(va("==== Run tic %u (local %d)\n",gametic, localgametic));
 
             G_Ticker ();
-            ExtraDataTicker();
+            ExtraDataTicker();  // execute NetXCmd
             gametic++;
             // skip paused tic in a demo
             if(demoplayback)
@@ -4282,6 +4331,8 @@ void NetUpdate(void)
             CL_Send_ClientCmd();     // send server tic
     }
 
+    Send_localtextcmd();  // includes server NetXCmd cmds
+   
     Net_Packet_Handler();  // get packet from client or from server
 
     // Client sends its commands after a receive of the server tic.

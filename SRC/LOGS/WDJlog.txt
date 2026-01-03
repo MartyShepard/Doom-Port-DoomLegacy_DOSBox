@@ -7626,3 +7626,56 @@ Use it to fix some problems with client join.
 Inform client when its players must wait until next game start,
 and when that game starts.
 Inform player when it is waiting for game start.
+
+*** w108_nettext
+patchfile = w108_79_nettext.patch
+- commit revision 1493
+Cleanup the NetXCmd and textcmd handling in the
+network code.
+Replace some of the kluges.
+Document the usage of the player[0] text channel for server commands like AddPlayer.
+Separate the client and server code.
+Separate the textcmd code to a separate function.
+
+*** w108_dnet
+patchfile = w108_80_dnet.patch
+- commit revision 1494
+Cleanup of d_net code.
+
+*** w108_nethash
+patchfile = w108_81_nethash.patch
+- commit revision 1495
+Cleanup network node address hash, so hash is always present.
+Use a generic hash as default.
+
+*** w108_netwait
+patchfile = w108_82_netwait.patch
+- commit revision 1496
+Add wait_netplayer function to the network code so that nodes can be
+put into pause during download operations that might be long enough
+to miss a tic.  Adds a timeout capability, and automatic release of the
+pause when all nodes are ready to play.
+
+Add control functions to put a node into a wait_for_game_start state,
+and to activate that node during the next intermission.
+
+Add a command to serverconfig so that separate messages do not need to
+be sent when putting the joining node into a non-normal state.
+
+*** w108_netdebug
+patchfile = w108_83_netdebug.patch
+- commit revision 1497
+Update some of the network debugging code for the changes to network
+message fields, and new message types.
+
+*** w108_netsplit
+patchfile = w108_84_netsplit.patch
+- commit revision 1498
+Simplify the handling of splitplayer changes being passed to the network code.
+
+
+
+
+
+
+
