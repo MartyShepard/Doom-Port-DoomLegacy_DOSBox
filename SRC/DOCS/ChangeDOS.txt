@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01495 ]: w108_81 network hash
 [01494 ]: w108_80 dnet clean
 [01493 ]: w108_79 net textcmd
 [01492 ]: w108_78 net control

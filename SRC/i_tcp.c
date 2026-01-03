@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1448 2019-07-21 01:30:31Z wesleyjohnson $
+// $Id: i_tcp.c 1495 2020-01-05 22:10:12Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -135,6 +135,7 @@
 # ifdef USE_IPX
 # include <wsipx.h>
 # endif // USE_IPX
+
 #else
   // Not Windows
 
@@ -311,16 +312,6 @@ static uint16_t my_sock_port = 0;  // From UDP_Socket or IPX_Socket
 static SOCKET   mysocket = -1;
 
 
-#define NODE_ADDR_HASHING
-#ifdef NODE_ADDR_HASHING
-// To receive must set to hash of clientaddress.
-// To send, any value > 0 will enable.
-#else
-// Use node_hash as node connected flag.
-#endif
-// Contains address hash, is 0 when unused.  Hash is not allowed to be 0.
-static byte     node_hash[MAX_CON_NETNODE];
-
 // A network address, kept in network byte order.
 typedef union {
         struct sockaddr_in  ip;
@@ -333,6 +324,30 @@ typedef union {
 static mysockaddr_t clientaddress[MAX_CON_NETNODE];
 
 
+// Enables node_hash functions.
+// When off, use a generic node hash.
+#define NODE_ADDR_HASHING
+
+// Contains address hash, is 0 when unused.  Hash is not allowed to be 0.
+// Node connected when node_hash > 0.
+// To receive, node_hash must have been set to hash of clientaddress.
+// To send, any hash value > 0 will enable.  Using 1 will not allow receive.
+static byte     node_hash[MAX_CON_NETNODE];
+
+#ifdef NODE_ADDR_HASHING
+// Customized hash function.
+byte    (*SOCK_hashaddr) (mysockaddr_t *a);
+#else
+// For all network types.
+static
+byte  generic_hashaddr( mysockaddr_t *a )
+{
+    // For any structure.
+    // Not allowed to be 0. Always node_hash is connected flag.
+    byte * p = &(a->ip);
+    return (p[0] ^ p[3]) | 0x80;
+}
+#endif
 
 
 
@@ -476,11 +491,9 @@ byte  UDP_hashaddr(mysockaddr_t *a)
 }
 #endif
 
+
 // Indirect function for net address compare.
 boolean (*SOCK_cmpaddr) (mysockaddr_t *a, mysockaddr_t *b);
-#ifdef NODE_ADDR_HASHING
-byte    (*SOCK_hashaddr) (mysockaddr_t *a);
-#endif
 
 
 // Set address and port of utility net nodes.
@@ -495,7 +508,7 @@ void UDP_Bind_Node( int nnode, unsigned int saddr, uint16_t port )
 #ifdef NODE_ADDR_HASHING
     node_hash[nnode] = UDP_hashaddr( &clientaddress[nnode] );
 #else
-    node_hash[nnode] = 1;
+    node_hash[nnode] = generic_hashaddr( &clientaddress[nnode] );
 #endif
 }
 
@@ -570,12 +583,16 @@ boolean  Bind_Node_str( int nnode, char * addrstr, uint16_t port )
         for( i=0; i<6; i++ )
             clientaddress[nnode].ipx.sa_nodenum[i] = ic[i];
 # endif // linux
+
+#if 0       
 # ifdef NODE_ADDR_HASHING
-//	node_hash[nnode] = IPX_hashaddr( &clientaddress[nnode] );
-        node_hash[nnode] = 1;  // send only
+        node_hash[nnode] = IPX_hashaddr( &clientaddress[nnode] );
 # else
-        node_hash[nnode] = 1;  // send only
+        node_hash[nnode] = generic_hashaddr( &clientaddress[nnode] );
 # endif
+#else
+        node_hash[nnode] = 1;  // send only
+#endif
     }
     else
 #endif // IPX
@@ -608,11 +625,7 @@ static byte get_freenode( void )
     {
         if( node_hash[nn] == 0 )
         {
-#ifdef NODE_ADDR_HASHING
             node_hash[nn]=1;  // enable send, but hash is needed to receive
-#else
-            node_hash[nn]=1;  // used as node_connection flag
-#endif
             return nn;
         }
     }
@@ -692,13 +705,14 @@ boolean  SOCK_Get(void)
 #ifdef NODE_ADDR_HASHING
     hashaddr = SOCK_hashaddr( &fromaddress );  // hash != 0
     // debug_Printf( "hashaddr=%d\n", hashaddr );
+#else
+    hashaddr = generic_hashaddr( &fromaddress );  // hash != 0
 #endif
     for (nnode=0; nnode<MAXNETNODES; nnode++)
     {
-#ifdef NODE_ADDR_HASHING
         // [WDJ] avoid testing null addresses.
         if( node_hash[nnode] != hashaddr )  continue;
-#endif
+
         if( SOCK_cmpaddr(&fromaddress, &(clientaddress[nnode])) )
              goto return_node;  // found match
     }
@@ -711,10 +725,8 @@ boolean  SOCK_Get(void)
     // SOCK_Send will use nnode to send back to this clientaddress.
     memcpy(&clientaddress[nnode], &fromaddress, fromlen);
 
-#ifdef NODE_ADDR_HASHING
     // Set node_hash[nnode] to enable receive.
     node_hash[nnode] = hashaddr;
-#endif
 
 #ifdef DEBUGFILE
     if( debugfile )
@@ -1078,6 +1090,8 @@ retry_bind:
 
 #ifdef NODE_ADDR_HASHING
     node_hash[0] = UDP_hashaddr( &clientaddress[0] );
+#else
+    node_hash[0] = generic_hashaddr( &clientaddress[0] );
 #endif
 
     // [WDJ] Broadcast is now setup at use by CL_Broadcast_AskInfo.
@@ -1374,6 +1388,8 @@ int SOCK_NetMakeNode (char *hostname)
     clientaddress[newnode].ip.sin_addr.s_addr = newaddr.ip.sin_addr.s_addr;
 #ifdef NODE_ADDR_HASHING
     node_hash[newnode] = SOCK_hashaddr( &newaddr );  // hash != 0
+#else
+    node_hash[newnode] = generic_hashaddr( &newaddr );  // hash != 0
 #endif
 
 clean_ret:
@@ -1406,7 +1422,7 @@ boolean SOCK_OpenSocket( void )
     for(i=1; i<MAX_CON_NETNODE; i++)
         node_hash[i] = 0;
 #endif
-    node_hash[0] = 1; // always connected to self
+    node_hash[0] = 0x81; // always connected to self
    
     I_NetSend        = SOCK_Send;
     I_NetGet         = SOCK_Get;
