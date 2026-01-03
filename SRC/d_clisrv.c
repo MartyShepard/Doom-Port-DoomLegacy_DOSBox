@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1507 2020-04-04 08:48:54Z wesleyjohnson $
+// $Id: d_clisrv.c 1508 2020-04-04 08:49:28Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -220,7 +220,6 @@ static byte  wait_netplayer = 0;
 boolean  server = true; // false when Client connected to other server
 boolean  serverrunning = false;
 byte     serverplayer = 255;  // 255= no server player (same as -1)
-byte     num_player_slots = 0;  // for messages with slots
 
 // Server specific vars.
 // player=255 when unused
@@ -348,6 +347,8 @@ static byte     update_player_count_request = 0;  // for XNetCmd, as the list is
 // Index for netcmds and textcmds
 #define BTIC_INDEX( tic )  ((tic)%BACKUPTICS)
 // Index using BTIC_INDEX
+static byte     netcmd_tic_hash[BACKUPTICS];  // tic hash for the BACKUPTIC
+static byte     netseq[BACKUPTICS];   // bit per tic packet seq, ready=0xFF
 ticcmd_t        netcmds[BACKUPTICS][MAXPLAYERS];
 
 // [WDJ] Combined textcmd buffer for all players, and server.
@@ -463,8 +464,11 @@ static void  generic_network_error_handler( byte errcode, const char * who )
         network_error_print( errcode, who );     
 }
 
-
-
+static byte btic_hash( tic_t tic )
+{
+    // Overlap with the BTIC_INDEX (tic % BACKUPTICS) is wasted.
+    return (byte) (tic >> 4);
+}
 
 // By Client, Server
 int ExpandTics (int low)
@@ -490,6 +494,9 @@ static void D_Clear_ticcmd(int tic)
     int i;
     int btic = BTIC_INDEX( tic );
 
+    netcmd_tic_hash[btic] = 0;
+    netseq[btic] = 0;
+   
     for(i=0;i<MAXPLAYERS;i++)
     {
 #ifdef TICCMD_148
@@ -545,6 +552,7 @@ void Register_NetXCmd(netxcmd_e cmd_id, void (*cmd_f) (xcmd_t * xc))
 // The NetXCmd must be executed in all clients during a specific gametic.
 // The current system has all movement commands and NetXCmd for one tick
 // in the servertick message.  Once it is received the client game tick can advance.
+// In Ver 1.48, the servertick message can be extended to several packets, when needed.
 
 // Command sent over text cmd channel.  Default as main player.
 //  cmd_id :  X command, XD_
@@ -807,13 +815,10 @@ static void net_textcmd_handler( byte nnode )
         }
 
 #ifdef CHECK_TIC_SIZE
-    // Check if tic that we are making isn't too large,
-    // else we cannot send it :(
-    // Note: num_player_slots+1 is "+1" because numplayers
-    // can change within this time and sent time.
+    // Check if tic that we are making isn't getting too large.
     tc_limit = software_MAXPACKETLENGTH
          - SERVER_TIC_BASE_SIZE
-         - ( (num_player_slots+1) * sizeof(ticcmd_t) )
+         - ( num_game_players * sizeof(ticcmd_t) )
          - ( 1 + sizeof_servertic_textcmd_t(itc_len) );
 
     // Search for a tic that has enough space in the ticcmd.
@@ -942,7 +947,7 @@ void ExtraDataTicker(void)
                            (xcmd.curpos - &(ip->textbuf.text[0])),
                            xcmd.cmd, textlen);
 #if 1
-                continue;
+                continue;	        
 #else
                 D_Clear_ticcmd(btic);
                 break;
@@ -1746,7 +1751,7 @@ static void SV_Send_player_desc( player_desc_t * pdesc, byte desc_flags, byte pn
     int entry_count;
     unsigned int paksize;
     unsigned int paksize_limit;
-
+   
     // Limit how many can be in one packet.
     paksize_limit = sizeof( netbuffer->u );
     if( paksize_limit > software_MAXPACKETLENGTH )   paksize_limit = software_MAXPACKETLENGTH;
@@ -1838,7 +1843,7 @@ static void SV_Send_player_desc( player_desc_t * pdesc, byte desc_flags, byte pn
             }
             bufp += sizeof( pd_inventory_t );
         }
-
+       
         entry_count ++;
         pdesc->entry_count = entry_count;
         paksize = bufp - ((byte *)& netbuffer->u);
@@ -1916,9 +1921,9 @@ void  CL_player_desc_handler( player_desc_t * pdesc, const char * msg )
         pp->armorpoints = r_armorpoints;
         pp->armortype = pdp->armortype;
         pp->readyweapon = pdp->readyweapon;
-
+       
         CL_set_mobj( &pdp->pos, msg, /*OUT*/ pp->mo );
-
+       
         byte flags = pdp->flags;
         if( msg )
         {
@@ -2145,7 +2150,7 @@ static void CL_player_repair( void )
 
     // Compare gametic as packet field, not as a tic_t
     uint32_t  r_gametic = read_N32( & netbuffer->u.repair.gametic );
-
+    
     // Receive all player desc.
     CL_init_playerdesc_receive( r_gametic );
     CL_player_desc_handler( & netbuffer->u.repair.u.player_desc, "Client player_repair" );
@@ -2870,6 +2875,7 @@ static void CL_ConnectToServer( void )
                 // see server_cfg_handler()
                 break;
             case CLM_download_savegame :
+                // client, download a savegame
 #ifdef JOININGAME
                 M_DrawTextBox( 2, NETFILE_BOX_Y, 38, 4);
                 V_DrawString (30, NETFILE_BOX_Y+8, 0, "Download Savegame");
@@ -3518,7 +3524,6 @@ static void  update_player_counts( void )
 
     num_player_used = 0;   
     num_game_players = 0;
-    num_player_slots = 1;
     num_ticcmd_per_tic = 0;
     ticcmd_player_mask = 0;
 
@@ -3548,7 +3553,6 @@ static void  update_player_counts( void )
 
         if( playeringame[pn] )
         {
-            num_player_slots = pn+1;
             num_game_players++;
             if( ps >= PS_player && ps < PS_bot )
             {
@@ -3559,8 +3563,24 @@ static void  update_player_counts( void )
     }
 }
 
-
-
+// Client
+//    pmask : player_mask
+// The number of bits set in the player_mask.
+static void CL_num_ticcmd_per( uint32_t pmask )
+{
+    byte pn = 0;
+    num_ticcmd_per_tic = 0;
+    ticcmd_player_mask = pmask;  // players that send ticcmds
+    while( pmask )
+    {
+        if( pmask & 0x0001 )  // has a ticcmd in the packet
+        {
+            ticcmd_pid[num_ticcmd_per_tic++] = pn;  // list of pid
+        }
+        pmask >>= 1;
+        pn++;
+    }
+}
 
 
 // FIXME: probably do not need this.
@@ -3586,8 +3606,9 @@ void  CL_player_mask_error_detection( uint32_t playerdet )
             GenPrintf(EMSG_warn, "  Player %d: server= %4X client= %4X\n", pn, playerdet & pnb, ticcmd_player_mask & pnb  );
         }
     }
-    
-    ticcmd_player_mask = playerdet; // trust the server message, because the server made the message content
+
+//  Causes servertic error because this is the test reference for the player list.
+//    ticcmd_player_mask = playerdet; // trust the server message, because the server made the message content
 }
 
 
@@ -3628,7 +3649,8 @@ static
 void Got_NetXCmd_AddPlayer(xcmd_t * xc)
 {
     static uint32_t sendconfigtic = 0xffffffff;
-    byte nnode, newplayernum, pind, flags;
+    byte nnode, newplayernum, pind;
+    byte flags = 0;
 
     // Format: XD_ADDPLAYER
     // Older, from demo
@@ -4238,8 +4260,7 @@ static void server_cfg_handler( byte nnode )
         uint32_t  playerdet = read_N32( & netbuffer->u.servercfg.playerdetected );
 #if 1
         CL_player_mask_error_detection( playerdet );
-#else
-        int j;
+#else       
         for(j=0;j<MAXPLAYERS;j++)
         {
             playeringame[j] = (( playerdet & (1<<j) ) != 0);
@@ -4300,28 +4321,6 @@ static void server_timeout_handler()
     }
 }
 
-
-// Copy an array of ticcmd_t, swapping between host and network byte order.
-//
-static void TicCmdCopy_n(ticcmd_t * dst, ticcmd_t * src, int n)
-{
-    int i;
-    for (i = 0; i < n; src++, dst++, i++)
-    {
-#ifdef CLIENTPREDICTION2
-        dst->x = LE_SWAP32_FAST(src->x);
-        dst->y = LE_SWAP32_FAST(src->y);
-#endif
-        dst->forwardmove = src->forwardmove;
-        dst->sidemove    = src->sidemove;
-        dst->angleturn   = LE_SWAP16_FAST(src->angleturn);
-        dst->aiming      = LE_SWAP16_FAST(src->aiming);
-        dst->buttons     = src->buttons;
-#ifdef TICCMD_148
-        dst->ticflags    = src->ticflags;
-#endif
-    }
-}
 
 // Copy a single ticcmd_t, swapping between host and network byte order.
 static void TicCmdCopy( ticcmd_t * dst, ticcmd_t * src )
@@ -4526,6 +4525,10 @@ static void client_cmd_handler( byte netcmd, byte nnode )
 }
 
 
+// [WDJ] The ver 1.48 server tic packet has a new format.  It can send extension
+// packets when needed.
+// All of the textcmd will be included.
+
 // By Server.
 // Send PT_SERVERTICS, the server packet.
 // Send tic from next_tic_send to maketic-1.
@@ -4533,16 +4536,23 @@ static void SV_Send_Tics (void)
 {
     static byte resend_cnt = 0;  // spread resends at less cost than Get_Time
 
+    ticcmd_t * netcmd_p;
+    byte * bufpos;  // net txtcmd text
+    byte * endbuf, * end_ticcmd;
+
     tic_t start_tic, end_tic, ti;
-    int  nnode;
+    int  btic, j;
     int  packsize;
-    char * bufpos;
-    byte num_txt;
+    int  total_textcmd_size;
+    byte seq_num, num_cmds, num_txt, flags;
+    byte nnode, pn;
+
+    // update_player_counts sets ticcmd_player_mask, num_ticcmd_per_tic, ticcmd_pid[].
 
     // Send PT_SERVERTIC to all client, but not to myself.
-    // For each node create a packet with x tics and send it.
-    // x is computed using nextsend_tic[n], max packet size and maketic.
-    // Assume sender is server. Assume cl_servernode=0.
+    // For each node create a packet with num_tics and send it.
+    // Compute num_tics using nextsend_tic[n], max packet size, and maketic.
+    // Assume cl_servernode=0.
     for(nnode=1; nnode<MAXNETNODES; nnode++)
     {
         if( nnode_state[nnode] < NOS_client )  continue;
@@ -4555,10 +4565,11 @@ static void SV_Send_Tics (void)
         // They may be different, with individual status.
         end_tic = maketic;
           // The last tic to send is one before maketic.
+          // Does not send end_tic.
 
         // assert nextsend_tic[nnode]>=nettics[nnode]
         start_tic = nextsend_tic[nnode];  // last tic sent to this nnode
-       
+
         if(start_tic >= maketic)
         {
             // We have sent all tics, so we will use the extrabandwidth
@@ -4568,12 +4579,13 @@ static void SV_Send_Tics (void)
             // (in the getpacket servertics case).
             DEBFILE(va("Send Tics none: node %d maketic %u nxttic %u nettic %u\n",
                        nnode, maketic, nextsend_tic[nnode], nettics[nnode]));
-            start_tic = nettics[nnode];
+            // Client sends a tic, then server re-sends the ticcmds to everyone.	   
+            start_tic = nettics[nnode];  // last client tic received by server
             if( start_tic >= maketic )
                 continue;  // all tic are ok, do next node
             if( (nnode + resend_cnt++)&3 )  // some kind of randomness
                 continue;  // skip it
-            DEBFILE(va("Resend from tic %d\n", start_tic));
+            DEBFILE(va("Send Tics Resend: node %d from tic %d\n", nnode, start_tic));
         }
 
         // Limit start to first new tic we have.
@@ -4581,91 +4593,146 @@ static void SV_Send_Tics (void)
             start_tic = next_tic_send;
 
         // Compute the length of the packet and cut it if too large.
-        packsize = SERVER_TIC_BASE_SIZE + 1; // fixed fields, num_textcmd 
+        packsize = SERVER_TIC_BASE_SIZE;
+        total_textcmd_size = 0;
         for(ti=start_tic; ti<end_tic; ti++)
         {
             // All of the ticcmd
-            packsize += sizeof(ticcmd_t) * num_player_slots;
+            packsize += sizeof(ticcmd_t) * num_ticcmd_per_tic;
             // All of the textcmd buffer and support fields
             // Optional textcmd support fields, are only needed when there are textcmd.
             int tcblen = textcmdbuff[ BTIC_INDEX(ti) ].len;
             if( tcblen )
-                packsize += sizeof_servertic_textcmd_t( tcblen );
+            {
+                total_textcmd_size += sizeof_servertic_textcmd_t( tcblen );
+            }
 
-            if( packsize > software_MAXPACKETLENGTH )
+#if 1
+            // Limit each to 1 packet.
+            if( (packsize > software_MAXPACKETLENGTH) || (total_textcmd_size > software_MAXPACKETLENGTH) )
+#else
+            // Limit together at 1 packet.
+            if( (packsize + total_textcmd_size) > software_MAXPACKETLENGTH )
+#endif
             {
                 // Exceeds max packet size.
-                DEBFILE(va("Packet too large (%d) at tic %d (should be from %d to %d)\n",
-                            packsize, ti, start_tic, end_tic));
-                end_tic = ti;  // limit this packet due to size
+                // Will send extension packets to carry excess ticcmd, and all textcmd.
+                if(ti == start_tic)  ti++;  // do at least one tic, will send extension packet
 
-                // too bad :
-                // Too many players have sent extradata and there is too
-                // much data for one tic packet.
-                // Too avoid it put the data on the next tic (see getpacket
-                // textcmd case). But when numplayer changes the computation
-                // can be different
-                if(end_tic == start_tic)
-                {
-                    // No tics made it into the packet.
-                    if( packsize > MAXPACKETLENGTH )
-                    {
-                        I_Error("Too many players: cannot send %d data for %d players to net node %d\n"
-                                "Well sorry nobody is perfect....\n",
-                                packsize, num_player_slots, nnode);
-                    }
-                    else
-                    {
-                        end_tic++;  // send it anyway !
-                        DEBFILE("Sending empty tic anyway\n");
-                    }
-                }
+                DEBFILE(va("Packet size limited (%d) (tics %d to %d)  send tic %d \n",
+                            packsize, start_tic, end_tic - 1, ti - 1));
+
+                end_tic = ti;  // limit this packet due to size
                 break;
             }
         }
             
-        // Send the tics, start_tic..(end_tic-1), in one packet.
+        // Send the tics, start_tic..(end_tic-1).
 
+        // Header
         netbuffer->packettype = PT_SERVERTICS;
         netbuffer->u.serverpak.starttic = start_tic;
         netbuffer->u.serverpak.numtics = (end_tic - start_tic); // num tics
-        netbuffer->u.serverpak.numplayerslots = num_player_slots;
-        bufpos=(char *)& netbuffer->u.serverpak.cmds;
-       
+        write_N32( &netbuffer->u.serverpak.cmd_player_mask, ticcmd_player_mask );  // players that send ticcmd
+
+        // init
+        netbuffer->u.serverpak.cmds_offset = 0;
+        netbuffer->u.serverpak.num_textcmd = 0;
+        flags = seq_num = num_cmds = num_txt = 0;
+
+        bufpos= (byte *)&netbuffer->u.serverpak.cmds;
+        // limits
+        endbuf= ((byte*)netbuffer) + software_MAXPACKETLENGTH - 1;
+        end_ticcmd = endbuf - sizeof(ticcmd_t);
+        if( end_ticcmd > (byte*)& netbuffer->u.serverpak.cmds[NUM_SERVERTIC_CMD-1] )
+            end_ticcmd = (byte*)& netbuffer->u.serverpak.cmds[NUM_SERVERTIC_CMD-1];
+
         // All the ticcmd_t, start_tic..(end_tic-1)
         for(ti=start_tic; ti<end_tic; ti++)
         {
-            int btic = BTIC_INDEX( ti );
-            TicCmdCopy_n((ticcmd_t*) bufpos, netcmds[btic], num_player_slots);
-            bufpos += num_player_slots * sizeof(ticcmd_t);
-        }
+            btic = BTIC_INDEX( ti );
+            netcmd_p = netcmds[btic];
 
-        // num_textcmd, is the count of the servertic_textcmd_t
-        num_txt = 0;
-        // All the textcmd, start_tic..(end_tic-1)
-        for(ti=start_tic; ti<end_tic; ti++)
+            // Send only the ticcmd of players in game.
+            for( j=0; j<num_ticcmd_per_tic; j++ )
+            {
+                if( bufpos > end_ticcmd )
+                {
+                    // send packet section
+                    netbuffer->u.serverpak.flags = TPF_more | flags | seq_num;
+                    netbuffer->u.serverpak.num_cmds_present = num_cmds;
+                    packsize = bufpos - (byte*)&(netbuffer->u);
+                    HSendPacket(nnode, 0, 0, packsize);  // msg lost when too busy
+
+                    // init next seq packet
+                    netbuffer->u.serverpak.cmds_offset += num_cmds;
+                    num_cmds = 0;
+                    seq_num ++;
+                    bufpos = (byte*)&netbuffer->u.serverpak.cmds;
+                }
+
+                // Use list of pid generated from playeringame and player_state.
+                pn = ticcmd_pid[j];
+                TicCmdCopy( (ticcmd_t*) bufpos, /*src*/ &netcmd_p[pn] );
+                bufpos += sizeof(ticcmd_t);
+                num_cmds++;  // ticcmd count
+            }
+        }
+        netbuffer->u.serverpak.num_cmds_present = num_cmds;
+        // Done writing ticcmds
+
+        if( total_textcmd_size )
         {
+            // All the textcmd, start_tic..(end_tic-1)
             // [WDJ] Most often there are no textcmd.  Make that case simple and small.
-            int btic = BTIC_INDEX( ti );
-            textcmdbuff_t * tcbuf = & textcmdbuff[btic];
-            unsigned int buflen = tcbuf->len;
-            if( buflen == 0 )  continue;
 
-            // Tics with textcmd, use a servertic_textcmd_t, unaligned.
-            // All players and server textcmd are already packed into the buffer.
-            servertic_textcmd_t * stcp = (servertic_textcmd_t *)bufpos;
-            stcp->tic = ti;
-            write_N16( & stcp->len, buflen );
-            // Send the textcmdbuf, length limited.
-            memcpy(&stcp->textitem, &tcbuf->buff, buflen);
-            // Cannot add field sizes as the structure might be padded.
-            bufpos += sizeof_servertic_textcmd_t( buflen );  // tic, len(2 bytes), buf
-            num_txt++; // inc the number of textcmd sent
+            // [WDJ] Ver 1.48, easy to send in multiple packets
+
+            // The bufpos is always at end-of-packet; cannot update until the textcmd section actually gets text.
+            for(ti=start_tic; ti<end_tic; ti++)
+            {
+                // textcmd from players, bots, server
+                btic = BTIC_INDEX( ti );
+                textcmdbuff_t * tcbuf = & textcmdbuff[btic];
+                unsigned int buflen = tcbuf->len;
+                if( buflen == 0 )  continue;
+
+                if(((bufpos + sizeof_servertic_textcmd_t(buflen)) > endbuf)  // not enough room in packet
+                    || ( num_txt >= 250 ) )   // force send
+                {
+                    // Send packet, start new extension packet.
+                    // Rarely executed.  Required when many players are texting at once.
+                    // This may be ticcmd only, or both, or textcmd only.
+                    netbuffer->u.serverpak.flags = TPF_more | flags | seq_num;
+                    netbuffer->u.serverpak.num_textcmd = num_txt; // the number of textcmd
+                    packsize = bufpos - (byte *)&(netbuffer->u);
+                    HSendPacket(nnode, 0, 0, packsize);  // msg lost when too busy
+
+                    // init next seq packet
+                    netbuffer->u.serverpak.num_cmds_present = 0;
+                    seq_num ++;
+
+                    // Reset to start of data area, keep same packet header.
+                    bufpos = (byte *)&netbuffer->u.serverpak.cmds;
+                    num_txt = 0;
+                }
+
+                // Tics with textcmd, use a servertic_textcmd_t, unaligned.
+                // All players and server textcmd are already packed into the buffer.
+                servertic_textcmd_t * stcp = (servertic_textcmd_t *)bufpos;
+                stcp->tic = ti;
+                write_N16( & stcp->len, buflen );
+                // Send the textcmdbuf, length limited.
+                memcpy(&stcp->textitem, &tcbuf->buff, buflen);
+                // Cannot add field sizes as the structure might be padded.
+                bufpos += sizeof_servertic_textcmd_t( buflen );  // tic, len(2 bytes), buf
+                num_txt++;  // num_textcmd, the count of the servertic_textcmd_t
+            }
+            netbuffer->u.serverpak.num_textcmd = num_txt; // the number of servertic_textcmd_t
         }
-        // Update the num_txtcmd field, even if it is 0.
-        netbuffer->u.serverpak.num_textcmd = num_txt; // the number of textcmd
 
-        packsize = bufpos - (char *)&(netbuffer->u);
+        netbuffer->u.serverpak.flags = flags | seq_num; // last packet
+        packsize = bufpos - (byte*)&(netbuffer->u);
         HSendPacket( nnode, 0, 0, packsize );  // msg lost when too busy
 
         // Record next tic for this net node.
@@ -4683,19 +4750,23 @@ static void SV_Send_Tics (void)
 }
 
 
-// By Client.
+// By Client. Server does not send to self.
 // PT_SERVERTICS from Server.
 static void servertic_handler( byte nnode )
 {
-    tic_t  start_tic, end_tic, ti;
-    ticcmd_t * ticp;  // net tics
+    ticcmd_t * netcmd_p;  // player array
+    byte * bufpos;  // netbuffer position, end-of-data
+    byte * endbuffer;  // for buffer overrun tests
     servertic_textcmd_t * stcp;
     textcmdbuff_t * tcbuf;
-    byte * bufpos;  // net txtcmd text
-    byte * endbuffer;  // for buffer overrun tests
-    byte   num_txt;
-    unsigned int buflen;
-    int    btic, k;
+    int    btic, j;
+    uint16_t buflen;
+    uint32_t cmd_player_mask;
+    tic_t  start_tic, end_tic, ti;
+    byte   start_tic_hash;
+    byte   packetflags;
+    byte   seqbits;
+    byte   cmds_offset, num_cmds, num_txt;
 
     start_tic = ExpandTics (netbuffer->u.serverpak.starttic);
     end_tic   = start_tic + netbuffer->u.serverpak.numtics;
@@ -4708,33 +4779,89 @@ static void servertic_handler( byte nnode )
 
     if((start_tic > cl_need_tic) || (end_tic <= cl_need_tic))
        goto not_in_packet;
-   
+
     // The needed tic is within this packet.
-    // Nettics
-    ticp = netbuffer->u.serverpak.cmds;
-    endbuffer = (byte*)&ticp[NUM_SERVERTIC_CMD];  // after last content
+    packetflags = netbuffer->u.serverpak.flags;  // tic_packet_flag_e
+    // one bit per packet section by seq, last fills upper bits to make 0xFF
+    seqbits = 1 << (packetflags & TPF_seq);  // 0..7 => 0x01 .. 0x80
+    if( ! (packetflags & TPF_more) )  seqbits = -seqbits;  // 0x01=>0xFF, 0x08=>0xF8
 
-    // After the nettics are the net textcmds
-    k = netbuffer->u.serverpak.numplayerslots * netbuffer->u.serverpak.numtics;
-    if( k >= NUM_SERVERTIC_CMD )  goto nettic_exceed_buffer;
-    bufpos = (byte *)& netbuffer->u.serverpak.cmds[k];
-    // txtp uses cmd space for text
+    // First the nettics then the net textcmds.
+    bufpos = (byte*)netbuffer->u.serverpak.cmds;  // first ticcmd
+    endbuffer = (byte*)& netbuffer->u.serverpak.cmds[NUM_SERVERTIC_CMD];  // after last content
 
-    for(ti = start_tic; ti<end_tic; ti++)
+    cmd_player_mask = read_N32( &netbuffer->u.serverpak.cmd_player_mask );
+    cmds_offset = netbuffer->u.serverpak.cmds_offset;
+    num_cmds = netbuffer->u.serverpak.num_cmds_present;
+    if( num_cmds > NUM_SERVERTIC_CMD )  goto corrupt_packet;
+   
+    // Hash differs between this packet and previous usage of the same btic.
+    // Could compute it for every tic in the packet, but is not necessary.
+    // All extension packet have the same start_tic.
+    // Do clear separately so out-of-order packets cannot invoke errors.
+    // Otherwise, would have to appear in both ticcmds and textcmds code.
+    start_tic_hash = btic_hash( start_tic ); 
+    for( ti=start_tic; ti<end_tic; ti++ )
     {
-        // Clear first
-        D_Clear_ticcmd(ti);
-
-        // Copy the tics
+        // client only
         btic = BTIC_INDEX( ti );
-        // btic limited to BACKUPTICS-1
-        TicCmdCopy_n(netcmds[btic], ticp, netbuffer->u.serverpak.numplayerslots);
-        ticp += netbuffer->u.serverpak.numplayerslots;
+        if( netcmd_tic_hash[btic] != start_tic_hash )
+        {
+            // first packet for this tic, clear old stuff
+            D_Clear_ticcmd(btic);
+            netcmd_tic_hash[btic] = start_tic_hash;  // after clear
+        }
+        // When this was in textcmds, it would only record for those that
+        // had actually sent a textcmd.
+        // If that packet had num_cmds=0, then empty textcmds would never be ready.
+        netseq[btic] |= seqbits; // record receiving this packet section
+    }
+   
+    // Nettics
+    // Some extension packets may have num_cmds = 0
+    if( num_cmds && cmd_player_mask )
+    {
+        // client only
+        // Update the player list according to cmd_player_mask
+        if( cmd_player_mask != ticcmd_player_mask )
+            CL_num_ticcmd_per( cmd_player_mask );  // num_ticcmd_per_tic
+
+        ti = start_tic;
+        if( cmds_offset > num_ticcmd_per_tic )
+        {
+            // extension packet after multiple tics
+            byte whole_tics = cmds_offset / num_ticcmd_per_tic;  // whole tics in previous packet
+
+            ti += whole_tics;
+            cmds_offset -= whole_tics * num_ticcmd_per_tic;  // 0..num_ticcmd_per_tic
+        }
+
+        for( ; ti<end_tic; ti++)
+        {
+            if( num_cmds == 0 )  break;  // limited to ticcmd in this packet
+            num_cmds --;
+
+            // Copy the tics
+            btic = BTIC_INDEX( ti );
+            // btic limited to BACKUPTICS-1
+ 
+            netcmd_p = netcmds[btic];  // player dest
+
+            // when extension packet, cmds_offset is non-zero
+            for( j = cmds_offset; j<num_ticcmd_per_tic; j++ )
+            {
+                // Use list of pid generated from cmd_player_mask.
+                byte pn = ticcmd_pid[j];
+                TicCmdCopy( &netcmd_p[pn], /*src*/ (ticcmd_t*) bufpos );
+                bufpos += sizeof(ticcmd_t);
+            }
+            cmds_offset = 0;
+        }
     }
 
-
-    // Copy the incoming textcmds.
-    num_txt = netbuffer->u.serverpak.num_textcmd;  // number of txtcmd
+    // [WDJ] Ver 1.48, easy to send in multiple packets
+    // Some packets have textcmds, most do not.
+    num_txt = netbuffer->u.serverpak.num_textcmd;  // number textcmd sections field
     while( num_txt-- )
     {
         // Tics that have a textcmd have a servertic_textcmd_t, unaligned.
@@ -4755,22 +4882,20 @@ static void servertic_handler( byte nnode )
         // Cannot add field sizes as the structure might be padded.
         bufpos += sizeof_servertic_textcmd_t( buflen );  // tic, len(2 bytes), buf
     }
-   
-    cl_need_tic = end_tic;
+
+    // Only advance to the next tic when all packet extensions are received.
+    if( netseq[ BTIC_INDEX(start_tic) ] == 0xFF )
+        cl_need_tic = end_tic;
     return;
 
-   
  corrupt_packet:
     I_SoftError("Nettics: corrupt packet.\n");
-    return;
- nettic_exceed_buffer:
-    I_SoftError("Nettics: tics exceed buffer: len=%i\n", k);
     return;
  textcmd_exceed_buffer:
     I_SoftError("Nettics: textcmd exceed buffer: len=%i\n", buflen);
     return;
  not_in_packet:
-    DEBFILE(va("Nettics: Needed tic not in packet tic bounds: tic %u\n", cl_need_tic));
+    DEBFILE(va("Needed tic not in packet: needed tic %u, packet tic %u to %u\n", cl_need_tic, start_tic, end_tic));
     return;
 }
 
