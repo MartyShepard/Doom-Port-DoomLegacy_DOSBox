@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1500 2020-03-17 02:28:33Z wesleyjohnson $
+// $Id: b_game.c 1504 2020-03-17 02:31:22Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -334,6 +334,7 @@ void DemoAdapt_bots( void )
 }
 
 
+// may be called multiple times
 void B_Init_Bots()
 {  
     DemoAdapt_bots();
@@ -374,7 +375,7 @@ void Command_AddBot(void)
     WRITEBYTE( b, bip->name_index );
     WRITEBYTE( b, bip->colour );
     WRITEU16( b, LE_SWAP16( bip->skinrand ) );
-    Send_NetXCmd(XD_ADDBOT, buf, 5);
+    SV_Send_NetXCmd(XD_ADDBOT, buf, 5);  // as server
 }
 
 // Only call after console player and splitscreen players have grabbed their player slots.

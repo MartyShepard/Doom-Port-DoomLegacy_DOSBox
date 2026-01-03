@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1503 2020-03-17 02:30:45Z wesleyjohnson $
+// $Id: d_main.c 1504 2020-03-17 02:31:22Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1503"
+#define SVN_REV "1504"
 #endif
 
 
@@ -1259,7 +1259,7 @@ void D_StartTitle(void)
     playerdeadview = false;
     displayplayer = consoleplayer = statusbarplayer = 0;
     displayplayer_ptr = consoleplayer_ptr = &players[0]; // [WDJ]
-    paused = false;
+    paused = 0;
     demo_ctrl = 0;  // enable screens and seq demos
     demosequence = -1;
     CON_ToggleOff();

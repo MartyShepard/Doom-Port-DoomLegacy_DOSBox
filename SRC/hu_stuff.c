@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.c 1482 2019-12-13 05:16:47Z wesleyjohnson $
+// $Id: hu_stuff.c 1504 2020-03-17 02:31:22Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -282,6 +282,7 @@ void Command_Say_f (void)
         strcat(&buf[1]," ");
         strcat(&buf[1],COM_Argv(i));
     }
+    // as mainplayer
     Send_NetXCmd(XD_SAY, buf, strlen(buf+1)+2);
        // +2 because 1 for buf[0] and the other for null terminated string
 }
@@ -311,6 +312,7 @@ void Command_Sayto_f (void)
         strcat(&buf[1]," ");
         strcat(&buf[1],COM_Argv(i));
     }
+    // as mainplayer
     Send_NetXCmd(XD_SAY, buf, strlen(buf+1)+2);
 }
 
@@ -334,6 +336,7 @@ void Command_Sayteam_f (void)
         strcat(&buf[1]," ");
         strcat(&buf[1],COM_Argv(i));
     }
+    // as mainplayer
     Send_NetXCmd(XD_SAY, buf, strlen(buf+1)+2);
         // +2 because 1 for buf[0] and the other for null terminated string
 }

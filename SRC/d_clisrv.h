@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1503 2020-03-17 02:30:45Z wesleyjohnson $
+// $Id: d_clisrv.h 1504 2020-03-17 02:31:22Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -123,7 +123,7 @@ typedef enum   {
  // with HSendPacket(,SP_reliable,,) these can return false
     PT_FILEFRAGMENT=PT_CANFAIL, // a part of a file
     PT_TEXTCMD,       // extra text command from the client
-    PT_TEXTCMD2,      // extra text command from the client (splitscreen)
+    PT_TEXTCMD2,      // extra text command from the client (splitscreen)  // NO LONGER USED
  // 23
     PT_CLIENTJOIN,    // client want to join used in start game
     PT_NODE_TIMEOUT,  // packet is sent to self when connection timeout
@@ -173,6 +173,38 @@ typedef struct {
 
 //#pragma pack(1)
 
+
+#define MAXTEXTCMD           255
+#if MAXTEXTCMD > 255
+# error  Textcmd len is a byte, cannot hold MAXTEXTCMD
+#endif
+// One extra byte at end for 0 termination, to protect against malicious use.
+// Compatible format with DoomLegacy demo version 1.13 ..
+// Actual transmission and saved copies are limited to the actual used length.
+typedef struct {
+    byte     len;  // 0..MAXTEXTCMD
+    byte     text[MAXTEXTCMD+1];
+} textbuf_t;
+#define sizeof_textbuf_t(len)   (1+(len))
+
+// Used by textcmd_pak_t, servertic_textcmd_t, textcmd storage.
+typedef struct {
+    byte        pn;    // Explicit player pid.
+    textbuf_t   textbuf;
+} textcmd_item_t;
+#define sizeof_textcmd_item_t(len)   (offsetof( textcmd_item_t, textbuf ) + 1 + (len))
+
+// Ver 1.48,  TEXTCMD
+// Used by: PT_TEXTCMD
+// Replaces PT_TEXTCMD2 which is no longer used.
+// unaligned
+typedef struct {
+    byte            num_textitem; // num textitem present in this packet
+    textcmd_item_t  textitem[2];  // variable sized
+} textcmd_pak_t;
+
+
+
 // client to server packet
 // Used by: PT_CLIENTCMD, PT_CLIENTMIS
 // Used by: PT_CLIENT2CMD, PT_CLIENT2MIS
@@ -187,21 +219,33 @@ typedef struct {
    ticcmd_t    cmd2;  // only used when there is a player 2
 } clientcmd_pak_t;
 
+
+// unaligned
+typedef struct {
+   byte            tic;
+   N16_t           len;  // length of textitem array
+   textcmd_item_t  textitem[1];  // array limited by packet size
+} servertic_textcmd_t;
+#define sizeof_servertic_textcmd_t(len)   (offsetof( servertic_textcmd_t, textitem )+(len))
+
 // Server to client packet
 // this packet is too large !!!!!!!!!
+// TODO: new servertic format
 #define NUM_SERVERTIC_CMD   45
 typedef struct {
    byte        starttic;
    byte        numtics;
    byte        numplayerslots;
-   byte        pad1;
+   byte        num_textcmd;  // count of servertic_textcmd_t
 // aligned to 4 bytes
    ticcmd_t    cmds[NUM_SERVERTIC_CMD];
      // number of cmds used is (numtics*numplayers)
      // normaly [BACKUPTIC][MAXPLAYERS] but too large
 // unaligned
-//   char        textcmds[BACKUPTICS][MAXTEXTCMD];
+// After variable number of ticcmd_t
+//   servertic_textcmd_t  st[1];  // variable number
 } servertics_pak_t;
+
 
 // Player updates, Ver 1.48
 // aligned to 4 bytes
@@ -211,6 +255,7 @@ typedef struct {
    int32_t     momx, momy, momz;
 } mobj_pos_t;
 
+// message format for inventory
 // unaligned
 typedef struct {
     byte type, count;   
@@ -241,11 +286,10 @@ typedef struct {
     byte  optional;
 } pd_player_t;
 
-// message format for inventory
 typedef enum   {
-  PDI_seq = 0x07,
-  PDI_more = 0x08,
-  PDI_inventory = 0x40,
+  PDI_seq = 0x07,  // sequence number field
+  PDI_more = 0x08, // this is not the last sequence number, more packets follow
+  PDI_inventory = 0x40,  // optional inventory
 } playerdesc_flags_e;
 
 // aligned to 4 bytes
@@ -331,6 +375,7 @@ typedef struct {
 } serverconfig_pak_t;
 
 // PT_CLIENTJOIN
+// aligned to 4 bytes
 typedef struct {
    byte        version;    // different versions are not compatible
    byte        ver1, ver2, ver3;  // reserve for future version
@@ -353,7 +398,6 @@ typedef struct {
 } filetx_pak_t;
 
 // ver 1.48
-// aligned to 4 bytes
 // aligned to 4 bytes
 typedef struct {
     byte       num_netplayer;  // count players due to 2 player nodes
@@ -426,19 +470,6 @@ typedef struct {
     char       str[MAX_STRINGPAK_LEN];
 } string_pak_t;
 
-#define MAXTEXTCMD           255
-#if MAXTEXTCMD > 255
-# error  Textcmd len is a byte, cannot hold MAXTEXTCMD
-#endif
-// One extra byte at end for 0 termination, to protect against malicious use.
-// Used by: Text Cmd: PT_TEXTCMD, PT_TEXTCMD2
-// Compatible format with DoomLegacy demo version 1.13 ..
-// Actual transmission and saved copies are limited to the actual used length.
-typedef struct {
-      byte     len;  // 0..MAXTEXTCMD
-      byte     text[MAXTEXTCMD+1];
-} textbuf_t;
-
 #define MAX_NETBYTE_LEN  256
 // Used by: Send_AcksPacket: PT_ACKS
 // Used by: Net_ConnectionTimeout: PT_NODE_TIMEOUT
@@ -466,7 +497,7 @@ typedef struct
       clientcmd_pak_t    clientpak;
       servertics_pak_t   serverpak;
       serverconfig_pak_t servercfg;
-      textbuf_t          textcmdpak;
+      textcmd_pak_t      textcmdpak;
       filetx_pak_t       filetxpak;
       clientconfig_pak_t clientcfg;
       serverinfo_pak_t   serverinfo;
@@ -504,14 +535,13 @@ extern consvar_t cv_maxplayers;
 #define PACKET_BASE_SIZE     offsetof(netbuffer_t, u)
 //#define FILETX_HEADER_SIZE       ((int)   ((filetx_pak *)0)->data)
 #define FILETX_HEADER_SIZE   offsetof(filetx_pak_t, data)
-//#define SERVER_TIC_BASE_SIZE  ((int)&( ((netbuffer_t *)0)->u.serverpak.cmds[0]))
-#define SERVER_TIC_BASE_SIZE offsetof(netbuffer_t, u.serverpak.cmds[0])
 
 extern boolean   server;
 extern uint16_t  software_MAXPACKETLENGTH;
 
 extern boolean   cl_drone;  // is a drone client
 extern byte      cl_servernode;  // the server net node, 251=none
+extern byte      localplayer[2];  // client player number
 
 
 typedef struct xcmd_s {
@@ -525,17 +555,26 @@ typedef struct xcmd_s {
 void    D_Init_ClientServer (void);
 int     ExpandTics (int low);
 
-// initialise the other field
-void    Register_NetXCmd(netxcmd_e cmd_id,
-                        void (*cmd_f) (xcmd_t * xc));
+// Register a NetXCmd to an id.
+void    Register_NetXCmd(netxcmd_e cmd_id, void (*cmd_f) (xcmd_t * xc));
+
 // default, always main player
 void    Send_NetXCmd(byte cmd_id, void *param, int nparam);
 //  pind : player index, [0]=main player, [1]=splitscreen player
-void    Send_NetXCmd_pind(byte cmd_id, void *param, int nparam, byte pind);
+void    Send_NetXCmd_pind(byte cmd_id, void *param, int param_len, byte pind);
+//  pn : player textcmd dest, when textcmd_pind is 2
+void    Send_NetXCmd_auto( byte cmd_id, void *param, int param_len, byte textcmd_pind, byte pn );
+
+// Server textcmd uses separate channel, SERVER_PID.
+#define SERVER_PID  MAXPLAYERS
+// default, always SERVER_PID
+void    SV_Send_NetXCmd(byte cmd_id, void *param, int param_len);
+//  pn : SERVER_PID, or player pid (bots)
+void    SV_Send_NetXCmd_pn(byte cmd_id, void *param, int param_len, byte pn);
 
 // command.c
 void Got_NetXCmd_NetVar(xcmd_t * xc);
-// load/save gamesate (load and save option and for network join in game)
+// load/save gamestate (load and save option and for network join in game)
 void CV_SaveNetVars(xcmd_t * xc);
 void CV_LoadNetVars(xcmd_t * xc);
 

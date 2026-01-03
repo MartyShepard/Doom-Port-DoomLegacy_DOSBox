@@ -1588,7 +1588,7 @@ void CV_Set (consvar_t *cvar, const char *str_value)
         // Format:  netid uint16, var_string str0.
         WRITEU16(p, cvar->netid);
         p = write_stringn(p, str_value, SET_BUFSIZE-2-1);
-        Send_NetXCmd(XD_NETVAR, buf, (p - buf));
+        SV_Send_NetXCmd(XD_NETVAR, buf, (p - buf));  // as server
         // NetXCmd will set as netvar, CV_CALL, not user.
         // This NetXCmd is also used by savegame restore, so it cannot block server.
         return;
