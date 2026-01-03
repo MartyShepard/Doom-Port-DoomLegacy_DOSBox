@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1511 2020-04-04 08:50:49Z wesleyjohnson $
+// $Id: g_game.c 1512 2020-04-04 08:51:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -603,15 +603,16 @@ void Deathmatch_OnChange(void)
 
     if( cv_deathmatch.EV < 4 )
     {
+        // [WDJ] Server and Client, change other cvar affected by deathmatch, locally.
+        // Do not modify cvar here, and expect NETVAR to update them in clients.
+
+        // weapon respawn global enable
         weapon_persist = (cv_deathmatch.EV != 2);  // only the orig modes
 
-        // Within a CV_CALL routine, use CV_Set_by_OnChange.
-        if (server)
-        {
-            // itemrespawn for deathmatch 2,3
-            CV_Set_by_OnChange( &cv_itemrespawn,
-                deathmatch_to_itemrespawn[ deathmatch & 0x03 ] );
-        }
+        // itemrespawn for deathmatch 2,3
+        CV_SetParam( &cv_itemrespawn, deathmatch_to_itemrespawn[ deathmatch & 0x03 ] );
+        // itemrespawntime is NETVAR, and will have been distributed at join game.
+
         // [WDJ] Respawn weapons in the itemrespawn queue, for weapon_persist.
         // Fixed code inconsistency: it did not do this when going to coop mode.
         if( weapon_persist )
@@ -1652,6 +1653,7 @@ void G_Ticker (void)
         {
             cmd = &players[i].cmd;
 
+            // All clients run the bots, identically.
             if (players[i].bot)	//added by AC for acbot
                 B_BuildTiccmd(&players[i], &netcmds[buf][i]);
 
@@ -1681,6 +1683,7 @@ main_actions:
     {
       case GS_LEVEL:
         //IO_Color(0,255,0,0);
+        // Apply player cmds to players, then run thinkers and level animations for this gametic.       
         P_Ticker ();             // tic the game
         //IO_Color(0,0,255,0);
         ST_Ticker ();

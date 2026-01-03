@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1500 2020-03-17 02:28:33Z wesleyjohnson $
+// $Id: command.c 1512 2020-04-04 08:51:13Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1231,6 +1231,7 @@ void  CV_cvar_call( consvar_t *cvar, byte user_enable )
 
 // Set variable value, for user settings, save games, and network settings.
 // Updates value and EV.
+// Does NOT relay NETVAR to clients.
 //  call_enable : when 0, blocks CV_CALL
 //  user_enable : enable setting the string value which gets saved in config files.
 static

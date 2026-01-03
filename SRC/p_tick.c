@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_tick.c 1399 2018-07-02 03:41:01Z wesleyjohnson $
+// $Id: p_tick.c 1512 2020-04-04 08:51:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -369,7 +369,8 @@ void P_Ticker (void)
 
     P_RunThinkers ();
     P_UpdateSpecials ();
-    P_RespawnSpecials ();
+    if( cv_itemrespawn.EV )  P_RespawnSpecials ();
+
     P_AmbientSound();
 
     // for par times
