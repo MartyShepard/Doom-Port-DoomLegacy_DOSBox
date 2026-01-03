@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1490 2019-12-19 07:49:59Z wesleyjohnson $
+// $Id: d_clisrv.c 1491 2019-12-19 07:50:34Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -229,6 +229,7 @@ static byte  num_player_used = 0;
 static byte  num_join_waiting_players = 0;
 static byte  num_wait_game_start = 0;  // waiting until next game
 
+
 // Server net node state for
 // tracking client nodes.
 typedef enum {
@@ -330,7 +331,6 @@ consvar_t cv_SV_netrepair = {"sv_netrepair","2", CV_SAVE, netrepair_cons_t};
 // consistency check, index by cv_SV_netrepair
 static byte consistency_limit_fatal[4] = { 1, 2, 6, 9 };
 static byte consistency_sg_bit[4]    = { 0, 0x02, 0x14, 0xAA };  // bit on when should req savegame
-
 
 
 
@@ -648,6 +648,7 @@ static void SV_Reset_NetNode(byte nnode);
 static boolean SV_Add_Join_Waiting(void);
 static byte SV_update_player_counts(void);
 
+
 // send a simple packet
 static boolean  SendPacket( byte nnode, byte packettype )
 {
@@ -674,7 +675,7 @@ static boolean  CL_Send_Join( void )
 #ifdef __BIG_ENDIAN__
     flg |= NF_big_endian;
 #endif
-   
+
     GenPrintf(EMSG_hud, "Send join request...\n");
     netbuffer->packettype=PT_CLIENTJOIN;
     netbuffer->u.clientcfg.version = VERSION;
@@ -787,8 +788,8 @@ static void get_random_state( random_state_t * rs )
 
 #define SET_RANDOM    1
 // Client
-//   set_enable : 1=enable set,  0=check only
 // Receive: Update client random state.
+//   set_enable : 1=enable set,  0=check only
 static void random_state_checkset( random_state_t * rs, const char * msg, byte set_enable )
 {
     uint32_t  o_ernd1, o_ernd2, rs_ernd1, rs_ernd2;
@@ -870,6 +871,91 @@ static void state_handler( void )
 #endif
 }
 
+
+// NETWORK_WAIT_ACTIVE_FLAG is carefully choosen to avoid boolean values 0/1
+#define NETWORK_WAIT_ACTIVE_FLAG   0x40
+static uint16_t  network_wait_timer = 0;
+static byte      network_wait_pause = 0;
+
+// Server
+//  wait_timeout : wait timeout in ticks
+void  SV_network_wait_timer( uint16_t wait_timeout )
+{
+    if( wait_timeout > network_wait_timer )   network_wait_timer = wait_timeout;
+
+    if( ! network_wait_pause )
+    {
+        // save pause state, and network pause state
+        network_wait_pause = paused | NETWORK_WAIT_ACTIVE_FLAG;
+        if( ! paused )
+        {
+            SV_Send_State( 1 );  // pause game
+        }
+    }
+}
+
+// Server
+// Wait when netgame is forced to pause.
+static
+void  SV_network_wait_handler( void )
+{
+    byte nn, ns;
+   
+    // Is everybody ready.
+    for( nn=0; nn<MAXNETNODES; nn++ )
+    {
+        ns = nnode_state[nn];
+        if((ns >= NOS_join) && (ns <= NOS_join_sg_loaded))  goto keep_waiting;
+        if((ns >= NOS_repair) && (ns <= NOS_repair_sg_loaded))  goto keep_waiting;
+    }
+    goto unpause_game;
+    
+keep_waiting:
+    if( network_wait_timer > 1 )
+    {
+        network_wait_timer--;
+        return;
+    }
+        
+    // Timeout the wait
+    network_wait_timer = 0;
+    for( nn=0; nn<MAXNETNODES; nn++ )
+    {
+        byte ns = nnode_state[nn];
+        if( ns == NOS_idle ) continue;
+       
+        GenPrintf(EMSG_warn, "Network timeout: node=%i  nnode_state=%i\n", nn, ns );
+        if((ns >= NOS_join) && (ns < NOS_join_timeout))
+        {
+            nnode_state[nn] = NOS_join_timeout;
+            network_wait_timer = 6;
+        }
+        else if((ns >= NOS_repair) && (ns < NOS_repair_timeout))
+        {
+            nnode_state[nn] = NOS_repair_timeout;
+            network_wait_timer = 8;
+        }
+        else if( ns == NOS_repair_timeout || ns == NOS_join_timeout || ns == NOS_fatal )
+        {
+            Net_CloseConnection(nn, 1); // force close
+            SV_Reset_NetNode(nn);
+        }
+    }
+
+    if( network_wait_timer == 0 )  goto unpause_game;  // let other players continue
+    return;
+
+unpause_game:
+    if( network_wait_pause == NETWORK_WAIT_ACTIVE_FLAG )  // originally was not paused
+    {
+        SV_Send_State( 0 );  // unpause the game
+    }
+    network_wait_pause = 0;
+    network_wait_timer = 0;
+    return;
+}
+
+
 // By Server
 static void  ready_handler( byte nnode )
 {
@@ -896,10 +982,9 @@ static void  ready_handler( byte nnode )
 static void SV_Send_SaveGame(int to_node)
 {
     size_t  length;
-    byte    was_paused = paused;
 
-    SV_Send_State( 1 );  // pause game during download
-     
+    SV_network_wait_timer( 90 );  // pause game during download
+
     P_Alloc_savebuffer( 1 );	// large buffer, but no header
     if(! savebuffer)   goto buffer_err;
 
@@ -909,14 +994,13 @@ static void SV_Send_SaveGame(int to_node)
 
     length = P_Savegame_length();
     if( length < 0 )   goto buffer_err;	// overrun buffer
-   
+
     // then send it !
     SV_SendData(to_node, "SAVEGAME", savebuffer, length, TAH_MALLOC_FREE, SAVEGAME_FILEID);
     // SendData frees the savebuffer using free() after it is sent.
     // This is the only use of TAH_MALLOC_FREE.
-    
-    SV_Send_State( was_paused );  // unpause maybe
-    paused = was_paused;
+
+    // Wait for reply. Let wait timer do unpause.
     return;
 
 buffer_err:
@@ -986,7 +1070,6 @@ failed_exit:
 
 
 // ----- Consistency fail, repair position.
-
 
 // By Server.
 // Send a player repair message.
@@ -1151,7 +1234,7 @@ static void repair_handler_client( byte nnode )
 {
     // Message is PT_REPAIR
     byte msg_type = netbuffer->u.repair.repair_type;
-   
+
     if( server )
         return;  // Ignore attempts to corrupt server.
 
@@ -1163,7 +1246,7 @@ static void repair_handler_client( byte nnode )
         gametic = LE_SWAP32_FAST(netbuffer->u.repair.gametic);
         random_state_checkset( & netbuffer->u.repair.rs, NULL, SET_RANDOM ); // to sync P_Random
     }
-   
+
     switch( msg_type )
     {
      case RQ_SUG_SAVEGAME:
@@ -1284,6 +1367,7 @@ static void repair_handler_server( byte nnode )
         {
             nnode_state[nnode] = NOS_repair_savegame;
             SV_Send_SaveGame( nnode ); // send game data
+            // netwait timer is running
             GenPrintf(EMSG_info, "Repair: Send savegame\n");
             // Client will return  RQ_REQ_SAVEGAME, RQ_REQ_PLAYER, RQ_CLOSE_ACK, or PT_CLIENTQUIT
             break;	    
@@ -1296,6 +1380,7 @@ static void repair_handler_server( byte nnode )
        
      case RQ_REQ_PLAYER:
         // Client has requested a player repair
+        SV_network_wait_timer( 18 );  // keep alive
         nnode_state[nnode] = NOS_repair_player;
         SV_Send_repair( RQ_PLAYER, nnode );  // includes player1, player2 position
         break;
@@ -1304,6 +1389,10 @@ static void repair_handler_server( byte nnode )
         // Client is ending the repair.
         random_state_checkset( & netbuffer->u.repair.rs, "Repair Close", 0 ); // to check P_Random
         nnode_state[nnode] = NOS_active;
+        SV_network_wait_handler();
+        break;
+
+     default:
         break;
     }
 }
@@ -1604,6 +1693,7 @@ void CL_Update_ServerList( boolean internetsearch )
     {
         server = false;  // To get correct port
         if( ! I_NetOpenSocket() )  return;  // failed to get socket
+
         netgame = true;
         multiplayer = true;
         network_state = NETS_open;
@@ -2874,6 +2964,7 @@ static void client_join_handler( byte nnode )
             // Update the nnode with game in progress.
             nnode_state[nnode] = NOS_join_savegame;
             SV_Send_SaveGame(nnode); // send game data
+	    // netwait timer is running
             GenPrintf(EMSG_info, "Send savegame\n");
             // Client will return  PT_CLIENTREADY or PT_CLIENTQUIT
 #else
@@ -2902,6 +2993,7 @@ kill_node:
     SV_Reset_NetNode(nnode);
     return;
 }
+
 
 // BY Server.
 // PT_NODE_TIMEOUT, PT_CLIENTQUIT
@@ -3549,6 +3641,9 @@ static void Net_Packet_Handler(void)
         DEBFILE(va("Unknown packet type: type %d node %d\n", packettype, nnode));
        
     } // end while
+
+    if( server && network_wait_timer )
+        SV_network_wait_handler();
 }
 
 

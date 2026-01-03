@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1480 2019-12-13 05:15:32Z wesleyjohnson $
+// $Id: b_game.c 1491 2019-12-19 07:50:34Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -303,8 +303,6 @@ static byte bot_init_done = 0;
 
 static void CV_botrandom_OnChange( void )
 {
-    byte  was_paused = paused;
-
 #ifdef BOT_VERSION_DETECT
     if( demoversion < 148 )  return;
 #endif
@@ -317,7 +315,7 @@ static void CV_botrandom_OnChange( void )
 
     // [WDJ] Updating the random number generators in the middle of a game, ugh.
     if( netgame )
-        SV_Send_State( 1 );  // pause everybody
+        SV_network_wait_timer( 35 );  // pause everybody
     
     if( cv_bot_randseed.state & CS_MODIFIED )
         B_Rand_SetIndex( cv_bot_randseed.value );
@@ -325,9 +323,8 @@ static void CV_botrandom_OnChange( void )
     // Only change names after initial loading of config.
     if( bot_init_done )
         B_Init_Names();
-
-    if( netgame )
-        SV_Send_State( was_paused );  // sync bot random numbers
+   
+    // Let network un-pause naturally.  Better timing.
 }
 
 
