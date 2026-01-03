@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1498 2020-01-05 22:13:26Z wesleyjohnson $
+// $Id: d_clisrv.h 1500 2020-03-17 02:28:33Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -376,6 +376,8 @@ extern consvar_t cv_SV_download_savegame;
 extern consvar_t cv_SV_netrepair;
 extern consvar_t cv_wait_players;
 extern consvar_t cv_wait_timeout;
+extern consvar_t cv_allownewplayer;
+extern consvar_t cv_maxplayers;
 
 //#define PACKET_BASE_SIZE     ((int)&( ((netbuffer_t *)0)->u))
 #define PACKET_BASE_SIZE     offsetof(netbuffer_t, u)
@@ -386,14 +388,10 @@ extern consvar_t cv_wait_timeout;
 
 extern boolean   server;
 extern uint16_t  software_MAXPACKETLENGTH;
-extern boolean   acceptnewnode;
-extern byte      servernode;  // the server net node, 255=none
-extern byte      num_server_slots;
 
 extern boolean   cl_drone;  // is a drone client
+extern byte      cl_servernode;  // the server net node, 251=none
 
-extern consvar_t cv_allownewplayer;
-extern consvar_t cv_maxplayers;
 
 typedef struct xcmd_s {
     byte * curpos;  // text position, updated by command execution
@@ -428,7 +426,7 @@ byte    SV_get_player_num( void );
 void    SV_Add_waiting_players(void);
 void    SV_StartSinglePlayerServer(void);
 boolean SV_SpawnServer( void );
-void    SV_SpawnPlayer(int playernum, int x, int y, angle_t angle);
+void    SV_SpawnPlayer(byte playernum, int x, int y, angle_t angle);
 void    SV_StopServer( void );
 void    SV_ResetServer( void );
 

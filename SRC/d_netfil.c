@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1492 2019-12-19 07:51:00Z wesleyjohnson $
+// $Id: d_netfil.c 1500 2020-03-17 02:28:33Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -456,7 +456,7 @@ reqfile_e  Send_RequestFile(void)
         // debug_Printf("free byte %d\n",availablefreespace);
         if(totalfreespaceneeded > availablefreespace)  goto insufficient_space;
 
-        if( ! HSendPacket(servernode, true, 0, p - netbuffer->u.bytepak.b) )
+        if( ! HSendPacket(cl_servernode, true, 0, p - netbuffer->u.bytepak.b) )
             return RFR_send_fail;
 
         netfile_download = 1;
@@ -999,7 +999,7 @@ void Got_Filetxpak(void)
 
     if(++stat_cnt==4)
     {
-        Net_Send_AcksPacket(servernode);  // a packet of acks
+        Net_Send_AcksPacket(cl_servernode);  // a packet of acks
         stat_cnt=0;
     }
     return;

@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01500 ]: w108_86 netclean
 [01499 ]: w108_85 net errorcode
           DOS: Compile fix
           DJGPPDOS_NATIVE/i_net.c:87: error: `nodenum' undeclared.. why?

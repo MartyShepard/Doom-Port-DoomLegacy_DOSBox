@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1484 2019-12-13 05:19:05Z wesleyjohnson $
+// $Id: command.c 1500 2020-03-17 02:28:33Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1074,9 +1074,9 @@ void CV_RegisterVar (consvar_t *cvar)
 
 #ifdef PARANOIA
     if ((cvar->flags & CV_NOINIT) && !(cvar->flags & CV_CALL))
-        I_Error("variable %s has CV_NOINIT without CV_CALL\n");
+        I_Error("variable %s has CV_NOINIT without CV_CALL\n",cvar->name);
     if ((cvar->flags & CV_CALL) && !cvar->func)
-        I_Error("variable %s has CV_CALL without func");
+        I_Error("variable %s has CV_CALL without func",cvar->name);
 #endif
     CV_set_str_value( cvar, cvar->defaultvalue,
                      ((cvar->flags & CV_NOINIT) == 0), // call_enable

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_game.c 1491 2019-12-19 07:50:34Z wesleyjohnson $
+// $Id: b_game.c 1500 2020-03-17 02:28:33Z wesleyjohnson $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //
@@ -73,7 +73,7 @@ CV_PossibleValue_t botgen_cons_t[]={ {0,"Plain"}, {1,"Seed"}, {2,"Seed Random"},
 consvar_t  cv_bot_gen = { "botgen", "0", CV_NETVAR | CV_SAVE | CV_CALL, botgen_cons_t, CV_botrandom_OnChange };
 
 CV_PossibleValue_t botskin_cons_t[]={ {0,"Color"}, {1,"Skin"}, {0,NULL}};
-consvar_t  cv_bot_skin = { "botskin", "0", CV_NETVAR | CV_SAVE | CV_CALL, botskin_cons_t };
+consvar_t  cv_bot_skin = { "botskin", "0", CV_NETVAR | CV_SAVE, botskin_cons_t };
 
 CV_PossibleValue_t botrespawn_cons_t[]={
   {5,"MIN"},
