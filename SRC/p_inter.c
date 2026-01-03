@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
+// $Id: p_inter.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1991,13 +1991,13 @@ void P_MinotaurSlam(mobj_t *source, mobj_t *target)
     fixed_t thrust;
     
     angle = R_PointToAngle2(source->x, source->y, target->x, target->y);
-    thrust = 16*FRACUNIT+(P_Random()<<10);
+    thrust = 16*FRACUNIT + (PP_Random(ph_minoslam)<<10);
     target->momx += FixedMul(thrust, cosine_ANG(angle));
     target->momy += FixedMul(thrust, sine_ANG(angle));
     P_DamageMobj(target, NULL, NULL, HITDICE(6));
     if(target->player)
     {
-        target->reactiontime = 14+(P_Random()&7);
+        target->reactiontime = 14 + (PP_Random(ph_minoslam)&7);
     }
 }
 
@@ -2012,12 +2012,12 @@ boolean P_TouchWhirlwind(mobj_t *target)
 {
     int randVal;
     
-    target->angle += P_SignedRandom()<<20;
-    target->momx += P_SignedRandom()<<10;
-    target->momy += P_SignedRandom()<<10;
+    target->angle += PP_SignedRandom(ph_whirlwind)<<20;
+    target->momx += PP_SignedRandom(ph_whirlwind)<<10;
+    target->momy += PP_SignedRandom(ph_whirlwind)<<10;
     if(leveltime&16 && !(target->flags2&MF2_BOSS))
     {
-        randVal = P_Random();
+        randVal = PP_Random(ph_whirlwind);
         if(randVal > 160)
         {
             randVal = 160;
@@ -2124,7 +2124,7 @@ boolean P_ChickenMorph(mobj_t *actor)
     
     // preserve position, angle, target, invisible
     P_MorphMobj(actor, MT_CHICKEN, MM_telefog, MF_SHADOW);
-    actor->special1 = CHICKENTICS+P_Random();  // monster chickentics
+    actor->special1 = CHICKENTICS+PP_Random(ph_chickenmorph);  // monster chickentics
     actor->special2 = moType;  // save type for restore
     return true;
 }
@@ -2362,7 +2362,7 @@ boolean P_DamageMobj ( mobj_t*   target,
             damage = 10000; // Something's gonna die
             break;
         case MT_PHOENIXFX2: // Flame thrower
-            if(player && P_Random() < 128)
+            if(player && PP_Random(ph_phoenixdam2) < 128)
             { // Freeze player for a bit
                 target->reactiontime += 4;
             }
@@ -2373,12 +2373,12 @@ boolean P_DamageMobj ( mobj_t*   target,
         case MT_RAINPLR4:
             if(target->flags2&MF2_BOSS)
             { // Decrease damage for bosses
-                damage = (P_Random()&7)+1;
+                damage = (PP_Random(ph_raindam)&7)+1;
             }
             break;
         case MT_HORNRODFX2:
         case MT_PHOENIXFX1:
-            if(target->type == MT_SORCERER2 && P_Random() < 96)
+            if(target->type == MT_SORCERER2 && PP_Random(ph_sordam) < 96)
             { // D'Sparil teleports away
                 P_DSparilTeleport(target);
                 goto ret_false;
@@ -2388,7 +2388,7 @@ boolean P_DamageMobj ( mobj_t*   target,
         case MT_RIPPER:
             if(target->type == MT_HHEAD)
             { // Less damage to Ironlich bosses
-                damage = P_Random()&1;
+                damage = PP_Random(ph_headdam)&1;
                 if(!damage)
                     goto ret_false;
             }

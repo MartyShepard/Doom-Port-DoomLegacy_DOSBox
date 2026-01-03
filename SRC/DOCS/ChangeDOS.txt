@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01510 ]: w108 96 random1
 [01509 ]: w108 95 netstat
 [01508 ]: w108 94 sendtic3
 [01507 ]: w108 93 sendtic2

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hpspr.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
+// $Id: p_hpspr.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -293,7 +293,7 @@ void P_RepositionMace(mobj_t *mo)
     subsector_t *ss;
 
     P_UnsetThingPosition(mo);
-    spot = P_Random()%MaceSpotCount;
+    spot = PP_Random(ph_macepos2) % MaceSpotCount;
     mo->x = MaceSpots[spot].x;
     mo->y = MaceSpots[spot].y;
     ss = R_PointInSubsector(mo->x, mo->y);
@@ -318,11 +318,13 @@ void P_CloseWeapons(void)
     { // No maces placed
         return;
     }
-    if( (! deathmatch) && (P_Random() < 64) )
+
+    if( (! deathmatch) && (PP_Random(ph_macepos1) < 64) )
     { // Sometimes doesn't show up if not in deathmatch
         return;
     }
-    spot = P_Random()%MaceSpotCount;
+
+    spot = PP_Random(ph_macepos1) % MaceSpotCount;
     P_SpawnMobj(MaceSpots[spot].x, MaceSpots[spot].y, ONFLOORZ, MT_WMACE);
 }
 
@@ -434,7 +436,7 @@ void A_BeakAttackPL1(player_t *player, pspdef_t *psp)
     int damage;
     int slope;
 
-    damage = 1+(P_Random()&3);
+    damage = 1+(PP_Random(ph_beakatk1)&3);
     angle = pmo->angle;
     slope = P_AimLineAttack(pmo, angle, MELEERANGE, 0);
     // [WDJ] When PuffType is not set will get extraneous player mobj created.
@@ -446,9 +448,9 @@ void A_BeakAttackPL1(player_t *player, pspdef_t *psp)
         pmo->angle = R_PointToAngle2(pmo->x, pmo->y,
                                      lar_linetarget->x, lar_linetarget->y);
     }
-    S_StartObjSound(pmo, sfx_chicpk1+(P_Random()%3));
+    S_StartObjSound(pmo, sfx_chicpk1+(PP_Random(ph_beakatk1)%3));
     player->chickenPeck = 12;
-    psp->tics -= P_Random()&7;
+    psp->tics -= PP_Random(ph_beakatk1)&7;
 }
 
 //----------------------------------------------------------------------------
@@ -475,9 +477,9 @@ void A_BeakAttackPL2(player_t *player, pspdef_t *psp)
         pmo->angle = R_PointToAngle2(pmo->x, pmo->y,
                                      lar_linetarget->x, lar_linetarget->y);
     }
-    S_StartObjSound(pmo, sfx_chicpk1+(P_Random()%3));
+    S_StartObjSound(pmo, sfx_chicpk1+(PP_Random(ph_beakatk2)%3));
     player->chickenPeck = 12;
-    psp->tics -= P_Random()&3;
+    psp->tics -= PP_Random(ph_beakatk2)&3;
 }
 
 //----------------------------------------------------------------------------
@@ -493,9 +495,9 @@ void A_StaffAttackPL1(player_t *player, pspdef_t *psp)
     int damage;
     int slope;
 
-    damage = 5+(P_Random()&15);
+    damage = 5+(PP_Random(ph_staffatk1)&15);
     angle = pmo->angle;
-    angle += P_SignedRandom()<<18;
+    angle += PP_SignedRandom(ph_staffatk1)<<18;
     slope = P_AimLineAttack(pmo, angle, MELEERANGE, 0);
     PuffType = MT_STAFFPUFF;
     P_LineAttack(pmo, angle, MELEERANGE, slope, damage);
@@ -523,9 +525,9 @@ void A_StaffAttackPL2(player_t *player, pspdef_t *psp)
     int slope;
 
     // P_inter.c:P_DamageMobj() handles target momentums
-    damage = 18+(P_Random()&63);
+    damage = 18+(PP_Random(ph_staffatk2)&63);
     angle = pmo->angle;
-    angle += P_SignedRandom()<<18;
+    angle += PP_SignedRandom(ph_staffatk2)<<18;
     slope = P_AimLineAttack(pmo, angle, MELEERANGE, 0);
     PuffType = MT_STAFFPUFF2;
     P_LineAttack(pmo, angle, MELEERANGE, slope, damage);
@@ -557,7 +559,7 @@ void A_FireBlasterPL1(player_t *player, pspdef_t *psp)
     damage = HITDICE(4);
     angle = pmo->angle;
     if(player->refire)
-        angle += P_SignedRandom()<<18;
+        angle += PP_SignedRandom(ph_blaster1)<<18;
     PuffType = MT_BLASTERPUFF1;
     P_LineAttack(pmo, angle, MISSILERANGE, bulletslope, damage);
     S_StartObjSound(pmo, sfx_blssht);
@@ -610,7 +612,7 @@ void P_BlasterMobjThinker(mobj_t *mobj)
                 P_ExplodeMissile(mobj);
                 return;
             }
-            if(changexy && (P_Random() < 64))
+            if(changexy && (PP_Random(ph_blasterthink) < 64))
             {
                 z = mobj->z-8*FRACUNIT;
                 if(z < mobj->floorz)
@@ -667,10 +669,10 @@ void A_FireGoldWandPL1(player_t *player, pspdef_t *psp)
     
     player->ammo[am_goldwand] -= USE_GWND_AMMO_1;
     P_BulletSlope(pmo);
-    damage = 7+(P_Random()&7);
+    damage = 7+(PP_Random(ph_goldwandatk1)&7);
     angle = pmo->angle;
     if(player->refire)
-        angle += P_SignedRandom()<<18;
+        angle += PP_SignedRandom(ph_goldwandatk1)<<18;
     PuffType = MT_GOLDWANDPUFF1;
     P_LineAttack(pmo, angle, MISSILERANGE, bulletslope, damage);
     S_StartObjSound(pmo, sfx_gldhit);
@@ -699,7 +701,7 @@ void A_FireGoldWandPL2(player_t *player, pspdef_t *psp)
     angle = pmo->angle - (ANG45/8);
     for(i = 0; i < 5; i++)
     {
-        damage = 1+(P_Random()&7);
+        damage = 1+(PP_Random(ph_goldwandatk2)&7);
         P_LineAttack(pmo, angle, MISSILERANGE, bulletslope, damage);
         angle += ((ANG45/8)*2)/4;
     }
@@ -749,7 +751,7 @@ void A_FireMacePL1(player_t *player, pspdef_t *psp)
 {
     mobj_t *ball;
 
-    if(P_Random() < 28)
+    if(PP_Random(ph_maceatk1) < 28)
     {
         A_FireMacePL1B(player, psp);
         return;
@@ -759,10 +761,10 @@ void A_FireMacePL1(player_t *player, pspdef_t *psp)
         return;
     }
     player->ammo[am_mace] -= USE_MACE_AMMO_1;
-    psp->sx = ((P_Random()&3)-2)*FRACUNIT;
-    psp->sy = WEAPONTOP+(P_Random()&3)*FRACUNIT;
+    psp->sx = ((PP_Random(ph_maceatk1)&3)-2)*FRACUNIT;
+    psp->sy = WEAPONTOP+(PP_Random(ph_maceatk1)&3)*FRACUNIT;
     ball = P_SPMAngle(player->mo, MT_MACEFX1,
-                      player->mo->angle + (((P_Random()&7)-4)<<24));
+                      player->mo->angle + (((PP_Random(ph_maceatk1)&7)-4)<<24));
     if(ball)
     {
         ball->special1 = 16; // tics till dropoff
@@ -1042,11 +1044,11 @@ void A_BoltSpark(mobj_t *bolt)
 {
     mobj_t *spark;
     
-    if(P_Random() > 50)
+    if(PP_Random(ph_boltspark) > 50)
     {
         spark = P_SpawnMobj(bolt->x, bolt->y, bolt->z, MT_CRBOWFX4);
-        spark->x += P_SignedRandom()<<10;
-        spark->y += P_SignedRandom()<<10;
+        spark->x += PP_SignedRandom(ph_boltspark)<<10;
+        spark->y += PP_SignedRandom(ph_boltspark)<<10;
     }
 }
 
@@ -1067,7 +1069,7 @@ void A_FireSkullRodPL1(player_t *player, pspdef_t *psp)
     player->ammo[am_skullrod] -= USE_SKRD_AMMO_1;
     mo = P_SpawnPlayerMissile(player->mo, MT_HORNRODFX1);
     // Randomize the first frame
-    if(mo && P_Random() > 128)
+    if(mo && PP_Random(ph_skullrodatk1) > 128)
     {
         P_SetMobjState(mo, S_HRODFX1_2);
     }
@@ -1208,12 +1210,14 @@ void A_SkullRodStorm(mobj_t *actor)
         }
         return;
     }
-    if(P_Random() < 25)
+
+    if(PP_Random(ph_skullrodrain) < 25)
     { // Fudge rain frequency
         return;
     }
-    x = actor->x + ((P_Random()&127)-64)*FRACUNIT;
-    y = actor->y + ((P_Random()&127)-64)*FRACUNIT;
+
+    x = actor->x + ((PP_Random(ph_skullrodrain)&127)-64)*FRACUNIT;
+    y = actor->y + ((PP_Random(ph_skullrodrain)&127)-64)*FRACUNIT;
     mo = P_SpawnMobj(x, y, ONCEILINGZ, MT_RAINPLR1+actor->special2);
     mo->target = actor->target;
     mo->momx = 1; // Force collision detection
@@ -1239,7 +1243,7 @@ void A_RainImpact(mobj_t *actor)
     {
         P_SetMobjState(actor, S_RAINAIRXPLR1_1+actor->special2);
     }
-    else if(P_Random() < 40)
+    else if(PP_Random(ph_rainimpact) < 40)
     {
         P_HitFloor(actor);
     }
@@ -1335,8 +1339,8 @@ void A_FirePhoenixPL2(player_t *player, pspdef_t *psp)
     }
     pmo = player->mo;
     angle = pmo->angle;
-    x = pmo->x+(P_SignedRandom()<<9);
-    y = pmo->y+(P_SignedRandom()<<9);
+    x = pmo->x+(PP_SignedRandom(ph_phoenix2)<<9);
+    y = pmo->y+(PP_SignedRandom(ph_phoenix2)<<9);
     z = pmo->z+26*FRACUNIT+((player->aiming)<<FRACBITS)/173;
     if(pmo->flags2&MF2_FEETARECLIPPED)
     {
@@ -1406,21 +1410,21 @@ void A_GauntletAttack(player_t *player, pspdef_t *psp)
     int randVal;
     fixed_t dist;
 
-    psp->sx = ((P_Random()&3)-2)*FRACUNIT;
-    psp->sy = WEAPONTOP+(P_Random()&3)*FRACUNIT;
+    psp->sx = ((PP_Random(ph_gauntlet)&3)-2)*FRACUNIT;
+    psp->sy = WEAPONTOP+(PP_Random(ph_gauntlet)&3)*FRACUNIT;
     angle = pmo->angle;
     if(player->powers[pw_weaponlevel2])
     {
         damage = HITDICE(2);
         dist = 4*MELEERANGE;
-        angle += P_SignedRandom()<<17;
+        angle += PP_SignedRandom(ph_gauntlet)<<17;
         PuffType = MT_GAUNTLETPUFF2;
     }
     else
     {
         damage = HITDICE(2);
         dist = MELEERANGE+1;
-        angle += P_SignedRandom()<<18;
+        angle += PP_SignedRandom(ph_gauntlet)<<18;
         PuffType = MT_GAUNTLETPUFF1;
     }
     slope = P_AimLineAttack(pmo, angle, dist, 0);
@@ -1428,14 +1432,15 @@ void A_GauntletAttack(player_t *player, pspdef_t *psp)
     // lar_linetarget returned by P_LineAttack, P_AimLineAttack
     if(!lar_linetarget)
     {
-        if(P_Random() > 64)
+        if(PP_Random(ph_gauntlet2) > 64)
         {
             player->extralight = (player->extralight)? 0:LIGHT_UNIT;
         }
         S_StartObjSound(pmo, sfx_gntful);
         return;
     }
-    randVal = P_Random();
+
+    randVal = PP_Random(ph_gauntlet);
     if(randVal < 64)
     {
         player->extralight = 0;

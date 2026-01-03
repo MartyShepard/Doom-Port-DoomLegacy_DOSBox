@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_random.c 1467 2019-10-04 08:57:38Z wesleyjohnson $
+// $Id: m_random.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -85,21 +85,38 @@ int P_SignedRandom ()
 
 #else
 
-byte P_Random2 (char *a,int b)
+byte P_RandomFL (char *fn, int ln)
 {
-    debug_Printf("P_Random at : %sp %d\n",a,b);
+    debug_Printf("P_Random at : %sp %d\n", fn, ln);
     return rndtable[++prndindex];
 }
 
-int P_SignedRandom2 (char *a,int b)
+int P_SignedRandomFL (char *fn, int ln)
 {
     int r;
-    debug_Printf("P_SignedRandom at : %sp %d\n",a,b);
+    debug_Printf("P_SignedRandom at : %sp %d\n", fn, ln);
     r = rndtable[++prndindex];
     return r-rndtable[++prndindex];
 }
 
 #endif
+
+#ifdef PP_RANDOM_EXPOSED
+// For debugging, like in PrBoom
+byte PP_Random( byte pr )
+{
+    byte rv = rndtable[++prndindex];
+    return rv;
+}
+
+int PP_SignedRandom ( byte pr )
+{
+    int r = PP_Random(pr);
+    return r - PP_Random(pr);
+}
+#endif
+
+
 
 byte M_Random (void)
 {

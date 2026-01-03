@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1505 2020-03-17 02:32:01Z wesleyjohnson $
+// $Id: t_func.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -320,7 +320,8 @@ void SF_Rnd(void)
 void SF_PRnd(void)
 {
     t_return.type = FSVT_int;
-    t_return.value.i = P_Random();
+    // Legacy Fragglescript use of P_Random, not in Doom.
+    t_return.value.i = PP_Random(pL_PRnd);
 }
 
 // Find the next outermost

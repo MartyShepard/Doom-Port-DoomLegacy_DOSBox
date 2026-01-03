@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1463 2019-09-29 07:36:51Z wesleyjohnson $
+// $Id: p_map.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -676,7 +676,8 @@ static boolean PIT_CheckThing (mobj_t* thing)
         // more heretic stuff
         if (tm_thing->flags2 & MF2_RIP)
         {
-            damage = ((P_Random () & 3) + 2) * tm_thing->info->damage;
+	    // Heretic
+            damage = ((PP_Random(ph_ripdam) & 3) + 2) * tm_thing->info->damage;
             S_StartObjSound(tm_thing, sfx_ripslop);
             if( P_DamageMobj (thing, tm_thing, tm_thing->target, damage) )
             {

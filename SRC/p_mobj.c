@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1502 2020-03-17 02:30:10Z wesleyjohnson $
+// $Id: p_mobj.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1968,10 +1968,16 @@ mobj_t * P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
     if (gameskill != sk_nightmare)
         mobj->reactiontime = info->reactiontime;
 
+    // DoomLegacy 1.11 supported 8 players, 1.20 supports 32 players.
+    // We don't effectively support demos older than 1.2.
     if( (EV_legacy >= 129) || (mobj->type == MT_CHASECAM) )
         mobj->lastlook = -1;    // stuff moved in P_enemy.P_LookForPlayer
     else
-        mobj->lastlook = PP_Random(pr_lastlook) % MAXPLAYERS;  // Boom, MBF
+    {
+        // Boom, MBF demo assumes MAXPLAYERS=4, but Legacy MAXPLAYERS=32.
+ 	// FIXME: demo
+       mobj->lastlook = PP_Random(pr_lastlook) % MAXPLAYERS;  // Boom, MBF
+    }
 
     // do not set the state with P_SetMobjState,
     // because action routines can not be called yet
@@ -2039,14 +2045,19 @@ mobj_t * P_SpawnMobj(fixed_t x, fixed_t y, fixed_t z, mobjtype_t type)
 
     }
     else if (z == ONCEILINGZ)
+    {
+        // enabled by MF_SPAWNCEILING
         mobj->z = mobj->ceilingz - mobj->info->height;
+    }
     else if (z == FLOATRANDZ)
     {
+        // enabled by MF2_SPAWNFLOAT
         fixed_t space = ((mobj->ceilingz) - (mobj->height)) - mobj->floorz;
         if (space > 48 * FRACUNIT)
         {
             space -= 40 * FRACUNIT;
-            mobj->z = ((space * P_Random()) >> 8) + mobj->floorz + 40 * FRACUNIT;
+            // Heretic use of P_Random, enabled by MF2_SPAWNFLOAT (Heretic flying imp).
+            mobj->z = ((space * PP_Random(ph_spawnmobjfloat)) >> 8) + mobj->floorz + 40 * FRACUNIT;
         }
         else
             mobj->z = mobj->floorz;
@@ -2143,7 +2154,7 @@ boolean P_MorphMobj( mobj_t * mo, mobjtype_t type, int mmflags, int keepflags )
         )
     {
         // Heretic use of P_Random
-        mo->lastlook = P_Random() % MAXPLAYERS;
+        mo->lastlook = PP_Random(ph_morphlast) % MAXPLAYERS;
     }
     else
         mo->lastlook = -1;    // stuff moved in P_enemy.P_LookForPlayer
@@ -2771,7 +2782,7 @@ void P_SpawnMapthing (mapthing_t* mthing)
         if( deathmatch && (mthing->options & MTF_NODM))
             return;
 
-        // [WDJ] Coop_60, Coop_80, Coop
+        // [WDJ] Legacy 1.48: Coop_60, Coop_80, Coop.
         coop_index = (cv_deathmatch.EV & 0x30) >> 4;
 
         //SoM: 4/7/2000: Implement "not cooperative" thing flag
@@ -2811,11 +2822,13 @@ void P_SpawnMapthing (mapthing_t* mthing)
     // [WDJ] Coop items that do not appear in single player mode.
     if( coop_index && ( mthing->options & MTF_MPSPAWN ) )
     {
+        // [WDJ] Legacy 1.48: restricted coop settings, COOP_60, COOP_80.
         if((mobjinfo[i].spawnhealth > 1000) && (mobjinfo[i].painstate != S_NULL))
         {
+            // Legacy use of P_Random, not in Doom, enabled by Legacy coop mode settings.
             // Boss monster, not appropriate for lower levels.
             unsigned int cr = ((int)coop_xx_table[ coop_index ]) * gamemap * gameepisode * gameskill;
-            unsigned int pr = (((int)P_Random() * 36) / 32) + 1;
+            unsigned int pr = (((int)PP_Random(pL_coopthing) * 36) / 32) + 1;
 	    int mon_index = cr / pr;
 
 //     printf( "coop_index = %i,  cr=%i, pr=%i,   cr/pr=%i\n", coop_index, cr, pr, cr/pr );
@@ -2865,7 +2878,7 @@ spawnit:
 
     // Seed random starting index for bobbing motion
     if( EN_heretic && (mobj->flags2 & MF2_FLOATBOB) )
-        mobj->health = P_Random();
+        mobj->health = PP_Random(ph_spawnfloatbob);
 
     if (mobj->tics > 0)
         mobj->tics = 1 + (PP_Random(pr_spawnthing) % mobj->tics);
@@ -2943,8 +2956,9 @@ void P_SpawnSplash(mobj_t * mo, fixed_t z)
     S_StartObjSound(th, sfx_gloop);
     //else
     //    S_StartObjSound (th,sfx_splash);
-    th->tics -= P_Random() & 3;
 
+    // Legacy use of P_Random, not in Doom, enabled by EV_legacy >= 125.
+    th->tics -= PP_Random(pL_splashsound) & 3;
     if (th->tics < 1)
         th->tics = 1;
 
@@ -2971,13 +2985,14 @@ void P_SpawnSmoke(fixed_t x, fixed_t y, fixed_t z)
     if( EV_legacy < 125 )
         return;
 
-    x = x - ((P_Random() & 8) * FRACUNIT) - 4 * FRACUNIT;
-    y = y - ((P_Random() & 8) * FRACUNIT) - 4 * FRACUNIT;
-    z += (P_Random() & 3) * FRACUNIT;
+    // Legacy use of P_Random, not in Doom, enabled by EV_legacy.
+    x = x - ((PP_Random(pL_smokefeet) & 8) * FRACUNIT) - 4 * FRACUNIT;
+    y = y - ((PP_Random(pL_smokefeet) & 8) * FRACUNIT) - 4 * FRACUNIT;
+    z += (PP_Random(pr_smokefeet) & 3) * FRACUNIT;
 
     th = P_SpawnMobj(x, y, z, MT_SMOK);
     th->momz = FRACUNIT;
-    th->tics -= P_Random() & 3;
+    th->tics -= PP_Random(pr_smokefeet) & 3;
 
     if (th->tics < 1)
         th->tics = 1;
@@ -3051,7 +3066,10 @@ boolean PTR_BloodTraverse(intercept_t * in)
     {
         li = in->d.line;
 
-        z = bloodthing->z + (P_SignedRandom() << (FRACBITS - 3));
+        // Legacy use of P_Random, not in Doom, enabled by EV_legacy, enabled by cv_splats, which is NOT NETVAR.
+        // FIXME
+        byte rbs = PP_SignedRandom(pL_bloodtrav);
+        z = bloodthing->z + ( rbs << (FRACBITS - 3));
         if (!(li->flags & ML_TWOSIDED))
             goto hitline;
 
@@ -3160,8 +3178,12 @@ void P_SpawnBloodSplats(fixed_t x, fixed_t y, fixed_t z, int damage, fixed_t mom
     //uses 'bloodthing' set by P_SpawnBlood()
     for (i = 0; i < numsplats; i++)
     {
+        // FIXME: make cv_splats a netvar, or dont use P_Random
+        // Legacy use of P_Random, not in Doom, enabled by EV_legacy, enabled by cv_splats, which is NOT NETVAR.
+        byte rbs = PP_Random(pL_bloodsplat);
+
         // find random angle between 0-180deg centered on damage angle
-        anglesplat = angle + (((P_Random() - 128) * FINEANGLES / 512 * anglemul) << ANGLETOFINESHIFT);
+        anglesplat = angle + (((rbs - 128) * FINEANGLES / 512 * anglemul) << ANGLETOFINESHIFT);
         x2 = x + distance * cosine_ANG(anglesplat);
         y2 = y + distance * sine_ANG(anglesplat);
 
@@ -3187,8 +3209,9 @@ void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, int damage)
     th = P_SpawnMobj(x, y, z, MT_BLOOD);
     if( EV_legacy >= 128 )
     {
-        th->momx = P_SignedRandom() << 12;      //faB:19jan99
-        th->momy = P_SignedRandom() << 12;      //faB:19jan99
+        // Legacy use of P_Random, not in Doom, enabled by EV_legacy
+        th->momx = PP_SignedRandom(pL_spawnbloodxy) << 12;      //faB:19jan99
+        th->momy = PP_SignedRandom(pL_spawnbloodxy) << 12;      //faB:19jan99
     }
     th->momz = FRACUNIT * 2;
     th->tics -= PP_Random(pr_spawnblood) & 3;
@@ -3240,15 +3263,15 @@ int P_HitFloor(mobj_t * thing)
                     mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_HSPLASH);
                     P_SetReference(mo->target, thing);
                     mo->target = thing;
-                    mo->momx = P_SignedRandom() << 8;
-                    mo->momy = P_SignedRandom() << 8;
-                    mo->momz = 2 * FRACUNIT + (P_Random() << 8);
+                    mo->momx = PP_SignedRandom(ph_floorwater) << 8;
+                    mo->momy = PP_SignedRandom(ph_floorwater) << 8;
+                    mo->momz = 2 * FRACUNIT + (PP_Random(ph_floorwater) << 8);
                     S_StartObjSound(mo, sfx_gloop);
                     break;
                 case FLOOR_LAVA:
                     P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_LAVASPLASH);
                     mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_LAVASMOKE);
-                    mo->momz = FRACUNIT + (P_Random() << 7);
+                    mo->momz = FRACUNIT + (PP_Random(ph_floorlava) << 7);
                     S_StartObjSound(mo, sfx_burn);
                     break;
                 case FLOOR_SLUDGE:
@@ -3256,9 +3279,9 @@ int P_HitFloor(mobj_t * thing)
                     mo = P_SpawnMobj(thing->x, thing->y, ONFLOORZ, MT_SLUDGECHUNK);
                     P_SetReference(mo->target, thing);
                     mo->target = thing;
-                    mo->momx = P_SignedRandom() << 8;
-                    mo->momy = P_SignedRandom() << 8;
-                    mo->momz = FRACUNIT + (P_Random() << 8);
+                    mo->momx = PP_SignedRandom(ph_floorsludge) << 8;
+                    mo->momy = PP_SignedRandom(ph_floorsludge) << 8;
+                    mo->momz = FRACUNIT + (PP_Random(ph_floorsludge) << 8);
                     break;
             }
         }
@@ -3384,10 +3407,8 @@ mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
         // fuzzy player
         if (dest->flags & MF_SHADOW)
         {
-            if (EN_heretic)
-                ang += P_SignedRandom() << 21;
-            else
-                ang += PP_SignedRandom(pr_shadow) << 20;
+	    int aa = PP_SignedRandom(pr_shadow);
+            ang += (EN_heretic)? (aa << 21) : (aa << 20);
         }
 
         th->angle = ang;
@@ -3402,15 +3423,14 @@ mobj_t *P_SpawnMissile(mobj_t * source, mobj_t * dest, mobjtype_t type)
     }
     else
     {
+        // Not predicting monsters.
         ang = R_PointToAngle2(source->x, source->y, dest->x, dest->y);
 
         // fuzzy player
         if (dest->flags & MF_SHADOW)
         {
-            if (EN_heretic)
-                ang += P_SignedRandom() << 21;
-            else
-                ang += P_SignedRandom() << 20;
+            int aa = PP_SignedRandom(pr_shadow);
+            ang += (EN_heretic)? (aa << 21) : (aa << 20);
         }
 
         th->angle = ang;

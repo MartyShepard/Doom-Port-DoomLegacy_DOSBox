@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_plats.c 1361 2017-10-16 16:26:45Z wesleyjohnson $
+// $Id: p_plats.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -302,7 +302,7 @@ int  EV_DoPlat ( line_t* line, plattype_e type, int amount )
                 plat->high = sec->floorheight;
 
             plat->wait = PLATWAIT * adj_ticks_per_sec;  // [WDJ]
-            plat->status = P_Random()&1;
+            plat->status = PP_Random(pr_plats)&1;
 
             S_StartSecSound(sec, sfx_pstart);
             break;

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 1389 2018-04-23 02:49:28Z wesleyjohnson $
+// $Id: p_pspr.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -392,7 +392,7 @@ void A_WeaponReady ( player_t*     player,
     // Check for staff PL2 active sound
     if((player->readyweapon == wp_staff)
         && (psp->state == &states[S_STAFFREADY2_1])
-        && P_Random() < 128)  // Heretic
+        && PP_Random(ph_staffready) < 128)  // Heretic
     {
         S_StartAttackSound(pmo, sfx_stfcrk);
     }
@@ -871,9 +871,9 @@ void A_FireShotgun2 ( player_t*     player,
         if( demoversion > 114 && demoversion < 144 )
         {
             // Old legacy order, slope, damage, angle
-            slope = bulletslope + (P_SignedRandom()<<5);
-            damage = 5*(P_Random()%3+1);
-            angle = pmo->angle + (P_SignedRandom() << 19);
+            slope = bulletslope + (PP_SignedRandom(pr_shotgun)<<5);
+            damage = 5 * (PP_Random(pr_shotgun)%3+1);
+            angle = pmo->angle + (PP_SignedRandom(pr_shotgun) << 19);
         }
         else
         {

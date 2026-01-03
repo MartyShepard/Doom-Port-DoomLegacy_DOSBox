@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 1371 2017-12-18 17:17:13Z wesleyjohnson $
+// $Id: p_fab.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -58,10 +58,8 @@ void DoorDelay_OnChange( void )
    adj_ticks_per_sec = doordelay_table[ cv_doordelay.value ];
 }
 
-//consvar_t cv_doordelay = {"doordelay","1",CV_NETVAR|CV_CALL|CV_SAVE,doordelay_cons_t,DoorDelay_OnChange};
-#if defined (__DJGPP__)
-  consvar_t cv_doordelay = {"doordelay","1",CV_CALL|CV_SAVE,doordelay_cons_t,DoorDelay_OnChange}; //Wurde mit Commit 1371 entfernt. Warum?
-#endif
+consvar_t cv_doordelay = {"doordelay","1",CV_NETVAR|CV_CALL|CV_SAVE,doordelay_cons_t,DoorDelay_OnChange};
+
 #endif
 
 
@@ -114,8 +112,10 @@ void A_SmokeTrailer (mobj_t* actor)
                       actor->z, MT_SMOK);
 
     th->momz = FRACUNIT;
+
+    // Legacy use of P_Random, enabled by EV_legacy.
     // Do not use P_Random during Doom and Boom demos.
-    th->tics -= (EV_legacy ? P_Random() : A_Random() ) & 3;
+    th->tics -= (EV_legacy ? PP_Random(pL_smoketrail) : A_Random() ) & 3;
     if (th->tics < 1)
         th->tics = 1;
 }
