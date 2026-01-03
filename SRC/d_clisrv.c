@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1500 2020-03-17 02:28:33Z wesleyjohnson $
+// $Id: d_clisrv.c 1501 2020-03-17 02:29:11Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1153,6 +1153,382 @@ static void  ready_handler( byte nnode )
     }
 }
 
+// ---- Client Update Player
+// This supports network repair and client update.
+
+// By Server.
+//  mo : the mobj to be sent
+//  mpp : mobj_pos_t in a packet message
+static void SV_get_mobj( mobj_t * mo, /*OUT*/ mobj_pos_t * mpp )
+{
+    if( mo == NULL )
+    {
+        memset( mpp, 0, sizeof(mobj_pos_t) );
+        mpp->momz = LE_SWAP32(0x7FFF7FFF);  // too large to be valid
+        return;
+    }
+
+    // Player or monster position.
+    mpp->angle = LE_SWAP32( mo->angle );
+    mpp->x = LE_SWAP32( mo->x );
+    mpp->y = LE_SWAP32( mo->y );
+    mpp->z = LE_SWAP32( mo->z );
+    mpp->momx = LE_SWAP32( mo->momx );
+    mpp->momy = LE_SWAP32( mo->momy );
+    mpp->momz = LE_SWAP32( mo->momz );
+
+    return;
+}
+
+// By Client.
+//   mpp : mobj_pos_t in a packet message
+//   msg : report message header, if NULL then no reports
+//   mo : the mobj being received
+// Called by CL_player_repair, CL_player_desc_handler.
+static void  CL_set_mobj( mobj_pos_t * mpp, const char * msg, /*OUT*/ mobj_t * mo )
+{
+    angle_t  r_angle = LE_SWAP32( mpp->angle );
+    fixed_t  r_x = LE_SWAP32( mpp->x );
+    fixed_t  r_y = LE_SWAP32( mpp->y );
+    fixed_t  r_z = LE_SWAP32( mpp->z );
+    fixed_t  r_momx = LE_SWAP32( mpp->momx );
+    fixed_t  r_momy = LE_SWAP32( mpp->momy );
+    fixed_t  r_momz = LE_SWAP32( mpp->momz );
+
+    // Only check and report when it is repair.
+    if( msg )
+    {
+        if( mo->angle != r_angle )
+        {
+            GenPrintf( EMSG_warn, "%s: ANGLE  client %x  server %x\n", msg, mo->angle, r_angle );
+        }
+
+        if(  mo->x != r_x || mo->y != r_y || mo->z != r_z )
+        {
+            GenPrintf( EMSG_warn, "%s: POS  client (%x.%x, %x.%x, %x.%x)  server (%x.%x, %x.%x, %x.%x)\n", msg,
+                   mo->x>>16, mo->x&0xFFFF, mo->y>>16, mo->y&0xFFFF, mo->z>>16, mo->z&0xFFFF,
+                   r_x>>16, r_x&0xFFFF, r_y>>16, r_y&0xFFFF, r_z>>16, r_z&0xFFFF  );
+        }
+
+        if(  mo->momx != r_momx || mo->momy != r_momy || mo->momz != r_momz )
+        {
+            GenPrintf( EMSG_warn, "%s: MOM  client (%x.%x, %x.%x, %x.%x)  server (%x.%x, %x.%x, %x.%x)\n", msg,
+                   mo->momx>>16, mo->momx&0xFFFF, mo->momy>>16, mo->momy&0xFFFF, mo->momz>>16, mo->momz&0xFFFF,
+                   r_momx>>16, r_momx&0xFFFF, r_momy>>16, r_momy&0xFFFF, r_momz>>16, r_momz&0xFFFF  );
+        }
+    }
+
+    mo->angle = r_angle;
+    mo->x = r_x;
+    mo->y = r_y;
+    mo->z = r_z;
+    mo->momx = r_momx;
+    mo->momy = r_momy;
+    mo->momz = r_momz;
+}
+
+
+typedef enum {
+    PF_BACKPACK = 0x08,
+    PF_AUTOAIM = 0x10,
+    PF_ORIGWEAPONSWITCH = 0x20,
+} player_flags_e;
+
+// Return player_flags_e
+static byte  get_player_state_flags( player_t *  pp )
+{
+    byte flags = 0;
+    if( pp->autoaim_toggle )  flags |= PF_AUTOAIM;
+    if( pp->originalweaponswitch )  flags |= PF_ORIGWEAPONSWITCH;
+    if( pp->backpack )  flags |= PF_BACKPACK;
+    return flags;
+}
+
+// Receive
+static uint32_t playerdesc_gametic = 0;
+static byte  playerdesc_seq;   // bit per tic packet seq, ready=0xFF
+static byte  check_output_warn;
+
+// Initialize the playerdesc receive (conditionally on gametic).
+static
+void  CL_init_playerdesc_receive( uint32_t r_gametic )
+{
+    if( r_gametic != playerdesc_gametic )
+    {
+        playerdesc_seq = 0;
+        playerdesc_gametic = r_gametic;
+    }
+}
+
+static
+void check_output( unsigned int cv, unsigned int nv, const char * field, const char * msg  )
+{
+    if( cv != nv )
+    {
+        if( ! check_output_warn )
+        {
+            check_output_warn = 1;
+            GenPrintf( EMSG_warn, "%s: ", msg );
+        }
+        GenPrintf( EMSG_warn, "  %s  client %x  server %x\n", field, cv, nv );
+    }
+}
+
+
+// By Server.
+// Send the state of one or all players, within the caller supplied packet.
+// Packettype is already filled in by caller.
+//   pdesc : position of player_desc_t in netbuffer
+//   desc_flags : playerdesc_flags_e
+//   pn : player pid, or 255 for all players
+//   to_node : dest node
+static void SV_Send_player_desc( player_desc_t * pdesc, byte desc_flags, byte pn, byte to_node )
+{
+    player_t *  pp;
+    byte *  bufp;
+    byte seq_num = 0;
+    byte pn_end;
+    byte errcode;
+    int i;
+    int entry_count;
+    unsigned int paksize;
+    unsigned int paksize_limit;
+   
+    if( ! EN_inventory )
+        desc_flags &= ~ PDI_inventory;
+   
+    // Limit how many can be in one packet.
+    paksize_limit = sizeof( netbuffer->u );
+    if( paksize_limit > software_MAXPACKETLENGTH )   paksize_limit = software_MAXPACKETLENGTH;
+    paksize_limit -= sizeof(pd_player_t) + sizeof(pd_weapons_t) + sizeof(pd_inventory_t) + 1;
+
+    // Only those players that are present
+    entry_count = 0;
+    paksize = 0;
+    bufp = (byte*) &pdesc->p0;
+
+    if( pn < MAXPLAYERS )
+    {
+        // one player
+        pn_end = pn;
+    }
+    else
+    {
+        // all players
+        pn = 0;
+        pn_end = MAXPLAYERS;
+    }
+
+    for(  ; pn<pn_end; pn++ )
+    {
+        if( ! playeringame[pn] )  continue;
+
+        // As of 1.48: sizeof(netbuffer->u) = 4160, max paksize = 3072
+        if( paksize > paksize_limit )
+        {
+            // Would exceed netbuffer, send as two packets
+            pdesc->desc_flags = PDI_more | desc_flags | seq_num;
+            errcode = HSendPacket(to_node, SP_reliable|SP_queue|SP_error_handler, 0, paksize);
+            if( errcode >= NE_fail )  goto abort_send;
+            entry_count = 0;
+            seq_num++;
+        }
+
+        // Player state that would be valid during intermission, or repair.
+        pp = &players[pn];
+        if( ! pp )  continue;
+
+        pd_player_t * pdp = (pd_player_t*) bufp;
+        pdp->pid = pn;
+        pdp->playerstate = pp->playerstate;  // DEAD
+        pdp->health = LE_SWAP16( pp->health );
+        pdp->armor = LE_SWAP16( pp->armorpoints );
+        pdp->armortype = pp->armortype;
+        pdp->readyweapon = pp->readyweapon;
+        pdp->flags = get_player_state_flags( pp );
+
+        SV_get_mobj( pp->mo, &pdp->pos );
+
+        bufp += sizeof( pd_player_t );
+       
+        if( desc_flags & PDI_weapons )
+        {
+            pd_weapons_t * pdwp = (pd_weapons_t*) bufp;
+            uint32_t wo = 0;
+            for( i=0; i<NUMWEAPONS; i++)  // 19
+                if( pp->weaponowned[i] )  wo |= 1<<i;
+            pdwp->weaponowned = LE_SWAP32( wo );
+
+            for( i=0; i<NUMAMMO; i++ )
+            {
+                pdwp->ammo[i] = LE_SWAP16( pp->ammo[i] );
+                pdwp->maxammo[i] = LE_SWAP16( pp->maxammo[i] );
+            }
+            bufp += sizeof( pd_weapons_t );
+        }
+
+        if( desc_flags & PDI_inventory )
+        {
+            pd_inventory_t * pdip = (pd_inventory_t*) bufp;
+            pdip->inventoryslotnum = pp->inventorySlotNum;
+
+            // Because it is a structure it might be aligned on some machines
+            for( i=0; i<NUMINVENTORYSLOTS; i++ )
+            {
+                pdip->inventory[i].type = pp->inventory[i].type;
+                pdip->inventory[i].count = pp->inventory[i].count;
+            }
+            bufp += sizeof( pd_inventory_t );
+        }
+       
+        entry_count ++;
+        pdesc->entry_count = entry_count;
+        paksize = bufp - ((byte *)&netbuffer->u);
+    }
+
+    pdesc->desc_flags = desc_flags | seq_num;
+    errcode = HSendPacket(to_node, SP_reliable|SP_queue|SP_error_handler, 0, paksize);
+    if( errcode >= NE_fail )  goto abort_send;
+    return;
+
+abort_send:
+    // clean up
+    return;
+}
+
+
+// By Client
+// PT_SERVERPLAYER, or PT_REPAIR
+//   msg : repair msg, otherwise NULL
+static
+void  CL_player_desc_handler( player_desc_t * pdesc, const char * msg )
+{
+    player_t *  pp;
+    byte * bufp;
+    int i;
+    int entry_count = 0;
+    byte desc_flags;
+    byte seqbits;
+    byte pn;
+
+    desc_flags = pdesc->desc_flags;
+    seqbits = 1 << (desc_flags & PDI_seq);
+    if( ! (desc_flags & PDI_more) )  seqbits = -seqbits;  // 0x01=>0xFF, 0x08=>0xF8
+    playerdesc_seq |= seqbits;  // record receiving this packet
+
+    // Only those players that are present
+    bufp = (byte*) &pdesc->p0;
+    entry_count = pdesc->entry_count;
+    for( ; entry_count > 0; entry_count-- )
+    {
+        pd_player_t * pdp = (pd_player_t*) bufp;
+        pn = pdp->pid;
+        if( pn >= MAXPLAYERS )  break;
+       
+        pp = &players[pn];
+        if( ! playeringame[pn] || ! pp )
+        {
+            // should not happen, skip over this entry
+            bufp += sizeof( pd_player_t );
+            if( desc_flags & PDI_weapons )
+                bufp += sizeof(pd_weapons_t);
+            if( desc_flags & PDI_inventory )
+                bufp += sizeof(pd_inventory_t);
+            continue;
+        }
+
+        // Player state that would be valid during intermission.
+        check_output_warn = 0;  // reset msg header
+
+        uint16_t r_health = LE_SWAP16( pdp->health );
+        uint16_t r_armorpoints = LE_SWAP16( pdp->armor );
+
+        if( msg )
+        {
+            check_output( pp->playerstate, pdp->playerstate, "PLAYERSTATE", msg );
+            check_output( pp->health, r_health, "HEALTH", msg );
+            check_output( pp->armorpoints, r_armorpoints, "ARMORPOINTS", msg );
+            check_output( pp->armortype, pdp->armortype, "ARMORTYPE", msg );
+            check_output( pp->readyweapon, pdp->readyweapon, "READYWEAPON", msg );
+        }
+
+        pp->playerstate = pdp->playerstate;  // DEAD
+        pp->health = r_health;
+        pp->armorpoints = r_armorpoints;
+        pp->armortype = pdp->armortype;
+        pp->readyweapon = pdp->readyweapon;
+       
+        CL_set_mobj( &pdp->pos, msg, /*OUT*/ pp->mo );
+       
+        byte flags = pdp->flags;
+        if( msg )
+        {
+            byte cflags = get_player_state_flags( pp );
+            check_output( cflags, flags, "FLAGS", msg );
+        }
+        pp->autoaim_toggle = ( flags & PF_AUTOAIM )? 1:0;
+        pp->originalweaponswitch = ( flags & PF_ORIGWEAPONSWITCH )? 1:0;
+        pp->backpack = ( flags & PF_BACKPACK )? 1:0;
+
+        bufp += sizeof( pd_player_t );
+       
+        if( desc_flags & PDI_weapons )
+        {
+            pd_weapons_t * pdwp = (pd_weapons_t*) bufp;
+            uint32_t wo = LE_SWAP32( pdwp->weaponowned );
+            uint32_t cwo = 0;
+            for( i=0; i<NUMWEAPONS; i++)  // 19
+            {
+                if( pp->weaponowned[i] )  cwo |= 1<<i;
+                pp->weaponowned[i] = ( wo & (1<<i) )? 1:0;
+            }
+            if( msg )
+            {
+                check_output( cwo, wo, "WEAPONOWNED", msg );
+            }
+
+            for( i=0; i<NUMAMMO; i++ )
+            {
+                uint16_t r_ammo = LE_SWAP16( pdwp->ammo[i] );
+                uint16_t r_maxammo = LE_SWAP16( pdwp->maxammo[i] );
+                if( msg )
+                {
+                    // Not going to be specific about which ammo is wrong.
+                    check_output( pp->ammo[i], r_ammo, "AMMO", msg );
+                    check_output( pp->maxammo[i], r_maxammo, "MAXAMMO", msg );
+                }
+                pp->ammo[i] = r_ammo;
+                pp->maxammo[i] = r_maxammo;
+            }
+            bufp += sizeof( pd_weapons_t );
+        }
+
+        if( desc_flags & PDI_inventory )
+        {
+            pd_inventory_t * pdip = (pd_inventory_t*) bufp;
+            if( msg )
+            {
+                check_output( pp->inventorySlotNum, pdip->inventoryslotnum, "INVENTORYSLOTNUM", msg );
+            }
+            pp->inventorySlotNum = pdip->inventoryslotnum;
+
+            // Because it is a structure it might be aligned on some machines
+            for( i=0; i<NUMINVENTORYSLOTS; i++ )
+            {
+                if( msg )
+                {
+                    // Not going to be specific about which inventory is wrong.
+                    check_output( pp->inventory[i].type, pdip->inventory[i].type, "INVENTORY_TYPE", msg );
+                    check_output( pp->inventory[i].count, pdip->inventory[i].count, "INVENTORY_COUNT", msg );
+                }
+                pp->inventory[i].type = pdip->inventory[i].type;
+                pp->inventory[i].count = pdip->inventory[i].count;
+            }
+            bufp += sizeof( pd_inventory_t );
+        }
+    }
+}
+
 
 // ---- Client Update Savegame
 
@@ -1258,140 +1634,76 @@ failed_exit:
 
 // ----- Consistency fail, repair position.
 
+static repair_type_e  active_repair_type = 0;
+
+static void  fill_repair_header( byte repair_type )
+{
+    netbuffer->packettype = PT_REPAIR;
+    netbuffer->u.repair.repair_type = repair_type;
+    // The fields are there, so fill them.  Easier to fill them everytime.
+    netbuffer->u.repair.gametic = LE_SWAP32(gametic);
+    get_random_state( & netbuffer->u.repair.rs ); // to sync P_Random
+}
+
 // By Server.
 // Send a player repair message.
-//   pind : player index, 0=main player, 1=splitscreen player
+//   pn : player_id, 255 for all players
+//   severity : 0..3, see cv_netrepair
 //   to_node : the net node
-static void SV_Send_player_repair( byte pind, byte to_node )
+static void SV_Send_player_repair( byte pn, byte severity, byte to_node )
 {
-    const char * fail_msg;
-    mobj_t * mo;
+    const char * fail_msg = "";
+    byte desc_flags = PDI_weapons|PDI_inventory;
+   
+    if( severity < 2 )  desc_flags = 0;
+    if( cv_SV_netrepair.EV < 2 )  desc_flags = 0;
+   
+    fill_repair_header( RQ_PLAYER );
 
-    byte pn = nnode_to_player[pind][ to_node ];
-    if( pn >= MAXPLAYERS )  return;
-
-    if( ! playeringame[pn] )
+    if( pn < MAXPLAYERS )
     {
-        fail_msg = "not in game";
-        goto fail;
-    }
+        if( ! playeringame[pn] )
+        {
+            fail_msg = ", not in game";
+            goto fail;
+        }
 
-    mo = players[pn].mo;
-    if( ! mo )
-    {
-        fail_msg = "no mobj";
-        goto fail;
+        mobj_t * mo = players[pn].mo;
+        if( ! mo )
+        {
+            fail_msg = ", no mobj";
+            goto fail;
+        }
     }
 
     // Enough to fix a small difference in player position.
-    netbuffer->u.repair.repair_type = RQ_PLAYER;
-    netbuffer->u.repair.pos.id_num = LE_SWAP16( pn );
-    netbuffer->u.repair.pos.angle = LE_SWAP32( mo->angle );
-    netbuffer->u.repair.pos.x = LE_SWAP32( mo->x );
-    netbuffer->u.repair.pos.y = LE_SWAP32( mo->y );
-    netbuffer->u.repair.pos.z = LE_SWAP32( mo->z );
-    netbuffer->u.repair.pos.momx = LE_SWAP32( mo->momx );
-    netbuffer->u.repair.pos.momy = LE_SWAP32( mo->momy );
-    netbuffer->u.repair.pos.momz = LE_SWAP32( mo->momz );
-
-    byte errcode = HSendPacket( to_node, SP_reliable, 0, sizeof(repair_pak_t) );
-    if( errcode >= NE_fail )
-    {
-        nnode_state[to_node] = NOS_fatal;
-        fail_msg = "Send fail";       
-        goto fail;
-    }
-
-    GenPrintf( EMSG_warn, "Server Send_player_repair: player %i\n", pn );
-    return;
+    SV_Send_player_desc( &netbuffer->u.repair.u.player_desc, desc_flags, pn, to_node );
 
 fail:
-    GenPrintf( EMSG_warn, "Server Send_player_repair: player %i, %s\n", pn, fail_msg );
+    GenPrintf( EMSG_warn, "Server Send_player_repair: player %i%s\n", pn, fail_msg );
     return;
 }
-
 
 // By Client.
 // Repair the player from the repair message in the netbuffer.
 static void CL_player_repair( void )
 {
-    const char * fail_msg;
-    mobj_t * mo;
-    byte pn;
-
-    pn = (uint16_t) LE_SWAP16( netbuffer->u.repair.pos.id_num );
-    if( ! playeringame[pn] )
-    {
-        fail_msg = "not in game";
-        goto fail;
-    }
-
-    mo = players[pn].mo;
-    if( ! mo )
-    {
-        fail_msg = "no mobj";
-        goto fail;
-    }
-
-    angle_t  r_angle = LE_SWAP32( netbuffer->u.repair.pos.angle );
-    fixed_t  r_x = LE_SWAP32( netbuffer->u.repair.pos.x );
-    fixed_t  r_y = LE_SWAP32( netbuffer->u.repair.pos.y );
-    fixed_t  r_z = LE_SWAP32( netbuffer->u.repair.pos.z );
-    fixed_t  r_momx = LE_SWAP32( netbuffer->u.repair.pos.momx );
-    fixed_t  r_momy = LE_SWAP32( netbuffer->u.repair.pos.momy );
-    fixed_t  r_momz = LE_SWAP32( netbuffer->u.repair.pos.momz );
-
-    if( mo->angle != r_angle )
-    {
-        GenPrintf( EMSG_warn, "Client player_repair: ANGLE  client %x  server %x\n", mo->angle, r_angle );
-        mo->angle = r_angle;
-    }
-
-    if(  mo->x != r_x || mo->y != r_y || mo->z != r_z )
-    {
-        GenPrintf( EMSG_warn, "Client player_repair: POS  client (%x.%x, %x.%x, %x.%x)  server (%x.%x, %x.%x, %x.%x)\n",
-                   mo->x>>16, mo->x&0xFFFF, mo->y>>16, mo->y&0xFFFF, mo->z>>16, mo->z&0xFFFF,
-                   r_x>>16, r_x&0xFFFF, r_y>>16, r_y&0xFFFF, r_z>>16, r_z&0xFFFF  );
-        mo->x = r_x;
-        mo->y = r_y;
-        mo->z = r_z;
-    }
-
-    if(  mo->momx != r_momx || mo->momy != r_momy || mo->momz != r_momz )
-    {
-        GenPrintf( EMSG_warn, "Client player_repair: MOM  client (%x.%x, %x.%x, %x.%x)  server (%x.%x, %x.%x, %x.%x)\n",
-                   mo->momx>>16, mo->momx&0xFFFF, mo->momy>>16, mo->momy&0xFFFF, mo->momz>>16, mo->momz&0xFFFF,
-                   r_momx>>16, r_momx&0xFFFF, r_momy>>16, r_momy&0xFFFF, r_momz>>16, r_momz&0xFFFF  );
-        mo->momx = r_momx;
-        mo->momy = r_momy;
-        mo->momz = r_momz;
-    }
-    return;
-
-fail:
-    GenPrintf( EMSG_warn, "Server Send_player_repair: player %i, %s\n", pn, fail_msg );
-    return;
+    // ignore random state for now
+    
+    // Receive all player desc.
+    CL_init_playerdesc_receive( netbuffer->u.repair.gametic );
+    CL_player_desc_handler( &netbuffer->u.repair.u.player_desc, "Client player_repair" );
 }
+
 
 // By Server.
 //  to_node : to the player node
 //  repair_type : RQ_PLAYER, RQ_SUG_SAVEGAME
 static void SV_Send_repair( byte repair_type, byte to_node )
 {
-    netbuffer->packettype = PT_REPAIR;
-    netbuffer->u.repair.gametic = LE_SWAP32(gametic);
-    get_random_state( & netbuffer->u.repair.rs ); // to sync P_Random
-
-    netbuffer->u.repair.repair_type = repair_type;
-    if( repair_type == RQ_PLAYER )
-    {
-        SV_Send_player_repair( 0, to_node );  // main player
-        SV_Send_player_repair( 1, to_node );  // splitscreen
-        return;
-    }
-
     // simple messages
-    byte errcode = HSendPacket( to_node, SP_reliable|SP_queue, 0, sizeof(repair_pak_t) );
+    fill_repair_header( repair_type );
+    byte errcode = HSendPacket(to_node, SP_reliable|SP_queue, 0, sizeof(repair_pak_t));
     if( errcode >= NE_fail )
     {
         nnode_state[to_node] = NOS_fatal;
@@ -1405,14 +1717,9 @@ static void SV_Send_repair( byte repair_type, byte to_node )
 //  repair_type : RQ_REQ_SAVEGAME, RQ_REQ_PLAYER, RQ_CLOSE_ACK
 static void CL_Send_Req_repair( repair_type_e repair_type )
 {
-    netbuffer->packettype = PT_REPAIR;
-    netbuffer->u.repair.repair_type = repair_type;
-
-    // The fields are there, so fill them.  Easier to fill them everytime.
-    netbuffer->u.repair.gametic = LE_SWAP32(gametic);
-    get_random_state( & netbuffer->u.repair.rs ); // to sync P_Random
-
-    byte errcode = HSendPacket( cl_servernode, SP_reliable|SP_queue, 0, sizeof(repair_pak_t) );
+    fill_repair_header( repair_type );
+    playerdesc_seq = 0;  // ready to receive
+    byte errcode = HSendPacket(cl_servernode, SP_reliable|SP_queue, 0, sizeof(repair_pak_t));
     if( errcode >= NE_fail )
     {
         network_state = NETS_fatal;
@@ -1427,12 +1734,12 @@ static void CL_Send_Req_repair( repair_type_e repair_type )
 static void repair_handler_client( byte nnode )
 {
     // Message is PT_REPAIR
-    byte msg_type = netbuffer->u.repair.repair_type;
+    byte rq_type = netbuffer->u.repair.repair_type;
 
     if( server )
         return;  // Ignore attempts to corrupt server.
 
-    if( msg_type < RQ_REQ_TO_SERVER )
+    if( rq_type < RQ_REQ_TO_SERVER )
     {
         // Server repairs client.
         uint32_t net_gametic = LE_SWAP32_FAST(netbuffer->u.repair.gametic);
@@ -1444,7 +1751,7 @@ static void repair_handler_client( byte nnode )
         random_state_checkset( & netbuffer->u.repair.rs, NULL, SET_RANDOM ); // to sync P_Random
     }
 
-    switch( msg_type )
+    switch( rq_type )
     {
      case RQ_SUG_SAVEGAME:
 #ifdef JOININGAME
@@ -1506,8 +1813,6 @@ static void repair_handler_client( byte nnode )
             break;
         }
         // Download done
-        CL_Send_Req_repair( RQ_CLOSE_ACK ); // to server
-        cl_mode = CLM_connected;
         goto close_repair;
 #else
         CL_Send_Req_repair( RQ_REQ_PLAYER ); // to server
@@ -1522,8 +1827,9 @@ static void repair_handler_client( byte nnode )
      case RQ_PLAYER:
         // Server repairs player position.
         CL_player_repair();
-        cl_mode = CLM_connected;
-        goto close_repair;
+        consistency[ BTIC_INDEX( gametic ) ] = Consistency();
+        if( playerdesc_seq == 0xFF )  goto close_repair; // all parts of player desc received
+        break;
 
      default:
         break;
@@ -1531,10 +1837,13 @@ static void repair_handler_client( byte nnode )
     return;
 
 close_repair:
+    cl_mode = CLM_connected;
+
     // Client closes the repair state. 
     if( cl_mode != CLM_fatal )
         CL_Send_Req_repair( RQ_CLOSE_ACK ); // to server
     cl_error_status = 1;
+    active_repair_type = RQ_NULL;
     return;
 
 reset_to_title_exit:
@@ -1542,6 +1851,7 @@ reset_to_title_exit:
         D_Quit_NetGame(); // to server
     CL_Reset();
     D_StartTitle();
+    active_repair_type = RQ_NULL;
     return;
 }
 
@@ -1551,8 +1861,8 @@ static void repair_handler_server( byte nnode )
 {
     // Message is PT_REPAIR
     random_state_checkset( & netbuffer->u.repair.rs, "Repair", 0 ); // to check P_Random
-    byte msg_type = netbuffer->u.repair.repair_type;
-    switch( msg_type )
+    byte rq_type = netbuffer->u.repair.repair_type;
+    switch( rq_type )
     {
      case RQ_REQ_SAVEGAME:
         // Client has requested a savegame repair
@@ -1576,11 +1886,13 @@ static void repair_handler_server( byte nnode )
         SV_Send_repair( RQ_SAVEGAME_REJ, nnode );
         break;
        
+     case RQ_REQ_ALLPLAYER:
+        netbuffer->u.repair.u.player_id = 255;  // all players in game
      case RQ_REQ_PLAYER:
         // Client has requested a player repair
         SV_network_wait_timer( 18 );  // keep alive
         nnode_state[nnode] = NOS_repair_player;
-        SV_Send_repair( RQ_PLAYER, nnode );  // includes player1, player2 position
+        SV_Send_player_repair( netbuffer->u.repair.u.player_id, 3, nnode );
         break;
 
      case RQ_CLOSE_ACK:
@@ -1930,8 +2242,9 @@ void CL_Update_ServerList( boolean internetsearch )
                 // insert ip (and optionaly port) in node list
                 sprintf(addr_str, "%s:%s", server_list[i].ip, server_list[i].port);
                 node = I_NetMakeNode(addr_str);
-                if( node < 0 )
+                if( node >= MAXNETNODES )
                     break; // no more node free
+
                 CL_Send_AskInfo( node );
             }
         }
@@ -1945,7 +2258,7 @@ void CL_Update_ServerList( boolean internetsearch )
 // By User, future Client, and by server not dedicated.
 // Use adaptive send using net_bandwidth and stat.sendbytes.
 // Called by Command_connect, SV_SpawnServer
-//  cl_servernode: if set then reconnect, else search
+//   cl_servernode: if set then reconnect, else search
 static void CL_ConnectToServer( void )
 {
     int  i;

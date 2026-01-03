@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1500 2020-03-17 02:28:33Z wesleyjohnson $
+// $Id: d_clisrv.h 1501 2020-03-17 02:29:11Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -73,6 +73,8 @@
 #include "d_ticcmd.h"
 #include "d_netcmd.h"
 #include "tables.h"
+#include "d_items.h"
+  // NUMINVENTORYSLOTS, NUMAMMO
 
 //
 // Network play related stuff.
@@ -118,16 +120,22 @@ typedef enum   {
  // Low Priority
     PT_CANFAIL,       // A priority boundary
                       // This packet can't occupy all slots.
- // with HSendPacket(,true,,) these can return false
+ // with HSendPacket(,SP_reliable,,) these can return false
     PT_FILEFRAGMENT=PT_CANFAIL, // a part of a file
     PT_TEXTCMD,       // extra text command from the client
     PT_TEXTCMD2,      // extra text command from the client (splitscreen)
+ // 23
     PT_CLIENTJOIN,    // client want to join used in start game
     PT_NODE_TIMEOUT,  // packet is sent to self when connection timeout
     PT_NETWAIT,       // network game wait timer info
     PT_CLIENTREADY,   // client is ready
     PT_REPAIR,        // repair position, consistency fix
     PT_CONTROL,       // server to client node specific control
+    PT_REQ_SERVERPLAYER, // request players from server
+    PT_SERVERPLAYER,  // player state from server
+    PT_REQ_SERVERLEVEL,  // request level info from server
+    PT_SERVERLEVEL,   // level info from server
+    PT_REQ_CLIENTCFG, // request client config (via NetXCmd)
  // count for table
     NUMPACKETTYPE
 } packettype_t;
@@ -165,6 +173,60 @@ typedef struct {
 //   char        textcmds[BACKUPTICS][MAXTEXTCMD];
 } servertics_pak_t;
 
+// Player updates, Ver 1.48
+typedef struct {
+   uint32_t    angle;
+   int32_t     x, y, z;
+   int32_t     momx, momy, momz;
+} mobj_pos_t;
+
+typedef struct {
+    byte  pid; // player index   
+    byte  flags;
+    byte  playerstate;  // alive or DEAD
+    byte  armortype;
+    byte  readyweapon;
+    uint16_t  health;
+    uint16_t  armor;
+    mobj_pos_t  pos;
+} pd_player_t;
+
+// message format for inventory
+typedef enum   {
+  PDI_seq = 0x07,
+  PDI_more = 0x08,
+  PDI_weapons = 0x20,
+  PDI_inventory = 0x40,
+} playerdesc_flags_e;
+
+typedef struct {
+    byte type, count;   
+} ps_inventory_t; 
+
+typedef struct {
+    byte  inventoryslotnum;
+    ps_inventory_t  inventory[NUMINVENTORYSLOTS];
+} pd_inventory_t; 
+
+typedef struct {
+    uint32_t  weaponowned;
+    uint16_t  ammo[NUMAMMO];
+    uint16_t  maxammo[NUMAMMO];
+} pd_weapons_t; 
+
+typedef struct {
+    byte  desc_flags;  // playerdesc_flags_e
+    byte  entry_count; // number of players in playerdesc
+    // optional parts determined by desc_flags
+    pd_player_t    p0;
+    pd_weapons_t   w0;
+    pd_inventory_t i0;
+    // Repeat, for sizing
+    pd_player_t    p[11];
+    pd_weapons_t   w[11];
+    pd_inventory_t i[11];
+} player_desc_t;
+
 // ver 1.48
 // included in other pak
 typedef struct {
@@ -177,7 +239,7 @@ typedef struct {
 typedef enum   {
   RQ_NULL,
 // to client
-  RQ_PLAYER,
+  RQ_PLAYER,       // repair of player
   RQ_SUG_SAVEGAME, // server suggests a savegame
   RQ_MONSTER,  // not yet implemented
   RQ_OBJECT,   // not yet implemented
@@ -185,26 +247,23 @@ typedef enum   {
   RQ_REQ_TO_SERVER = 32,
   RQ_REQ_SAVEGAME,  // Request of savegame
   RQ_REQ_PLAYER,    // Request of player update
+  RQ_REQ_ALLPLAYER, // Request all game players
 // Ack/Nak
   RQ_CLOSE_ACK = 64,  // client repair done
   RQ_CLOSE_NACK, // failed in repair
   RQ_SAVEGAME_REJ, // server reject savegame
 } repair_type_e;
 
-typedef struct {
-   uint16_t    id_num;
-   uint32_t    angle;
-   int32_t     x, y, z;
-   int32_t     momx, momy, momz;
-} pos_repair_t;
-
 // Server update of client.
 // ver 1.48
 typedef struct {
-   tic_t       gametic;
-   pos_repair_t  pos;
-   random_state_t  rs;  // P_Random, etc.
-   byte        repair_type;
+    byte        repair_type;
+    tic_t       gametic;
+    random_state_t  rs;  // P_Random, etc.
+    union {
+      byte           player_id;
+      player_desc_t  player_desc;
+    } u;
 } repair_pak_t;
 
 // ver 1.48
