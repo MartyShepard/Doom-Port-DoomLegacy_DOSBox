@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1496 2020-01-05 22:11:50Z wesleyjohnson $
+// $Id: g_game.c 1502 2020-03-17 02:30:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1280,13 +1280,22 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, byte pind)
     if( gamemode == heretic )
     {
         if (G_KEY_DOWN(gc_flydown))
+#ifdef TICCMD_148
+            cmd->ticflags |= TC_flydown;
+        else
+            cmd->ticflags &= ~TC_flydown;
+#else
             cmd->angleturn |= BT_FLYDOWN;
         else
             cmd->angleturn &= ~BT_FLYDOWN;
+#endif
     }
 
  done:
     memset(gamekeytapped, 0, sizeof(gamekeytapped)); // we're done, reset key-tapping status
+#ifdef TICCMD_148
+    cmd->ticflags |= TC_received;
+#endif
 }
 
 

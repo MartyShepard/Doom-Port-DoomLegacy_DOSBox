@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
+// $Id: p_mobj.c 1502 2020-03-17 02:30:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1718,6 +1718,12 @@ void P_MobjThinker(mobj_t * mobj)
     // move player mobj (not the spirit) to spirit position (sent by ticcmd)
     if ((mobj->type == MT_PLAYER)
         && (player)
+#ifdef TICCMD_148
+        && ((player->cmd.ticflags & (TC_XY | TC_received)) == (TC_XY | TC_received))
+#else
+        && ((player->cmd.angleturn & (TICCMD_XY | TICCMD_RECEIVED)) == (TICCMD_XY | TICCMD_RECEIVED))
+#endif
+        && (mobj->player->playerstate == PST_LIVE)	
         && ((player->cmd.angleturn & (TICCMD_XY | TICCMD_RECEIVED)) == (TICCMD_XY | TICCMD_RECEIVED)) && (mobj->player->playerstate == PST_LIVE)
         && (EV_legacy > 130) )
     {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1452 2019-08-03 07:03:27Z wesleyjohnson $
+// $Id: p_user.c 1502 2020-03-17 02:30:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -318,8 +318,13 @@ void P_MovePlayer (player_t* player)
         pmo->angle += (cmd->angleturn<<16);
 
     stat_tic_moved++;
+#ifdef TICCMD_148
+    if( (cmd->ticflags & TC_received) == 0)
+        stat_tic_miss++;
+#else
     if( (cmd->angleturn & TICCMD_RECEIVED) == 0)
         stat_tic_miss++;
+#endif
 
     // Do not let the player control movement
     //  if not onground.
@@ -485,7 +490,11 @@ void P_MovePlayer (player_t* player)
             if(pmo->state == &states[S_PLAY])
                 P_SetMobjState(pmo, S_PLAY_RUN1);
     }
+#ifdef TICCMD_148
+    if( EN_heretic && (cmd->ticflags & TC_flydown) )
+#else
     if( EN_heretic && (cmd->angleturn & BT_FLYDOWN) )
+#endif
     {
         player->flyheight = -10;
     }
@@ -903,7 +912,11 @@ void P_ProcessCmdSpirit (player_t* player,ticcmd_t *cmd)
     // don't move if dead
     if( player->playerstate != PST_LIVE )
     {
+#ifdef TICCMD_148
+        cmd->ticflags &= ~TC_XY;  // turn off clientprediction
+#else
         cmd->angleturn &= ~TICCMD_XY;
+#endif
         return;
     }
     onground = (player->spirit->z <= player->spirit->floorz) ||
@@ -916,7 +929,11 @@ void P_ProcessCmdSpirit (player_t* player,ticcmd_t *cmd)
     }
 
     player->spirit->angle = cmd->angleturn<<16;
+#ifdef TICCMD_148
+    cmd->ticflags |= TC_XY;
+#else
     cmd->angleturn |= TICCMD_XY;
+#endif
 /*
     // now weapon is allways send change is detected at receiver side
     if(cmd->buttons & BT_CHANGE) 
@@ -1079,6 +1096,9 @@ void P_PlayerThink (player_t* player)
             cmd->angleturn = 0;
         cmd->forwardmove = 0xc800/512;
         cmd->sidemove = 0;
+#ifdef TICCMD_148
+        cmd->ticflags = 0;  // stun
+#endif
         pmo->flags &= ~MF_JUSTATTACKED;
     }
 

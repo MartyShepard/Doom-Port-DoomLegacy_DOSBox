@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1501 2020-03-17 02:29:11Z wesleyjohnson $
+// $Id: d_clisrv.c 1502 2020-03-17 02:30:10Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -390,7 +390,11 @@ static void D_Clear_ticcmd(int tic)
     for(i=0;i<MAXPLAYERS;i++)
     {
         textcmds[btic][i].len = 0;  // textlen
+#ifdef TICCMD_148
+        netcmds[btic][i].ticflags = 0; //  clear TC_received;
+#else
         netcmds[btic][i].angleturn = 0; //&= ~TICCMD_RECEIVED;
+#endif
     }
     DEBFILE(va("Clear tic %5d [%2d]\n", tic, btic));
 }
@@ -3775,6 +3779,9 @@ static void TicCmdCopy(ticcmd_t * dst, ticcmd_t * src, int n)
         dst->angleturn   = LE_SWAP16_FAST(src->angleturn);
         dst->aiming      = LE_SWAP16_FAST(src->aiming);
         dst->buttons     = src->buttons;
+#ifdef TICCMD_148
+        dst->ticflags    = src->ticflags;
+#endif
     }
 }
 
@@ -4615,7 +4622,11 @@ static void Local_Maketic(int realtics)
         localgametic+=realtics;
     }
 #endif
+#ifdef TICCMD_148
+    // moved to G_BuildTiccmd
+#else
     localcmds[0].angleturn |= TICCMD_RECEIVED;
+#endif
 }
 
 void SV_SpawnPlayer( byte playernum, int x, int y, angle_t angle )
@@ -4628,7 +4639,12 @@ void SV_SpawnPlayer( byte playernum, int x, int y, angle_t angle )
         tc->x = x;
         tc->y = y;
 #endif
+#ifdef TICCMD_148
+        tc->angleturn = (angle>>16);
+        tc->ticflags = TC_received;
+#else
         tc->angleturn=(angle>>16) | TICCMD_RECEIVED;
+#endif
     }
 }
 
@@ -4645,7 +4661,11 @@ void SV_Maketic(void)
        
         // Detect missing ticcmd, using only player[0] at the node.
         player = nnode_to_player[0][nnode];
+#ifdef TICCMD_148
+        if((netcmds[btic][player].ticflags & TC_received) == 0)
+#else
         if((netcmds[btic][player].angleturn & TICCMD_RECEIVED) == 0)
+#endif
         {
             // Catch startup glitch where playerpernode gets set
             // before the player is actually setup.
@@ -4660,8 +4680,13 @@ void SV_Maketic(void)
             bticprev = BTIC_INDEX(maketic-1);
             for(i=0; i<playerpernode[nnode]; i++)
             {
+                // All players at the node
                 netcmds[btic][player] = netcmds[bticprev][player];
+#ifdef TICCMD_148
+                netcmds[btic][player].ticflags &= ~TC_received;
+#else
                 netcmds[btic][player].angleturn &= ~TICCMD_RECEIVED;
+#endif
                 player = nnode_to_player[1][nnode];
             }
         }

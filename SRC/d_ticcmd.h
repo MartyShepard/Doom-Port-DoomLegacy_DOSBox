@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_ticcmd.h 1268 2016-09-20 17:26:51Z wesleyjohnson $
+// $Id: d_ticcmd.h 1502 2020-03-17 02:30:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -76,10 +76,26 @@ typedef enum
 // Mainly movements/button commands per game tick,
 // plus a checksum for internal state consistency.
 
+// TICCMD_148: Ticcmd flags into ticflags.
+// Old code had flags in angleturn without even masking them out.
+#define TICCMD_148
+
+#ifdef TICCMD_148
+typedef enum {
+  TC_received = 0x01,  // network
+  TC_XY       = 0x02,  // Client prediction
+  TC_flydown  = 0x04,  // Heretic
+  TC_faked    = 0x08  // DEBUG
+}  ticcmd_e;
+#else
 // bits in angleturn
 #define TICCMD_RECEIVED 1      
 #define TICCMD_XY       2
 #define BT_FLYDOWN      4
+#endif
+
+// [WDJ] This was being padded by compiler to 8 bytes,
+// so addition of flags has little cost, and eliminates noise in the angleturn.
 typedef struct
 {
 #ifdef CLIENTPREDICTION2
@@ -92,6 +108,9 @@ typedef struct
                                  // SAVED AS A BYTE into demos
     int16_t      aiming;    // pitch angle (up-down)
     byte         buttons;
+#ifdef TICCMD_148
+    byte         ticflags;  // ticcmd_e
+#endif
 } ticcmd_t;
 
 
