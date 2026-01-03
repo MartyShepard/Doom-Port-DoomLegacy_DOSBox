@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1501 2020-03-17 02:29:11Z wesleyjohnson $
+// $Id: d_clisrv.h 1503 2020-03-17 02:30:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -140,25 +140,52 @@ typedef enum   {
     NUMPACKETTYPE
 } packettype_t;
 
+
+// [WDJ] The compilers are padding these, but not always the same.
+// Must be careful with any integer types that are longer than a byte, as they will be aligned,
+// as well as any struture that contains such.
+// Aligns uint16_t to 2 bytes.
+// Aligns uint32_t to 4 bytes.
+// Aligns uint64_t, long, to 8 bytes.
+// Aligns double to 8 bytes, but in Linux within a struct this may be 4 bytes on some compilers.
+// Aligns struct to the alignment of the longest field in the struct.
+// Aligns array elements to the alignment of the element type.  Thus it treats array elements
+// as if they were padded out to meet this alignment.  This affects sizeof() too.
+// On a 64 bit machines, some types (like any ptr) will align to 8 bytes,
+// but 32 bit machines will align to 4 bytes.
+
+// [WDJ] Packed structures.
+// Do not use ordinary ptrs on any fields of packed structures.
+// Some machines will fault, and this cannot be detected by testing on x86 machines.
+// Mingw32 does not recognize PACKED_ATTR, which is "__attribute__((packed))".
+
+// Network types
+// These will not provoke alignment, and provide easy network endianess conversion.
+// 16 bit, unsigned int or other usage
+typedef struct {
+    byte  b[2];
+} N16_t;
+
+// 32 bit, unsigned int or other usage
+typedef struct {
+    byte  b[4];
+} N32_t;
+
 //#pragma pack(1)
 
 // client to server packet
+// Used by: PT_CLIENTCMD, PT_CLIENTMIS
+// Used by: PT_CLIENT2CMD, PT_CLIENT2MIS
+// Used by: PT_NODEKEEPALIVE, PT_NODEKEEPALIVEMIS
+// aligned to 4 bytes
 typedef struct {
    byte        client_tic;
    byte        resendfrom;
    int16_t     consistency;
+// aligned to 4 bytes
    ticcmd_t    cmd;
+   ticcmd_t    cmd2;  // only used when there is a player 2
 } clientcmd_pak_t;
-
-// splitscreen packet
-// WARNING : must have the same format of clientcmd_pak, for more easy use
-typedef struct {
-   byte        client_tic;
-   byte        resendfrom;
-   int16_t     consistency;
-   ticcmd_t    cmd;
-   ticcmd_t    cmd2;
-} client2cmd_pak_t;
 
 // Server to client packet
 // this packet is too large !!!!!!!!!
@@ -167,64 +194,68 @@ typedef struct {
    byte        starttic;
    byte        numtics;
    byte        numplayerslots;
+   byte        pad1;
+// aligned to 4 bytes
    ticcmd_t    cmds[NUM_SERVERTIC_CMD];
      // number of cmds used is (numtics*numplayers)
      // normaly [BACKUPTIC][MAXPLAYERS] but too large
+// unaligned
 //   char        textcmds[BACKUPTICS][MAXTEXTCMD];
 } servertics_pak_t;
 
 // Player updates, Ver 1.48
+// aligned to 4 bytes
 typedef struct {
    uint32_t    angle;
    int32_t     x, y, z;
    int32_t     momx, momy, momz;
 } mobj_pos_t;
 
+// unaligned
+typedef struct {
+    byte type, count;   
+} ps_inventory_t; 
+
+// unaligned
+typedef struct {
+    byte  inventoryslotnum;
+    ps_inventory_t  inventory[NUMINVENTORYSLOTS];
+} pd_inventory_t;
+
+// aligned to 4 bytes
 typedef struct {
     byte  pid; // player index   
-    byte  flags;
     byte  playerstate;  // alive or DEAD
-    byte  armortype;
+    byte  flags;
     byte  readyweapon;
+// aligned to 4 bytes
+    mobj_pos_t  pos;
     uint16_t  health;
     uint16_t  armor;
-    mobj_pos_t  pos;
+    uint32_t  weaponowned;
+    uint16_t  ammo[NUMAMMO];
+    uint16_t  maxammo[NUMAMMO];
+// unaligned
+    byte  armortype;
+    // optional parts determined by desc_flags, should be unaligned
+    byte  optional;
 } pd_player_t;
 
 // message format for inventory
 typedef enum   {
   PDI_seq = 0x07,
   PDI_more = 0x08,
-  PDI_weapons = 0x20,
   PDI_inventory = 0x40,
 } playerdesc_flags_e;
 
-typedef struct {
-    byte type, count;   
-} ps_inventory_t; 
-
-typedef struct {
-    byte  inventoryslotnum;
-    ps_inventory_t  inventory[NUMINVENTORYSLOTS];
-} pd_inventory_t; 
-
-typedef struct {
-    uint32_t  weaponowned;
-    uint16_t  ammo[NUMAMMO];
-    uint16_t  maxammo[NUMAMMO];
-} pd_weapons_t; 
-
+// aligned to 4 bytes
 typedef struct {
     byte  desc_flags;  // playerdesc_flags_e
     byte  entry_count; // number of players in playerdesc
-    // optional parts determined by desc_flags
-    pd_player_t    p0;
-    pd_weapons_t   w0;
-    pd_inventory_t i0;
-    // Repeat, for sizing
-    pd_player_t    p[11];
-    pd_weapons_t   w[11];
-    pd_inventory_t i[11];
+    byte  pad1, pad2;  // alignment
+// aligned to 4 bytes
+    pd_player_t    pd;  // array
+      // variable sized entries, but each entry aligned to 4 bytes
 } player_desc_t;
 
 // ver 1.48
@@ -232,7 +263,7 @@ typedef struct {
 typedef struct {
    byte        p_rand_index; // to sync P_Random
    byte        b_rand_index; // to sync B_Random
-   uint32_t    e_rand1, e_rand2;  // to sync E_Random
+   N32_t       e_rand1, e_rand2;  // to sync E_Random
 } random_state_t;
 
 // Repair messages triggered by consistency fault.
@@ -256,10 +287,13 @@ typedef enum   {
 
 // Server update of client.
 // ver 1.48
+// aligned to 4 bytes
 typedef struct {
     byte        repair_type;
-    tic_t       gametic;
+    N32_t       gametic;
     random_state_t  rs;  // P_Random, etc.
+    byte        pad1, pad2;
+// aligned to 4 bytes
     union {
       byte           player_id;
       player_desc_t  player_desc;
@@ -267,8 +301,9 @@ typedef struct {
 } repair_pak_t;
 
 // ver 1.48
+// aligned to 4 bytes
 typedef struct {
-   tic_t       gametic;
+   N32_t       gametic;
    random_state_t  rs;  // P_Random, etc.
    byte        server_pause; // silent pause
 } state_pak_t;
@@ -276,39 +311,50 @@ typedef struct {
 // [WDJ] As of 9/2016 there are 37 CV_NETVAR.
 // Ver 1.48 (10/2019) there are 49 CV_NETVAR.
 #define NETVAR_BUFF_LEN  4096
+// aligned to 4 bytes
 typedef struct {
    byte        version;    // exe from differant version don't work
+   byte        ver1, ver2, ver3;  // reserve for future version
+// align to 4 bytes
    uint32_t    subversion; // contain build version and maybe crc
 
    // server lunch stuffs
    byte        serverplayer;
    byte        num_player_slots;  // message player slots
-   tic_t       gametic;
+   N32_t       gametic;
    byte        clientnode;
    byte        gamestate;
    byte        command;   // CTRL_ command
-   
-   uint32_t    playerdetected; // playeringame vector in bit field
+   N32_t       playerdetected; // playeringame vector in bit field
+// unaligned
    byte        netvar_buf[NETVAR_BUFF_LEN];
 } serverconfig_pak_t;
 
 // PT_CLIENTJOIN
 typedef struct {
    byte        version;    // different versions are not compatible
+   byte        ver1, ver2, ver3;  // reserve for future version
+// align to 4 bytes
    uint32_t    subversion; // build version
    byte        num_node_players; // 0,1,2
    byte        mode;
    byte        flags;  // NF_drone, NF_download_savegame
 } clientconfig_pak_t;
 
+// aligned to 4 bytes
 typedef struct {
    char        fileid;
+   byte        pad1, pad2, pad3;
+// align to 4 bytes
    uint32_t    position;
    uint16_t    size;
+// unaligned
    byte        data[100];  // size is variable using hardare_MAXPACKETLENGTH
 } filetx_pak_t;
 
 // ver 1.48
+// aligned to 4 bytes
+// aligned to 4 bytes
 typedef struct {
     byte       num_netplayer;  // count players due to 2 player nodes
     byte       wait_netplayer;  // if non-zero, wait for player net nodes
@@ -317,45 +363,61 @@ typedef struct {
 } netwait_pak_t;
 
 // ver 1.48
+// aligned to 4 bytes
 typedef struct {
     byte       command;  // net_control_command_e
     byte       player_num;  // player num (may be 255)
     byte       player_state;  // the state to put the player into
     byte       gamemap, gameepisode;  // current map
-    tic_t      gametic;
-    uint16_t   data;
+    N32_t      gametic;
+    N16_t      data;
 } control_pak_t;
 
 #define MAXSERVERNAME 32
 #define FILENEED_BUFF_LEN  4096
 // [WDJ] Do not change this, so older server version can be identified.
+// aligned to 4 bytes
 typedef struct {
-    byte       version;
+// byte[0]
+    byte       version;  // identification version (usually VERSION)
+    byte       ver1, ver2, ver3;  // reserve for future version
+// byte[4]
+ // align to 4 bytes
     uint32_t   subversion;
     byte       num_active_players;  // num of players using the server
     byte       maxplayer;   // control var
     byte       deathmatch;  // control var
-    tic_t      trip_time;   // askinfo time in packet, ping time in list
+    byte       pad4;
+// byte[12]
+ // align to 4 bytes
+    uint32_t   trip_time;   // askinfo time in packet, ping time in list
     float      load;        // unused for the moment
     char       mapname[8];
-    char       servername[MAXSERVERNAME];
+// byte[28]
+    char       servername[MAXSERVERNAME];  // at byte[28]
+// byte[60]
     byte       num_fileneed;
     byte       fileneed[FILENEED_BUFF_LEN];   // is filled with writexxx (byteptr.h)
 } serverinfo_pak_t;
 
 #define MAXSERVERLIST 32  // limited by the display
+// aligned to 4 bytes
 typedef struct { 
     serverinfo_pak_t   info;
     byte  server_node;  // network node this server is on
 } server_info_t;
 
+// FIXME: use less memory, this uses 32 * 4K, and it is only used temporarily
 extern server_info_t  serverlist[MAXSERVERLIST];
 extern int serverlistcount;
 
 
+// PT_ASKINFO
 typedef struct {
-   byte        version;
-   tic_t       send_time;      // used for ping evaluation
+   byte        version;  // identification version (usually VERSION)
+   byte        ver1, ver2, ver3;  // reserve for future version
+// align to 4 bytes
+   uint32_t    send_time;      // used for ping evaluation
 } askinfo_pak_t;
 
 #define MAX_STRINGPAK_LEN  255
@@ -397,11 +459,11 @@ typedef struct
                               // 0= no ack
 
     byte       packettype;
-    byte       reserved;      // padding
+    byte       pad9;          // padding
+// align to 4 bytes
     union  {
       byte_pak_t         bytepak;
       clientcmd_pak_t    clientpak;
-      client2cmd_pak_t   client2pak;
       servertics_pak_t   serverpak;
       serverconfig_pak_t servercfg;
       textbuf_t          textcmdpak;

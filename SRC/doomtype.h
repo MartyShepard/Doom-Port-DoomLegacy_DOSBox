@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: doomtype.h 1471 2019-10-04 08:59:55Z wesleyjohnson $
+// $Id: doomtype.h 1503 2020-03-17 02:30:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -126,6 +126,7 @@ typedef enum {
 #endif
 
 #ifdef __GNUC__
+// Mingw32 ignores this.
 #define PACKED_ATTR  __attribute__((packed))
 #else
 #define PACKED_ATTR

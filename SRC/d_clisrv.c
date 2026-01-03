@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1502 2020-03-17 02:30:10Z wesleyjohnson $
+// $Id: d_clisrv.c 1503 2020-03-17 02:30:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -183,7 +183,7 @@
 
 // The addition of wait messages should be transparent to previous network
 // versions.
-const int  NETWORK_VERSION = 25; // separate version number for network protocol (obsolete)
+const int  NETWORK_VERSION = 26; // separate version number for network protocol (obsolete)
 
 
 #define JOININGAME
@@ -353,6 +353,70 @@ static byte consistency_sg_bit[4]    = { 0, 0x02, 0x14, 0xAA };  // bit on when 
 // (original sersetup, not exactly, but the probability of sending a packet
 // of 512 octet is like 0.1)
 uint16_t  software_MAXPACKETLENGTH;
+
+// Align to 4 byte
+#define ALIGN4(p) (byte *)(((uintptr_t)(p) + 3) & ~0x03)
+
+// Special unaligned types for network packets.
+// Detect which machines can do unaligned read and write, with LSB first.
+#if defined(__i386__) || defined(__i486__) || defined(__i586__) || defined(__i686__) || defined(__x86_64__)
+  # define UNALIGNED_INT_RW
+#endif
+#if defined(__ia64__) && defined(__GNUC__) && (__GNUC__ >= 3) && ! defined(__BIG_ENDIAN__)
+  # define UNALIGNED_INT_RW
+#endif
+#if defined(__arm__) && defined(__ARM_FEATURE_UNALIGNED) && ! defined(__BIG_ENDIAN__)
+  # define UNALIGNED_INT_RW
+#endif
+
+static inline
+void  write_N16( N16_t * vf, uint16_t val )
+{
+    // LSB first
+#if defined(UNALIGNED_INT_RW)
+    *((uint16_t*)vf) = val;
+#else
+    vf->b[0] = val;
+    vf->b[1] = val>>8;
+#endif
+}
+
+static inline
+uint16_t  read_N16( N16_t * vf )
+{
+    // LSB first
+#if defined(UNALIGNED_INT_RW)
+    return *((uint16_t*)vf);
+#else
+    return (((uint16_t)(vf->b[1]))<<8) | vf->b[0];
+#endif
+}
+
+static inline
+void  write_N32( N32_t * vf, uint32_t val )
+{
+    // LSB first
+#if defined(UNALIGNED_INT_RW)
+    *((uint32_t*)vf) = val;
+#else
+    vf->b[0] = val;
+    vf->b[1] = val>>8;
+    vf->b[2] = val>>16;
+    vf->b[3] = val>>24;
+#endif
+}
+
+static inline
+uint32_t  read_N32( N32_t * vf )
+{
+    // LSB first
+#if defined(UNALIGNED_INT_RW)
+    return *((uint32_t*)vf);
+#else
+    return (((((((uint32_t)(vf->b[3]))<<8) | vf->b[2])<<8) | vf->b[1])<<8) | vf->b[0];
+#endif
+}
+
 
 // Handle errors from HSendPacket consistently.
 static void  generic_network_error_handler( byte errcode, const char * who )
@@ -758,6 +822,9 @@ static boolean  CL_Send_Join( void )
     GenPrintf(EMSG_hud, "Send join request...\n");
     netbuffer->packettype=PT_CLIENTJOIN;
     netbuffer->u.clientcfg.version = VERSION;
+    netbuffer->u.clientcfg.ver1 = 0;
+    netbuffer->u.clientcfg.ver2 = VERSION;
+    netbuffer->u.clientcfg.ver3 = REVISION;
     netbuffer->u.clientcfg.subversion = LE_SWAP32(NETWORK_VERSION);
     netbuffer->u.clientcfg.mode = 0;
     netbuffer->u.clientcfg.flags = flg;
@@ -783,6 +850,9 @@ static void SV_Send_ServerInfo(int to_node, tic_t reqtime)
 
     netbuffer->packettype=PT_SERVERINFO;
     netbuffer->u.serverinfo.version = VERSION;
+    netbuffer->u.serverinfo.ver1 = 0;
+    netbuffer->u.serverinfo.ver2 = VERSION;
+    netbuffer->u.serverinfo.ver3 = REVISION;
     netbuffer->u.serverinfo.subversion = LE_SWAP32(NETWORK_VERSION);
     // return back the time value so client can compute their ping
     netbuffer->u.serverinfo.trip_time = LE_SWAP32(reqtime);
@@ -804,7 +874,7 @@ static void SV_Send_ServerInfo(int to_node, tic_t reqtime)
 
     p=Put_Server_FileNeed();
 
-    HSendPacket( to_node, 0, 0, p - ((byte *)&netbuffer->u) );  // msg lost when too busy
+    HSendPacket( to_node, 0, 0, p - ((byte *)& netbuffer->u) );  // msg lost when too busy
 }
 
 
@@ -826,12 +896,15 @@ static boolean SV_Send_ServerConfig( byte to_node, byte command )
     }
 
     netbuffer->u.servercfg.version         = VERSION;
+    netbuffer->u.servercfg.ver1 = 0;
+    netbuffer->u.servercfg.ver2 = VERSION;
+    netbuffer->u.servercfg.ver3 = REVISION;
     netbuffer->u.servercfg.subversion      = LE_SWAP32(NETWORK_VERSION);
 
     netbuffer->u.servercfg.serverplayer    = serverplayer;
     netbuffer->u.servercfg.num_player_slots= num_player_slots;
-    netbuffer->u.servercfg.playerdetected  = LE_SWAP32(playermask);
-    netbuffer->u.servercfg.gametic         = LE_SWAP32(gametic);
+    write_N32( & netbuffer->u.servercfg.playerdetected, playermask );
+    write_N32( & netbuffer->u.servercfg.gametic, gametic );
     netbuffer->u.servercfg.clientnode      = to_node;  // client node (in server space)
     netbuffer->u.servercfg.gamestate       = gamestate;
     netbuffer->u.servercfg.command         = command;
@@ -842,7 +915,7 @@ static boolean SV_Send_ServerConfig( byte to_node, byte command )
     CV_SaveNetVars( &xc );
     // curpos is 1 past last cvar (if none then is at netvar_buf)
 
-    byte errcode = HSendPacket( to_node, SP_reliable|SP_queue|SP_error_handler, 0, xc.curpos - ((byte *)&netbuffer->u) );
+    byte errcode = HSendPacket( to_node, SP_reliable|SP_queue|SP_error_handler, 0, xc.curpos - ((byte *)& netbuffer->u) );
     return  (errcode < NE_fail);
 }
 
@@ -869,10 +942,10 @@ static void SV_Send_control( byte nnode, byte ctrl_command, byte player_num, uin
     netbuffer->u.control.command = ctrl_command;
     netbuffer->u.control.player_num = player_num;
     netbuffer->u.control.player_state = (player_num < MAXPLAYERS)? player_state[player_num] : PS_unused;
-    netbuffer->u.control.gametic = LE_SWAP32(gametic);
+    write_N32( & netbuffer->u.control.gametic, gametic );
     netbuffer->u.control.gamemap = gamemap;
     netbuffer->u.control.gameepisode = gameepisode;
-    netbuffer->u.control.data = LE_SWAP16( data16 );
+    write_N16( & netbuffer->u.control.data, data16 );
 
     if( nnode == BROADCAST_NODE )
     {
@@ -895,13 +968,14 @@ static void control_msg_handler( void )
     // Command from server to client.
     byte pn = netbuffer->u.control.player_num;
     byte ps = netbuffer->u.control.player_state;
+    uint16_t ctrl_data = read_N16( & netbuffer->u.control.data );
 
     if( !server )
     {
         if( pn < MAXPLAYERS )
             player_state[pn] = ps;
    
-        gametic = LE_SWAP32(netbuffer->u.control.gametic);
+        gametic = read_N32( & netbuffer->u.control.gametic );
         cl_need_tic = gametic;
         gamemap = netbuffer->u.control.gamemap;
         gameepisode = netbuffer->u.control.gameepisode;
@@ -937,7 +1011,7 @@ static void control_msg_handler( void )
             G_Start_Intermission();  // setup intermission
 
             // update from server
-            wait_game_start_timer = LE_SWAP16( netbuffer->u.control.data );
+            wait_game_start_timer = ctrl_data;
 //            wait_netplayer = 0;  // only want the timer display
             S_StartSound(sfx_telept);  // longer sound, likely to be in all games
         }
@@ -945,7 +1019,7 @@ static void control_msg_handler( void )
      case CTRL_wait_timer:
         if( server )  break;  // protection, should not happen
 
-        wait_game_start_timer = LE_SWAP16( netbuffer->u.control.data );
+        wait_game_start_timer = ctrl_data;
         break;
      default:
         break;	 
@@ -961,8 +1035,8 @@ static void get_random_state( random_state_t * rs )
     uint32_t rand2;
     rs->p_rand_index = P_Rand_GetIndex(); // to sync P_Random
     rs->b_rand_index = B_Rand_GetIndex(); // to sync B_Random
-    rs->e_rand1 = LE_SWAP32_FAST( E_Rand_Get( & rand2 ) ); // to sync E_Random
-    rs->e_rand2 = LE_SWAP32_FAST( rand2 );
+    write_N32( &rs->e_rand1, E_Rand_Get( & rand2 ) ); // to sync E_Random
+    write_N32( &rs->e_rand2, rand2 );
 }
 
 #define SET_RANDOM    1
@@ -1000,8 +1074,8 @@ static void random_state_checkset( random_state_t * rs, const char * msg, byte s
     }
 
     o_ernd1 = E_Rand_Get( & o_ernd2 );
-    rs_ernd1 = LE_SWAP32_FAST(rs->e_rand1);
-    rs_ernd2 = LE_SWAP32_FAST(rs->e_rand2);
+    rs_ernd1 = read_N32( &rs->e_rand1 );
+    rs_ernd2 = read_N32( &rs->e_rand2 );
     if( o_ernd1 != rs_ernd1 || o_ernd2 != rs_ernd2 )
     {
         GenPrintf( EMSG_warn, "%s: update E_Random (%08X,%08X) to (%08X,%08X)\n",
@@ -1019,7 +1093,7 @@ static void random_state_checkset( random_state_t * rs, const char * msg, byte s
 void SV_Send_State( byte server_pause )
 {
     netbuffer->packettype=PT_STATE;
-    netbuffer->u.state.gametic = LE_SWAP32_FAST(gametic);
+    write_N32( & netbuffer->u.state.gametic, gametic );
     get_random_state( & netbuffer->u.state.rs ); // to sync P_Random
     netbuffer->u.state.server_pause = server_pause;
 
@@ -1032,7 +1106,7 @@ static void state_handler( void )
     byte nnode = doomcom->remotenode;
 
     // Message is PT_STATE
-    tic_t serv_gametic = LE_SWAP32_FAST(netbuffer->u.state.gametic);
+    tic_t serv_gametic = read_N32( & netbuffer->u.state.gametic );
     if( serv_gametic != gametic )
     {
         if( verbose > 1 )
@@ -1249,7 +1323,7 @@ static byte  get_player_state_flags( player_t *  pp )
 }
 
 // Receive
-static uint32_t playerdesc_gametic = 0;
+static uint32_t  playerdesc_gametic = 0;
 static byte  playerdesc_seq;   // bit per tic packet seq, ready=0xFF
 static byte  check_output_warn;
 
@@ -1298,18 +1372,24 @@ static void SV_Send_player_desc( player_desc_t * pdesc, byte desc_flags, byte pn
     unsigned int paksize;
     unsigned int paksize_limit;
    
-    if( ! EN_inventory )
-        desc_flags &= ~ PDI_inventory;
-   
     // Limit how many can be in one packet.
     paksize_limit = sizeof( netbuffer->u );
     if( paksize_limit > software_MAXPACKETLENGTH )   paksize_limit = software_MAXPACKETLENGTH;
-    paksize_limit -= sizeof(pd_player_t) + sizeof(pd_weapons_t) + sizeof(pd_inventory_t) + 1;
+    paksize_limit -= offsetof(pd_player_t, optional) + 1;
 
+    if( EN_inventory )
+    {
+        paksize_limit -= sizeof(pd_inventory_t);
+    }
+    else   
+    {
+        desc_flags &= ~ PDI_inventory;
+    }
+   
     // Only those players that are present
     entry_count = 0;
     paksize = 0;
-    bufp = (byte*) &pdesc->p0;
+    bufp = (byte*) &pdesc->pd;
 
     if( pn < MAXPLAYERS )
     {
@@ -1342,6 +1422,8 @@ static void SV_Send_player_desc( player_desc_t * pdesc, byte desc_flags, byte pn
         pp = &players[pn];
         if( ! pp )  continue;
 
+        bufp = ALIGN4(bufp); // align to 4 bytes
+
         pd_player_t * pdp = (pd_player_t*) bufp;
         pdp->pid = pn;
         pdp->playerstate = pp->playerstate;  // DEAD
@@ -1353,24 +1435,21 @@ static void SV_Send_player_desc( player_desc_t * pdesc, byte desc_flags, byte pn
 
         SV_get_mobj( pp->mo, &pdp->pos );
 
-        bufp += sizeof( pd_player_t );
+        uint32_t wo = 0;
+        for( i=0; i<NUMWEAPONS; i++)  // 19
+            if( pp->weaponowned[i] )  wo |= 1<<i;
+        pdp->weaponowned = LE_SWAP32( wo );
        
-        if( desc_flags & PDI_weapons )
+        for( i=0; i<NUMAMMO; i++ )
         {
-            pd_weapons_t * pdwp = (pd_weapons_t*) bufp;
-            uint32_t wo = 0;
-            for( i=0; i<NUMWEAPONS; i++)  // 19
-                if( pp->weaponowned[i] )  wo |= 1<<i;
-            pdwp->weaponowned = LE_SWAP32( wo );
-
-            for( i=0; i<NUMAMMO; i++ )
-            {
-                pdwp->ammo[i] = LE_SWAP16( pp->ammo[i] );
-                pdwp->maxammo[i] = LE_SWAP16( pp->maxammo[i] );
-            }
-            bufp += sizeof( pd_weapons_t );
+            pdp->ammo[i] = LE_SWAP16( pp->ammo[i] );
+            pdp->maxammo[i] = LE_SWAP16( pp->maxammo[i] );
         }
 
+        // advance bufp upto the optional field
+        bufp += offsetof( pd_player_t, optional );
+
+        // Optional unaligned
         if( desc_flags & PDI_inventory )
         {
             pd_inventory_t * pdip = (pd_inventory_t*) bufp;
@@ -1387,7 +1466,7 @@ static void SV_Send_player_desc( player_desc_t * pdesc, byte desc_flags, byte pn
        
         entry_count ++;
         pdesc->entry_count = entry_count;
-        paksize = bufp - ((byte *)&netbuffer->u);
+        paksize = bufp - ((byte *)& netbuffer->u);
     }
 
     pdesc->desc_flags = desc_flags | seq_num;
@@ -1421,11 +1500,15 @@ void  CL_player_desc_handler( player_desc_t * pdesc, const char * msg )
     playerdesc_seq |= seqbits;  // record receiving this packet
 
     // Only those players that are present
-    bufp = (byte*) &pdesc->p0;
+    bufp = (byte*) &pdesc->pd;
     entry_count = pdesc->entry_count;
     for( ; entry_count > 0; entry_count-- )
     {
+        bufp = ALIGN4(bufp); // align to 4 bytes
+
         pd_player_t * pdp = (pd_player_t*) bufp;
+        bufp += offsetof( pd_player_t, optional );
+
         pn = pdp->pid;
         if( pn >= MAXPLAYERS )  break;
        
@@ -1433,9 +1516,6 @@ void  CL_player_desc_handler( player_desc_t * pdesc, const char * msg )
         if( ! playeringame[pn] || ! pp )
         {
             // should not happen, skip over this entry
-            bufp += sizeof( pd_player_t );
-            if( desc_flags & PDI_weapons )
-                bufp += sizeof(pd_weapons_t);
             if( desc_flags & PDI_inventory )
                 bufp += sizeof(pd_inventory_t);
             continue;
@@ -1474,39 +1554,33 @@ void  CL_player_desc_handler( player_desc_t * pdesc, const char * msg )
         pp->originalweaponswitch = ( flags & PF_ORIGWEAPONSWITCH )? 1:0;
         pp->backpack = ( flags & PF_BACKPACK )? 1:0;
 
-        bufp += sizeof( pd_player_t );
-       
-        if( desc_flags & PDI_weapons )
+        uint32_t wo = LE_SWAP32( pdp->weaponowned );
+        uint32_t cwo = 0;
+        for( i=0; i<NUMWEAPONS; i++)  // 19
         {
-            pd_weapons_t * pdwp = (pd_weapons_t*) bufp;
-            uint32_t wo = LE_SWAP32( pdwp->weaponowned );
-            uint32_t cwo = 0;
-            for( i=0; i<NUMWEAPONS; i++)  // 19
-            {
-                if( pp->weaponowned[i] )  cwo |= 1<<i;
-                pp->weaponowned[i] = ( wo & (1<<i) )? 1:0;
-            }
-            if( msg )
-            {
-                check_output( cwo, wo, "WEAPONOWNED", msg );
-            }
-
-            for( i=0; i<NUMAMMO; i++ )
-            {
-                uint16_t r_ammo = LE_SWAP16( pdwp->ammo[i] );
-                uint16_t r_maxammo = LE_SWAP16( pdwp->maxammo[i] );
-                if( msg )
-                {
-                    // Not going to be specific about which ammo is wrong.
-                    check_output( pp->ammo[i], r_ammo, "AMMO", msg );
-                    check_output( pp->maxammo[i], r_maxammo, "MAXAMMO", msg );
-                }
-                pp->ammo[i] = r_ammo;
-                pp->maxammo[i] = r_maxammo;
-            }
-            bufp += sizeof( pd_weapons_t );
+            if( pp->weaponowned[i] )  cwo |= 1<<i;
+            pp->weaponowned[i] = ( wo & (1<<i) )? 1:0;
+        }
+        if( msg )
+        {
+            check_output( cwo, wo, "WEAPONOWNED", msg );
         }
 
+        for( i=0; i<NUMAMMO; i++ )
+        {
+            uint16_t r_ammo = LE_SWAP16( pdp->ammo[i] );
+            uint16_t r_maxammo = LE_SWAP16( pdp->maxammo[i] );
+            if( msg )
+            {
+                // Not going to be specific about which ammo is wrong.
+                check_output( pp->ammo[i], r_ammo, "AMMO", msg );
+                check_output( pp->maxammo[i], r_maxammo, "MAXAMMO", msg );
+            }
+            pp->ammo[i] = r_ammo;
+            pp->maxammo[i] = r_maxammo;
+        }
+
+        // Optional unaligned
         if( desc_flags & PDI_inventory )
         {
             pd_inventory_t * pdip = (pd_inventory_t*) bufp;
@@ -1528,7 +1602,7 @@ void  CL_player_desc_handler( player_desc_t * pdesc, const char * msg )
                 pp->inventory[i].type = pdip->inventory[i].type;
                 pp->inventory[i].count = pdip->inventory[i].count;
             }
-            bufp += sizeof( pd_inventory_t );
+            bufp += sizeof(pd_inventory_t);
         }
     }
 }
@@ -1645,7 +1719,7 @@ static void  fill_repair_header( byte repair_type )
     netbuffer->packettype = PT_REPAIR;
     netbuffer->u.repair.repair_type = repair_type;
     // The fields are there, so fill them.  Easier to fill them everytime.
-    netbuffer->u.repair.gametic = LE_SWAP32(gametic);
+    write_N32( & netbuffer->u.repair.gametic, gametic );
     get_random_state( & netbuffer->u.repair.rs ); // to sync P_Random
 }
 
@@ -1657,7 +1731,7 @@ static void  fill_repair_header( byte repair_type )
 static void SV_Send_player_repair( byte pn, byte severity, byte to_node )
 {
     const char * fail_msg = "";
-    byte desc_flags = PDI_weapons|PDI_inventory;
+    byte desc_flags = PDI_inventory;
    
     if( severity < 2 )  desc_flags = 0;
     if( cv_SV_netrepair.EV < 2 )  desc_flags = 0;
@@ -1681,7 +1755,7 @@ static void SV_Send_player_repair( byte pn, byte severity, byte to_node )
     }
 
     // Enough to fix a small difference in player position.
-    SV_Send_player_desc( &netbuffer->u.repair.u.player_desc, desc_flags, pn, to_node );
+    SV_Send_player_desc( & netbuffer->u.repair.u.player_desc, desc_flags, pn, to_node );
 
 fail:
     GenPrintf( EMSG_warn, "Server Send_player_repair: player %i%s\n", pn, fail_msg );
@@ -1693,10 +1767,13 @@ fail:
 static void CL_player_repair( void )
 {
     // ignore random state for now
+
+    // Compare gametic as packet field, not as a tic_t
+    uint32_t  r_gametic = read_N32( & netbuffer->u.repair.gametic );
     
     // Receive all player desc.
-    CL_init_playerdesc_receive( netbuffer->u.repair.gametic );
-    CL_player_desc_handler( &netbuffer->u.repair.u.player_desc, "Client player_repair" );
+    CL_init_playerdesc_receive( r_gametic );
+    CL_player_desc_handler( & netbuffer->u.repair.u.player_desc, "Client player_repair" );
 }
 
 
@@ -1746,7 +1823,7 @@ static void repair_handler_client( byte nnode )
     if( rq_type < RQ_REQ_TO_SERVER )
     {
         // Server repairs client.
-        uint32_t net_gametic = LE_SWAP32_FAST(netbuffer->u.repair.gametic);
+        uint32_t net_gametic = read_N32( & netbuffer->u.repair.gametic );
         if( gametic != net_gametic )
         {
             GenPrintf( EMSG_warn, "Client repair: gametic client %u  server %u\n", gametic, net_gametic );
@@ -2104,6 +2181,9 @@ static void CL_Send_AskInfo( byte to_node )
 {
     netbuffer->packettype = PT_ASKINFO;
     netbuffer->u.askinfo.version = VERSION;
+    netbuffer->u.askinfo.ver1 = 0;
+    netbuffer->u.askinfo.ver2 = VERSION;
+    netbuffer->u.askinfo.ver3 = REVISION;
     netbuffer->u.askinfo.send_time = LE_SWAP32(I_GetTime());
     HSendPacket( to_node, 0, 0, sizeof(askinfo_pak_t) );  // msg lost when too busy
 }
@@ -3457,8 +3537,7 @@ static void server_askinfo_handler( byte nnode )
     if(serverrunning)
     {
         // Make the send_time the round trip ping time.
-        SV_Send_ServerInfo(nnode,
-                           LE_SWAP32(netbuffer->u.askinfo.send_time));
+        SV_Send_ServerInfo(nnode, LE_SWAP32(netbuffer->u.askinfo.send_time));
         Net_CloseConnection(nnode, 0);  // a temp connection
     }
 }
@@ -3644,7 +3723,7 @@ static void server_info_handler( byte nnode )
      (I_GetTime() - LE_SWAP32(netbuffer->u.serverinfo.trip_time))*1000/TICRATE; 
     netbuffer->u.serverinfo.servername[MAXSERVERNAME-1]=0;
 
-    SL_InsertServer( &netbuffer->u.serverinfo, nnode);
+    SL_InsertServer( & netbuffer->u.serverinfo, nnode);
 }
 
 
@@ -3677,7 +3756,7 @@ static void server_cfg_handler( byte nnode )
     if(!server)
     {
         // Clients not on the server, update to server time.
-        maketic = gametic = cl_need_tic = LE_SWAP32(netbuffer->u.servercfg.gametic);
+        maketic = gametic = cl_need_tic = read_N32( &  netbuffer->u.servercfg.gametic );
     }
 
     // Client keeps server state, even on the server.
@@ -3704,7 +3783,7 @@ static void server_cfg_handler( byte nnode )
     if( ! server )
     {
         // Client
-        uint32_t  playerdet = LE_SWAP32(netbuffer->u.servercfg.playerdetected);
+        uint32_t  playerdet = read_N32( & netbuffer->u.servercfg.playerdetected );
         for(j=0;j<MAXPLAYERS;j++)
         {
             playeringame[j] = (( playerdet & (1<<j) ) != 0);
@@ -4035,7 +4114,7 @@ static void client_cmd_handler( byte netcmd, byte nnode, byte client_pn )
     // Copy the ticcmd
     btic = BTIC_INDEX( maketic );
     TicCmdCopy(&netcmds[btic][client_pn],
-               &netbuffer->u.clientpak.cmd, 1);
+               & netbuffer->u.clientpak.cmd, 1);
 
     // PT_CLIENT2CMD has cmd for both players
     if( netcmd == PT_CLIENT2CMD )
@@ -4046,7 +4125,7 @@ static void client_cmd_handler( byte netcmd, byte nnode, byte client_pn )
         {
             // Copy the ticcmd for player2.
             TicCmdCopy(&netcmds[btic][client_pn2], 
-                   &netbuffer->u.client2pak.cmd2, 1);
+                   & netbuffer->u.clientpak.cmd2, 1);
         }
     }
     return;
@@ -4425,7 +4504,7 @@ static void CL_Send_ClientCmd (void)
     if( gamestate != GS_NULL )
     {
         int btic = BTIC_INDEX( gametic );
-        TicCmdCopy(&netbuffer->u.clientpak.cmd, &localcmds[0], 1);
+        TicCmdCopy(& netbuffer->u.clientpak.cmd, &localcmds[0], 1);
         netbuffer->u.clientpak.consistency = LE_SWAP16_FAST(consistency[btic]);
 
         // send a special packet with 2 cmd for splitscreen
@@ -4433,11 +4512,11 @@ static void CL_Send_ClientCmd (void)
         {
             // send PT_CLIENT2CMD, or PT_CLIENT2CMDMIS packet
             netbuffer->packettype = PT_CLIENT2CMD_options[cmd_options];
-            TicCmdCopy(&netbuffer->u.client2pak.cmd2, &localcmds[1], 1);
-            packetsize = sizeof(client2cmd_pak_t);
+            TicCmdCopy(& netbuffer->u.clientpak.cmd2, &localcmds[1], 1);
+            packetsize = sizeof(clientcmd_pak_t);
         }
         else
-            packetsize = sizeof(clientcmd_pak_t);
+            packetsize = offsetof(clientcmd_pak_t, cmd2);  // exclude cmd2
         
         HSendPacket( cl_servernode, 0, 0, packetsize );  // msg lost when too busy
     }
@@ -4546,7 +4625,7 @@ static void SV_Send_Tics (void)
         netbuffer->u.serverpak.starttic = start_tic;
         netbuffer->u.serverpak.numtics = (end_tic - start_tic); // num tics
         netbuffer->u.serverpak.numplayerslots = num_player_slots;
-        bufpos=(char *)&netbuffer->u.serverpak.cmds;
+        bufpos=(char *)& netbuffer->u.serverpak.cmds;
        
         // All the ticcmd_t, start_tic..(end_tic-1)
         for(ti=start_tic; ti<end_tic; ti++)
