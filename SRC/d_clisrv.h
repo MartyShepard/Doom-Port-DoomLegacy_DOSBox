@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1496 2020-01-05 22:11:50Z wesleyjohnson $
+// $Id: d_clisrv.h 1498 2020-01-05 22:13:26Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -438,8 +438,8 @@ void    SV_Send_State( byte server_pause );
 //  wait_timeout : wait timeout in ticks
 void    SV_network_wait_timer( uint16_t wait_timeout );
 
-void    CL_AddSplitscreenPlayer( void );
-void    CL_RemoveSplitscreenPlayer( void );
+// By Client
+void    CL_Splitscreen_Player_Manager( void );
 void    CL_Reset (void);
 void    CL_Update_ServerList( boolean internetsearch );
 // is there a game running

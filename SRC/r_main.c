@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
+// $Id: r_main.c 1498 2020-01-05 22:13:26Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -324,10 +324,7 @@ void SplitScreen_OnChange(void)
 
     if( !demoplayback)
     {
-        if( cv_splitscreen.EV )
-            CL_AddSplitscreenPlayer();
-        else
-            CL_RemoveSplitscreenPlayer();
+        CL_Splitscreen_Player_Manager();
 
         if(server && !netgame)
             multiplayer = cv_splitscreen.EV;

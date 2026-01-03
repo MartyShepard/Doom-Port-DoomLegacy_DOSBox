@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1497 2020-01-05 22:12:35Z wesleyjohnson $
+// $Id: d_clisrv.c 1498 2020-01-05 22:13:26Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -2955,19 +2955,22 @@ void SV_Add_waiting_players( void )
 }
 
 
-void CL_AddSplitscreenPlayer( void )
+void CL_Splitscreen_Player_Manager( void )
 {
-    if( cl_mode == CLM_connected )
-        CL_Send_Join();  // join game
-}
+    if( cl_mode != CLM_connected )  return;
 
-void CL_RemoveSplitscreenPlayer( void )
-{
-    if( cl_mode != CLM_connected )
+    if( cv_splitscreen.EV )
+    {
+        if( ! displayplayer2_ptr )
+            CL_Send_Join();  // join game
         return;
+    }
 
-    Send_NetXCmd_p2(XD_KICK, displayplayer2, KICK_MSG_PLAYER_QUIT);  // player 2
+    // Remove splitscreen player
+    if( displayplayer2_ptr )
+        Send_NetXCmd_p2(XD_KICK, displayplayer2, KICK_MSG_PLAYER_QUIT);  // player 2
 }
+
 
 // Is there a game running.
 boolean Game_Playing( void )
