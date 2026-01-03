@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1491 2019-12-19 07:50:34Z wesleyjohnson $
+// $Id: d_clisrv.c 1492 2019-12-19 07:51:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -164,6 +164,8 @@
   // skins
 #include "g_input.h"
   // gamecontrol
+#include "s_sound.h"
+  // StartSound
 
 
 //
@@ -757,6 +759,57 @@ static boolean SV_Send_ServerConfig(int to_node)
     // curpos is 1 past last cvar (if none then is at netvar_buf)
 
     return HSendPacket(to_node, true, 0, xc.curpos - ((byte *)&netbuffer->u));
+}
+
+
+typedef enum {
+    CTRL_state,  // no node command
+    CTRL_normal,
+    CTRL_wait_game_start,
+} net_control_command_e;
+
+// By Server
+//   ctrl_command : net_control_e
+//   player_num : player num (may be 255)
+static void SV_Send_control( byte nnode, byte ctrl_command, byte player_num )
+{
+    netbuffer->packettype = PT_CONTROL;
+    netbuffer->u.control.command = ctrl_command;
+    netbuffer->u.control.player_num = player_num;
+    netbuffer->u.control.player_state = (player_num < MAXPLAYERS)? player_state[player_num] : PS_unused;
+
+    HSendPacket(servernode, true, 0, sizeof(control_pak_t));
+}
+
+// By Client
+static void control_msg_handler( void )
+{
+    // Command from server to client.
+    byte pn = netbuffer->u.control.player_num;
+    byte ps = netbuffer->u.control.player_state;
+
+    if( !server && (pn < MAXPLAYERS) )
+        player_state[pn] = ps;
+
+    // Situation specific
+    switch( netbuffer->u.control.command )
+    {
+     case CTRL_normal:
+        if( cl_mode < CLM_connected )
+        {
+            cl_mode = CLM_connected;
+            // Warn the player, who probably has dozed off by now.	   
+            S_StartSound(sfx_menuop);  // always present
+            S_StartSound(sfx_telept);  // longer sound, likely to be in all games
+        }
+        break;	 
+     case CTRL_wait_game_start:
+        if( (cl_mode < CLM_connected) && (ps == PS_join_wait_game_start) )
+            cl_mode = CLM_wait_game_start;
+        break;	 
+     default:
+        break;	 
+    }
 }
 
 
@@ -1423,6 +1476,16 @@ static void SV_Send_NetWait( void )
 #endif
 }
 
+// By Client
+static void netwait_handler( void )
+{
+    // Updates of wait for players, from the server.
+    num_netplayer = netbuffer->u.netwait.num_netplayer;
+    wait_netplayer = netbuffer->u.netwait.wait_netplayer;
+    wait_tics = LE_SWAP16( netbuffer->u.netwait.wait_tics );
+    random_state_checkset( & netbuffer->u.netwait.rs, NULL, SET_RANDOM ); // to sync P_Random
+}
+
 void D_WaitPlayer_Drawer( void )
 {
     WI_Draw_wait( num_netnodes, num_netplayer, wait_netplayer, wait_tics );
@@ -1878,8 +1941,8 @@ static void CL_ConnectToServer( void )
                 // waiting for server response	   
                 // see server_cfg_handler()
                 break;
-#ifdef JOININGAME
             case CLM_download_savegame :
+#ifdef JOININGAME
                 M_DrawTextBox( 2, NETFILE_BOX_Y, 38, 6);
                 V_DrawString (30, NETFILE_BOX_Y+8, 0, "Download Savegame");
                 if( netfile_download )
@@ -1899,7 +1962,18 @@ static void CL_ConnectToServer( void )
                 gamestate = GS_LEVEL;  // game loaded
                 cl_mode = CLM_connected;
                 break;
+#else	   
+                goto reset_to_searching;  // should not end up in this state
 #endif
+            case CLM_wait_game_start :
+                // Not going to get a download.
+                if( netfile_download )
+                    CL_Cancel_download_savegame();
+                M_DrawTextBox( 2, NETFILE_BOX_Y, 38, 6);
+                V_DrawString (30, NETFILE_BOX_Y+8, 0, "Wait Game Start");
+                // wait for control msg
+                break;
+
             default:
                 break;
             // CLM_connected will exit the loop
@@ -1946,6 +2020,10 @@ static void CL_ConnectToServer( void )
         }
     } while ( cl_mode != CLM_connected );
 
+    // If this is still set, then did not get a savegame, so turn it off.
+    if( netfile_download )
+        CL_Cancel_download_savegame();
+   
     network_state = NETS_active;
 
     DEBFILE(va("Synchronization Finished\n"));
@@ -2745,13 +2823,15 @@ boolean SV_Add_Join_Waiting(void)
 // Add players waiting for game start
 void SV_Add_waiting_players( void )
 {
-    byte pn;
+    byte pn, nnode;
 
     for( pn=0; pn<MAXPLAYERS; pn++)
     {
         if( player_state[pn] == PS_join_wait_game_start )
         {
-            SV_Send_AddPlayer( player_to_nnode[pn], pn, 0 );  // PS_added_commit
+            nnode = player_to_nnode[pn];
+            SV_Send_control( nnode, CTRL_normal, pn );
+            SV_Send_AddPlayer( nnode, pn, 0 );  // PS_added_commit
         }
     }
 }
@@ -2964,7 +3044,7 @@ static void client_join_handler( byte nnode )
             // Update the nnode with game in progress.
             nnode_state[nnode] = NOS_join_savegame;
             SV_Send_SaveGame(nnode); // send game data
-	    // netwait timer is running
+            // netwait timer is running
             GenPrintf(EMSG_info, "Send savegame\n");
             // Client will return  PT_CLIENTREADY or PT_CLIENTQUIT
 #else
@@ -2983,7 +3063,9 @@ wait_for_game_start:
     // These players will wait until the next game start.
     while( num_to_join-- )
     {
-        SV_commit_player( nnode, PS_join_wait_game_start );
+        byte pn = SV_commit_player( nnode, PS_join_wait_game_start );
+        SV_Send_control( nnode, CTRL_wait_game_start, pn );
+        DEBFILE(va("Client Join: node=%i, wait game start player=%i.\n", nnode, pn));
     }
     return;
     
@@ -3514,17 +3596,7 @@ static void Net_Packet_Handler(void)
                 continue;
              case PT_NETWAIT:
                 if( !server )
-                {
-                    // Updates of wait for players, from the server.
-                    num_netplayer = netbuffer->u.netwait.num_netplayer;
-                    wait_netplayer = netbuffer->u.netwait.wait_netplayer;
-                    wait_tics = LE_SWAP16( netbuffer->u.netwait.wait_tics );
-                    random_state_checkset( & netbuffer->u.netwait.rs, NULL, SET_RANDOM ); // to sync P_Random
-                }
-                continue;
-             case PT_STATE:
-                if( !server )
-                    state_handler();  // to client
+                    netwait_handler();
                 continue;
              case PT_REPAIR:
                 repair_handler_client( nnode );  // from server
@@ -3541,6 +3613,13 @@ static void Net_Packet_Handler(void)
             // These messages are recognized, but application is limited.
             switch(packettype)
             {
+             case PT_STATE:
+                if( !server )
+                    state_handler();  // to client
+                continue;
+             case PT_CONTROL:
+                control_msg_handler();
+                continue;
              case PT_SERVERSHUTDOWN:
                 if( ! server )
                     server_shutdown_handler();  // only client not on server
@@ -3626,20 +3705,33 @@ static void Net_Packet_Handler(void)
 
         switch(packettype)
         {
+         case PT_ASKINFO:  // broadcast, non-servers should ignore it
          case PT_SERVERCFG :  // server cfg at wrong time
+         case PT_NODE_TIMEOUT:  // errant
             continue;  // ignore
+         case PT_REQUESTFILE :
+            if( ! server )  goto server_only;
+            continue;
         }
 
         // Packet not accepted.
         if((nnode >= MAXNETNODES) || (nodestate < NOS_recognized))
         {
             DEBFILE(va("Unknown packet received (%d) from unknown host !\n", packettype));
-            Net_CloseConnection(nnode, 0);  // a temp connection
-            continue;
+            goto close_node;
         }
 
         DEBFILE(va("Unknown packet type: type %d node %d\n", packettype, nnode));
+        continue;
        
+    server_only:
+        GenPrintf(EMSG_warn, "Recv warn: unknown node=%i, Client ignores server only packet type (%d).\n", nnode, netbuffer->packettype );
+        DEBFILE(va("Recv warn: unknown node=%i, Client ignores server only packet type (%d).\n", nnode, netbuffer->packettype));
+        goto close_node;
+
+    close_node:
+        Net_CloseConnection(nnode, 0);  // a temp connection
+        continue;       
     } // end while
 
     if( server && network_wait_timer )
@@ -3707,6 +3799,7 @@ static void CL_Send_ClientCmd (void)
     {
         lastsenttime=I_GetTime();
 */
+
     int packetsize=0;
 
     byte  cmd_options = 0;  // easier to understand and maintain
@@ -4208,9 +4301,13 @@ void NetUpdate(void)
 
         if( Filetx_file_cnt )  // Rare to have file download in progress.
             Filetx_Ticker();
+
+        if( num_join_waiting_players )
+            SV_Add_Join_Waiting();
     }
 
     Net_AckTicker();
+
     if( ! dedicated )
     {
         M_Ticker ();

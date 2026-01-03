@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.h 1484 2019-12-13 05:19:05Z wesleyjohnson $
+// $Id: d_netfil.h 1492 2019-12-19 07:51:00Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -77,6 +77,7 @@ void D_NetFileInit(void);
 byte * Put_Server_FileNeed(void);
 void CL_Got_Fileneed(int num_fileneed_parm, byte *fileneed_str);
 void CL_Prepare_download_savegame(const char *tmpsave);
+void CL_Cancel_download_savegame( void );
 boolean  CL_waiting_on_fileneed( void );
 
 // Check file list in wadfiles return.
