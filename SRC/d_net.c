@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1490 2019-12-19 07:49:59Z wesleyjohnson $
+// $Id: d_net.c 1494 2020-01-05 22:09:38Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -206,6 +206,9 @@ boolean Net_GetNetStat(void)
 
 // The net node num (nnode) are internal to the Doom program communications.
 // Net node num are 1..(MAX_CON_NETNODE-1), 0=myself,
+//   MAXNETNODES < MAX_CON_NETNODE
+//   BROADCAST_NODE=MAXNETNODES
+//   BROADCAST_NODE < MAX_CON_NETNODE
 // limited to 254 (byte), 255=empty.
 #if ( MAX_CON_NETNODE > 254 )
 # error Required: MAX_CON_NETNODE <= 254
@@ -214,6 +217,14 @@ boolean Net_GetNetStat(void)
 // limited to 127 by chat message packing.
 #if ( MAXNETNODES > 127 )
 # error Required: MAXNETNODES <= 127
+#endif
+// MAXNETNODES must be within MAX_CON_NETNODE, or else it may be rejected
+#if ( MAXNETNODES >= MAX_CON_NETNODE )
+# error Required: MAXNETNODES < MAX_CON_NETNODE
+#endif
+// BROADCAST_NODE must be within MAX_CON_NETNODE, or else it may be rejected
+#if ( BROADCAST_NODE >= MAX_CON_NETNODE )
+# error Required: BROADCAST_NODE < MAX_CON_NETNODE
 #endif
 
 // Max ack packets that can be saved.  Must exceed the max number of net nodes.
@@ -405,9 +416,16 @@ static byte Get_return_ack(byte nnode)
 // Called when have received an ack from the net node.
 static void Remove_ackpak( ackpak_t * ackpakp )
 {
+    netnode_t * dnp;
     byte dnode = ackpakp->destination_node;  // 0..(MAXNETNODES-1) by caller
-    netnode_t * dnp = & net_nodes[dnode];  // dest node of the ackpak
+    
+    if( dnode >= MAXNETNODES )   // invalid node number
+    {
+        ackpakp->acknum=0;  // ackpak is now idle
+        return;
+    }
 
+    dnp = & net_nodes[dnode];  // dest node of the ackpak
     // Stats
     fixed_t trueping = (I_GetTime() - ackpakp->senttime) << FRACBITS;
 
@@ -932,6 +950,7 @@ void Net_CloseConnection(byte nnode, byte forceclose)
         Net_Send_AcksPacket( nnode );
         Net_Send_AcksPacket( nnode );
     }
+
     // Check if we have to wait for ack from this node.
     for( ackpakp = &ackpak[0]; ackpakp < &ackpak[MAXACKPACKETS]; ackpakp++ )
     {
@@ -1157,7 +1176,7 @@ boolean HSendPacket(int to_node, boolean reliable, byte acknum,
         if((rebound_head+1)%MAXREBOUND==rebound_tail)
         {
 #ifdef PARANOIA
-            CONS_Printf("Empty rebound buf\n");
+            CONS_Printf("Full rebound buf\n");
 #endif
             goto fail_ret;
         }
@@ -1239,7 +1258,7 @@ boolean HSendPacket(int to_node, boolean reliable, byte acknum,
     else
     {
         if (debugfile)
-            DebugPrintpacket("NOTSEND");
+            DebugPrintpacket("SENDLOST");
     }
 #endif
     return true;  // indicates sent, but gets lost
@@ -1254,7 +1273,7 @@ empty_packet:
     DEBFILE("HSendPacket: abort send of empty packet\n");
 #ifdef DEBUGFILE
     if (debugfile)
-        DebugPrintpacket("TRISEND");
+        DebugPrintpacket("SENDEMPTY");
 #endif
     goto fail_ret;
 
