@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1484 2019-12-13 05:19:05Z wesleyjohnson $
+// $Id: m_menu.c 1490 2019-12-19 07:49:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1600,6 +1600,7 @@ static void M_PlayerDirector(int choice)
     Push_Setup_Menu( &PlayerDirectorDef );
 }
 
+
 //===========================================================================
 //MULTI PLAYER SETUP MENU
 //===========================================================================
@@ -2554,7 +2555,9 @@ void M_NetOption(int choice)
 
 menuitem_t ConnectOptionMenu[]=
 {
-    {IT_STRING | IT_CVAR,0,"Download files", &cv_downloadfiles , 0},
+    {IT_STRING | IT_CVAR,0,"Download files", &cv_download_files , 0},
+    {IT_STRING | IT_CVAR,0,"Download savegame", &cv_download_savegame , 0},
+    {IT_STRING | IT_CVAR,0,"Netgame repair", &cv_netrepair , 0},
     {IT_STRING | IT_CVAR | IT_CV_STRING,0,"Server 1", &cv_server1 , 0},
     {IT_STRING | IT_CVAR | IT_CV_STRING,0,"Server 2", &cv_server2 , 0},
     {IT_STRING | IT_CVAR | IT_CV_STRING,0,"Server 3", &cv_server3 , 0},
@@ -2562,7 +2565,7 @@ menuitem_t ConnectOptionMenu[]=
 
 menu_t  ConnectOptionDef =
 {
-    "M_OPTTTL",
+    NULL,
     "Connect Options",
     ConnectOptionMenu,
     M_DrawGenericMenu,
@@ -2588,12 +2591,15 @@ menuitem_t ServerOptionsMenu[]=
         | IT_CV_STRING  ,0, "Master server",       &cv_masterserver     ,  0},
     {IT_STRING | IT_CVAR
         | IT_CV_STRING  ,0, "Server name",         &cv_servername       ,  0},
+    {IT_STRING | IT_CVAR,0, "Serve files",    &cv_SV_download_files , 0},
+    {IT_STRING | IT_CVAR,0, "Serve savegame", &cv_SV_download_savegame , 0},
+    {IT_STRING | IT_CVAR,0, "Serve repair",   &cv_SV_netrepair , 0},
 };
 
 menu_t  ServerOptionsDef =
 {
-    "M_OPTTTL",
-    "Server Options",
+    NULL,
+    "Server Settings",
     ServerOptionsMenu,
     M_DrawGenericMenu,
     NULL,
@@ -6053,7 +6059,12 @@ void M_Init (void)
     CV_RegisterVar(&cv_wait_players);
     CV_RegisterVar(&cv_wait_timeout);
     CV_RegisterVar(&cv_serversearch);
-    CV_RegisterVar(&cv_downloadfiles);
+    CV_RegisterVar(&cv_download_files);
+    CV_RegisterVar(&cv_download_savegame);
+    CV_RegisterVar(&cv_netrepair);
+    CV_RegisterVar(&cv_SV_download_files);
+    CV_RegisterVar(&cv_SV_download_savegame);
+    CV_RegisterVar(&cv_SV_netrepair);
     CV_RegisterVar(&cv_menusound);
 }
 

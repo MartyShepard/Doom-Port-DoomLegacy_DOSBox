@@ -7592,3 +7592,37 @@ patchfile = w108_74_netbug1.patch
 - commit revision 1488
 Fix some bugs introduced by the last two network patches.
 
+*** w108_netjoin
+patchfile = w108_75_netjoin.patch
+- commit revision 1489
+Upgrade of network join.
+Add controls for client download of files and savegames.
+Add controls for server allows download of files and savegames.
+Add ability to join game at next game start.
+Rewrite much of join functions.
+Fix of bug in waitplayer network message handling, missing line.
+
+*** w108_netrepair
+patchfile = w108_76_netrepair.patch
+- commit revision 1490
+Upgrade of network repair.
+Add controls for client and server repair control.
+Protect the server against misuse of the repair message.
+Better network handshakes with client.
+
+*** w108_nettimer
+patchfile = w108_77_nettimer.patch
+- commit revision 1491
+Some network exchanges are better done with the game paused,
+and those need a timeout.
+A network pause with a timer is added.
+It is used for adding a bot, and download of savegames.
+
+*** w108_netcontrol
+patchfile = w108_78_netcontrol.patch
+- commit revision 1492
+Add PT_CONTROL to inform clients of what server has decided.
+Use it to fix some problems with client join.
+Inform client when its players must wait until next game start,
+and when that game starts.
+Inform player when it is waiting for game start.

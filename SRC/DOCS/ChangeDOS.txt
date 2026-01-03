@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01490 ]: w108_76 netrepair
+[01489 ]: w108_75 network join
 [01488 ]: w108_74 netbug1
 [01487 ]: w108_73 netfunc
 [01486 ]: w108_72 netstate

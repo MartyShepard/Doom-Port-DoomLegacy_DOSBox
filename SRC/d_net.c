@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1487 2019-12-13 05:21:38Z wesleyjohnson $
+// $Id: d_net.c 1490 2019-12-19 07:49:59Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1022,7 +1022,7 @@ static char *packettypename[NUMPACKETTYPE]={
     "ASKINFO",
     "SERVERINFO",
     "REQUESTFILE",
-    "REPAIR",
+    "DUMMY15",
     "ACKS",
     "STATE",
     "DUMMY18",
@@ -1034,7 +1034,8 @@ static char *packettypename[NUMPACKETTYPE]={
     "CLIENTJOIN",
     "NODETIMEOUT",
     "WAITINFO",
-
+    "CLIENTREADY",
+    "REPAIR",
 };
 
 static void DebugPrintpacket(char *header)

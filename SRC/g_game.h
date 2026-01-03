@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 1482 2019-12-13 05:16:47Z wesleyjohnson $
+// $Id: g_game.h 1489 2019-12-16 06:33:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -83,12 +83,18 @@ char * get_team_name( int team_num );
 
 extern  player_t  players[MAXPLAYERS];
 extern  byte      playeringame[MAXPLAYERS];
+
 typedef enum {
-  PS_player = 1,
-  PS_from_server = 2,  // server told us
-  PS_from_savegame = 3,  // savegame told us
-  PS_bot = 8,
-  PS_added = 16,
+  PS_unused,
+// active players
+  PS_player,
+  PS_player_from_server,  // server told us
+  PS_player_from_savegame,  // savegame told us
+  PS_bot,
+// not a player, yet
+  PS_join_wait_game_start,  // join waits until game start
+  PS_added,
+  PS_added_commit,     // add player issued
 } player_state_e;
 extern byte       player_state[MAXPLAYERS];
 

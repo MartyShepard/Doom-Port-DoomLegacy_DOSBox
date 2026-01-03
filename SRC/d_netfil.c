@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1488 2019-12-14 07:18:13Z wesleyjohnson $
+// $Id: d_netfil.c 1489 2019-12-16 06:33:11Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -349,7 +349,7 @@ reqfile_e  Send_RequestFile(void)
     fileneed_t * fnp;
 
     if( M_CheckParm("-nodownload")
-      || cv_downloadfiles.value == 1 )  // no download
+      || (cv_download_files.EV == 0) )  // download not allowed
     {
         int j;
         int len;

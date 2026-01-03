@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1484 2019-12-13 05:19:05Z wesleyjohnson $
+// $Id: p_saveg.c 1489 2019-12-16 06:33:11Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2017 by DooM Legacy Team.
@@ -3496,7 +3496,7 @@ boolean P_UnArchiveMisc()
     for (i = 0; i < MAXPLAYERS; i++)
     {
         playeringame[i] = (pig & (1 << i)) != 0;
-        player_state[i] = (playeringame[i])? PS_from_savegame : 0;
+        player_state[i] = (playeringame[i])? PS_player_from_savegame : 0;
         players[i].playerstate = PST_REBORN;
     }
 
