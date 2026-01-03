@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1504 2020-03-17 02:31:22Z wesleyjohnson $
+// $Id: d_clisrv.h 1507 2020-04-04 08:48:54Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -98,8 +98,8 @@ typedef enum   {
                       // this is positive response to CLIENTJOIN request
     PT_CLIENTCMD,     // ticcmd of the client
     PT_CLIENTMIS,     // same as above but saying resend from
-    PT_CLIENT2CMD,    // with player 2, ticcmd of the client
-    PT_CLIENT2MIS,    // with player 2, same as above but saying resend from
+    PT_CLIENT2CMD,    // with player 2, ticcmd of the client  // NO LONGER USED
+    PT_CLIENT2MIS,    // with player 2, same as above but saying resend from  // NO LONGER USED
     PT_NODEKEEPALIVE, // same but without ticcmd and consistancy
     PT_NODEKEEPALIVEMIS,
     PT_SERVERTICS,    // all cmd for the tic
@@ -200,23 +200,28 @@ typedef struct {
 // unaligned
 typedef struct {
     byte            num_textitem; // num textitem present in this packet
-    textcmd_item_t  textitem[2];  // variable sized
+    textcmd_item_t  textitem;  // repeated textcmd_item_t, each variable sized
 } textcmd_pak_t;
 
 
 
 // client to server packet
 // Used by: PT_CLIENTCMD, PT_CLIENTMIS
-// Used by: PT_CLIENT2CMD, PT_CLIENT2MIS
 // Used by: PT_NODEKEEPALIVE, PT_NODEKEEPALIVEMIS
 // aligned to 4 bytes
 typedef struct {
    byte        client_tic;
    byte        resendfrom;
    int16_t     consistency;
+   byte        pind_mask;  // bit mask of pind
+#ifdef CLIENTPREDICTION2
 // aligned to 4 bytes
-   ticcmd_t    cmd;
-   ticcmd_t    cmd2;  // only used when there is a player 2
+   byte        pad1, pad2, pad3;
+#else
+// aligned to 2 bytes
+   byte        pad1;
+#endif
+   ticcmd_t    cmd[2]; // use only what is needed
 } clientcmd_pak_t;
 
 
@@ -224,20 +229,26 @@ typedef struct {
 typedef struct {
    byte            tic;
    N16_t           len;  // length of textitem array
-   textcmd_item_t  textitem[1];  // array limited by packet size
+   textcmd_item_t  textitem;  // repeated textitem, limited by packet size
 } servertic_textcmd_t;
 #define sizeof_servertic_textcmd_t(len)   (offsetof( servertic_textcmd_t, textitem )+(len))
+
 
 // Server to client packet
 // this packet is too large !!!!!!!!!
 // TODO: new servertic format
 #define NUM_SERVERTIC_CMD   45
 typedef struct {
-   byte        starttic;
-   byte        numtics;
+   byte        starttic; // low byte of gametic
+   byte        numtics;  // 1..
    byte        numplayerslots;
    byte        num_textcmd;  // count of servertic_textcmd_t
+#ifdef CLIENTPREDICTION2
+   byte        pad1, pad2;
 // aligned to 4 bytes
+#else
+// aligned to 2 bytes
+#endif
    ticcmd_t    cmds[NUM_SERVERTIC_CMD];
      // number of cmds used is (numtics*numplayers)
      // normaly [BACKUPTIC][MAXPLAYERS] but too large
@@ -364,7 +375,7 @@ typedef struct {
 
    // server lunch stuffs
    byte        serverplayer;
-   byte        num_player_slots;  // message player slots
+   byte        num_game_players;
    N32_t       gametic;
    byte        clientnode;
    byte        gamestate;

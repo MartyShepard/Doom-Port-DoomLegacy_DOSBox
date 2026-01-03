@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1499 2020-03-17 02:27:41Z wesleyjohnson $
+// $Id: d_net.c 1507 2020-04-04 08:48:54Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1122,9 +1122,9 @@ static void DebugPrintpacket(char *header)
     fprintfstring(netbuffer->u.textcmdpak.text,netbuffer->u.textcmdpak.len);
     break;
    case PT_SERVERCFG:
-    fprintf(debugfile, "    playermask %x plyslots %d clientnode %d serverplayer %d gametic %lu gamestate %d command %s\n",
+    fprintf(debugfile, "    playermask %x numplayers %d clientnode %d serverplayer %d gametic %lu gamestate %d command %s\n",
       (unsigned int)netbuffer->u.servercfg.playerdetected,
-      netbuffer->u.servercfg.num_player_slots,
+      netbuffer->u.servercfg.num_game_players,
       netbuffer->u.servercfg.clientnode,
       netbuffer->u.servercfg.serverplayer,
       (unsigned long)netbuffer->u.servercfg.gametic,
