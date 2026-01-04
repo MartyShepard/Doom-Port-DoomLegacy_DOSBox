@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1514 2020-04-18 10:49:41Z wesleyjohnson $
+// $Id: d_net.c 1522 2020-05-05 03:30:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1719,9 +1719,13 @@ boolean HGetPacket (void)
     if (!netgame)   goto fail_ret;
 
     byte errcode = I_NetGet();
-    if( errcode == NE_empty )   return false;  // no packet
-    if( errcode >= NE_fail )   goto ret_errcode;  // some other error
-
+    if( errcode >= NE_fail )
+        goto ret_errcode;  // some other error
+    if( errcode >= NE_empty )
+        return false;  // no packet
+    if( doomcom->remotenode < 0 )
+        return false; // no packet
+   
     stat_getbytes += (net_packetheader_length + doomcom->datalength); // for stat
 
     if( doomcom->remotenode < MAXNETNODES )

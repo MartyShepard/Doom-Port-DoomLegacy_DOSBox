@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01522 ]: w108_108 not_network game
 [01521 ]: w108_107 endtext
 [01520 ]: w108_106 config2
 [01519 ]: w108_105 modeswitch
