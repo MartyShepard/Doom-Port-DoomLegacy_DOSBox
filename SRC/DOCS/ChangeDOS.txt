@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01521 ]: w108_107 endtext
+[01520 ]: w108_106 config2
 [01519 ]: w108_105 modeswitch
 [01518 ]: w108_104 config ver 1.48.2
 [01517 ]: w108 103 version 148.1

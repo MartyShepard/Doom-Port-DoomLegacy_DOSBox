@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1519 2020-05-05 03:29:02Z wesleyjohnson $
+// $Id: d_main.c 1521 2020-05-05 03:30:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1519"
+#define SVN_REV "1521"
 #endif
 
 
@@ -2760,6 +2760,7 @@ restart_command:
         CONS_Printf ("config file: %s\n", configfile_main);
     }
     // This config will load the config drawmode setting.
+    M_ClearConfig( CFG_main );  // due to launcher loop
     M_LoadConfig( CFG_main, configfile_main );        // WARNING : this do a "COM_BufExecute()"
 
 
@@ -2839,6 +2840,7 @@ restart_command:
 #endif
 #endif
 
+        M_ClearConfig( CFG_drawmode );  // due to launcher loop
         // Load the config file for this drawmode.       
         // example: /home/user/.legacy/config32.cfg
         M_Set_configfile_drawmode( set_drawmode );
@@ -3284,7 +3286,9 @@ void D_Quit_Save ( quit_severity_e severity )
     {
         quitseq = 10;
         if( (severity == QUIT_normal)
-             && ! M_CheckParm("-noendtxt") )
+             && ! M_CheckParm("-noendtext")  // normal spelling, docs
+             && ! M_CheckParm("-noendtxt")   // previous versions
+             && cv_textout.EV > 0 )
         {
             // [WDJ] Check on errors during I_Error shutdown.
             // Avoid repeat errors during bad environment shutdown.

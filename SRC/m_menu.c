@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1490 2019-12-19 07:49:59Z wesleyjohnson $
+// $Id: m_menu.c 1520 2020-05-05 03:29:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -212,6 +212,8 @@
   // server1, server2, server3
 #include "mserv.h"
 #include "p_inter.h"
+#include "m_misc.h"
+  // config
 
 
 boolean                 menuactive;
@@ -861,7 +863,7 @@ void  config_cvar_edit_setvalue( consvar_t * cv_parent, int value )
 
 // Create a new configfile cvar entry, using menu_cfg.
 static
-void  config_cvar_edit_insert( consvar_t * cv_parent )
+void  config_cvar_edit_insert( consvar_t * cv_parent, byte copy_flag )
 {
     if( ! (cv_parent->flags & CV_SAVE) )
         goto done;  // not in config file
@@ -873,13 +875,10 @@ void  config_cvar_edit_insert( consvar_t * cv_parent )
         goto done;  // already exists as pushed cvar
 
     // Create the cvar value, even if it is pushed and not current.
-#if 0
-    // Copy existing value.
-    CV_Put_Config_string( cv_parent, menu_cfg, cv_parent->string );
-#else
-    // Get default value.
-    CV_Put_Config_string( cv_parent, menu_cfg, cv_parent->defaultvalue );
-#endif
+    const char * newstr = ( copy_flag )?
+        cv_parent->string // Copy existing value.
+      : cv_parent->defaultvalue ; // Get default value.
+    CV_Put_Config_string( cv_parent, menu_cfg, newstr );
 
 done:
     return;
@@ -908,7 +907,7 @@ byte  config_cvar_edit_key_handler( int key )
     switch( key )
     {
      case KEY_INS :  // insert config
-        config_cvar_edit_insert( cv_parent );  // using menu_cfg
+        config_cvar_edit_insert( cv_parent, 0 );  // using menu_cfg
         goto done;
 
      case KEY_DELETE :  // delete config
@@ -984,6 +983,34 @@ done:
     return true;  // used the key
 }
 #endif
+
+
+// Create initial drawmode config file.
+static
+void  create_initial_drawmode_config( void )
+{
+    // M_Set_configfile_drawmode( ) was done at mode switch.
+
+    if( M_Have_configfile_drawmode() )
+        return;
+   
+    S_StartSound(menu_sfx_enter);
+    menu_cfg = CFG_drawmode; // using menu_cfg
+    config_cvar_edit_insert( &cv_scr_width, 1 );
+    config_cvar_edit_insert( &cv_scr_height, 1 );
+    config_cvar_edit_insert( &cv_scr_depth, 1 );
+    config_cvar_edit_insert( &cv_fullscreen, 1 );
+    config_cvar_edit_insert( &cv_vidwait, 1 );
+    config_cvar_edit_insert( &cv_gammafunc, 0 );
+    config_cvar_edit_insert( &cv_usegamma, 0 );
+    config_cvar_edit_insert( &cv_black, 0 );
+    config_cvar_edit_insert( &cv_bright, 0 );
+
+    M_Set_configfile_drawmode_present();
+    M_SaveConfig( CFG_drawmode, configfile_drawmode );
+}
+
+
 
 //===========================================================================
 // All ready playing, quit current game
@@ -3137,15 +3164,17 @@ static int vidm_column_size;
 
 // Draw the instructions for the video mode setting
 //   vm_mode : 1 for setting video mode
-//   mode_name : the current desc string for the mode
+//   current_mode_name : the desc string for the current mode
+//   mode_name : the desc string for the selected mode
 static
-void  draw_set_mode_instructions( byte vm_mode, const char * mode_name )
+void  draw_set_mode_instructions( byte vm_mode, const char * current_mode_name, const char * sel_mode_name )
 {
     char  temp[80];
+    byte  test_mkcfg = 0;
 
     if (vidm_testing_cnt>0)
     {
-        sprintf(temp, "TESTING MODE %s", mode_name );
+        sprintf(temp, "TESTING MODE %s", sel_mode_name );
         M_CentreText(MODETXT_Y + 20, temp );
         M_CentreText(MODETXT_Y + 30, "Please wait 5 seconds..." );
     }
@@ -3154,6 +3183,7 @@ void  draw_set_mode_instructions( byte vm_mode, const char * mode_name )
     {
         M_CentreText(MODETXT_Y,"Press ENTER to set mode");
         M_CentreText(MODETXT_Y + 40,"Press ESC to exit");
+        test_mkcfg = 1;
     }
 #endif
     else
@@ -3163,20 +3193,45 @@ void  draw_set_mode_instructions( byte vm_mode, const char * mode_name )
 
         M_CentreText(MODETXT_Y + 10,"T to test mode for 5 seconds");
 
-        sprintf(temp, "D to make %s the default", mode_name );
-        M_CentreText(MODETXT_Y + 20,temp);
+        if( current_mode_name )
+        {
+            sprintf(temp, "D to set default to  %s", current_mode_name );
+            M_CentreText(MODETXT_Y + 20,temp);
+        }
 
         if( vm_mode )
-          sprintf(temp, "Current default is %dx%d (%d bits)", cv_scr_width.value, cv_scr_height.value, cv_scr_depth.value);
+        {
+          sprintf(temp, "Current default : %dx%d (%d bits)", cv_scr_width.value, cv_scr_height.value, cv_scr_depth.value);
+        }
         else
-          sprintf(temp, "Current drawmode : %s %s",
-                  drawmode_sel_t[drawmode_to_drawmode_sel_t[cv_drawmode.EV]].strvalue, rendermode_name[rendermode] );
+        {
+#if 1
+//          sprintf(temp, "Current drawmode : %s", current_mode_name );
+//          sprintf(temp, "Current default : %s", drawmode_sel_t[ drawmode_to_drawmode_sel_t[ cv_drawmode.value ] ].strvalue );
+          sprintf(temp, "Current default : %s", cv_drawmode.string );
+#else
+          // Redundant, looks like an error.
+          sprintf(temp, "Current drawmode : %s %s", current_mode_name, rendermode_name[rendermode] );
+#endif
+          test_mkcfg = 1;
+        }
         M_CentreText(MODETXT_Y + 30,temp);
 
         M_CentreText(MODETXT_Y + 40,"Press ESC to exit");
     }
 
-// Draw the cursor for the VidMode menu
+    if( test_mkcfg && ! M_Have_configfile_drawmode() )
+    {
+        // is current_mode_name only during drawmode menu
+        sprintf(temp, "C to make config: %s", drawmode_sel_t[ drawmode_to_drawmode_sel_t[ cv_drawmode.EV ] ].strvalue );
+#if 1
+        V_DrawString( 2, 24, V_WHITEMAP, temp);
+#else
+        M_CentreText(MODETXT_Y + 20,temp);
+#endif
+    }
+
+    // Draw the cursor for the VidMode menu
     if (skullAnimCounter<4)    //use the Skull anim counter to blink the cursor
 //    if( (itemOn > 0) && skullAnimCounter<4 )    //use the Skull anim counter to blink the cursor
     {
@@ -3323,10 +3378,11 @@ void M_DrawVideoMode(void)
     range_t moderange;
     modenum_t  dmode;  // draw modenum
 #ifdef CONFIG_MENU_PAGE
-    modenum_t  current_mode;
+    modenum_t  cfg_vid_mode;
 #endif
     modedesc_t * mdp;  // modedesc
     modedesc_t * current_modedesc;
+    const char * current_modename = "";
     int     i, row, col;
     char    *desc;
 
@@ -3338,8 +3394,8 @@ void M_DrawVideoMode(void)
 
 #ifdef CONFIG_MENU_PAGE
     // Current video mode as default.
-    current_mode.modetype = vid.modenum.modetype;
-    current_mode.index = vid.modenum.index;
+    cfg_vid_mode.modetype = vid.modenum.modetype;
+    cfg_vid_mode.index = vid.modenum.index;
     menu_cfg_editing = 0;  // normal
     if( menu_cfg )
     {
@@ -3365,7 +3421,7 @@ void M_DrawVideoMode(void)
             temp_fullscreen = ( CV_Get_Pushed_cvar( &cv_fullscreen, menu_cfg, /*OUT*/ &temp_cvar2 ))?
                                 temp_cvar2.value : cv_fullscreen.value;
 
-            current_mode = VID_GetModeForSize( temp_cvar.value, temp_height, temp_fullscreen );
+            cfg_vid_mode = VID_GetModeForSize( temp_cvar.value, temp_height, temp_fullscreen );
         }
     }
 #endif
@@ -3373,6 +3429,7 @@ void M_DrawVideoMode(void)
     dmode.modetype = base_modetype;
     vidm_nummodes = 0;
     current_modedesc = NULL;
+    current_modename = NULL;
     moderange = VID_ModeRange( base_modetype );   // indexing
     for (i=moderange.first ; i<=moderange.last ; i++)
     {
@@ -3408,13 +3465,16 @@ void M_DrawVideoMode(void)
         detect_current_setting:
             // Detect current setting, for highlight
 #ifdef CONFIG_MENU_PAGE
-            if (dmode.modetype == current_mode.modetype
-                && dmode.index == current_mode.index )
+            if (dmode.modetype == cfg_vid_mode.modetype
+                && dmode.index == cfg_vid_mode.index )
 #else
             if (dmode.modetype == vid.modenum.modetype
                 && dmode.index == vid.modenum.index )
 #endif
+            {
                 current_modedesc = mdp;
+                current_modename = mdp->desc;
+            }
 
             // Must be after the detection.
             if( vidm_nummodes >= MAXMODEDESCS )  break;
@@ -3443,7 +3503,7 @@ void M_DrawVideoMode(void)
 #ifdef CONFIG_MENU_PAGE
 draw_instructions:
 #endif
-    draw_set_mode_instructions( 1, modedescs[vidm_current].desc );
+    draw_set_mode_instructions( 1, current_modename, modedescs[vidm_current].desc );
 }
 
 
@@ -3483,12 +3543,16 @@ byte  video_test_key_handler( int key )
             }
             goto used_key;
           case KEY_INS :  // insert config
-            config_cvar_edit_insert( &cv_scr_width );  // using menu_cfg
-            config_cvar_edit_insert( &cv_scr_height );  // using menu_cfg
+            config_cvar_edit_insert( &cv_scr_width, 1 );  // using menu_cfg
+            config_cvar_edit_insert( &cv_scr_height, 1 );  // using menu_cfg
             goto used_key;
          case KEY_DELETE :  // delete config
             config_cvar_edit_delete( &cv_scr_width );  // using menu_cfg
             config_cvar_edit_delete( &cv_scr_height );  // using menu_cfg
+            goto used_key;
+	 case 'c' :
+	 case 'C' :
+            create_initial_drawmode_config();
             goto used_key;
          default:
             break;
@@ -3603,6 +3667,11 @@ byte  drawmode_test_key_handler( int key )
         CV_SetValue( &cv_drawmode, cv_drawmode.EV );
         goto used_key;
 
+      case 'c' :
+      case 'C' :
+        create_initial_drawmode_config();
+        goto used_key;
+
       default:
         break;
     }
@@ -3618,6 +3687,7 @@ change_drawmode:
         set_drawmode = vidm_drawmode[vidm_current];  // drawmode for menu row
         drawmode_recalc = true;
     }
+    goto used_key;
    
  used_key:
     return 1;
@@ -3640,13 +3710,18 @@ void M_Draw_drawmode(void)
     // step through cv_drawmode settings
     for(i=0; i<num_drawmode_sel; i++)
     {
-        byte dm = drawmode_sel_t[i].value;
-        if( drawmode_sel_t[i].strvalue == NULL )  break;   // end of drawmode_sel_t
+        byte dm = drawmode_sel_t[i].value; // vid_drawmode_e
+        const char * dmstr = drawmode_sel_t[i].strvalue;
+        if( dmstr == NULL )  break;   // end of drawmode_sel_t
         if( drawmode_sel_avail[dm] == 0 )  continue;
 
         vidm_drawmode[vidm_nummodes++] = dm;  // the drawmode at this row
+
+        // current drawmode: cv_drawmode.EV
+        // default drawmode: cv_drawmode.value
+        // Both have values from vid_drawmode_e.
         // whitemap the current
-        V_DrawString (col, row, ((dm != cv_drawmode.EV) ? 0 : V_WHITEMAP), drawmode_sel_t[i].strvalue);
+        V_DrawString (col, row, ((dm != cv_drawmode.EV) ? 0 : V_WHITEMAP), dmstr);
 
         if( vidm_nummodes > MAXCOLUMNMODES )  break;
 
@@ -3658,8 +3733,10 @@ void M_Draw_drawmode(void)
         }
     }
 
-    byte dm = vidm_drawmode[vidm_current];
-    draw_set_mode_instructions( 0, drawmode_sel_t[drawmode_to_drawmode_sel_t[dm]].strvalue );
+    byte sel_dm = vidm_drawmode[vidm_current];  // selected drawmode
+    const char * sel_drawmode_str = drawmode_sel_t[ drawmode_to_drawmode_sel_t[ sel_dm ] ].strvalue;
+    const char * cur_drawmode_str = drawmode_sel_t[ drawmode_to_drawmode_sel_t[ cv_drawmode.EV ] ].strvalue;
+    draw_set_mode_instructions( 0, cur_drawmode_str, sel_drawmode_str );
 
     // setup key handler for video modes
     key_handler2 = drawmode_test_key_handler;  // key handler

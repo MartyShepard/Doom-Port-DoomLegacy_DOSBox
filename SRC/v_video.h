@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1434 2019-04-26 10:35:00Z wesleyjohnson $
+// $Id: v_video.h 1521 2020-05-05 03:30:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -88,6 +88,8 @@ extern  consvar_t cv_gammafunc;
 extern  consvar_t cv_black;	// input to gammafunc
 extern  consvar_t cv_bright;	// input to gammafunc
 
+extern  consvar_t cv_textout;
+
 extern byte  set_drawmode;
 extern byte  drawmode_recalc;
 extern byte  rendermode_recalc;
@@ -96,7 +98,9 @@ extern byte  HWR_patchstore;  // patches are stored in HWR format
 extern const byte num_drawmode_sel;
 extern byte drawmode_to_drawmode_sel_t[];
 extern byte drawmode_sel_avail[];
+#if 0
 extern const char * rendermode_name[];
+#endif
 
 //  drawmode : drawmode_sel_t
 byte  V_switch_drawmode( byte drawmode, byte change_config );

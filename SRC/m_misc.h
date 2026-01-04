@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.h 1434 2019-04-26 10:35:00Z wesleyjohnson $
+// $Id: m_misc.h 1520 2020-05-05 03:29:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -102,8 +102,11 @@ void Command_ChangeConfig_f (void);
 
 void M_Set_configfile_main( const char * filename );
 void M_Set_configfile_drawmode( byte drawmode );
-void M_LoadConfig( byte cs_config, const char * cfgfile );
-void M_SaveConfig( byte cs_config, const char * cfgfile );
+byte M_Have_configfile_drawmode( void );
+void M_Set_configfile_drawmode_present( void );
+void M_ClearConfig( byte cfg );
+void M_LoadConfig( byte cfg, const char * cfgfile );
+void M_SaveConfig( byte cfg, const char * cfgfile );
 void M_SaveAllConfig( void );
 
 //===========================================================================

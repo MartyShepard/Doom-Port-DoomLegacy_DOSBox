@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.c 1518 2020-04-26 01:48:55Z wesleyjohnson $
+// $Id: m_misc.c 1520 2020-05-05 03:29:56Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -294,6 +294,7 @@ void  M_Set_configfile_main( const char * filename )
 {
     free( configfile_main );
     configfile_main = strdup( filename );
+    config_loaded &= ~config_load_bit[CFG_main];  // clear flag bit
 }
 
 // This table will work even on compilers that do not
@@ -335,8 +336,19 @@ void  M_Set_configfile_drawmode( byte drawmode )
 
     free( configfile_drawmode );
     configfile_drawmode = strdup( cfgbuf );
+    config_loaded &= ~config_load_bit[CFG_drawmode];  // clear flag bit
 }
 
+
+byte  M_Have_configfile_drawmode( void )
+{
+    return  config_loaded & config_load_bit[ CFG_drawmode ];
+}
+
+void  M_Set_configfile_drawmode_present( void )
+{
+    config_loaded |= config_load_bit[ CFG_drawmode ];
+}
 
 
 // Save config file, without disturbing configfile settings.
@@ -415,6 +427,7 @@ void Command_LoadConfig_f (void)
     }
     else
     {
+        M_ClearConfig( CFG_main );
         // Load config sets main config filename.
         M_Set_configfile_main( cfgname );
         // At program end, it will overwrite this config file with all the CFG_main settings.
@@ -451,13 +464,20 @@ void Command_ChangeConfig_f (void)
 #endif
 #if 1
     // Replace the main config with a different config file.
-    CV_Clear_Config( CFG_main );  // cleanup old values
+    M_ClearConfig( CFG_main );  // cleanup old values
 #endif
     // indirect invoke of LoadConfig above.
     COM_BufAddText (va("loadconfig \"%s\"\n", carg.arg[1])); // -> configfile
 }
 
 
+// Clear the config
+//   cfg : cv_config_e, source config file ident
+void M_ClearConfig( byte cfg )
+{
+    config_loaded &= ~config_load_bit[cfg];  // clear flag bit
+    CV_Clear_Config( cfg );
+}
 
 //
 // Load a config file
@@ -474,11 +494,8 @@ void M_LoadConfig( byte cfg, const char * cfgfile )
     fr = fopen ( cfgfile, "r" );
     if( ! fr )
     {
-        // Marty:  Taken fix from future Commit.
         if( cfg == CFG_main )
-        {
             config_loaded |= 0x40;  // set flag bit, so can create CFG_main later
-        }
         return;
     }
     fclose( fr );
@@ -515,7 +532,6 @@ void M_SaveConfig( byte cfg, const char * cfgfile )
 
     // Write this config file if one was loaded,
     // or if there are some values of that config now.
-    // Marty:  Taken fix from future Commit.
     if( (cfg != CFG_main) // CFG_main always gets saved, has all CFG_none var too.
         && ! (config_loaded & config_load_bit[cfg])  // cfg was NOT loaded
         && ! CV_Config_check( cfg ) ) // NOT any of the cfg is (current or pushed).

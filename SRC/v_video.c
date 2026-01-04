@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: v_video.c 1521 2020-05-05 03:30:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -305,6 +305,7 @@ byte drawmode_to_rendermode[] = {
    render_d3d,    // D3D
 };
 
+#if 0
 // Indexed by rendermode_e
 const char * rendermode_name[] = {
     "",
@@ -318,6 +319,7 @@ const char * rendermode_name[] = {
 #endif
     "None"
 };
+#endif
 
 
 
@@ -415,7 +417,7 @@ byte  V_switch_drawmode( byte drawmode, byte change_config )
         }
 
         // Remove the config values from the previous drawmode.
-        CV_Clear_Config( CFG_drawmode );
+        M_ClearConfig( CFG_drawmode );
 
         if( drawmode <= DRM_END )
         {
@@ -483,6 +485,14 @@ consvar_t cv_con_fontsize =
   { "con_fontsize", "Med2", CV_SAVE|CV_CALL, fontsize_t, CV_fontsize_OnChange };
 consvar_t cv_msg_fontsize =
   { "msg_fontsize", "Large", CV_SAVE|CV_CALL, fontsize_t, CV_fontsize_OnChange };
+
+// Controls FinalText output.
+CV_PossibleValue_t textout_sel_t[] = {
+   {0,"Off"},
+   {1,"Vanilla"},
+   {2,"UTF8"},
+   {0,NULL} };
+consvar_t cv_textout = { "textout", "2", CV_SAVE, textout_sel_t, NULL };
 
 
 CV_PossibleValue_t ticrate_sel_t[] = {
@@ -948,6 +958,7 @@ void V_Init_VideoControl( void )
    
     CV_RegisterVar(&cv_vidwait);
     CV_RegisterVar(&cv_ticrate);
+    CV_RegisterVar(&cv_textout);
     CV_RegisterVar(&cv_darkback);
     CV_RegisterVar(&cv_con_fontsize);
     CV_RegisterVar(&cv_msg_fontsize);
@@ -957,7 +968,7 @@ void V_Init_VideoControl( void )
     CV_RegisterVar(&cv_black);
     CV_RegisterVar(&cv_bright);
     CV_RegisterVar(&cv_gammafunc);
-   
+
     // Screen
     CV_RegisterVar(&cv_fullscreen);     // only for opengl so use differant name please and move it to differant place
     CV_RegisterVar(&cv_scr_depth);
