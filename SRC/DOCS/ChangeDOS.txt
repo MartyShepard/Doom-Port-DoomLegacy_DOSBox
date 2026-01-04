@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01526 ]: w108_112 ver 1.48.3
 [01525 ]: w108_111 opengl
 [01524 ]: w108_110 linux_x11
 [01523 ]: w108_109 patch
