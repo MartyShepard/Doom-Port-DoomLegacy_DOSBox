@@ -1,4 +1,4 @@
-f<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
@@ -10,13 +10,14 @@ f<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/
 
 <body>
 <div class="column">
-<h1>Doom Legacy 1.47 User Reference Manual</h1>
+<h1>Doom Legacy 1.48 User Reference Manual</h1>
 
 
 <div class="floatbox">
 <ol>
   <li><a href="#intro">Introduction</a></li>
   <li><a href="#install">Install</a></li>
+  <li><a href="#setup">Setup</a></li>
   <li><a href="#gameplay">Basic gameplay</a></li>
   <li><a href="#console">Console</a></li>
   <li><a href="#network">Network games</a></li>
@@ -139,9 +140,16 @@ f<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/
 <h2 id="install">INSTALL</h2>
 
 <p>
-  Installing Doom Legacy depends upon the operating system and the
+Installing Doom Legacy depends upon the operating system and the
 user preferences:
 
+<p>
+DoomLegacy needs to be installed in its own directory, and not your
+HOME directory.
+DoomLegacy has protections against using your HOME directory,
+such as refusing to search it for support files.
+Support files in your HOME directory will be inaccessible.
+<p>
 A full explanation of the source packages install is in the
 <a href=INSTALL.html>INSTALL</a> manual.
 </p>
@@ -175,11 +183,6 @@ A specific directory may be specified.
 Install for the use of the immediate user, owned by the immediate user.
 The install directory must be within the user directory space.
 The User may specify a directory.
-
-<p>
-Install Doom Legacy in its own directory.
-Do not install Doom Legacy to your home directory.  Doom Legacy
-will not search the home directory.
 </p>
 
 
@@ -191,48 +194,29 @@ will not search the home directory.
   The user can also keep private wad directories.
   All will be searched, see the search directory list in the
   <a href=INSTALL.html>INSTALL</a> manual.
-</p>
-<p>
-  The IWAD files should go in a separate directory that can be shared
-  between all Doom source ports (such as <b>/usr/local/share/games/doomwads</b>).
-  You can set the <b>DOOMWADDIR</b> environment variable to point this directory in a login script or a game starting script.
-  If <b>DOOMWADDIR</b> is not set, Doom Legacy will try the
-  directories of the search list, and the installation directory.
-</p>
-<p>
-  You can also make soft links one of the above mentioned directories to
-  point to the actual IWAD files.
-  The valid file names for each game selection can be found in
-  docs/technical/wad_selection.txt.
-</p>
-<div class="code">$ ln -s wads/idgames/doom1.wad  doom1.wad
-$ ln -s wads/idgames/doom2.wad  doom2.wad
-$ ln -s wads/idgames/doomu.wad  doomu.wad
-$ ln -s wads/idgames/plutonia.wad  plutonia.wad
-$ ln -s wads/idgames/tnt.wad  tnt.wad
-$ ln -s wads/freedoom-iwad-0.7/doom2.wad  freedoom.wad
-$ ln -s wads/freedoom-iwad-0.9/freedoom2.wad  freedoom2.wad
-</div>
 <p>
   Doom Legacy will use the <b>HOME</b> environment variable, which is
-  usually set by your Linux login, to find your home directory.
+  usually set by your Linux login, to find your user home directory.
   It will make a hidden directory named <b>.doomlegacy</b> there for
   storing your configuration files and saved games.
-  If <b>HOME</b> is not set, Doom Legacy will look for
-  <b>/usr/local/games/legacyhome</b>, and if that is not present then will
-  use the current directory.
-  This behavior can be overridden by using the -home and -config switches:
+<p>
+  If <b>HOME</b> is not set, Doom Legacy will fall back on an old behavior,
+  and look for <b>legacyhome</b> in the current directory.
+  If necessary, it will create <b>legacyhome</b> in the program directory.
+  It will then use <b>legacyhome</b> as the legacy directory.
 </p>
+Use the -home and -config switches:
 <div class="code">$ doomlegacy -home ~/doomstuff -game plutonia
 $ doomlegacy -home ~/doom -config ~/doom/plutconfig.cfg -game plutonia
 </div>
 <p>
-  PWAD and DeHackEd files can be included using the -file switch. Examples:
+  PWAD and DeHackEd files can be included using the -file switch.
 </p>
+Examples:<br>
 <div class="code">$ doomlegacy -game tnt
-$ doomlegacy -game plutonia -file pwad/pl2/PL2.WAD
+$ doomlegacy -game plutonia -file wads/pl2/PL2.WAD
 $ doomlegacy -iwad freedoom.wad -file new_map13.wad
-$ doomlegacy -file pwad/Twilight/TWILIGHT.DEH pwad/Twilight/TWILIGHT.WAD
+$ doomlegacy -file wads/Twilight/TWILIGHT.DEH wads/Twilight/TWILIGHT.WAD
 </div>
 <p>
   Script files can also be used to start Doom Legacy:
@@ -248,49 +232,36 @@ doomlegacy -iwad doom2.wad -file DM8.WAD
 <p>
   The installation can be system style, a games directory, or within the
   user home directory.
-  Some wad files can be put into one of the absolute path wad directories,
-  making them available to all users and all doom programs.
-  The user can also keep private wad directories relative to HOME.
-  All will be searched, see the search directory list in the
-  <a href=INSTALL.html>INSTALL</a> manual.
+  Support files, like wads, legacy.wad, autoexec.cfg, and config.cfg,
+  need to be found by Doom Legacy.
 <p>
   The installation should put all files in known directories, which
   makes it easy to start Doom Legacy without needing to change to the
   program directory.
+  The known directories are listed in the 
+  <a href=INSTALL.html>INSTALL</a> manual.
+<p>
   If there is difficulty, it will be due to Doom Legacy not finding your
   HOME directory, not finding where legacy.wad is stored, or not finding
-  the IWAD.  Ensure there is a consistent HOME directory to use the same
+  the IWAD.  Ensure there is a consistent HOME directory, so it uses the same
   config file each time you play.
   Put the needed files in known directories, and check that that the HOME or
   UserProfile environment variable is set to your home directory.
   When started with the "-v" switch, Doom Legacy will print to
   stderr.txt where it finds directories and the search list.
-  Support files, like wads, legacy.wad, autoexec.cfg, and config.cfg,
-  need to be found by Doom Legacy.
-  The known directories are listed in the 
-  <a href=INSTALL.html>INSTALL</a> manual.
-</p>
 <p>
-  Put your wad files in known directories of the search list,
-  like "\doomwads", or "\games\doomwads", or in the current directory.
-  Doom Legacy will look in all directories of the search directory list.
-  Setting DOOMWADDIR environment variable specifies an additional wad directory
-  to be searched.  This can be set at login, or in a batch file that
-  starts Doom Legacy.
-</p>
-<p>
-  A "legacy" directory will be created in your home directory for savegames
+  A legacy directory will be created in your user home directory for savegames
   and saved config files.
   Set the environment variable "<b>HOME</b>" in a batch file, or use the -home switch
   when starting Doom Legacy.
   In Windows, "<b>UserProfile</b>" will be checked as an alternative to HOME.
-  Otherwise, it will check for an alternative home directory exists,
-  <b>"legacyhome"</b>.
-  As a last resort, it will try to create <b>"legacyhome"</b> in the
-  program directory.
+  <p>
+  Failing to find a user home directory, it will fall back on an old
+  behavior of using <b>"legacyhome"</b> for the legacy home directory.
+  If necessary, it will create <b>"legacyhome"</b> in the program directory.
 
-  Overriding by using the -home and -config switches, examples:
 </p>
+Use the -home and -config switches:
 <div class="code">> doomlegacy -home c:\games\doomsave -game plutonia
 > doomlegacy -home c:\games\doomsave -config c:\games\plutconfig.cfg -game plutonia
 </div>
@@ -346,11 +317,24 @@ DM2MOD.BAT
 
 <h3>Windows with launcher</h3>
 <p>
-  The previous separate launcher is no longer actively supported,
-  but older launchers will still work.  Other Launchers can also be used,
-  as most command line switches are somewhat standard.
+  Newer Launchers can be used with Doom Legacy, as most command line switches are somewhat standard.
   Most of the settings that a launcher supports can now also be set from the
   console also, or using an autoexec file.
+</p>
+<p>
+  The old Legacy Launcher is not supported, and I am trying to bury it; it is dead.
+  The source code is lost and we cannot fix it.
+<p>
+  The old launcher can misplace the doom settings file (doomargs.tmp),
+  putting it into the directory where the IWAD is found.
+  It then specifies a doomargs file to Legacy without using the directory name.
+  Legacy will start without seeing the file, or will use a stale file.
+<p>
+  The best solution is to never specify a directory name on the IWAD file
+  when using the old launcher.
+  Let Legacy search the known directories for the IWAD file.
+  If necessary, you can put in the Legacy executable directory a soft link to the directory
+  where you keep the IWAD files.  Legacy will search through it.
 </p>
 <p>
   The launcher has some problems with setting home and config directories.
@@ -362,6 +346,7 @@ DM2MOD.BAT
       like <b>C:\games\doomlegacy</b></li>
   <li>Start the Launcher</li>
   <li>Fill in required information about WAD locations and hardware options</li>
+  <li>Give the IWAD filename without a directory, and let Legacy search for it.</li>
   <li>Launch the game!</li>
 </ul>
 
@@ -395,6 +380,54 @@ DM2MOD.BAT
   </li>
 </ul>
 
+<h2 id="setup">SETUP</h2>
+
+<h3>Wad files</h3>
+<p>
+  Doom Legacy will look in all directories of the search directory list.
+  See the search directory list in the
+  <a href=INSTALL.html>INSTALL</a> manual.
+<p>
+  Some wad files can be put into one of the absolute path wad directories,
+  making them available to all users and all doom programs.
+  like "/doomwads", or "/games/doomwads".
+<p>
+  The IWAD files should go in a separate directory that can be shared
+  between all Doom source ports (such as
+<nobr><b>/usr/local/share/games/doomwads</b></nobr>).
+<p>
+  The user can also keep private wad directories relative to HOME.
+  Put your personal wad files into one of the relative path directories,
+  like "doomwads", or "games/doomwads".
+</p>
+<p>
+  Setting DOOMWADDIR environment variable specifies an additional wad directory
+  to be searched.  This can be set at login, or in a script file that starts Doom Legacy.
+<p>
+  Doom Legacy will also search the installation directory, but it is
+  not a recommended location for wad files. The wad files would not be shared, leading to duplicate copies.
+  Installing and deleting wad files from the installation directory will damage the installation eventually,
+  such as overwriting or deleting a required file by mistake.
+  The legacy.wad file should be in the installation directory because it is only used by Doom Legacy.
+<p>
+  You can also make soft links to one of the above mentioned
+  directories, or point to the actual IWAD files.
+  The valid file names for each game selection can be found in
+  docs/technical/wad_selection.txt.
+</p>
+<div class="code">$ ln -s wads/idgames/doom1.wad  doom1.wad
+$ ln -s wads/idgames/doom2.wad  doom2.wad
+$ ln -s wads/idgames/doomu.wad  doomu.wad
+$ ln -s wads/idgames/plutonia.wad  plutonia.wad
+$ ln -s wads/idgames/tnt.wad  tnt.wad
+$ ln -s wads/freedoom-iwad-0.7/doom2.wad  freedoom.wad
+$ ln -s wads/freedoom-iwad-0.9/freedoom2.wad  freedoom2.wad
+</div>
+<p>
+  Doom Legacy will search the current directory only if it is not the user home directory.
+  It will refuse to search a default directory containing a "Desktop", "Pictures", or "Music" directory.
+  This prevents long searches through directories that are not likely to contain wad files.
+</p>
 
 <h3>Setting up the game</h3>
 <p>
@@ -407,9 +440,54 @@ DM2MOD.BAT
   When config.cfg does not exist, Legacy will write one using a default config.
 </p>
 <p>
-  OpenGL uses a separate file, 'glconfig.cfg', so that the OpenGL
-  settings do not disturb an existing config file. This does
-  mean that switching to OpenGL requires setting up the controls again.
+  Each drawmode has an optional config file for drawmode dependent
+  settings.  These are typically the video mode, gamma settings,
+  fullscreen, and vert sync settings.
+  Any other config file setting can also be included.
+  The settings from the drawmode config file override the settings
+  from the main config file.
+</p>
+Drawmode config files, where two letters indicate the drawmode
+that loads it:
+<ul>
+<li>config8p.cfg (8 bit pal)</li>
+<li>config15.cfg (15 bit)</li>
+<li>config16.cfg (16 bit)</li>
+<li>config24.cfg (24 bit)</li>
+<li>config32.cfg (32 bit)</li>
+<li>configbp.cfg (explicit bpp)</li>
+<li>confign.cfg (native)</li>
+<li>configgl.cfg (OpenGL)</li>
+<li>configmg.cfg (MiniGL)</li>
+<li>configwg.cfg (Windows Glide)</li>
+<li>configwd.cfg (Windows D3D)</li>
+</ul>
+<p>
+Use the option menu controls to insert and delete config file
+settings.  First change to the drawmode that you want to modify.
+The drawmode config file will be loaded automatically.
+Change to the options menu page, press F3, move to
+the item to be inserted, and press INSERT.
+Press F1 to return to normal menu operation.
+<p>
+Config setting keys:
+<ul>
+<li>F1 = normal menu</li>
+<li>F2 = Main config values only</li>
+<li>F3 = Drawmode config values only</li>
+<li>F4 = normal menu</li>
+<li>INSERT = add the menu item to the config file</li>
+<li>DEL = delete the menu item from the config file</li>
+</ul>
+<p>
+Menu entries that are not relevant to the drawmode config, like the control
+key assignments, do not have support for insert to the drawmode config file.
+</p>
+<p>
+  OpenGL had a separate file, 'glconfig.cfg', which is no longer used.
+  It can be kept around if you ever run older versions of Doom Legacy.
+  The new OpenGL config file is configgl.cfg, but it will only contain
+  drawmode specific settings.
 </p>
 <p>
   Develop mode (-devgame or -devparm), will use devdataconfig.cfg
@@ -444,19 +522,26 @@ with your own selection of compile options.
 
 <li>WINDOWS
 <p>
-  In the Windows native version the sound is autodetected using DirectX so make
-  sure your card works well with DirectX and then legacy will use it.
+  The Windows SDL version uses SDL for the sound.
 </p>
 <p>
-  Additionally, Legacy could utilize hardware 3D sound
-  for making more realistic sound environment.
+  The Windows native version normally uses DirectX to autodetect the sound,
+  so make sure your card works well with DirectX and then legacy will use it.
+</p>
+<p>
+  Additionally, Legacy could utilize hardware 3D sound drivers
+  for making a more realistic sound environment.  This requires that the
+  specified compile option be selected, and such options are only
+  valid for compiling the Windows native version.  Because these driver
+  options were developed before WinXP, they may have to be debugged for
+  newer Windows OS.
 </p>
 <p>
   Specify -ds3d command line parameter to use generic 3D sound driver
-  (DirectSound 3D). This driver are suitable for most 3D sound chips.
+  (DirectSound 3D). This driver is suitable for most 3D sound chips.
 </p>
 <p>
-  FMOD is an alternative sound library.  To use FMOD, it must be compiled
+  FMOD is an alternative sound library.  To use FMOD, Legacy must be compiled
   with the FMOD library and FMOD configuration selected.
   FMOD support was incompletely developed, so compilation has not been
   sucessfull. FMOD compilation is disabled by default.
@@ -506,6 +591,48 @@ tested.  A more modern operating system provides better support.
   The mouse and joystick sensitivities can be set
   using the console variables, and there is some menu support.
 </p>
+<p>
+  There are double click control variables for mouse and joystick,
+  that adjust the double click detection time.
+  A normal double click time is about 6.
+</p>
+<p>
+  If your button assignments have made it impossible to access the menu.
+  and you do not have a keyboard, you have a problem.
+  You won't be able to change those menu assignments either.
+  In this case you must find the config.cfg file in your legacy
+  directory, and edit it.  You can delete any offending "setcontrol" lines
+  (must delete the entire line), and let Doom Legacy revert to default settings.
+</p>
+<ul>
+<li>Mouse : 2 per machine</li>
+<li>Mouse Buttons : 8 per mouse</li>
+<li>Mouse Wheel : 1 per mouse  (UP, DOWN)</li>
+<li>Joysticks : 4 per machine</li>
+<li>Joystick Buttons : 16 per joystick</li>
+<li>Joystick Triggers : 2 per joystick/controller</li>
+<li>Joystick Hat : 1 per joystick/controller (UP, RIGHT, DOWN, LEFT)</li>
+</ul>
+
+<h3>Controller</h3>
+<p>
+  Support for an xbox-style gamepad has been added.
+  It appears to be a joystick with many buttons, triggers, and a hat.
+  Button assignments have been made for menuesc, pause, and automap,
+  so it is possible to play without a keyboard.
+</p>
+<ul>
+<li>Pause: Joystick 0, Button 6, Controller BACK button.</li>
+<li>MenuEsc: Joystick 0, Button 7, Controller START button.</li>
+<li>Automap: Joystick 0, Button 8.</li>
+<li>During the wait for players, when it asks for 's' to start,
+it will also accept joystick button 2,3,4, or 5, as start.</li>
+<li>All joystick buttons have double-click sensing.</li>
+<li>Accidentally activating double-click button in the menus happens,
+and that setting ignores normal button presses.
+Delete that button assignment and start over.</li>
+</ul>
+
 
 
 <h3>Setup Controls menu</h3>
@@ -516,11 +643,20 @@ tested.  A more modern operating system provides better support.
 
   To CLEAR the keys attached to a control, use the BACKSPACE key.
 </p>
+<table class="def">
+<tr><td>mouse b1</td><td>First mouse, button 1.</td></tr>
+<tr><td>mouse2 b3</td><td>Second mouse, usually for second player. Button 3.</td></tr>
+<tr><td>mouse2 b3 d&nbsp</td><td>Second mouse. Button 3 double click.</td></tr>
+<tr><td>joy0 b0</td><td>First joystick, button 0.</td></tr>
+<tr><td>joy3 b15</td><td>There can be 4 joysticks, buttons 0 to 15.</td></tr>
+<tr><td>joy0 hu</td><td>The 4 hat directions, 'hu', 'hd', 'hl', 'hr'.</td></tr>
+<tr><td>joy0 lt</td><td>'lt', 'rt' are left and right trigger.</td></tr>
+</table>
 <p>
   To setup the DOUBLE CLICK for mouse/joystick buttons: enter the
-  click one time, so that it displays, e.g. 'MOUSEBUTTON1'. Then
+  click one time, so that it displays, e.g. 'mouse b1'. Then
   re-enter the click a second time, and it will transform into a
-  dbl-click, e.g. 'MOUSEBUTTON1' will become 'DOUBLEMOUSE1'.
+  dbl-click, e.g. 'mouse b1' will become 'mouse b1 d'.
 
   You can use double-clicks for any joystick/mouse button, and you
   can attach any action to it.
@@ -561,7 +697,7 @@ black -2
 gamma 2
 bright -1</div>
 <p>
-  To see the current setting just type the name, without a value.
+  To see the current setting on the console, just type the name, without a value.
   Normal levels are black 0, gamma 0.
 </p>
 <p>
@@ -734,8 +870,13 @@ mouselook, autoaim is not needed, so autoaim can be disabled.
 <p>
   The OpenGL renderer is shinier and has fancier effects than the software one,
   but it does not do everything that the software renderer does.
-  It does have coronas, explosion light, and other light effects that the
-  software renderer does not do.
+  The OpenGL renderer does draw explosion light, and other light effects
+  that the software renderer does not do.
+</p>
+<p>
+  The coronas that previously were OpenGL only, are now available with software
+  rendering too.  The native drawmode can also look very nice, and often
+  renders much faster than OpenGL in large maps.
 </p>
 <p>
   Some wads rely upon violating wad rules to get trick effects.
@@ -811,6 +952,14 @@ See <a href="console.html">here</a> for more about the console.
     are sent to all the players when they
     are changed on the server, and only the server can change them.
     Examples are 'allowjump', 'respawnitemtime', 'deathmatch', ...
+  </li>
+  <li>
+    The multiplayer menu allows bots to be in a game.  In Network play,
+    they seem to work in Coop, but not in deathmatch.
+    Bots are a work-in-progress.
+    The bots are a substitute for real players.
+    Insert your own joke here, but wait until you have tried playing
+    COOP with them.
   </li>
 </ul>
 
@@ -1040,9 +1189,11 @@ Doom Legacy 1.47.2 is network incompatible with previous versions of DoomLegacy.
   This is more balanced that the original frags system, because
   you can't get a good score simply by slaughtering clueless newbies.
 <p>
-  If player i has fragged player j F[i][j] times,
-  the total frags of player i are given by T[i] = sum_j F[i][j].
-  The Buchholz score of player i is sum_j F[i][j] * T[j].
+  It defines F[i][j] as the number of times player i has fragged player j.<br>
+  The total frags of player i are given by<br>
+  T[i] = sum( F[i][j], where j = 0..num_players).<br>
+  The Buchholz score of player i is:<br>
+  sum( F[i][j] * T[j], where j = 0..num_players).
 </p>
   </li>
   <li>
@@ -1051,12 +1202,12 @@ Doom Legacy 1.47.2 is network incompatible with previous versions of DoomLegacy.
   get 1 point. Then all the points are added and the
   winner is the one with the most points. This was
   suggested by Cristian Romero (romero-c@usa.net).
-  Is is not perfect, but is already interesting enough:
+  It is not perfect, but is already interesting enough:
   think of it more 'individual'. You have to make more frags
   compared to each other player to earn points. So you will
-  want to go after players that you can make more frags, and
-  forget about the ones which have already too much frags
-  compared to you. Go for the victories, more than the frags.
+  want to go after players that are close to you in their number of frags,
+  and forget about the ones which have already have more frags than you.
+  Go for the victories, more than the frags.
   </li>
   <li>DEATHS: this ranking shows the players who have died the most!</li>
 </ul>
@@ -1090,7 +1241,7 @@ Doom Legacy 1.47.2 is network incompatible with previous versions of DoomLegacy.
   </li>
   <li>DOOMWADDIR: A directory to search for legacy.wad, IWAD, and PWAD files.
   </li>
-  <li>CONFIG: The config file to use.
+  <li>CONFIG: The main config file to use.
   This will be submitted by the launcher using the "-config" switch.
   <br>Example: "myconfig", which will be submitted as "-config myconfig".
   </li>
@@ -1132,7 +1283,6 @@ at the command line.<br/>
 They will be executed right after the configfile, but before autoexec.cfg.</td>
 </tr>
 
-
 <tr>
 <td>-home &lt;dirname&gt;</td>
 <td>Set your home directory location, where your configfiles and
@@ -1141,7 +1291,7 @@ savegames are kept.</td>
 
 <tr>
 <td id="config">-config &lt;filename&gt;</td>
-<td>Set the configfile to use. Default: config.cfg.</td>
+<td>Set the main config file to use. Default: config.cfg.</td>
 </tr>
 
 <tr>
@@ -1407,7 +1557,10 @@ If that fails, it will try 8 bpp modes.</td>
 <td>Request use of a native bpp video mode, based on what video
 mode is being used when the program starts.
 If that fails, it will try 8 bpp modes.
-On most modern systems, native is 24 or 32 bpp.</td>
+On most modern systems, native is 24 or 32 bpp.
+<br>
+This can now be selected using the options menu drawmode.
+</td>
 </tr>
 
 <tr>
@@ -1434,6 +1587,8 @@ MiniGL is a subset library of the OpenGL standard for WIN32 and will use the
 minigl.dll instead.
 Requires compiling with the OpenGL library and configuration.
 Default: use the software renderer.
+<br>
+This can now be selected using the options menu drawmode.
 </td>
 </tr>
 
@@ -1741,7 +1896,7 @@ Normal deathmatch has weapons and a few special items respawn,
 but altdeath has all items and weapons respawn.
 Without -deathmatch or -altdeath, the game will start cooperative where
 the players cooperate to fight the monsters.
-This can also be selected and customized from the menus.
+This can also be selected and customized from the menus, with more choices.
 </td>
 </tr>
 

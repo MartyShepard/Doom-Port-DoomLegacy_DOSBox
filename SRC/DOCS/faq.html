@@ -4,17 +4,17 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
   <link rel="stylesheet" href="legacy.css" type="text/css"/>
   <meta name="keywords" content="Doom, Legacy, documentation, manual, docs, FAQ"/>
-  <meta name="description" content="Doom Legacy is your premiere source port engine for id Software's classic DOOM games and more!"/>
-  <title>Doom Legacy FAQ</title>
+  <meta name="description" content="DoomLegacy is your premiere source port engine for id Software's classic DOOM games and more!"/>
+  <title>DoomLegacy FAQ</title>
 </head>
 <!-- $Id$ -->
 <body>
 <div class="column">
-<h1>Doom Legacy 1.47 FAQ</h1>
-<h1 class="tagline">Last updated 2018-07-11</h1>
+<h1>DoomLegacy 1.48 FAQ</h1>
+<h1 class="tagline">Last updated 2020-05-14</h1>
 
 <p>
-If you have any trouble with Doom Legacy, you might find a solution here.
+If you have any trouble with DoomLegacy, you might find a solution here.
 </p>
 <p>
 If you find a solution to a problem that was not listed here,
@@ -50,14 +50,22 @@ switch on the command line.
 It does not have to be a real switch, -nolaunch, or even -xx will do it.
 <p>If you do not have a command line console, or do not want to use it,
 you can start DoomLegacy without any switches, which will bring up the
-Doom Legacy built-in Launcher.
+DoomLegacy built-in Launcher.
 From the Launcher you can specify almost all switches.
 The switches -mb (Zalloc memory size), -h (help) are handled before the built-in Launcher runs,
 and thus the Launcher will ignore them.
 <p>
-For command line switches, I recommend using native video, and you must select your game.
+You must select the game in the command line switches.
 <br>
-> doomlegacy -native -game doom2
+<pre>
+> doomlegacy -game doom2
+</pre>
+I also recommend using native video, but as that can now be selected by
+the saved config, it is not necessary to specify it on the command line.
+<pre>
+> doomlegacy -game doom2 -native
+</pre>
+</p>
   </dd>
 </dl>
 
@@ -73,28 +81,68 @@ From the Launcher this would be:
   How does DoomLegacy determine the HOME directory.
   </dt>
   <dd>
+<p>There are two home directories to consider. The user home, and the
+legacy home directory.  The legacy home directory, where DoomLegacy
+saves config and savegames, is created within the user home
+directory.</p>
+<p>The directory names vary by OS (Operating System, like Linux,
+Windows, DOS), due to filesystem differences.
+The directory names are specified in the doomdef.h for each OS.
+These may be changed to compile a DoomLegacy for special circumstances.
+<p>The DEFHOME directory name is specified in the doomdef.h file for each OS.
+It is usually "legacyhome", but is "DL_HOME" on DOS.
+This is only used if your OS does not have a home directory for each user, such as DOS.
+<p>The legacy home directory name also is specified for each OS in the
+doomdef.h file.
+There is also an alternative name, such as if your legacy home was created by an older DoomLegacy version.
+It is usually ".doomlegacy" or ".legacy", or may be
+a "doomlegacy", "dmlegacy", or "legacy" depending on the OS.</p>
+</p>
   <ul>
-  <li>It is specified by the -home switch on the command line.</li>
+  <li>The user home can be specified by the -home switch on the command line.</li>
   <li>
-The HOME environment variable is specified.  Linux, BSD,
+If a HOME environment variable is found, it specifies the user home.  Linux, BSD,
 and unix-like operating systems setup HOME during user login.
   </li>
   <li>
-The "UserProfile" environment variable is specified.  The is done
-by WinXP, and probably later versions of Windows (but they change and break things too).
-This will make the parent of "My Documents" your home directory by default.
+If a "UserProfile" environment variable is specified, it specifies the user home.
+The is done by WinXP, and probably later versions of Windows (but they change and break things too).
+This will make the parent of "My Documents" your user home directory by default.
+  </li>
+  </ul>
+<br>
+Having a user home directory.
+  <ul>
+  <li>After having determined the user home directory, DoomLegacy
+tries to find the legacy home directory within it.
+  </li>
+  <li>If legacy home is not found, DoomLegacy creates it within the user home directory.
+  </li>
+  </ul>
+<br>
+No user home directory:
+  <ul>
+  <li>
+If a home directory is not determined, DoomLegacy will look for the
+DEFHOME directory (example: legacyhome) in the current directory.
+If found, it is used as the legacyhome directory.
+This would have been created by the user, as DoomLegacy would not
+have created it there.
   </li>
   <li>
-The default directory specified by DEFHOME in the doomdef.h
-file is found to exist.
-  </li>  
-  <li>
-If none of these exist then DoomLegacy will make a home directory in
-the program directory using the DEFHOME name.
+DoomLegacy will use the DEFHOME directory in the program directory as legacy home.
+It may already exist, or DoomLegacy will create it.
   </li>  
   </ul>
-If you are inconsistent about specifying the home directory, you
+  </p>
+<p>If you are inconsistent about specifying the home directory, you
 can easily have more than one set of config files.
+The above does not apply on a Mac, where a legacy home directory is
+provided by the OS.
+<p>Write protected directories, or system protected directories, will
+prevent DoomLegacy from creating directories.  Then you will not be
+able to save config, nor savegames.
+</p>
   </dd>
 </dl>
 
@@ -106,15 +154,17 @@ DoomLegacy tries to use the MSYS home directory.
   <dd>
 MSYS sets the HOME environment variable to its own home directory
 for use by MSYS commands.
+<p>
 Older versions of DoomLegacy would use the MSYS home,
-but DoomLegacy 1.46 ignores a HOME environment variable that has
+but since DoomLegacy 1.46 it ignores a HOME environment variable that has
 the string MSYS in it.
+<p>
 If you had your home directory in MSYS,
 then it would be best to move to a more reasonable home location.
 You may have to specify it with the -home switch if it is an odd location.
-<p>DoomLegacy 1.46 also recognizes the environment variable "UserProfile" as
+<p>Since DoomLegacy 1.46 also recognizes the environment variable "UserProfile" as
 home, which appears on WinXP (and probably later versions of Windows too).
-This will make the parent of "My Documents" your home directory automatically.
+This will make the parent of "My Documents" your home directory automatically.</p>
   </dd>
 </dl>
 
@@ -152,17 +202,172 @@ DoomLegacy keeps losing my config settings.
   </dt>
   <dd>
 <p>The config settings are saved by DoomLegacy during program shutdown.
-If it is being killed some other way, the settings will not be saved.
+If it is being killed some other way, the settings will not be
+saved.</p>
 <p>If you are inconsisent about specifying your home directory, then
 DoomLegacy will create a new config file in each new location.
 If you find you have to setup your keyboard again, then you may have
 mistyped your -home directory name.  Setup a profile or a batch
 file to start DoomLegacy from saved settings to ensure getting a consistent
-home directory.
-<p>OpenGL hardware rendering has its own separate config file.
-You will have to set all your settings again, sorry.
+home directory.</p>
+<p>Previous versions of DoomLegacy had a separate config file for
+OpenGL hardware rendering.  This config file is no longer used.
+There is a new drawmode config file for OpenGL, with a different file
+name, and different content.
+<p>You will have to setup the drawmode config files if you want separate
+video settings for OpenGL hardware rendering.  Each drawmode has an
+separate optional drawmode config file that pushes down and hides settings from
+the main config file.
+<p>The drawmode config files are optional. You do not have to create
+them or use them.  You could only create one, such as for OpenGL.
+<p>Only put into each drawmode config file the video settings that are
+unique for that drawmode.  This is usually video mode, fullscreen, and
+gamma settings.
+</p>
   </dd>
 </dl>
+
+<dl>
+  <dt>
+How to create an OpenGL config file.
+  </dt>
+  <dd>
+The Menu system offers to create an initial drawmode config file.
+When you are in drawmode config edit mode, and it detects that the
+drawmode config does not exist, it will offer to create one.
+ <ul>
+ <li>Goto the Video options menu. </li>
+ <li>Press "F3" to enter drawmode config edit mode.</li>
+ <li>Drawmode config edit mode will have DRAWMODE in WHITE text at the top of the screen.
+ If you do not have DRAWMODE in WHITE text at the top of the screen, you are not in drawmode config edit mode.</li>
+ <li>Use the drawmode menu to select a drawmode (such as OpenGL).</li>
+ <li>If the config file for that drawmode does not exist, the menu will offer to create it (in WHITE text).
+If it does not offer to create the file, then a drawmode config file
+must already exist.</li>
+ <li>Press "C" to create an initial drawmode config mode.
+ The video mode, fullscreen, vidwait, and gamma, will be included automatically.</li>
+ <li>Exit to the Video options menu.  The drawmode config file entries are shown
+ there while in drawmode config edit mode.  Menu items that are not in
+the drawmode config file will be blank.</li>
+ <li>To add a menu item to the drawmode config mode, move to it, and press "INSERT".
+ This will create a separate entry in drawmode config file, that will
+be used whenever that drawmode is being used.</li>
+ <li>To remove a menu item from the drawmode config mode, move to it, and press "DELETE".
+ The setting from the main config file will then be used.</li>
+ <li>Press "F1" to exit the drawmode config edit mode.  Now the menu
+will show the current settings that DoomLegacy is using.  Some of
+these will be from the main config, and some will be from the drawmode
+config.</li>
+ </ul>
+  </dd>
+</dl>
+
+
+<dl>
+  <dt>
+Config file edit mode.  What is that?
+  </dt>
+  <dd>
+DoomLegacy supports editing the config files from the menus.
+Not all menus support this.  Some menus have items that only appear
+in the main config file, like the keyboard setup.
+<ul>
+<li>F1: Normal menu.</br>
+Settings from the main config file and the
+drawmode config file are shown, and other.</li>
+<li>F2: Edit main config file.</br>
+Only settings from the main config file will show.</li>
+<li>F3: Edit drawmode config file.</br>
+Only settings from the drawmode config file will show.
+Menu items that are not in the drawmode config file will be blank.</li>
+<li>F4: Normal menu</br></li>
+<li>INSERT: Insert current menu item (at the cursor), into the config
+file being edited.  The config file being edited appears in WHITE at
+the top of the screen.</li>
+<li>DELETE: Remove the current menu item (at the cursor), from the
+config file being edited.  The config file being edited appears in WHITE at
+the top of the screen.</li>
+</ul>
+Config file changes will be saved when exiting DoomLegacy.
+  </dd>
+</dl>
+
+
+<dl>
+  <dt>
+My old OpenGL config file does not work.
+  </dt>
+  <dd>
+The config file naming has changed.
+<ul>
+<li>The main config file is still named config.cfg.</li>
+<li>The old OpenGL config file, glconfig.cfg, which contained all settings including
+keyboard settings, is no longer used.</li>
+<li>The new OpenGL config file, configgl.cfg, contains only video
+specific settings.  The user decides which settings they want using
+drawmode config edit mode (F3).</li>
+<li>DoomLegacy remembers which settings were loaded from the drawmode
+config file, and writes them back again.</li>
+<li>If you do something like rename glconfig.cfg to configgl.cfg, then
+the new drawmode config file will takeover all the config settings,
+including the keyboard setup.  You also need to edit the new
+configgl.cfg file and delete any lines that the OpenGL config should
+not control. That is most of the config file. Those will default to the main config file settings.
+<br>Be sure to delete the drawmode line from the drawmode config file.
+</li>
+</ul>
+  </dd>
+</dl>
+
+
+<dl>
+  <dt>
+How many config files are there?
+  </dt>
+  <dd>
+Only config.cfg is required.  The others are optional.  Every drawmode
+can have its own drawmode config file, which only contains drawmode specific
+settings like video mode, fullscreen, and gamma.
+<ul>
+<li>The main config file: config.cfg</li>
+<li>8 bit palette draw: config8p.cfg</li>
+<li>15 bit software draw: config15.cfg</li>
+<li>16 bit software draw: config16.cfg</li>
+<li>24 bit software draw: config24.cfg</li>
+<li>32 bit software draw: config32.cfg</li>
+<li>Explicit bpp software draw: configbp.cfg</br>
+This currently has its own config.  This may change.
+</li>
+<li>Native software draw: confign.cfg</br>
+This is the native video mode that is detected when DoomLegacy starts.</li>
+<li>OpenGL draw: configgl.cfg</li>
+<li>MiniGL draw: configmg.cfg</li>
+<li>Glide draw: configwg.cfg</br>
+Windows native port only</li>
+<li>D3D draw: configwd.cfg</br>
+Windows native port only</li>
+</ul>
+  </dd>
+</dl>
+
+
+<dl>
+  <dt>
+Can I put any other config lines into the drawmode config file?
+  </dt>
+  <dd>
+Yes, almost any config file line can appear in a drawmode config file.
+<p>
+One exception is drawmode, do not put that in your drawmode config file.
+<p>
+You can go to other menus and insert entries into your drawmode config
+file.
+Some menus, like keyboard setup, do not have any menu support for
+INSERT to a drawmode config file.
+</p>
+  </dd>
+</dl>
+
 
 <dl>
   <dt>
@@ -170,20 +375,33 @@ When a friend comes over to play, he changes my keyboard settings.
 Is there any way to save my settings?
   </dt>
   <dd>
-Give your friend (George) their own config file.
+<p>Give your friend (George) their own config file.
 <br>Start DoomLegacy with "-config george.cfg".
-<p>George will now have his own config settings.  As long as you do not
+<p>George will now have his own config settings, such as keyboard
+settings, and option settings.  As long as you do not
 delete the file, George's settings will still be there next time he comes
-to visit.
-<p>Give your friend their own home directory, with its own config file
-and savegames.
+to visit.  However,
+any video settings (such as gamma) in drawmode config files will still be shared.
+Make him a savegame subdirectory, otherwise his savegames will be mixed in with your savegames.
+  </dd>
+</dl>
+
+<dl>
+  <dt>
+My friend needs more than just a config file.
+Is there any way to keep his settings and savegames separate?
+  </dt>
+  <dd>
+<p>Give your friend their own home directory.<br>
+Your friend will have an independent config.cfg, a set of
+drawmode config files, and a place for savegames.
 <br>Make a directory named "george_home".
 <br>Start DoomLegacy with "-home george_home".
 <p>DoomLegacy will make a doomlegacy directory in the george_home
 directory, where it will put config.cfg and savegames.  On Linux this
 is a hidden directory, so the george_home directory will appear empty,
 but it is not empty.
-  <p>
+</p>
   </dd>
 </dl>
 
@@ -252,6 +470,18 @@ the Doom switches that are not in the Heretic wad.
 
 <h2><a name="misc">Compatibility</a></h2>
 
+
+<dl>
+  <dt>
+The monsters walk weird, walk backwards, and moon-walk.
+  </dt>
+  <dd>
+This started when MBF compatibility was added.  I have not been able
+to eliminate it, yet.
+<br>Turn OFF the MBF monster avoid hazard option.  That will stop it.
+  </dd>
+</dl>
+
 <dl>
   <dt>
 The player acts weird in the Doom wad demos.
@@ -299,7 +529,7 @@ much longer now.
 The game does not look the same as other versions of Doom.
   </dt>
   <dd>
-Doom Legacy is an advanced port with many new features.  These features
+DoomLegacy is an advanced port with many new features.  These features
 offer improved and alternative behaviors over previous versions and other ports.
 The controls to select your preferred behavior for these features are
 in the <b>options menu</b>.  Your settings will be saved to your config
@@ -358,6 +588,31 @@ Once the mouse or joystick is activated, you have to
 bind the buttons to controls in the <b>setup controls menu</b>.
     </p>
  </dd>
+  <dt>My mouse/joystick settings don't work anymore.</dt>
+  <dd>
+  DoomLegacy 1.48 changed some of the KEY names, and the config file key names.
+  <ul>
+  <li>The KEY_2MOUSExx are now KEY_MOUSE2xx.</li>
+  <li>The KEY_DBLMOUSExx are now KEY_MOUSExxDBL.</li>
+  <li>Unnecessary spaces were taken out of the button names.
+  Thus, "mouse 2 b 3" is now "mouse2 b3".
+  </ul>
+  </dd>
+  <dt>How do I use an XBOX controller.</dt>
+  <dd>
+    <p>Support for XBOX controller is in DoomLegacy 1.48, but only
+for the SDL port.  It is a compile option, so if you have a custom compilation, check that
+XBOX_CONTROLLER is defined.
+    <p>If you are using the XBOX controller, without a keyboard, then
+several button controls need to be defined to access the menus and
+start the game.  There are default assignments for these in the
+config, using buttons 0 through 8 of the first joystick/controller.
+Plug in a keyboard to do the setup, if you can.
+If you have 6 or more buttons, you should be able to play simple Doom
+and Heretic wads without a keyboard.
+    <p>There is support for 4 joysticks, with each having 16 buttons, 2 triggers, and 2 hats.
+    </p>
+  </dd>
 </dl>
 
 
@@ -365,20 +620,23 @@ bind the buttons to controls in the <b>setup controls menu</b>.
 
 <dl>
   <dt>The game doesn't restore the video mode I have chosen the last time
-I played Doom Legacy.
+I played DoomLegacy.
   </dt>
   <dd>
-The current video mode has to be made the 'default' so that it is
-saved to the config file.  Press the key 'd' on the Video Options menu
-to set the current video mode as the default.
-<p>Otherwise, the video mode you select is only temporary for this run
-of DoomLegacy.  This supports testing modes before committing to using them.
+When you change the video mode using the menus, it is only for the
+current session.  To save it to the config file, it has to be made the
+'default' video mode.  The next time DoomLegacy is started it will
+use the 'default' video mode from the config file.
+<br>Press the 'd' key when in the Video mode menu to set the current video mode as the default.
+<p>This supports testing modes before committing to using them.
 If you select some video mode that will not display
-properly and you have to abort, or even reboot, it does not become
-stuck to DoomLegacy.  The next time DoomLegacy is started it will
+properly and you have to abort, or even reboot, you can kill
+DoomLegacy without saving config.  The next time DoomLegacy is started it will
 revert to the known good video mode saved in the config file.
+<p>Use the 't' key to test an unknown video mode.  This provides an
+escape, and a timeout, in case the video mode displays badly.
 <p>Do not set a video mode to default until you know it is good.
-If you have a bad video mode and cannot see the video controls in the DoomLegacy menu,
+If you have saved a bad video mode and cannot see the video controls in the DoomLegacy menu,
 you will have to edit the config file by hand,
 or delete your config file to clear the bad video mode.
 The config file is re-written when DoomLegacy exits, so do not leave
@@ -411,17 +669,17 @@ somewhat complicated.
   <p>
 The menus and intermission screens are scaled at integer ratios to
 fit the screen.  This will often leave bars at the edges.  Because
-these are drawn using color palette graphics from the wad, attempts
-at finer interpolation required looking up blended colors in a palette,
-which leads to a muddy look.  To avoid this problem, the menus will be
-scaled larger or smaller for some video display modes.
+these are wad images using color palette graphics, attempts
+at finer interpolation would require looking up blended palette colors,
+which would lead to a muddy look.  To avoid this problem, the menus will be
+scaled larger or smaller in only integer ratios, with background fill bars.
   </p>
   <p>
 The game rendering is fully scaled to display the same view at
 all video display modes.
   </p>
   <p>
-In software render mode, Doom Legacy will proportion the display to keep
+In software render mode, DoomLegacy will proportion the display to keep
 the original display appearance.  It will display with filler bars if
 necessary to do this.  The pixels will not be identical
 to those from the original Doom.
@@ -435,7 +693,7 @@ display is 4:3.
 There is a FOV control, but it zooms and does not change the aspect ratio.
   </p>
   <p>
-When you have a 16:9 display, Doom Legacy displays expecting a 4:3
+When you have a 16:9 display, DoomLegacy displays expecting a 4:3
 aspect, and the monitor may stretch it to fill the 16:9 shape.
 This will alter the appearance of rooms and sprites.
 Most monitors can be set to display a 4:3 aspect with black borders.
@@ -452,13 +710,20 @@ that fills most of the screen.
   <dd>
 There are many large format monitors that exceed the internal display
 limits in DoomLegacy.
-<p>There are limits to the monitor width because every texture segment
-saves display state in a structure of that maximum line width.
+<p>There are limits to the monitor width because some structures are
+dependent upon the maxiumum video width.
 To expand the line width limit for a few, we would have to do it for every
 user regardless of their hardware.
 <p>Eventually, this will have to be changed to allow using larger monitors
 in fullscreen.  That will require a rewrite of most of the texture segment
 code to some other, slower, texture segment state storage scheme.
+<p>DoomLegacy 1.48 has removed the maxiumum video width structures
+from the drawsegs, making them allocated.  But, there is still work to be
+done before the maxiumum video width can be increased.
+<p>Display at a high resolution monitor may look nice, but drawing
+such a large screen slows the frame rate.
+Drawing at a resolution above 1600x1200 has limited
+appeal because the game response would be slow.
   </dd>
 </dl>
 
@@ -467,8 +732,7 @@ code to some other, slower, texture segment state storage scheme.
   </dt>
   <dd>
 DoomLegacy only considers the standard proportion monitor modes.
-There are more than a few problems to be solved before wider monitor
-modes will be allowed.
+There are more than a few problems to be solved before wider monitor modes will be allowed.
 <p>Is that cheating for one player to have such a wide view?
 It is more fair in deathmatch for all players to have the
 same field of view.  There will have to be network controls to allow using
@@ -489,7 +753,7 @@ volume control.
   <dd>
 More recent Windows products changed the sound interface to implement
 only one volume control for a program.  All the Doom ports have had
-problems with this.  Doom Legacy has not implemented any of
+problems with this.  DoomLegacy has not implemented any of
 the suggested solutions yet.  One requires starting an independent task to
 play the music, just to get the independent volume control.
   </dd>
@@ -506,7 +770,7 @@ play the music, just to get the independent volume control.
 running an older DoomLegacy.
 <p>The Game server locations respond to requests.
 The interested parties should submit a request to the Game Server to host a
-DoomLegacy 1.47 Server.
+DoomLegacy 1.48 Server.
   </dd>
 </dl>
 
@@ -521,11 +785,13 @@ DoomLegacy Server menu of each player.
 <p>If it is a dynamic IP address, then each player must setup the server IP
 address every time the server connects to the Internet, because that
 IP address will likely be different each time.
-<p>Your success at this may depend upon filtering done by your IP
-service providers.  It will not work if they are blocking packets using the
+<p>Your success at this may depend upon filtering done by your IP service providers.
+It will not work if they are blocking packets using the
 DoomLegacy port address (port 5029).
 <p>Your firewall also has to let through the DoomLegacy port address
 (port 5029).
+<p>You could use a different port number, and even have several servers on the
+same machine using different port numbers.  See the network port explanation in the docs.
   </dd>
 </dl>
 
@@ -562,14 +828,13 @@ Otherwise, make sure the server connects to the network first, so some
 client does not steal the preferred IP address it uses.
 <p>It does not matter what IP address the clients get, as long as it
 is an address on your subnet.
-The server gets the client IP address from their first connect message.
-<p>Without DHCP, modern internet communications should allow you to
-add the server IP address
+The server will discover the client IP address from their first connect message.
+<p>Without DHCP, modern internet communications should allow you to add the server IP address
 to your recognized addresses (static or manual routing) for a particular hardware device
 (like your wifi-router, or Ethernet router, assuming you have the firewall enabled).
 Just add the needed addresses, you should not have to replace any existing internet address.
 <p>Your firewall has to let through the DoomLegacy server port address
-(port 5029).
+(by default, port 5029).  You can setup DoomLegacy to use a different port number.
 <p>If any of your clients are using an unusual port address, then your
 firewall will also need to let through messages to that port.
   </dd>
@@ -594,18 +859,21 @@ line, and fix their firewalls to allow through packets that use that port.
   <dt>DoomLegacy will not play with older DoomLegacy servers?
   </dt>
   <dd>
-The Network version has been bumped to Version 24 in DoomLegacy 1.47.
+<p>Minor versions of DoomLegacy (1.48) are usually not network compatible
+with other minor versions of DoomLegacy (1.46).  It will likely have a
+different network version number.  They would also quickly lose sync,
+and someone would get kicked, due to differences in random number usage.
+<p>DoomLegacy 1.47 uses Network Version 24</br>
+DoomLegacy 1.48 uses Network Verson 26.</br>
 Some of the network messages have been changed.
-Since DoomLegacy 1.46, the network code has been hardened against
+<p>Since DoomLegacy 1.46, the network code has been hardened against
 malicious packets overrunning buffers and from using file download to
 explore your file system.
-<p>Older versions of DoomLegacy should be eliminated from network
-usage for security reasons.
-With so many important bug fixes, there is no
-reason to be using older DoomLegacy for network play.
+<p>Older versions of DoomLegacy should be eliminated from network usage for security reasons.
+With so many important bug fixes, there is no reason to be using older DoomLegacy for network play.
 <p>Each client should ideally run the same version of DoomLegacy as the server.
-Otherwise, some slight play difference may get them kicked due to
-consistency failure.
+Otherwise, some slight play difference may get them kicked due to consistency failure.
+</p>
   </dd>
 </dl>
 
@@ -615,17 +883,18 @@ with a consistency error message.  Is there a way to have bots in a
 network game?
   </dt>
   <dd>
-Bots do not work with network games.  I do not know exactly why they
-trigger consistency errors in the players.
-<p>Bots were a new feature that was being worked on by other
-team members.
-Being that they can only be activated by a obscure
-console command, they may not be totally finished.
-The bots might not be integrated with all DoomLegacy features either,
-such as network play, splitplayer, and saving games.
-<p>Making the bots compatible with network play is waiting until after
-some other major enhancements are done.
-Then the whole bot system will get re-worked, integrated, and finished.
+Bots have not worked with network games with DoomLegacy before 1.48.
+They would trigger players getting kicked in the clients.
+<p>
+Bots creation, and bot game play, got improved in DoomLegacy 1.48,
+but they are still a work-in-progress.
+<p>It is possible to get network clients and bots at the same time.
+Try adding the bots last.
+Unfortunately, just as I think I got it figured out, it can start
+kicking players again.
+<p>Integration with other DoomLegacy features,
+such as network play, splitplayer, and saving games, has not been done yet.
+</p>
   </dd>
 </dl>
 

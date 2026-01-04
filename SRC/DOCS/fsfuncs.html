@@ -18,7 +18,7 @@ Note: We'd like to thank Quasar for allowing us to modify the docs of the
 </p>
  
 <h1><a name="top">FraggleScript Function Reference</a></h1>
-<h1 class="tagline">Last updated 2016-09-20</h1>
+<h1 class="tagline">Last updated 2019-10-02</h1>
 
 <div class="floatbox">
 <ul>
@@ -1575,7 +1575,10 @@ script 0
   <dt><a name="setcorona">void setcorona( int id, int attribute, polytype value )</a></dt>
   <dd>
     Set a corona attribute to parameter value, for the corona of
-    parameter id.<br>
+    parameter id.  The COLOR attributes are specified as {A R G B},
+    which can be supplied as an integer, or a string of HEX digits.
+    The alpha is required, if it is 0 then alpha will be set to FF.
+<br>
     Attribute:<br>
     <table align="center", border="4", cellpadding="2">
     <tr><td>0:</td><td>CORONA_TYPE</td><td>See corona type table.</td><td>int</td></tr>
@@ -1587,7 +1590,12 @@ script 0
     <tr><td>6:</td><td>LIGHT_SIZE</td><td>radius</td><td>fixed</td></tr>
     </table><br>
 
-    <br>Corona type:<br>
+    <p>The corona type now has a new format with bit enables and the type of corona.
+    The older predefined names and their values are still recognized.
+    Doom Legacy will convert them to an appropriate new field setting (heuristic guessing).
+    </p>
+
+    <br>Corona type (predefined combination values):<br>
     <table align="center", border="4", cellpadding="2">
     <tr><td>0:</td><td>UNDEFINED_SPR</td><td>off</td></tr>
     <tr><td>1:</td><td>CORONA_SPR</td><td>corona only</td></tr>
@@ -1595,6 +1603,38 @@ script 0
     <tr><td>3:</td><td>LIGHT_SPR</td><td>corona+light</td></tr>
     <tr><td>19:</td><td>ROCKET_SPR</td><td>rocket+corona+light+randomradius</td></tr>
     </table><br>
+
+    <br>For example: ROCKET_SPR works out to be
+    <br>(DYNLIGHT_SPR | CORONA_SPR | SPLT_rocket)
+    <br>
+
+    <br>Corona type (bit enables):<br>
+    <table align="center", border="4", cellpadding="2">
+    <tr><td>0x01</td><td>CORONA_SPR</td><td>enable corona draw</td></tr>
+    <tr><td>0x02</td><td>DYNLIGHT_SPR</td><td>enable dynamic light</td></tr>
+    </table><br>
+
+    The corona type selection should OR'ed with the CORONA_SPR bit.
+    <br>These names are not defined for fragglescript yet, please use literals.
+    <br>Corona type selection (field mask 0xF0):<br>
+    <table align="center", border="4", cellpadding="2">
+    <tr><td>0x00</td><td>SPLT_unk</td><td>plain corona, near and far fadeout</td></tr>
+    <tr><td>0x10</td><td>SPLT_rocket</td><td>rocket corona with random flicker, near and far fadeout</td></tr>
+    <tr><td>0x20</td><td>SPLT_lamp</td><td>lamp and corona, brighter than plain corona, different size, near and far fadeout</td></tr>
+    <tr><td>0x30</td><td>SPLT_fire</td><td>fire and torches, slow flicker, near and far fadeout, 64 generators</td></tr>
+    <tr><td>0xC0</td><td>SPLT_light</td><td>a light source without an object, far fadeout</td></tr>
+    <tr><td>0xD0</td><td>SPLT_firefly</td><td>blinking firefly, far fadeout, 64 generator phases</td></tr>
+    <tr><td>0xE0</td><td>SPLT_random</td><td>random LED, no fadeout, 32 generators</td></tr>
+    <tr><td>0xF0</td><td>SPLT_pulse</td><td>slow pulsation, no fadeout, 256 generator phases</td></tr>
+    </table><br>
+    <p>
+    The generator phases are selected automatically (by some attribute of the mobj), to avoid lights all blinking in synch.
+    </p>
+    <p>
+    These effects will be improved in future versions of Doom Legacy,
+    so do not rely upon them remaining exactly as they are.
+    Please use them according to their descriptions and intended usage.
+    </p>
   </dd>
   <dt><a name="setcorona">void setcorona( int id, int type,
   int xoffset, int yoffset, int color, int radius, int dynamic_color,
@@ -1604,9 +1644,9 @@ script 0
     Parameters are as described in the Attribute table.
     Parameter type is the CORONA_TYPE attribute, and is from the Corona type table.
     Parameter color is the CORONA_COLOR attribute, and is a hex rgba color.
-    Parameter radius is the CORONA_SIZE attribute.
+    Parameter radius is the CORONA_SIZE attribute (fixed type value).
     Parameter dynamic_color is the LIGHT_COLOR attribute, and is a hex rgba color.
-    Parameter dynamic_radius is the LIGHT_SIZE attribute.
+    Parameter dynamic_radius is the LIGHT_SIZE attribute (fixed type value).
   </dd>
   <dt><a name="setfade">void setfade(int red, int green, int blue, int alpha)</a></dt>
   <dd>

@@ -10,8 +10,8 @@
 <!-- $Id$ -->
 
 <body>
-<h1>Doom Legacy 1.47 Console Reference</h1>
-<h1 class="tagline">Last updated 2018-07-10</h1>
+<h1>Doom Legacy 1.48 Console Reference</h1>
+<h1 class="tagline">Last updated 2020-04-14</h1>
 
 <div class="floatbox">
 <h2>Contents</h2>
@@ -29,12 +29,17 @@
 <li><a href="#reference">Console commands and variables</a>
 <ol>
 <li><a href="#basic_cmd">Basic commands</a></li>
+<li><a href="#game_cmds">Game commands</a></li>
 <li><a href="#con_setup">Console setup</a></li>
 <li><a href="#player_setup">Player setup</a></li>
 <li><a href="#player_controls">Player controls</a></li>
 <li><a href="#game_options">Game options</a></li>
-<li><a href="#game_cmds">Game commands</a></li>
+<li><a href="#bot_options">Bot options</a></li>
+<li><a href="#lighting_options">Lighting options</a></li>
 <li><a href="#net_options">Net options</a></li>
+<li><a href="#server_options">Server options</a></li>
+<li><a href="#connect_options">Connect options</a></li>
+<li><a href="#menu_options">Menu options</a></li>
 <li><a href="#video_options">Video options</a></li>
 <li><a href="#sound_options">Sound options</a></li>
 <li><a href="#misc_options">Misc options</a></li>
@@ -57,7 +62,7 @@ in a hurry!
 <h3 id="usage">Console usage</h3>
 
 <p>With the DoomLegacy console, you will be able to change most of the game
-parameters from within the game, and customise it to your preferences.
+parameters from within the game, and customize it to your preferences.
 The console is simply a command prompt, where you can enter commands
 and change the values of game variables.
 The first game console we know of was from id Software's game Quake.
@@ -154,14 +159,17 @@ flynn renamed to dj fab
 </div>
 
 <p>
-  There are four types of variable and command parameters: <b>strings</b>,
-  <b>integers</b>, <b>floats</b> (actually 16.16 fixed point numbers)
-  and <b>booleans (true/false)</b>.
+There are several types of variable and command parameters.
+The legal values differ according to the variable type.
 </p>
-<p>
+<p><b>String</b>:<br>
 String values can be simple, such as Fred, or quoted, such as "Mr. Fred",
 String values that contain spaces, or certain other special characters,
-must be <b>quoted</b> using double quotes, as we saw in the previous example.
+must be <b>quoted</b> using double quotes, as we saw in the previous example.</p>
+<p>Example:</p>
+<div class="code">> name "Punkin Smasher"
+</div>
+<p>
 Inside a quoted string you can use the following C-style <b>backslash escape sequences</b>:
 </p>
 <table class="def">
@@ -177,38 +185,152 @@ this string contains "escaped" special chars such as \,
     tab and newline
 </div>
 
-<p>
+<p><b>Boolean</b>:<br>
 Boolean variables (true/false, yes/no) use 0 to denote false.
 Any nonzero value means true.
 </p>
+<p>Example:</p>
+<div class="code">> allowjump 0
+</div>
 
-<p>
+<p><b>Integer</b>:<br>
 Integer variables are simple integer values, such as 2, and 13.
 </p>
+<p>Example:</p>
+<div class="code">> con_height 48
+</div>
 
-<p>
-The float values are decimal values with a decimal point, such as 13.2, and 0.5.
+<p><b>Enum</b>:<br>
+Enum variables are integer variables with a limited set of values.
+They can be set by the name of the enum value, or by the integer value.
 </p>
+<p>Example:</p>
+<div class="code">> showmessages verbose
+</div>
+
+<p><b>Float</b>:<br>
+The float values are decimal values with a decimal point, such as 13.2, and 0.5.
+Float values are stored as 16.16 fixed point numbers.
+</p>
+<p>Example:</p>
+<div class="code">> gravity  1.25
+</div>
 
 
 <h3 id="config">Configuration files</h3>
 
-<p>Most variables are automatically saved to the default configuration
-file <b>config.cfg</b>. Like in the original Doom, the <a href="legacy.html#config">-config</a>
-parameter will set explicitly the configuration file to use.
+<p>Many variables are automatically saved to the default configuration
+file <b>config.cfg</b>, in the home directory.
+Like in the original Doom, the <a href="legacy.html#config">-config</a>
+command-line parameter will specify the configuration file.
 Thus, you can have default settings for different persons, using
 different configuration files.
 While the configuration files support any commands, and are executed
 like a script, you should not edit them, because they are always overwritten
-when the game exits.
+with the current settings when the game exits.
 </p>
 
 <p>Some variables, like gravity, are not saved.  They are restored to
-initial settings everytime DoomLegacy is started.  These might be
+initial settings every time DoomLegacy is started.  These might be
 changed for a specific game, but would not want to be saved, as that
 would affect all games that follow.  See Autoexec.cfg and exec files for
 setting up DoomLegacy for a specific game.
 </p>
+
+<p>Each video drawmode has a drawmode config file that is loaded
+after the main config.cfg file is loaded.
+It can save the values of control variables that depend upon the drawmode.
+When the video drawmode is set, the appropriate drawmode config file is loaded.
+</p>
+<p>
+When a value is loaded from the drawmode config file, it will push
+down and hide the value loaded from the main config file.
+All other control variables will still have the value from the main config file, or a default value.
+When menu options are changed, those changes will be saved to the
+config file that last loaded that control variable.
+</p>
+
+<p>Each drawmode can have separate settings for video mode, fullscreen,
+gamma, and can save any other control variable that is saved in config.
+Thus, the OpenGL drawmode can have a different Gamma setting, than the
+Software drawmodes.  All the other control variables will continue to
+have the value loaded from the main config file.
+</p>
+<p>By default, the drawmode config are empty.  The files will not be
+written unless they contain some control variable to be saved.
+The user must set this up by the INSERT of a control variable while using
+the drawmode.
+</p>
+
+<p>The menu interface can edit which control variables are saved in each config
+file.  Entries can be inserted and deleted.</p>
+<table class="def">
+<tr><td>F1</td><td>normal menu view</td></tr>
+<tr><td>F2</td><td>Main config values only</td></tr>
+<tr><td>F3</td><td>Drawmode config values only</td></tr>
+<tr><td>F4</td><td>normal menu</td></tr>
+<tr><td>INSERT</td><td>add the menu item to the config file</td></tr>
+<tr><td>DEL</td><td>delete the menu item from the config file</td></tr>
+</table>
+
+Example: Add Gamma settings to the native drawmode.  Note that Gamma
+settings are unusual in that there is a Gamma function, and separate
+Gamma, Black, and Bright.
+<ul>
+<li>Change to the Native drawmode.</li>
+<li>Go to the Video Options menu.</li>
+<li>Move to the gamma function option.</li>
+<li>Press F3, to edit the drawmode config file.</li>
+<li>Press INSERT to add gamma function to the drawmode config file.</li>
+<li>Change the gamma function as desired.</li>
+<li>Move to the gamma value.</li>
+<li>Press INSERT to add the gamma value to the drawmode config file.</li>
+<li>Repeat for any other values that are used by the gamma function.</li>
+<li>Press F1, to return to the normal options menu.</li>
+</ul>
+<p>Changes to the gamma value, while in Native drawmode, will now only change
+the Native drawmode config value.  The main config file value is
+pushed down and hidden when a value from a drawmode config file is
+present.  When the program is exited and the config is saved, the
+gamma value will be saved back to the Native drawmode config file.
+The gamma value in the main config file will not be affected.
+</p>
+
+<p>Other drawmodes, that do not have a gamma setting of their own,
+will use the main config file gamma settings.</p>
+
+<p>Menu entries that are not relevant to the drawmode config, like the control
+key assignments, do not have support for insert to the drawmode config
+file.</p>
+
+<p>The command line can be used to load a personal main config file,
+which may contain personal key assignments.  This does not affect the
+loading of drawmode config files.  If there are gamma settings in a
+drawmode config file, they will overload any settings from whatever main
+config file that is loaded.
+To get better personal control, the user will have to specify a different home directory.
+</p>
+
+<p>The config files can always be edited using an ordinary editor
+to include anything. It may be easier to initially create drawmode
+config files with a text editor, and copy a few lines from your existing config file.
+Mistakes and comments will be ignored and lost.
+When the program is exited, the file will be
+overwritten with the most recent saved values.</p>
+
+<table class="def">
+<tr><td>Software 8 bit </td><td>config8p.cfg</td></tr>
+<tr><td>Software 15 bit</td><td>config15.cfg</td></tr>
+<tr><td>Software 16 bit</td><td>config16.cfg</td></tr>
+<tr><td>Software 24 bit</td><td>config24.cfg</td></tr>
+<tr><td>Software 32 bit</td><td>config32.cfg</td></tr>
+<tr><td>Native</td><td>confign.cfg</td></tr>
+<tr><td>OpenGL</td><td>configgl.cfg</td></tr>
+<tr><td>MiniGL</td><td>configmg.cfg</td></tr>
+<tr><td>Glide</td><td>configwg.cfg</td></tr>
+<tr><td>D3D</td><td>configwd.cfg</td></tr>
+</table>
+
 
 
 <h3 id="autoexec">Autoexec.cfg</h3>
@@ -252,6 +374,20 @@ variables like <a href="#bloodtime">bloodtime</a> that are not
 normally saved to config.cfg.
 Just look at config.cfg to find out which variables are saved.
 </p>
+
+<p>Doom Legacy first looks for a user autoexec.cfg file in the home
+directory, where the config and savegame files are kept.  This is
+intended for the user to own and edit.</p>
+<p>If the user autoexec file is not present, it will look for the
+autoexec.cfg file with the executable.
+This is intended for the installer of the executable to own and edit.
+This could be system games, or some other protected directory.</p>
+<p>The user autoexec.cfg file can chain to another file, like the
+system autoexec.cfg file.</p>
+<div class="example">
+// Get system settings first<br/>
+exec autoexec.cfg<br/>
+</div>
 
 
 <h3 id="scripts">Script files</h3>
@@ -328,9 +464,15 @@ will execute all the commands in autoexec.cfg
 </p>
 </td></tr>
 
-<tr><td>help [&lt;variable&gt;]</td>
+<tr><td>help [&lt;category&gt;|&lt;variable&gt;]</td>
 <td>
 Shows a list of all the console commands and variables.<br/>
+Alone, it will respond with help categories.<br/>
+Help of a category
+(INFO, CHEAT, COMMAND, SAVEGAME, CONFIG, CONTROL, FS, CHAT, NET, CONSOLE),
+will list associated commands.<br/>
+Help of a category (VAR, NETVAR, CFGVAR) will list variables of that
+category.<br/>
 If given a variable name, shows detailed info on that variable.
 </td></tr>
 
@@ -381,774 +523,6 @@ Now each time you press the s key the game will save a screenshot.
 <td>Clear the console text buffer.</td></tr>
 </table>
 
-
-<h3 id="con_setup">Console setup</h3>
-
-<p>These variables control the look and feel of the console.
-</p>
-
-<table class="def">
-<tr><th>variable</th><th>type</th><th>definition</th></tr>
-
-<tr><td>con_backpic</td><td>bool</td>
-<td>
-0: use a translucent LCD-like console background.<br/>
-1: use an opaque
-<a href="editing.html#CONSBACK">console background picture</a>, like in Quake.
-</td></tr>
-
-<tr><td>con_height</td><td>int</td>
-<td>
-How many percent of the total screen height the console
-will use. E.g. con_height 50 (the default) will use half the
-screen height for the console.
-</td></tr>
-
-<tr><td>con_speed</td><td>int</td>
-<td>
-The speed (in pixels/tic) at which the console comes down or moves out of
-the screen when you press the console toggle key.
-</td></tr>
-
-<tr><td id="con_hudtime">con_hudtime</td><td>int</td>
-<td>
-The number of seconds messages stay on the top
-of the screen. They are 5 message lines that scroll as soon
-as new messages arrive. E.g. con_hudtime 5, which is the
-default, will make the messages stay for 5 seconds before
-disappearing. Set this to 0, and you will never see any
-messages outside the console (HUD means heads-up display).
-</td></tr>
-
-<tr><td>showmessages<br>&lt;0-5&gt;</td><td>int</td>
-<td>
-Limits the messages that are shown on the HUD during gameplay.
-<ul>
-<li>Off: never show any messages on the screen.</li>
-<li>Minimal: Important play messages are shown, like you got the BFG.
-Common messages, like those about ammo, are not shown.</li>
-<li>Play: The standard Play messages are shown, but verbose and diagnostic
-messages are not (default).</li>
-<li>Verbose: Verbose messages too.</li>
-<li>Debug:  Debug and Verbose messages too.</li>
-<li>Dev: Development.  All messages are shown.</li>
-</ul>
-There is also a control for this in the Options menu.
-</td></tr>
-<tr><td>darkback<br>&lt;0-2&gt;</td><td>int</td>
-<td>
-The console background is darkened to make the text easier to read.
-This controls how dark it gets.<ul>
-<li>Half: Half darkness (40%).</li>
-<li>Med: Middle darkness (25%).</li>
-<li>Dark: Darkest (17%).</li>
-</ul>
- There is also a control for this in the Video menu.
-</td></tr>
-<tr><td>con_fontsize &lt;1-5&gt;</td><td>int</td>
-<td>
-The console fontsize.
-<ul>
-<li>Small: Smallest font.</li>
-<li>Med2:</li>
-<li>Med3:</li>
-<li>Med4:</li>
-<li>Large: Largest font.</li>
-</ul>
-There is also a control for this in the Video menu.
-</td></tr>
-<tr><td>msg_fontsize &lt;1-5&gt;</td><td>int</td>
-<td>
-The HUD message fontsize. 
-<ul>
-<li>Small: Smallest font.</li>
-<li>Med2:</li>
-<li>Med3:</li>
-<li>Med4:</li>
-<li>Large: Largest font.</li>
-</ul>
-There is also a control for this in the Video menu.
-</td></tr>
-</table>
-
-
-
-<h3 id="player_setup">Player setup</h3>
-
-<p>These variables control your player avatar's appearance and your game
-preferences. The splitscreenplayer has similar variables, but with the
-number 2 appended to the variable name, e.g. "color2 red" turns the
-splitscreenplayer's avatar red.
-</p>
-
-<table class="def">
-<tr><th>variable</th><th>type</th><th>definition</th></tr>
-
-<tr><td>splitscreen</td><td>bool</td>
-<td>
-Enable/disable the splitscreen. If necessary, this spawns a secondary
-local player, called the splitscreenplayer.
-</td></tr>
-
-<tr><td>name</td><td>string</td>
-<td>
-Enter your name as a player, for network games. Your name will
-be seen when you send a message (chat key), and is displayed
-in the deathmatch rankings. Use "" if the name contains spaces,
-e.g. <span class="example">name "dj fabbe"</span>
-</td></tr>
-
-<tr><td>color<br>&lt;0 - 10&gt;</td><td>int</td>
-<td>
-Choose your avatar's color.
-<ul>
-<li> 0: Green</li>
-<li> 1: Gray</li>
-<li> 2: Brown</li>
-<li> 3: Red</li>
-<li> 4: Light Gray</li>
-<li> 5: Light Brown</li>
-<li> 6: Light Red</li>
-<li> 7: Light Blue</li>
-<li> 8: Blue</li>
-<li> 9: Yellow</li>
-<li>10: Beige</li>
-</ul>
-</td></tr>
-
-<tr><td>skin</td><td>string</td>
-<td>
-Change your skin, provided some skins are loaded (use
-the commandline option <a href="legacy.html#file">-file</a>
-to add skins wads. The default marine skin
-name is "marine".
-</td></tr>
-
-<tr><td>autoaim</td><td>bool</td>
-<td>
-The original Doom used autoaiming in the vertical direction, and a
-small aim adjustment in the horizontal.
-Now that you can freely aim up and down with the freelook, you can
-play like a pro and set autoaim off.<br/>
-
-NETWORK NOTE: in a multiplayer game, the server can force
-the autoaim off for all players with the command
-<a href="#allowautoaim">allowautoaim</a>.
-</td></tr>
-
-<tr><td>originalweaponswitch</td><td>bool</td>
-<td>
-Choose whether to use the original weapon change method (1), or
-the new preferred weapons order (0), see
-<a href="#weaponpref">weaponpref</a> for more.<br/>
-
-With the original weapon switch, whenever you pick up a new weapon
-it becomes the active one, even if it is not as powerful
-as the one you are currently using. That can be sometimes very
-annoying, especially in fast deathmatches.
-</td></tr>
-
-
-<tr><td id="weaponpref">weaponpref</td><td>string</td>
-<td>
-The preferred weapons order.<br/>
-This works only if you have set originalweaponswitch to 0.
-
-<p>You give a priority to each of the weapons, with a number digit
-from 0 to 9. Several weapons can have the same priority.
-When you pick up a weapon that you don't already have, you
-will switch to that weapon IF AND ONLY IF that weapon's priority
-is greater that the one you are carrying. If you already had the
-weapon, you will pickup the ammo as usual, without changing
-weapon.
-The command is given a string of priority values, one for each weapon, in the following order:
-</p>
-
-<p>Fist, Chainsaw, Pistol, Shotgun, Super Shotgun, Chaingun, Rocket
-  Launcher, Plasma Rifle, BFG.
-</p>
-
-<p>Thus 'weaponpref "021485763"' means that the super shotgun has
-the highest priority (8), while the fist is lowest priority (0).
-After the super shotgun, in decreasing priority you have the
-rocket launcher (7), plasma gun (6), chaingun (5), shotgun (4),
-BFG (3), chainsaw (2) and pistol (1).
-</p>
-
-<p>Let's have another interesting example: 'weaponpref "333333333"'
-</p>
-
-<p>Since all weapons have the same priority in this last example,
-you will NEVER change weapon automatically, because
-no weapon has a priority higher than any other one. You might
-consider this the manual weapon change.
-</p>
-</td></tr>
-
-<tr><td>crosshair<br>&lt;0 - 3&gt;</td><td>int</td>
-<td>
-Choose the type of aiming point (crosshair) that appears on the screen.
-<ul>
-<li>Off:  No crosshair</li>
-<li>Cross: Large white + with an open center, the largest crosshair.
-<li>Angle: Small vertical and horizontal green lines.  The aiming point is where the two lines meet.
-<li>Point: Red aiming dot, like a laser pointer.
-</td></tr>
-There is a control in the Options menu.
-</table>
-
-
-
-<h3 id="player_controls">Player controls</h3>
-
-<p>These variables control the way the game handles the players' input.
-The splitscreenplayer has similar variables, but with the
-number 2 appended to the variable name.
-</p>
-
-<table class="def">
-<tr><th>variable</th><th>type</th><th>definition</th></tr>
-
-<tr><td>autorun</td><td>bool</td>
-<td>
-Set this to 1 to invert the <b>run</b> key. You will always be running,
-EXCEPT when you push the run key.
-</td></tr>
-
-<tr><td>automlook</td><td>bool</td>
-<td>
-<p>You can use the "freelook" (ability to look up and down) in two
-modes: permanent or temporary.
-</p>
-
-<p>Setting this variable to 1 will make the freelook permanent.
-</p>
-
-<p>When automlook is 0, you will need to hold the freelook
-key down while moving the mouse up and down. When releasing the key,
-the view will always re-center. This is useful if you keep
-firing rockets at your feet.
-</p>
-</td></tr>
-
-
-<tr><td>use_mouse</td><td>bool</td>
-<td>
-Setting use_mouse to 0 will disable the mouse. The next time
-you start the game, the mouse won't be detected.
-
-Set use_mouse to 1 to search for a mouse, and activate it.
-There is also a control for this in the Mouse menu.
-</td></tr>
-
-<tr><td>invertmouse</td><td>bool</td>
-<td>
-Set invertmouse to 1 to invert the mouse y (up and down) axis.
-This is for freelook only, you will look up, when moving the mouse
-down (backward), and look down when moving mouse forward.
-There is also a control for this in the Mouse menu.
-</td></tr>
-
-<tr><td>mousemove</td><td>bool</td>
-<td>
-Enable/disable mouse y-axis for forward/backward movement.
-There is also a control for this in the Mouse menu.
-</td></tr>
-
-<tr><td>mousesensx<br/>
-mousesensy</td><td>int</td>
-<td>
-Sets the mouse sensitivity in the x and y directions.
-There is also a control for this in the Mouse menu.
-</td></tr>
-</table>
-
-
-<p>These input variables are common to both local players.
-</p>
-
-<table class="def">
-<tr><th>variable</th><th>type</th><th>definition</th></tr>
-
-<tr><td>controlperkey &lt;1|2&gt;</td><td>int</td>
-<td>
-When set to 2 (several) you can bind more than one control to a key.
-Otherwise binding a control to a key will remove the key's other
-assignations.
-</td></tr>
-
-<tr><td>mouse2port &lt;1|2|3|4&gt;</td><td>int</td>
-<td>
-Choose the port number of the secondary mouse for the
-splitscreenplayer between COM1 to COM4.
-</td></tr>
-
-<tr><td>mousemotion</td><td>enum</td>
-<td>
-Values Absolute | Relative.
-SDL port only.<br>
-Absolute: Uses the original mouse interface with local difference
-calculations.
-It should work for any SDL port.<br>
-Relative: Uses the newer relative motion interface, which
-may not work on some SDL library ports.  It is reported to work with
-Linux and Windows.
-Does not affect mouse2.
-There is also a control for this in the Mouse menu.
-</td></tr>
-
-<tr><td>grabinput</td><td>bool</td>
-<td>
-Sets the SDL grabinput attribute.  This keeps the mouse in the window.
-It also disables most of any window manager's keyboard and mouse functions,
-so DoomLegacy gets all combination events.
-Pause releases grabinput to let the mouse be used outside of DoomLegacy.
-There is also a control for this in the Mouse menu.
-</td></tr>
-</table>
-
-<p>
-The game controls can be defined using the setcontrol command.
-</p>
-
-<table class="def">
-<tr><th>command</th><th>definition</th></tr>
-
-<tr><td>setcontrol &lt;control&gt; &lt;key1&gt; [&lt;key2&gt;]</td>
-<td>
-<p>Binds a key/joystick button/mouse button to a
-game control (<span class="keyword">forward</span>, <span class="keyword">fire</span>, <span class="keyword">use</span> etc.).
-The second keyname is optional. You can set it, and have
-two keys attached to one game control, e.g. have both <b>UP ARROW</b>
-and <b>MOUSE2</b> mean <span class="keyword">forward</span>.
-</p>
-
-<p>If a key does not have a useful name, it uses a name of the
-form 'KEYxxx' where xxx is the key code.
-To learn the names of the keys, look for them at the Setup Controls menu.
-</p>
-
-<p>The controls are <span class="keyword">forward, backward, strafe, 
-straferight, strafeleft, speed, turnleft, turnright, 
-fire, use, lookup, lookdown, centerview, mouseaiming, 
-weapon1, weapon2, ..., weapon8, talkkey, scores, 
-jump, console</span>.
-</p>
-
-Example:
-<div class="example">
-&gt; setcontrol forward "keypad 8" "up arrow"
-</div>
-</td></tr>
-
-<tr><td>setcontrol2 &lt;control&gt; &lt;key1&gt; [&lt;key2&gt;]</td>
-<td>Same as setcontrol but for splitscreenplayer.
-</td></tr>
-
-<tr><td>
-bindjoyaxis [&lt;joynum&gt; &lt;axisnum&gt; [&lt;playernum&gt;
-&lt;control&gt; &lt;scale&gt;]]<br/></td>
-<td>
-Lists, releases or creates joystick axis bindings.
-</td></tr>
-
-
-</table>
-
-
-
-
-<h3 id="game_options">Game options</h3>
-
-<p>Using these variables you can change may aspects of the game
-itself. For obvious reasons, in a network game only the server can change them.
-</p>
-
-<table class="def">
-<tr><th>variable</th><th>type</th><th>definition</th></tr>
-
-
-
-
-<tr><td>deathmatch &lt;0|1|2|3&gt;</td><td>int</td>
-<td>
-Set the game type<br/>
-0: coop<br/>
-1: dm,  placed weapons respawn immediately<br/>
-2: dm, items respawn<br/>
-3: dm, items respawn, placed weapons respawn immediately
-</td></tr>
-
-<tr><td>teamplay &lt;0|1|2&gt;</td><td>int</td>
-<td>
-You can change the deathmatch mode while in a multiplayer game.
-<br/>
-0: no teams, usual free-for-all deathmatch.<br/>
-1: teamplay, use color to identify teams (players of the
-same color will be in the same team), the team names will
-be like "red team" or "yellow team".
-<br/>
-2: teamskin, using skins to identify teams (players who use
-the same skin will be in the same team), the team names will
-show as "leprechaun team" or "terminator team", according
-to the name of the skin.
-</td></tr>
-
-<tr><td>teamdamage</td><td>bool</td>
-<td>
-Decide whether members of the same team can hurt one another or
-not. Real players always have teamdamage on.
-</td></tr>
-
-
-<tr><td>hiddenplayers</td><td>bool</td>
-<td>
-Are the other players visible in the automap? Also determines if you
-can switch to their POV using the spy mode. Usually enabled in deathmatch.
-</td></tr>
-
-<tr><td>fraglimit</td><td>int</td>
-<td>
-When the limit is reached, the level exited and game goes to intermission.
-Use 0 to disable.
-</td></tr>
-
-<tr><td>timelimit</td><td>int</td>
-<td>
-After the given number of minutes, the level is exited and game goes
-to intermission. Use 0 to disable.
-</td></tr>
-
-
-<tr><td>gravity</td><td>float</td>
-<td>
-Sets the acceleration of gravity in the game.
-The default gravity is 1.
-</td></tr>
-
-
-<tr><td>solidcorpse</td><td>bool</td>
-<td>
-Setting solidcorpse to 1 makes the dead corpses
-(monsters/marines) solid. The corpses thus stack one on top
-of another, and you walk over them. Sometimes you can even
-reach ledges where you couldn't get before by climbing on corpses!
-</td></tr>
-
-
-<tr><td>allowjump</td><td>bool</td>
-<td>
-Choose whether jump is allowed or not. Those of you who
-come from the planet NoJump or have a limited sensory system
-and couldn't survive a jump in the 3rd axis of our world
-can disable the jump in single player too.<br/>
-NOTE: Jumping is considered cheating in maps not designed with it in
-mind, especially in speedrunning.
-</td></tr>
-
-<tr><td>allowrocketjump</td><td>bool</td>
-<td>
-Enable/disable emulation of the Quake1 bug known as "Rocket Jump".
-</td></tr>
-
-<tr><td id="allowautoaim">allowautoaim</td><td>bool</td>
-<td>
-Enable/disable autoaiming for all players... make sure everyone is ok
-before getting your friends angry.
-</td></tr>
-
-<tr><td>allowfreelook</td><td>bool</td>
-<td>
-Enable/disable looking up and down for all players in the game.
-</td></tr>
-
-
-
-<tr><td>respawnitem</td><td>bool</td>
-<td>
-Choose whether items respawn or not.
-respawnitem 0 is like the old deathmatch.
-deathmatch 2 automatically sets it to 1.
-
-<p>NOTE: it is considered cheating to allow respawning of items
- when in single player mode ! :)
-</p>
-</td></tr>
-
-
-<tr><td>respawnitemtime</td><td>int</td>
-<td>
-Set the respawn item time in seconds. The time between the moment
-you pick up the item, and the moment it reappears.
-
-<p>The default is 30 seconds, from the original Doom.
-</p>
-</td></tr>
-
-
-<tr><td>respawnmonsters</td><td>bool</td>
-<td>
-Choose if monsters can respawn.
-respawnmonsters 1 is like the -respawn command-line option of
-the original Doom.
-</td></tr>
-
-<tr><td>respawnmonsterstime</td><td>int</td>
-<td>
-Choose the time of respawn for the monsters, in seconds.
-
-<p>The default is 12, from the original Doom.
-</p>
-</td></tr>
-
-
-<tr><td>nomonsters</td><td>bool</td>
-<td>
-Set to 1 if you want no monsters to spoil your gaming experience.
-Often used in deathmatch.
-</td></tr>
-
-<tr><td>fastmonsters</td><td>bool</td>
-<td>
-Choose if monster are "fast" like with the original -fastparm
-</td></tr>
-
-
-<tr><td>monsterbehavior</td><td>string</td>
-<td>
-Select the mode of monster infighting.
-<ul>
-  <li>Normal: Monsters retaliate by default, as in vanilla Doom.
-   DEH settings in the wad can override this.</li>
-  <li>Coop: Monsters cooperate by default.
-  DEH settings in the wad can override this.
-  This is the same setting as the -coopmonsters command line switch.</li>
-  <li>Infight: Monsters retaliate by default.
-  DEH settings in the wad can override this.
-  This is the same setting as the -infight command line switch.</li>
-  <li>Force Coop: Monsters cooperate.
-  This overrides DEH infight settings.</li>
-  <li>Force Infight: Monsters retailiate and damage each other.
-  This overrides DEH infight settings.</li>
-  <li>No Infight: Monsters take damage from missiles, but do not retaliate.</li>
-</ul>
-Default is Normal.
-</td></tr>
-
-<tr><td>monsterfriction</td><td>string</td>
-<td>
-Select the mode of monster friction.
-<ul>
-  <li>None: Monsters ignore friction, as in vanilla Doom and Heretic.</li>
-  <li>MBF: Monster friction from MBF, where ice gave momentum to monsters.
-  Has momentum effects on transition between ice and other sectors.</li>
-  <li>Momentum: Monsters have momentum all the time. Their friction is tuned
-  to match the player friction.</li>
-  <li>Heretic: The monster friction only has some special ice effects.</li>
-  <li>Normal: Enable monster friction based on the friction model.
-</ul>
-Default is Momentum.
-</td></tr>
-
-<tr><td>monstergravity</td><td>bool</td>
-<td>
-Select how monsters fall according to gravity.
-<ul>
-  <li>Off: Monsters ignore gravity and instantly fall to the floor, as in vanilla Doom and Heretic.</li>
-  <li>MBF: Monsters fall according to gravity, as in MBF.
-      When a fall is greater than 24 units then the fall ignores gravity.</li>
-  <li>On: Monsters fall according to gravity.
-</ul>
-Default is On.
-</td></tr>
-
-<tr><td>dropoff</td><td>bool</td>
-<td>
-Enable the MBF dropoff behavior, which blocks or allows a monster at
-a dropoff based on situation and height. It also handles dogs and monkeys.
-An MBF behavior.
-Default is On.
-</td></tr>
-
-<tr><td>falloff</td><td>bool</td>
-<td>
-Enable the MBF falloff behavior for objects hanging on a dropoff.
-This torques them until they fall off, or until it gives up on lets
-them stay.
-An MBF behavior.
-Default is On.
-</td></tr>
-
-<tr><td>monkeys</td><td>bool</td>
-<td>
-Enable the monsters to climb steps more easily.
-An MBF behavior.
-Default is Off.
-</td></tr>
-
-<tr><td>mon_avoidhazard</td><td>bool</td>
-<td>
-Enable the monsters to avoid crushing ceilings.
-An MBF behavior.
-Default is On.
-</td></tr>
-
-<tr><td>mon_backing</td><td>bool</td>
-<td>
-Enable monsters to back away from an enemy when it is favorable,
-such as having missiles and the enemy does not, or when the enemy has
-the chainsaw.
-An MBF behavior.
-Default is Off.
-</td></tr>
-
-<tr><td>mon_remember</td><td>bool</td>
-<td>
-Enable monsters to remember their last target, when they cannot find a
-new target.
-A Boom behavior.
-Default is Off.
-</td></tr>
-
-<tr><td>pursuit</td><td>bool</td>
-<td>
-Enable monster pursuit of a targeted enemy they can still see.
-An MBF behavior.
-Default is Off.
-</td></tr>
-
-<tr><td>staylift</td><td>bool</td>
-<td>
-Enable monsters to stay on a lift if their targeted enemy is on it.
-An MBF behavior.
-Default is On.
-</td></tr>
-
-<tr><td>helpfriend</td><td>bool</td>
-<td>
-Enable monsters to help friends that are in danger of dying.
-This applies to dogs and other friends of the player. 
-An MBF behavior.
-Default is On.
-</td></tr>
-
-<tr><td>distfriend</td><td>int</td>
-<td>
-The distance that a friendly monster should be from the player.
-This is what makes a friendly monster follow the player, and what makes them
-back away when too close or in the way.
-This applies to dogs and other friends of the player. 
-An MBF behavior.
-Valid range is 0 to 999.
-Default is 128.
-</td></tr>
-
-<tr><td>dogs_cnt</td><td>int</td>
-<td>
-Enable friendy dogs.
-This applies during single player and coop play.
-An MBF behavior.
-Valid range is 0 to 9.
-Default is 0.
-</td></tr>
-
-<tr><td>dogjump</td><td>int</td>
-<td>
-Enable friendy dogs, and BEX designated helper friends, to jump down a
-dropoff, up to 128 units, to follow their player.
-An MBF behavior.
-Default is On.
-</td></tr>
-
-
-<tr><td>voodoo_mode</td><td>string</td>
-<td>
-Sets the voodoo doll behavior.  A voodoo doll is an accident of the
-original doom code that occurs when a wad has extra player starts.
-The voodoo dolls that are spawned at the extra starts look like
-players, but do not move on their own. When they get shot or
-damaged, a player gets damaged too.  Many wads use voodoo dolls for
-automated actions because they can trip linedefs.
-<ul>
-  <li>Vanilla: No enhancements. Allows zombies and walking dead players.</li>
-  <li>Multispawn: The target of damage is determined by the wad spawn type.</li>
-  <li>Target: DoomLegacy will attempt to determine the player that
-    triggered the voodoo doll, and will put the damage on them.  There are
-    still many ways the wrong player can get hurt (which is wad related),
-    some as simple as one player tripping the death-trap, right before
-    another pushes the switch to turn it off
-    (if timed right, the player at the switch dies instead).</li>
-  <li>Auto: If the wad has multiple player voodoo spawning, then it
-    switches to Multispawn, otherwise it will be Target.</li>
-</ul>
-Default is Auto.
-</td></tr>
-
-<tr><td>instadeath</td><td>string</td>
-<td>
-Used to mitigate the effects of voodoo doll teleport frag.
-For coop and deathmatch play, a setting other than Die is suggested.
-<br/>
-The telefrag kills the player instantly, thus the name "instadeath".
-Used in unusual wad traps to kill the player, like when
-they touch something dangerous.
-Vanilla voodoo doll behavior has the voodoo doll instadeath always killing
-the same player, and it does not matter who walked into the death-trap.
-In most wads the victim is always player1.
-<ul>
-  <li>Die: Telefrag death of player.</li>
-  <li>Damage: Player takes 20 damage, stunned, and gets thrown back.</li>
-  <li>Zap: Player takes 5 damage, stunned longer, and gets thrown back.</li>
-</ul>
-Default is Die.
-</td></tr>
-
-
-<tr><td>invul_skymap</td><td>int</td>
-<td>
-How the sky appears when the player is invulnerable.  This was a bug
-in the vanilla Doom.
-<ul>
-  <li>Vanilla: The sky does not change when the player is invulnerable.</li>
-  <li>Boom: The sky changes just like everything else.</li>
-</ul>
-Default is Boom.
-</td></tr>
-
-<tr><td>zerotag</td><td>int</td>
-<td>
-Control if sectors with a tag value of 0 will react to a linedef with a tag
-of 0.
-By default, new sectors have a tag value of 0.
-In vanilla Doom, a tag of 0 on some linedefs would affect every sector
-with the default value, causing havoc.
-<ul>
-  <li>Allow: Allow tag values of 0, just like vanilla Doom.</li>
-  <li>Boom: Ignore most linedefs that have a tag value of 0.
-      It is valid special case for only a few linedefs.</li>
-</ul>
-Default is Boom.
-</td></tr>
-
-
-<tr><td>weaponrecoil</td><td>bool</td>
-<td>
-Boom weapon recoil effect.  Each weapon has a recoil, with the missile
-launcher and BFG having the most recoil.  This will push the player
-back when they fire, which may be significant if they are on ice.
-Default is Off.
-</td></tr>
-
-<tr><td>playdemospeed</td><td>int</td>
-<td>
-Number of frames to skip for each frame rendered when playing back
-demos. Default is 0.
-</td></tr>
-
-</table>
-
-
-
 <h3 id="game_cmds">Game commands</h3>
 
 <p>
@@ -1180,7 +554,9 @@ Restart the current map.
 
 <tr><td>exitlevel</td>
 <td>
-Exit current map and go to the intermission screen.
+Exit current map and go to the intermission screen.<br/>
+If there are game-start waiting players, they will join the game
+during the intermission.
 </td></tr>
 
 <tr><td>pause</td>
@@ -1334,6 +710,11 @@ addbot
 </td>
 <td>
 Adds a bot (AI player) to the game. You can remove bots from the game using <a href="#kick">kick</a>.
+<br/>Bots can be added during a netgame.
+Sometimes there are problems with clients.  The exact conditions that
+trigger the problems are unknown, and it may require restarting to clear.
+If bots are added during an intermission, the clients can consistency fault.
+This is a known problem.
 </td></tr>
 
 <tr><td>say &lt;message&gt;</td>
@@ -1433,8 +814,1006 @@ Lists all the currently running FS scripts.
 </table>
 
 
+<h3 id="con_setup">Console setup</h3>
+
+<p>These variables control the look and feel of the console.
+</p>
+
+<table class="def">
+<tr><th>variable</th><th>type</th><th>definition</th></tr>
+
+<tr><td>showmessages</td><td>enum</td>
+<td>
+Limits the messages that are shown on the HUD during gameplay.
+<table class="def">
+<tr><td>Off</td><td>0</td><td>Never show any messages on the screen.</td></tr>
+<tr><td>Minimal</td><td>1</td><td>Important play messages are shown, like you got the BFG.
+Common messages, like those about ammo, are not shown.</td></tr>
+<tr><td>Play</td><td>2</td><td>The standard Play messages are shown, but verbose and diagnostic
+messages are not (default).</td></tr>
+<tr><td>Verbose</td><td>3</td><td>Verbose messages too.</td></tr>
+<tr><td>Debug</td><td>4</td><td>Debug and Verbose messages too.</td></tr>
+<tr><td>Dev</td><td>5</td><td>Development.  All messages are shown.</td></tr>
+</table>
+There is also a control for this in the Options menu.
+</td></tr>
+
+<tr><td>con_backpic</td><td>bool</td>
+<td>
+0: use a translucent LCD-like console background.<br/>
+1: use an opaque
+<a href="editing.html#CONSBACK">console background picture</a>, like in Quake.
+</td></tr>
+
+<tr><td>con_height</td><td>int</td>
+<td>
+How many percent of the total screen height the console
+will use. E.g. con_height 50 (the default) will use half the
+screen height for the console.
+</td></tr>
+
+<tr><td>con_speed</td><td>int</td>
+<td>
+The speed (in pixels/tic) at which the console comes down or moves out of
+the screen when you press the console toggle key.
+</td></tr>
+
+<tr><td id="con_hudtime">con_hudtime</td><td>int</td>
+<td>
+The number of seconds messages stay on the top
+of the screen. They are 5 message lines that scroll as soon
+as new messages arrive. E.g. con_hudtime 5, which is the
+default, will make the messages stay for 5 seconds before
+disappearing. Set this to 0, and you will never see any
+messages outside the console (HUD means heads-up display).
+</td></tr>
+
+<tr><td>darkback</td><td>enum</td>
+<td>
+The console background is darkened to make the text easier to read.
+This controls how dark it gets.
+<table class="def">
+<tr><td>Half</td><td>0</td><td>Half darkness (40%).</td></tr>
+<tr><td>Med</td><td>1</td><td>Middle darkness (25%).</td></tr>
+<tr><td>Dark</td><td>2</td><td>Darkest (17%).</td></tr>
+</table>
+ There is also a control for this in the Video menu.
+</td></tr>
+<tr><td>con_fontsize</td><td>enum</td>
+<td>
+The console fontsize.
+<table class="def">
+<tr><td>Small</td><td>0</td><td>Smallest font.</td></tr>
+<tr><td>Med2</td><td>1</td></tr>
+<tr><td>Med3</td><td>2</td></tr>
+<tr><td>Med4</td><td>3</td></tr>
+<tr><td>Large</td><td>4</td><td>Largest font.</td></tr>
+</table>
+There is also a control for this in the Video menu.
+</td></tr>
+<tr><td>msg_fontsize</td><td>enum</td>
+<td>
+The HUD message fontsize. 
+<table class="def">
+<tr><td>Small</td><td>0</td><td>Smallest font.</td></tr>
+<tr><td>Med2</td><td>1</td></tr>
+<tr><td>Med3</td><td>2</td></tr>
+<tr><td>Med4</td><td>3</td></tr>
+<tr><td>Large</td><td>4</td><td>Largest font.</td></tr>
+</table>
+There is also a control for this in the Video menu.
+</td></tr>
+</table>
+
+
+
+<h3 id="player_setup">Player setup</h3>
+
+<p>These variables control your player avatar's appearance and your game
+preferences. The splitscreenplayer has similar variables, but with the
+number 2 appended to the variable name, e.g. "color2 red" turns the
+splitscreenplayer's avatar red.
+</p>
+
+<table class="def">
+<tr><th>variable</th><th>type</th><th>definition</th></tr>
+
+<tr><td>splitscreen</td><td>bool</td>
+<td>
+Enable/disable the splitscreen. If necessary, this spawns a secondary
+local player, called the splitscreenplayer.
+</td></tr>
+
+<tr><td>name</td><td>string</td>
+<td>
+The name of Player 1.<br/>
+Enter your name as a player, for network games. Your name will
+be seen when you send a message (chat key), and is displayed
+in the deathmatch rankings. Use "" if the name contains spaces,
+e.g. <span class="example">name "dj fabbe"</span>
+</td></tr>
+
+<tr><td>name2</td><td>string</td>
+<td>
+The name of Player 2.
+</td></tr>
+
+
+<tr><td>color &lt;0 - 10&gt;</td><td>int</td>
+<td>
+The color of Player 1.<br/>
+Choose your avatar's color.
+<ul>
+<li> 0: Green</li>
+<li> 1: Gray</li>
+<li> 2: Brown</li>
+<li> 3: Red</li>
+<li> 4: Light Gray</li>
+<li> 5: Light Brown</li>
+<li> 6: Light Red</li>
+<li> 7: Light Blue</li>
+<li> 8: Blue</li>
+<li> 9: Yellow</li>
+<li>10: Beige</li>
+</ul>
+</td></tr>
+
+<tr><td>color2 &lt;0 - 10&gt;</td><td>int</td>
+<td>
+The color of Player 2.
+</td></tr>
+
+
+<tr><td>skin</td><td>string</td>
+<td>
+The skin selection for Player 1.<br/>
+Change your skin, provided some skins are loaded (use
+the commandline option <a href="legacy.html#file">-file</a>
+to add skins wads. The default marine skin
+name is "marine".
+</td></tr>
+
+<tr><td>skin2</td><td>string</td>
+<td>
+The skin selection for Player 2.<br/>
+</td></tr>
+
+<tr><td>autoaim</td><td>bool</td>
+<td>
+Enable autoaim for Player 1.<br/>
+The original Doom used autoaiming in the vertical direction, and a
+small aim adjustment in the horizontal.
+Now that you can freely aim up and down with the freelook, you can
+play like a pro and set autoaim off.<br/>
+
+NETWORK NOTE: in a multiplayer game, the server can force
+the autoaim off for all players with the command
+<a href="#allowautoaim">allowautoaim</a>.
+</td></tr>
+
+<tr><td>autoaim2</td><td>bool</td>
+<td>
+Enable autoaim for Player 2.
+</td></tr>
+
+
+<tr><td>originalweaponswitch</td><td>bool</td>
+<td>
+Choose whether to use the original weapon change method (1), or
+the new preferred weapons order (0), see
+<a href="#weaponpref">weaponpref</a> for more.<br/>
+
+With the original weapon switch, whenever you pick up a new weapon
+it becomes the active one, even if it is not as powerful
+as the one you are currently using. That can be sometimes very
+annoying, especially in fast deathmatches.
+</td></tr>
+
+
+<tr><td id="weaponpref">weaponpref</td><td>string</td>
+<td>
+The preferred weapons order for Player 1.<br/>
+This works only if you have set originalweaponswitch to 0.
+
+<p>You give a priority to each of the weapons, with a number digit
+from 0 to 9. Several weapons can have the same priority.
+When you pick up a weapon that you don't already have, you
+will switch to that weapon IF AND ONLY IF that weapon's priority
+is greater that the one you are carrying. If you already had the
+weapon, you will pickup the ammo as usual, without changing
+weapon.
+The command is given a string of priority values, one for each weapon, in the following order:
+</p>
+
+<p>Fist, Chainsaw, Pistol, Shotgun, Super Shotgun, Chaingun, Rocket
+  Launcher, Plasma Rifle, BFG.
+</p>
+
+<p>Thus 'weaponpref "021485763"' means that the super shotgun has
+the highest priority (8), while the fist is lowest priority (0).
+After the super shotgun, in decreasing priority you have the
+rocket launcher (7), plasma gun (6), chaingun (5), shotgun (4),
+BFG (3), chainsaw (2) and pistol (1).
+</p>
+
+<p>Let's have another interesting example: 'weaponpref "333333333"'
+</p>
+
+<p>Since all weapons have the same priority in this last example,
+you will NEVER change weapon automatically, because
+no weapon has a priority higher than any other one. You might
+consider this the manual weapon change.
+</p>
+</td></tr>
+
+<tr><td>weaponpref2</td><td>string</td>
+<td>
+The preferred weapons order for Player 2.<br/>
+</td></tr>
+
+
+<tr><td>crosshair</td><td>enum</td>
+<td>
+The type of aiming point (crosshair) that appears on the screen for Player 1.
+<table class="def">
+<tr><td>Off</td><td>0</td><td>No crosshair.</td></tr>
+<tr><td>Cross</td><td>1</td><td>Large white + with an open center, the largest crosshair.</td></tr>
+<tr><td>Angle</td><td>2</td><td>Small vertical and horizontal green lines.  The aiming point is where the two lines meet.</td></tr>
+<tr><td>Point</td><td>3</td><td>Red aiming dot, like a laser pointer.</td></tr>
+</table>
+There is a control in the Options menu.
+</td></tr>
+<tr><td>crosshair2</td><td>enum</td>
+<td>
+The type of aiming point (crosshair) that appears on the screen for Player 2.
+</td></tr>
+</table>
+
+
+
+<h3 id="player_controls">Player controls</h3>
+
+<p>These variables control the way the game handles the players' input.
+The splitscreenplayer has similar variables, but with the
+number 2 appended to the variable name.
+</p>
+
+<table class="def">
+<tr><th>variable</th><th>type</th><th>definition</th></tr>
+
+<tr><td>autorun</td><td>bool</td>
+<td>
+The autorun setting for Player 1.<br/>
+Player 0 will always be running, EXCEPT when pushing the <b>run</b> key.
+</td></tr>
+
+<tr><td>autorun2</td><td>bool</td>
+<td>
+The autorun setting for Player 2 (splitplayer).<br/>
+Player 1 will always be running, EXCEPT when pushing the <b>run</b> key.
+</td></tr>
+
+<tr><td>alwaysmlook</td><td>bool</td>
+<td>
+<p>Setting alwaysmlook to 1 will enable freelook for Player 1.
+</p>
+
+<p>When alwaysmlook is 0, you will need to hold the freelook
+key down while moving the mouse up and down. When releasing the key,
+the view will always re-center. This is useful if you keep
+firing rockets at your feet.
+</p>
+</td></tr>
+
+<tr><td>alwaysmlook2</td><td>bool</td>
+<td>
+<p>Setting alwaysmlook2 to 1 will enable freelook for Player 2.
+</p>
+</td></tr>
+
+
+<tr><td>use_mouse</td><td>bool</td>
+<td>
+Enable using the mouse for Player 1.
+Setting use_mouse to 0 will disable the mouse. The next time
+you start the game, the mouse won't be detected.
+
+Set use_mouse to 1 to search for a mouse, and activate it.
+There is also a control for this in the Mouse menu.
+</td></tr>
+
+<tr><td>use_mouse2</td><td>bool</td>
+<td>
+Enable using the second mouse for Player 2.
+Setting use_mouse2 to 0 will disable the mouse. The next time
+you start the game, the mouse won't be detected.
+
+Set use_mouse2 to 1 to search for a second mouse, and activate it.
+There is also a control for this in the Mouse menu.
+</td></tr>
+
+<tr><td>invertmouse</td><td>bool</td>
+<td>
+Set invertmouse to 1 to invert the mouse y (up and down) axis for Player 1.
+This is for freelook only, you will look up, when moving the mouse
+down (backward), and look down when moving mouse forward.
+There is also a control for this in the Mouse menu.
+</td></tr>
+
+<tr><td>invertmouse2</td><td>bool</td>
+<td>
+Set invertmouse to 1 to invert the mouse y (up and down) axis for Player 2.
+This is for freelook only, you will look up, when moving the mouse
+down (backward), and look down when moving mouse forward.
+There is also a control for this in the Mouse menu.
+</td></tr>
+
+<tr><td>mousemove</td><td>bool</td>
+<td>
+Enable/disable mouse y-axis for forward/backward movement of Player 1.
+There is also a control for this in the Mouse menu.
+</td></tr>
+
+<tr><td>mousemove2</td><td>bool</td>
+<td>
+Enable/disable mouse y-axis for forward/backward movement of Player 2.
+There is also a control for this in the Mouse menu.
+</td></tr>
+
+<tr><td>mousesensx<br/>
+mousesensy</td><td>int</td>
+<td>
+Sets the mouse sensitivity in the x and y directions for Player 1.
+There is also a control for this in the Mouse menu.
+</td></tr>
+
+<tr><td>mouse2sensx<br/>
+mouse2sensy</td><td>int</td>
+<td>
+Sets the mouse sensitivity in the x and y directions for Player 2.
+There is also a control for this in the Mouse menu.
+</td></tr>
+</table>
+
+
+<p>These input variables are common to both local players.
+</p>
+
+<table class="def">
+<tr><th>variable</th><th>type</th><th>definition</th></tr>
+
+<tr><td>controlperkey &lt;1|2&gt;</td><td>int</td>
+<td>
+When set to 2 (several) you can bind more than one control to a key.
+Otherwise binding a control to a key will remove the key's other
+assignations.
+</td></tr>
+
+<tr><td>mouse2port &lt;1|2|3|4&gt;</td><td>int</td>
+<td>
+Choose the port number of the secondary mouse for the
+splitscreenplayer between COM1 to COM4.
+</td></tr>
+
+<tr><td>mousemotion</td><td>enum</td>
+<td>
+SDL port only.  Does not affect mouse2.
+<table class="def">
+<tr><td>Absolute</td><td>0</td><td>Uses the original mouse interface with local difference
+calculations.
+It should work for any SDL port.</td></tr>
+<tr><td>Relative</td><td>1</td><td>Uses the newer relative motion interface, which
+may not work on some SDL library ports.  It is reported to work with
+Linux and Windows.</td></tr>
+</table>
+There is also a control for this in the Mouse menu.
+</td></tr>
+
+<tr><td>mousedouble</td><td>int</td>
+<td>
+Sets the mouse double click detection.
+A normal double click is about 6.<br>
+There is also a control for this in the Mouse menu.
+</td></tr>
+
+<tr><td>grabinput</td><td>bool</td>
+<td>
+Sets the SDL grabinput attribute.  This keeps the mouse in the window.
+It also disables most of any window manager's keyboard and mouse functions,
+so DoomLegacy gets all combination events.
+Pause releases grabinput to let the mouse be used outside of DoomLegacy.
+There is also a control for this in the Mouse menu.
+</td></tr>
+</table>
+
+<p>
+The game controls can be defined using the setcontrol command.
+</p>
+
+<table class="def">
+<tr><th>command</th><th>definition</th></tr>
+
+<tr><td>setcontrol &lt;control&gt; &lt;key1&gt; [&lt;key2&gt;]</td>
+<td>
+<p>Binds a key/joystick button/mouse button to a
+game control (<span class="keyword">forward</span>, <span class="keyword">fire</span>, <span class="keyword">use</span> etc.).
+The second keyname is optional. You can set it, and have
+two keys attached to one game control, e.g. have both <b>UP ARROW</b>
+and <b>MOUSE2</b> mean <span class="keyword">forward</span>.
+</p>
+
+<p>If a key does not have a useful name, it uses a name of the
+form 'KEYxxx' where xxx is the key code.
+To learn the names of the keys, look for them at the Setup Controls menu.
+</p>
+
+<p>The controls are <span class="keyword">forward, backward, strafe, 
+straferight, strafeleft, speed, turnleft, turnright, 
+fire, use, lookup, lookdown, centerview, mouseaiming, 
+weapon1, weapon2, ..., weapon8, talkkey, scores, 
+jump, console</span>.
+</p>
+
+Example:
+<div class="example">
+&gt; setcontrol forward "keypad 8" "up arrow"
+</div>
+</td></tr>
+
+<tr><td>setcontrol2 &lt;control&gt; &lt;key1&gt; [&lt;key2&gt;]</td>
+<td>Same as setcontrol but for splitscreenplayer.
+</td></tr>
+
+<tr><td>
+bindjoyaxis [&lt;joynum&gt; &lt;axisnum&gt; [&lt;playernum&gt;
+&lt;control&gt; &lt;scale&gt;]]<br/></td>
+<td>
+Lists, releases or creates joystick axis bindings.
+</td></tr>
+
+
+</table>
+
+
+
+
+<h3 id="game_options">Game options</h3>
+
+<p>Using these variables you can change may aspects of the game
+itself. For obvious reasons, in a network game only the server can change them.
+</p>
+
+<table class="def">
+<tr><th>variable</th><th>type</th><th>definition</th></tr>
+
+
+<tr><td>deathmatch</td><td>enum</td>
+<td>
+Select the multiplayer game type, coop or deathmatch<br/>
+<table class="def">
+<tr><td>Coop_weapons</td>
+<td>0</td><td>Coop. Placed weapons respawn immediately.<td></tr>
+<tr><td>DM_weapons</td>
+<td>1</td><td>Deathmatch. Placed weapons respawn immediately<td></tr>
+<tr><td>DM_item</td>
+<td>2</td><td>Deathmatch. Items respawn<td></tr>
+<tr><td>DM_both</td>
+<td>3</td><td>Deathmatch. Items respawn, placed weapons respawn immediately<td></tr>
+<tr><td>DM</td>
+<td>4</td><td>Deathmatch.
+Option menu controls the item and weapon respawning<td></tr>
+<tr><td>Coop</td>
+<td>16</td><td>Coop.
+Option menu controls the item and weapon respawning<td></tr>
+<tr><td>Coop_80</td>
+<td>32</td><td>Coop, 80%.
+Monsters added for Coop that are too strong are changed to lesser
+monsters according to map level, skill level, and 80% level.
+Option menu controls the item and weapon respawning.<td></tr>
+<tr><td>Coop_60</td>
+<td>48</td><td>Coop, 60%.
+Monsters added for Coop that are too strong are changed to lesser
+monsters according to map level, skill level, and 60% level.
+Option menu controls the item and weapon respawning.<td></tr>
+<tr><td>Coop_SP_Map</td>
+<td>128</td><td>Coop, on the Single Player Map.  Limited weapons.
+Option menu controls the item and weapon respawning.<td></tr>
+</table>
+</td></tr>
+
+</td></tr>
+
+
+<tr><td>gravity</td><td>float</td>
+<td>
+Sets the acceleration of gravity in the game.
+The default gravity is 1.
+</td></tr>
+
+<tr><td>solidcorpse</td><td>bool</td>
+<td>
+Setting solidcorpse to 1 makes the dead corpses
+(monsters/marines) solid. The corpses thus stack one on top
+of another, and you walk over them. Sometimes you can even
+reach ledges where you couldn't get before by climbing on corpses!
+</td></tr>
+
+
+<tr><td>respawnitem</td><td>bool</td>
+<td>
+Choose whether items respawn.
+This is set automatically by some of the deathmatch modes, while
+others use this value.
+
+<p>NOTE: it is considered cheating to allow respawning of items
+ when in single player mode ! :)
+</p>
+</td></tr>
+
+<tr><td>respawnitemtime</td><td>int</td>
+<td>
+Set the respawn item time in seconds. The time between the moment
+you pick up the item, and the moment it reappears.
+
+<p>The default is 30 seconds, from the original Doom.
+</p>
+</td></tr>
+
+
+<tr><td>respawnmonsters</td><td>bool</td>
+<td>
+Choose if monsters can respawn.
+The -respawn command-line option will temporarily set this to 1.
+</td></tr>
+
+<tr><td>respawnmonsterstime</td><td>int</td>
+<td>
+Choose the time of respawn for the monsters, in seconds.
+
+<p>The default is 12, from the original Doom.
+</p>
+</td></tr>
+
+
+<tr><td>nomonsters</td><td>bool</td>
+<td>
+Set to 1 to prevent monsters from spoiling your gaming experience.
+Often used in deathmatch.
+</td></tr>
+
+<tr><td>fastmonsters</td><td>bool</td>
+<td>
+Choose if monster are "fast" like with the original -fastparm
+</td></tr>
+
+
+<tr><td>monsterbehavior</td><td>enum</td>
+<td>
+Select the mode of monster infighting.
+<table class="def">
+<tr><td>Normal</td><td>0</td><td>Monsters retaliate by default, as in vanilla Doom.
+   DEH settings in the wad can override this.</td></tr>
+<tr><td>Coop</td><td>1</td><td>Monsters cooperate by default.
+  DEH settings in the wad can override this.
+  This is the same setting as the -coopmonsters command line switch.</td></tr>
+<tr><td>Infight</td><td>2</td><td>Monsters retaliate by default.
+  DEH settings in the wad can override this.
+  This is the same setting as the -infight command line switch.</td></tr>
+<tr><td><nobr>Force Coop</nobr></td><td>3</td><td>Monsters cooperate.
+  This overrides DEH infight settings.</td></tr>
+<tr><td><nobr>Force Infight</nobr></td><td>4</td><td>Monsters retailiate and damage each other.
+  This overrides DEH infight settings.</td></tr>
+<tr><td><nobr>No Infight</nobr></td><td>5</td><td>Monsters take damage from missiles, but do not retaliate.</td></tr>
+</table>
+Default is Normal.
+</td></tr>
+
+<tr><td>monsterfriction</td><td>enum</td>
+<td>
+Select the mode of monster friction.
+<table class="def">
+<tr><td>None</td><td>0</td><td>Monsters ignore friction, as in vanilla Doom and Heretic.</td></tr>
+<tr><td>MBF</td><td>1</td><td>Monster friction from MBF, where ice gave momentum to monsters.
+  Has momentum effects on transition between ice and other sectors.</td></tr>
+<tr><td>Momentum</td><td>2</td><td>Monsters have momentum all the time. Their friction is tuned
+  to match the player friction.</td></tr>
+<tr><td>Heretic</td><td>3</td><td>The monster friction only has some special ice effects.</td></tr>
+<tr><td>Normal</td><td>4</td><td>Enable monster friction based on the friction model.</td></tr>
+</table>
+Default is Momentum.
+</td></tr>
+
+<tr><td>monstergravity</td><td>enum</td>
+<td>
+Select how monsters fall according to gravity.
+<table class="def">
+<tr><td>Off</td><td>0</td><td>Monsters ignore gravity and instantly fall to the floor,
+as in vanilla Doom and Heretic.</td></tr>
+<tr><td>MBF</td><td>1</td><td>Monsters fall according to gravity, as in MBF.
+      When a fall is greater than 24 units then the fall ignores gravity.</td></tr>
+<tr><td>On</td><td>3</td><td>Monsters fall according to gravity.</td></tr>
+</table>
+Default is On.
+</td></tr>
+
+<tr><td>dropoff</td><td>bool</td>
+<td>
+Enable the MBF dropoff behavior, which blocks or allows a monster at
+a dropoff based on situation and height. It also handles dogs and monkeys.
+An MBF behavior.
+Default is On.
+</td></tr>
+
+<tr><td>falloff</td><td>bool</td>
+<td>
+Enable the MBF falloff behavior for objects hanging on a dropoff.
+This torques them until they fall off, or until it gives up on lets
+them stay.
+An MBF behavior.
+Default is On.
+</td></tr>
+
+<tr><td>monkeys</td><td>bool</td>
+<td>
+Enable the monsters to climb steps more easily.
+An MBF behavior.
+Default is Off.
+</td></tr>
+
+<tr><td>mon_avoidhazard</td><td>bool</td>
+<td>
+Enable the monsters to avoid crushing ceilings.
+An MBF behavior.
+Default is On.
+</td></tr>
+
+<tr><td>mon_backing</td><td>bool</td>
+<td>
+Enable monsters to back away from an enemy when it is favorable,
+such as having missiles and the enemy does not, or when the enemy has
+the chainsaw.
+An MBF behavior.
+Default is Off.
+</td></tr>
+
+<tr><td>mon_remember</td><td>bool</td>
+<td>
+Enable monsters to remember their last target, when they cannot find a
+new target.
+A Boom behavior.
+Default is Off.
+</td></tr>
+
+<tr><td>pursuit</td><td>bool</td>
+<td>
+Enable monster pursuit of a targeted enemy they can still see.
+An MBF behavior.
+Default is Off.
+</td></tr>
+
+<tr><td>staylift</td><td>bool</td>
+<td>
+Enable monsters to stay on a lift if their targeted enemy is on it.
+An MBF behavior.
+Default is On.
+</td></tr>
+
+<tr><td>helpfriend</td><td>bool</td>
+<td>
+Enable monsters to help friends that are in danger of dying.
+This applies to dogs and other friends of the player. 
+An MBF behavior.
+Default is On.
+</td></tr>
+
+<tr><td>distfriend</td><td>int</td>
+<td>
+The distance that a friendly monster should be from the player.
+This is what makes a friendly monster follow the player, and what makes them
+back away when too close or in the way.
+This applies to dogs and other friends of the player. 
+An MBF behavior.
+Valid range is 0 to 999.
+Default is 128.
+</td></tr>
+
+<tr><td>dogs_cnt</td><td>int</td>
+<td>
+Enable friendy dogs.
+This applies during single player and coop play.
+An MBF behavior.
+Valid range is 0 to 9.
+Default is 0.
+</td></tr>
+
+<tr><td>dogjump</td><td>int</td>
+<td>
+Enable friendy dogs, and BEX designated helper friends, to jump down a
+dropoff, up to 128 units, to follow their player.
+An MBF behavior.
+Default is On.
+</td></tr>
+
+
+<tr><td>voodoo_mode</td><td>enum</td>
+<td>
+Sets the voodoo doll behavior.  A voodoo doll is an accident of the
+original doom code that occurs when a wad has extra player starts.
+The voodoo dolls that are spawned at the extra starts look like
+players, but do not move on their own. When they get shot or
+damaged, a player gets damaged too.  Many wads use voodoo dolls for
+automated actions because they can trip linedefs.
+<table class="def">
+<tr><td>Vanilla</td><td>0</td><td>No enhancements. Allows zombies and walking dead players.</td></tr>
+<tr><td>Multispawn</td><td>1</td><td>The target of damage is determined by the wad spawn type.
+  A player2 voodoo doll will damage player2.
+  Because most wads only have player1 voodoo dolls, often player1 gets the damage instead.</td></tr>
+<tr><td>Target</td><td>2</td><td>DoomLegacy will attempt to determine the player that
+    triggered the voodoo doll, and will put the damage on them.  There are
+    still many ways the wrong player can get hurt (which is wad related),
+    some as simple as one player tripping the death-trap, right before
+    another pushes the switch to turn it off
+    (if timed right, the player at the switch dies instead).</td></tr>
+<tr><td>Auto</td><td>3</td><td>If the wad has multiple player voodoo spawning, then it
+    switches to Multispawn, otherwise it will be Target.</td></tr>
+</table>
+Default is Auto.
+</td></tr>
+
+<tr><td>instadeath</td><td>enum</td>
+<td>
+Used to mitigate the effects of voodoo doll teleport frag.
+For coop and deathmatch play, a setting other than Die is suggested.
+<br/>
+The telefrag kills the player instantly, thus the name "instadeath".
+Used in unusual wad traps to kill the player, like when
+they touch something dangerous.
+Vanilla voodoo doll behavior has the voodoo doll instadeath always killing
+the same player, and it does not matter who walked into the death-trap.
+In most wads the victim is always player1.
+<table class="def">
+<tr><td>Die</td><td>0</td><td>Telefrag death of player.</td></tr>
+<tr><td>Damage</td><td>1</td><td>Player takes 20 damage, stunned, and gets thrown back.</td></tr>
+<tr><td>Zap</td><td>2</td><td>Player takes 5 damage, stunned longer, and gets thrown back.</td></tr>
+</table>
+Default is Die.
+</td></tr>
+
+
+<tr><td>invul_skymap</td><td>enum</td>
+<td>
+How the sky appears when the player is invulnerable.  This was a bug
+in the vanilla Doom.
+<table class="def">
+<tr><td>Vanilla</td><td>0</td><td>The sky does not change when the player is invulnerable.</td></tr>
+<tr><td>Boom</td><td>1</td><td>The sky changes just like everything else.</td></tr>
+</table>
+Default is Boom.
+</td></tr>
+
+<tr><td>skygen</td><td>enum</td>
+<td>
+Select how to make a Doom vanilla sky fit the larger Doom Legacy sky.
+Whenever a starry sky is detected, a star fill will be selected automatically.
+<table class="def">
+<tr><td>auto</td><td>Will look for a replacement sky first, then will make best choice, which is usually extend_bg.<td></tr>
+<tr><td>subst</td><td>Will use a replacement sky. (not fully implemented yet)<td></tr>
+<tr><td>bg_stars</td><td>Extend the sky, replace all of background with stars.<td></tr>
+<tr><td>extend_stars</td><td>Extend the sky, replace missing background with stars.<td></tr>
+<tr><td>extend_bg</td><td>Extend the sky, fill with background color.<td></tr>
+<tr><td>extend_fill</td><td>Extend the sky, fill with random samples.<td></tr>
+<tr><td>stretch</td><td>Stretch the sky to fit.<td></tr>
+</table>
+Default is auto.
+</td></tr>
+
+<tr><td>zerotag</td><td>enum</td>
+<td>
+Control if sectors with a tag value of 0 will react to a linedef with a tag
+of 0.
+By default, new sectors have a tag value of 0.
+In vanilla Doom, a tag of 0 on some linedefs would affect every sector
+with the default value, causing havoc.
+<table class="def">
+<tr><td>Allow</td><td>0</td><td>Allow tag values of 0, just like vanilla Doom.<td></tr>
+<tr><td>Boom</td><td>1</td><td>Ignore most linedefs that have a tag value of 0.
+      It is valid special case for only a few linedefs.<td></tr>
+</table>
+Default is Boom.
+</td></tr>
+
+
+<tr><td>weaponrecoil</td><td>bool</td>
+<td>
+Boom weapon recoil effect.  Each weapon has a recoil, with the missile
+launcher and BFG having the most recoil.  This will push the player
+back when they fire, which may be significant if they are on ice.
+Default is Off.
+</td></tr>
+
+<tr><td>playdemospeed</td><td>int</td>
+<td>
+Number of frames to skip for each frame rendered when playing back
+demos. Default is 0.
+</td></tr>
+
+</table>
+
+
+<h3 id="bot_options">Bot Options</h3>
+
+<p>These variables control the bots.  Bots are a work-in-progress, so
+some of these behaviors will likely change in the future.
+</p>
+These all appear in the Bot options menu.
+
+<table class="def">
+<tr><th>variable</th><th>type</th><th>definition</th></tr>
+
+<tr><td>botskill</td><td>enum</td>
+<td>
+The skill level of the bots.  Some of the bot skill selections affect all bots, but the rand bot skills
+gives each individual bot an independent skill setting.
+The game selections make the bot skill dependent upon the game skill setting.
+<br/>
+<table class="def">
+<tr><td>crippled</td><td>0</td><td>All bots.<td></tr>
+<tr><td>baby</td><td>1</td><td>All bots.<td></tr>
+<tr><td>easy</td><td>2</td><td>All bots.<td></tr>
+<tr><td>medium</td><td>3</td><td>All bots.<td></tr>
+<tr><td>hard</td><td>4</td><td>All bots.<td></tr>
+<tr><td>nightmare</td><td>5</td><td>All bots.<td></tr>
+<tr><td>randmed</td><td>6</td><td>Random, 0 to gameskill-1<td></tr>
+<tr><td>randgame</td><td>7</td><td>Random, 1 to gameskill.<td></tr>
+<tr><td>gamemed</td><td>8</td><td>All bots use gameskill-1 setting.<td></tr>
+<tr><td>gameskill</td><td>9</td><td>All bots use gameskill setting.<td></tr>
+</table>
+</td></tr>
+
+<tr><td>botspeed</td><td>enum</td>
+<td>The speed at which bots move.  It also controls how long they can run
+before they tire.
+<br/>
+<table class="def">
+<tr><td>walk</td><td>0</td><td>Walks most of the time.<td></tr>
+<tr><td>trainer</td><td>1</td><td>4 second run.<td></tr>
+<tr><td>slow</td><td>2</td><td>6 second run.<td></tr>
+<tr><td>medium</td><td>3</td><td>12 second run.<td></tr>
+<tr><td>fast</td><td>4</td><td>24 second run.<td></tr>
+<tr><td>run</td><td>5</td><td>Always run, does not tire.<td></tr>
+<tr><td>gamemed</td><td>8</td><td>dependent upon gameskill-1, speed=0..4<td></tr>
+<tr><td>gameskill</td><td>9</td><td>dependent upon gameskill, speed=1..5<td></tr>
+<tr><td>botskill</td><td>10</td><td>dependent upon bot skill, speed=0..5<td></tr>
+</table>
+</td></tr>
+
+<tr><td>botgen</td><td>enum</td>
+<td>How the bots are generated.  It also selects the random number
+generator that is used for bot name, skin, and color.
+<br/>
+<table class="def">
+<tr><td>Plain</td><td>0</td><td>Repeatable using Bot random.  Reset at
+Game Start.  Same bots each Multiplayer game start.<td></tr>
+<tr><td>Seed</td><td>1</td><td>Bot Random Seed.  Reset to seed each
+Game start.   Same bots each Multiplayer game start.<td></tr>
+<tr><td><nobr>Seed Random</nobr></td><td>2</td><td>Bot Random Seed.  Reset to seed
+at Program Start.  Different bots each Multiplayer game start.<td></tr>
+<tr><td><nobr>Cfg Random</nobr></td><td>3</td><td>Persistant Config Random number.
+Does not repeat.  Different bots each Multiplayer game start.<td></tr>
+<tr><td><nobr>Sys Random</nobr></td><td>4</td><td>System Random number.  System
+Random is usually init at Program Start.  Different bots each Multiplayer game start.<td></tr>
+</table>
+</td></tr>
+
+<tr><td>botrandseed</td><td>int</td>
+<td>
+A user set random number seed, that is saved in config.
+Used to initialize the Bot Random number generator.
+This seed is also used by some bot generation settings to determine the bot names, skins, and colors.
+A particular seed value will generate the same bot names, skins, and colors each game.
+This appears in the Bot options menu, but it is easier to change using
+console, than by pressing up or down several thousand times.
+</td></tr>
+
+<tr><td>botrandom</td><td>int</td>
+<td>
+A persistant random number that is saved in the config file.  The
+value changes automatically.
+It is used by some of the Bot generation settings.
+This does not appear in any menu.
+</td></tr>
+
+</table>
+
 
 <h3 id="net_options">Net options</h3>
+
+<table class="def">
+<tr><th>variable</th><th>type</th><th>definition</th></tr>
+
+<tr><td>allowjump</td><td>bool</td>
+<td>
+Choose whether jump is allowed or not. Those of you who
+come from the planet NoJump or have a limited sensory system
+and couldn't survive a jump in the 3rd axis of our world
+can disable the jump in single player too.<br/>
+NOTE: Jumping is considered cheating in maps not designed with it in
+mind, especially in speedrunning.
+</td></tr>
+
+<tr><td>allowrocketjump</td><td>bool</td>
+<td>
+Enable emulation of the Quake1 bug known as "Rocket Jump".
+</td></tr>
+
+<tr><td id="allowautoaim">allowautoaim</td><td>bool</td>
+<td>
+Off will disable autoaiming for all players.  Make sure everyone is ok
+before getting your friends angry.
+</td></tr>
+
+<tr><td>allowfreelook</td><td>bool</td>
+<td>
+Off will disable looking up and down for all players in the game.
+</td></tr>
+
+<tr><td>allowturbo</td><td>bool</td>
+<td>
+Off will disable clients use of the -turbo switch.  Default is not-allowed.
+</td></tr>
+
+<tr><td>allowexitlevel</td><td>bool</td>
+<td>
+Off will disable all the exit level doors, switches, and linedefs.
+</td></tr>
+
+<tr><td>fraglimit</td><td>int</td>
+<td>
+When the limit is reached, the level exited and game goes to intermission.
+Use 0 to disable.
+</td></tr>
+
+<tr><td>timelimit</td><td>int</td>
+<td>
+After the given number of minutes, the level is exited and game goes
+to intermission. Use 0 to disable.
+</td></tr>
+
+<tr><td>teamplay</td><td>enum</td>
+<td>
+You can change the deathmatch mode while in a multiplayer game.
+<table class="def">
+<tr><td>Off</td><td>0</td><td>No teams, usual free-for-all deathmatch.<td></tr>
+<tr><td>Color</td><td>1</td><td>Teamplay by color.  Use color to identify teams (players of the
+same color will be in the same team).  The team names will
+be like "red team" or "yellow team".
+<td></tr>
+<tr><td>Skin</td><td>2</td><td>Teamskin. Use skins to identify teams (players who use
+the same skin will be in the same team).  The team names will
+show as "leprechaun team" or "terminator team", according
+to the name of the skin.
+<td></tr>
+</table>
+
+<tr><td>teamdamage</td><td>bool</td>
+<td>
+Determines whether members of the same team can hurt one another.
+Useful with beginner players who have not yet learned how much a
+chaingun sprays when you just hold the trigger down.  Real players always have teamdamage on.
+</td></tr>
+
+<tr><td>fragsweaponfalling</td><td>bool</td>
+<td>Enables the weapon to remain after a kill in deathmatch.
+</td></tr>
+
+<tr><td>hiddenplayers</td><td>bool</td>
+<td>REMOVED. You cannot see other players in the automap during deathmatch.
+</td></tr>
+
+</table>
+
+
+<h3 id="server_options">Server options</h3>
 
 <table class="def">
 <tr><th>variable</th><th>type</th><th>definition</th></tr>
@@ -1443,25 +1822,6 @@ Lists all the currently running FS scripts.
 <td>
 This is the name of your server.
 It is displayed on clients' screens when they are searching for servers.
-</td></tr>
-
-<tr><td>sv_public</td><td>bool</td>
-<td>
-If true, your server will announce itself to the master server so that
-it will be visible outside the local network.
-</td></tr>
-
-<tr><td>server1<br>server2<br>server3</td><td>string</td>
-<td>
-The IP addresses (server1, server2, server3)
-that will be checked to find the DoomLegacy server.
-The server should have an IP address such as
-"192.168.1.1", or a network broadcast address such as "192.168.1.255".
-For a home network, addresses should be 192.168.nn.xx, where all your
-computers have the same nn, but different xx (nn=1..254, xx=1..254).
-Do not use addresses such as 255.255.nn.xx as those do not work.
-Default is "192.168.1.255".
-<br>These can be set in the Connect menu.
 </td></tr>
 
 <tr><td>wait_players<br>&lt;0 - 32&gt;</td><td>int</td>
@@ -1479,13 +1839,48 @@ This can be specified in the network menu when starting the server.
 
 <tr><td>sv_allownewplayers</td><td>bool</td>
 <td>
-Allows or disallows the joining of new players to the game.
+Off will disallow the joining of new players to the game.<br/>
+Net Menu: Allow Join Players.
 </td></tr>
 
 <tr><td>sv_maxplayers</td><td>int</td>
 <td>
 Maximum allowed number of players in the game. Default is 32 so don't
-worry about it.
+worry about it.<br/>
+Net Menu: Max Players.
+</td></tr>
+
+<tr><td>sv_download_files</td><td>boolean</td>
+<td>
+Serve files, Enables the server to send files to the client.  This can be disabled if you
+have limited network bandwidth, or do not want to serve files.
+</td></tr>
+<tr><td>sv_download_savegame</td><td>boolean</td>
+<td>
+Serve savegame. Enables the server to send a savegame to joining clients, and for repair.
+The savegame is needed if the client is joining a game-in-progress.
+This can be disabled if you have limited network bandwidth, or do not
+want to be sending savegames.</br>
+Any client that has a different endian than the server, will be
+prevented from downloading a savegame.
+</br>
+When savegame is disabled, the client will join the game at the start of the next level.
+</td></tr>
+
+<tr><td>sv_netrepair</td><td>enum</td>
+<td>
+Serve Repair, the server network repair setting.
+Controls the automatic repair when the server detects a client
+consistency error.
+<br/>
+Repair is also limited by Client settings.
+<table class="def">
+<tr><td>None</td><td>0</td><td>Repair off.<td></tr>
+<tr><td>Minimal</td><td>1</td><td>1 Repair attempts, 0 savegame.<td></tr>
+<tr><td>Medium</td><td>2</td><td>4 Repair attempts,  1 savegames.<td></tr>
+<tr><td>Aggressive</td><td>3</td><td>7 Repair attempts, 2 savegames.<td></tr>
+</table>
+The default is Medium.
 </td></tr>
 
 <tr><td>masterserver</td><td>string</td>
@@ -1494,13 +1889,105 @@ The masterserver address used during server search and when
 registering your server.
 </td></tr>
 
+<tr><td>sv_public</td><td>bool</td>
+<td>
+InternetServer control.
+Enables this server to announce itself to the master server so that
+it will be visible outside the local network.
+</td></tr>
+
 <tr><td>netstat</td><td>bool</td>
 <td>
-Print network statistics on the HUD?
+Print network statistics on the HUD.
 </td></tr>
 
 </table>
 
+<h3 id="connect_options">Connect options</h3>
+
+<table class="def">
+<tr><th>variable</th><th>type</th><th>definition</th></tr>
+<tr><td>download_files</td><td>boolean</td>
+<td>
+Enables download of files from the server.  This can be disabled if you
+have limited network bandwidth, or do not want files downloaded.
+</td></tr>
+<tr><td>download_savegame</td><td>boolean</td>
+<td>
+Enables download of savegame from the server.  The savegame is needed if
+the client is joining a game-in-progress.
+This can be disabled if you have limited network bandwidth, or do not
+want savegames downloaded.</br>
+If your client has a different endian than the server, then you need
+to disable savegames because the server savegame will be made using the endian
+of the server.
+</br>
+When download_savegame is disabled, the client will join the game at the start of the next level.
+</td></tr>
+
+<tr><td>netrepair</td><td>enum</td>
+<td>
+The client network repair setting.
+Controls the automatic repair when the server detects a client
+consistency error.<br/>
+Repair is also limited by Server settings.
+<table class="def">
+<tr><td>None</td><td>0</td><td>Repair off.<td></tr>
+<tr><td>Minimal</td><td>1</td><td>1 Repair attempts, 0 savegame.<td></tr>
+<tr><td>Medium</td><td>2</td><td>4 Repair attempts,  1 savegames.<td></tr>
+<tr><td>Aggressive</td><td>3</td><td>7 Repair attempts, 2 savegames.<td></tr>
+</table>
+The default is Medium.
+</td></tr>
+
+<tr><td>server1<br>server2<br>server3</td><td>string</td>
+<td>
+The IP addresses (server1, server2, server3)
+that will be checked to find the DoomLegacy server.
+The server should have an IP address such as
+"192.168.1.1", or a network broadcast address such as "192.168.1.255".
+For a home network, addresses should be 192.168.nn.xx, where all your
+computers have the same nn, but different xx (nn=1..254, xx=1..254).
+Do not use addresses such as 255.255.nn.xx as those do not work.
+Default is "192.168.1.255".
+<br>These can be set in the Connect menu.
+</td></tr>
+
+</table>
+
+
+
+<h3 id="menu_options">Menu options</h3>
+
+<p>
+Variables that control menu and other non-play effects.
+These controls appear in the Menu Options menu.
+</p>
+
+<table class="def">
+<tr><th>variable</th><th>type</th><th>definition</th></tr>
+<tr><td>screenlink</td><td>enum</td>
+<td>
+Select the screen transistion effect.
+<table class="def">
+<tr><td>None</td><td>0</td><td>No transition effect.<td></tr>
+<tr><td>Crossfade</td><td>1</td><td>Crossfade. It was in the original code, we just enabled it.<td></tr>
+<tr><td>Melt</td><td>2</td><td>Melt the screen, revealing the next screen.<td></tr>
+</table>
+</td></tr>
+
+<tr><td>menusound</td><td>enum</td>
+<td>The sound played during menu movements.
+<br>The menu sound selections.
+<table class="def">
+<tr><td>Auto</td><td>0</td><td>DoomLegacy will automatically select the menu sound.<td></tr>
+<tr><td>Legacy</td><td>1</td><td>Softer wooden clack sounds.<td></tr>
+<tr><td>Doom</td><td>2</td><td>Gun shots mostly.  Only when playing Doom.<td></tr>
+<tr><td>Heretic</td><td>3</td><td>Heretic clicks.  Only when playing Heretic.<td></tr>
+</table>
+</td></tr>
+
+</table>
 
 
 
@@ -1508,12 +1995,30 @@ Print network statistics on the HUD?
 
 <p>
 These variables control many visual aspects of the game.
-<br>The GAMMA_FUNCS code replaces the original 5 level gamma with other controls.  The GAMMA_FUNCS
-code is now standard (no longer optional).
 </p>
 
 <table class="def">
 <tr><th>variable</th><th>type</th><th>definition</th></tr>
+
+<tr><td>drawmode</td><td>enum</td>
+<td>
+Choose the drawmode.  When changed, this control also automatically
+saves the previous drawmode config file, and loads the new
+drawmode config file.
+This is most easily set by the control in the Video menu.
+<table class="def">
+<tr><td><nobr>Software 8bit</nobr></td><td>1</td><td>8 bit palette draw.<td></tr>
+<tr><td><nobr>Software 15bit</nobr></td><td>2</td><td>15 bit RGB draw.<td></tr>
+<tr><td><nobr>Software 16bit</nobr></td><td>3</td><td>16 bit RGB draw.<td></tr>
+<tr><td><nobr>Software 24bit</nobr></td><td>4</td><td>24 bit RGB draw.<td></tr>
+<tr><td><nobr>Software 32bit</nobr></td><td>5</td><td>32 bit RGB draw.<td></tr>
+<tr><td>Native</td><td>7</td><td>Query the interface for the native draw. Software draw.<td></tr>
+<tr><td>OpenGL</td><td>8</td><td>OpenGL draw.<td></tr>
+<tr><td>MiniGL</td><td>9</td><td>MiniGL, WIN32 only.<td></tr>
+<tr><td>Glide</td><td>10</td><td>Glide, WIN32 only.<td></tr>
+<tr><td>D3D</td><td>11</td><td>DirectDraw, WIN32 only.<td></tr>
+</table>
+</td></tr>
 
 <tr><td>fullscreen</td><td>bool</td>
 <td>
@@ -1535,23 +2040,21 @@ Screen width in pixels.
 Screen height in pixels.
 </td></tr>
 
-<tr><td>gammafunc<br>&lt;0 - 3&gt;
-</td><td>int</td>
+<tr><td>gammafunc</td><td>enum</td>
 <td>
 Select the gamma curve function for controlling display brightness.<br/>
 The function selected enables appropriate control sliders.<br/>
 Gamma is the brightness encoding curve for CRT displays.<br/>
-<ul>
-<li>Gamma:  Gamma adjustment (-12 - +12).</li>
-<li>Gamma_black:  Gamma and a black level control (-12 - +12).</li>
-<li>Gamma_full:  Gamma, black level, and brightness controls (-12 - +12).</li>
-<li>Linear:  Linear segment approximation, useful for some LCD displays.</li>
-</ul>
+<table class="def">
+<tr><td>Gamma</td><td>0</td><td>Gamma adjustment (-12 - +12).</tr></td>
+<tr><td>Gamma_black</td><td>1</td><td>Gamma and a black level control (-12 - +12).</tr></td>
+<tr><td>Gamma_full</td><td>2</td><td>Gamma, black level, and brightness controls (-12 - +12).</tr></td>
+<tr><td>Linear</td><td>3</td><td>Linear segment approximation, useful for some LCD displays.</tr></td>
+</table>
 There is a control for this in the Video menu.
 </td></tr>
 
-<tr><td>gamma<br>&lt;-12 - 12&gt;
-</td><td>int</td>
+<tr><td>gamma<br>&lt;-12 - 12&gt;</td><td>int</td>
 <td>
 Fine gamma control for all gamma functions (slider index, not the actual GAMMA value).
 Default is 0, which is no-correction (GAMMA=1.0).<br/>
@@ -1559,16 +2062,14 @@ Original gamma settings are at (0, -3, -6, -9, -12).<br/>
 See Gamma table in <a href="legacy.html#gamma">User Reference Manual</a>.<br/>
 </td></tr>
 
-<tr><td>black<br>&lt;-12 - 12&gt;
-</td><td>int</td>
+<tr><td>black<br>&lt;-12 - 12&gt;</td><td>int</td>
 <td>
 Fine black level control for Gamma_black and Gamma_bright_black functions.
 Adjusts the black end of the curve to get even blacks and grays in dark rooms.<br/>
 Normal is 0.<br/>
 </td></tr>
 
-<tr><td>bright<br>&lt;-12 - 12&gt;
-</td><td>int</td>
+<tr><td>bright<br>&lt;-12 - 12&gt;</td><td>int</td>
 <td>
 Fine brightness control for Gamma_bright_black function.
 Adjusts the bright end of the curve to get evenness in bright lit rooms.<br/>
@@ -1624,29 +2125,23 @@ floor before disappearing. Useful for tracking down your prey :)
 
 <tr><td>translucency</td><td>bool</td>
 <td>
-Enable/disable translucent sprites.
+Enables translucent sprites.
 </td></tr>
 
-<tr><td>screenlink<br>&lt;0|1|2&gt;</td><td>int</td>
+<tr><td>fuzzymode</td><td>bool</td>
 <td>
-Change the screen link between
-<ul>
-<li>0: None: none </li>
-<li>1: Crossfade: crossfade (it was in the original code, we just enabled it). </li>
-<li>2: Melt: normal melting </li>
-</ul>
-This is the Screens Link control in the Effects menu.
+Enables the Vanilla Doom fuzzy draw for cloaked monsters instead of
+the newer translucent draw.
 </td></tr>
 
-<tr><td>pickupflash<br>&lt;0 - 3&gt;</td><td>int</td>
-<td>
-Change the screen link between
-<ul>
-<li>Off: no pickup flash </li>
-<li>Status: Flash the status bar in the area where the item is displayed.  If the player picks up ammo, the ammo display will flash.</li>
-<li>Half: Half intensity palette flash.  Slightly less confusing than the full intensity palette flash.</li>
-<li>Vanilla: The Vanilla Doom palette flash.  It is similar enough to the palette flash of being hit to be confusing.</li>
-</ul>
+<tr><td>pickupflash</td><td>enum</td>
+<td>How to notify the user when an item is picked up.
+<table class="def">
+<tr><td>Off</td><td>0</td><td>No pickup flash.</tr></td>
+<tr><td>Status</td><td>1</td><td>Flash the status bar in the area where the item is displayed.  If the player picks up ammo, the ammo display will flash.</tr></td>
+<tr><td>Half</td><td>2</td><td>Half intensity palette flash.  Slightly less confusing than the full intensity palette flash.</tr></td>
+<tr><td>Vanilla</td><td>3</td><td>The Vanilla Doom palette flash.  It is similar enough to the palette flash of being hit to be confusing.</tr></td>
+</table>
 This is the Pickup Flash control in the Effects menu.
 </td></tr>
 
@@ -1658,7 +2153,7 @@ Don't laugh! Sometimes I like to play with playersprites off.
 
 <tr><td>splats</td><td>bool</td>
 <td>
-Enable/disable bloodsplats and bullet holes on walls.
+Enables bloodsplats and bullet holes on walls.
 </td></tr>
 
 <tr><td>scalestatusbar</td><td>bool</td>
@@ -1674,34 +2169,28 @@ Choose what information to show in the HUD when in full screen mode.
 Each letter represent a piece of information that will be shown.
 </p>
 <p>
-f: show frags (only in deathmatch)<br/>
-h: show health<br/>
-m: show armor<br/>
-a: show current weapon ammo<br/>
-k: show keys<br/>
-e: show monsters kill<br/>
-s: show secret found count
+<b>f</b>&nbsp: show frags (only in deathmatch)<br/>
+<b>h</b>&nbsp: show health<br/>
+<b>m</b>&nbsp: show armor<br/>
+<b>a</b>&nbsp: show current weapon ammo<br/>
+<b>k</b>&nbsp: show keys<br/>
+<b>e</b>&nbsp: show monsters kill<br/>
+<b>s</b>&nbsp: show secret found count
 </p>
+Example: &nbsp > hud_overlay  "hma"
 </td></tr>
 
-
-<tr><td>ticrate<br> &lt;0 - 2&gt;</td><td>int</td>
+<tr><td>ticrate</td><td>enum</td>
 <td>
 The ticrate is displayed as Frames Per Second.
-<ul>
-<li>Off: Display of frame rate is off.</li>
-<li>Graph:  Draw a scrolling graph of the Frames Per Second.</li>
-<li>Numeric:  Display the Frames Per Second.</li>
-</ul>
+<table class="def">
+<tr><td>Off</td><td>0</td><td>Display of frame rate is off.</td></tr>
+<tr><td>Graph</td><td>1</td><td>Draw a scrolling graph of the Frames Per Second.</td></tr>
+<tr><td>Numeric</td><td>2</td><td>Display the Frames Per Second.</td></tr>
+</table>
 This is the Show Ticrate control in the Video menu.
 </td></tr>
 
-
-<tr><td>fuzzymode</td><td>bool</td>
-<td>
-Enables the Vanilla Doom fuzzy draw for cloaked monsters instead of
-the newer translucent draw.
-</td></tr>
 </table>
 
 
@@ -1712,19 +2201,14 @@ These options only apply in the OpenGL mode.
 <table class="def">
 <tr><th>variable</th><th>type</th><th>definition</th></tr>
 
-<tr><td>gr_coronas</td><td>bool</td>
-<td>
-Enable/disable coronas around light sources.
-</td></tr>
-
 <tr><td>
-gr_coronasize
-</td><td>float</td>
+gr_gammared | gr_gammagreen | gr_gammablue
+</td><td>int</td>
 <td>
-  Sets the corona size. In reality coronas are
-  caused by the dispersion of light in the eye.
-  You can adjust the size to get a more realistic effect or just to see
-  bigger coronas :).
+Set the intensities of red, green and
+blue on the scale 0-255.
+You can use them to make Legacy uniformly brighter or darker if you
+set all these variables to the same smaller or higher value.
 </td></tr>
 
 <tr><td>
@@ -1743,6 +2227,15 @@ gr_mblighting
 <td>
 Same as dynamic lighting, except it shows the light emitted
 by missiles thrown by monsters.
+</td></tr>
+
+<tr><td>
+gr_staticlighting
+</td><td>bool</td>
+<td>
+This is an experimental variable for now since it's not yet
+optimized. I don't recommend you to use it, except if you have
+the cream of the cream PC. It's ok for some maps, though.
 </td></tr>
 
 <tr><td>
@@ -1774,28 +2267,32 @@ gr_fov
 </td><td>float</td>
 <td>
 <p>
-Field of view, in degrees. If you set a value above 90 and gr_mlook
+Field of view, in degrees.</p>
+<p>If you set a value above 90 and gr_mlook
 (see below) is "Off", then Legacy will automatically set gr_mlook
 to "On". This is because FOV, with a value higher than 90 degrees,
-needs this mode to work properly. You can use it for zooming:
+needs this mode to work properly.
 </p>
+You can use it for zooming:
 <div class="example">
-Mandeep/FlynnT tips for zooming (see other commands/variables)
-  alias psprites_on "playersprites 1"
-  alias psprites_off "playersprites 0"
-  alias zoom_in "set_zoom_out; psprites_off; gr_fov 80; wait 1;
-  gr_fov 71; wait 1; gr_fov 62; wait 1; gr_fov 54;
-  wait 1; gr_fov 46; wait 1; gr_fov 39; wait 1;
-  gr_fov 32; wait 1; gr_fov 26; wait 1; gr_fov 20;
-  wait 1; gr_fov 15; wait 1; gr_fov 10"
-  alias set_zoom_out "bind n zoom_out"
-  alias zoom_out "set_zoom_in; gr_fov 15; wait 1; gr_fov 20; wait 1;
-   gr_fov 26; wait 1; gr_fov 32; wait 1; gr_fov 39;
-   wait 1; gr_fov 46; wait 1; gr_fov 54; wait 1;
-   gr_fov 62;  wait 1; gr_fov 71;  wait 1; gr_fov 80;
-   psprites_on; wait 1; gr_fov 90"
-  alias set_zoom_in "bind n zoom_in"
-  bind n zoom_in
+Mandeep/FlynnT tips for zooming (see other commands/variables)<br>
+<nobr>
+  alias psprites_on "playersprites 1"<br>
+  alias psprites_off "playersprites 0"<br>
+  alias zoom_in "set_zoom_out; psprites_off; gr_fov 80; wait 1;<br>
+  gr_fov 71; wait 1; gr_fov 62; wait 1; gr_fov 54;<br>
+  wait 1; gr_fov 46; wait 1; gr_fov 39; wait 1;<br>
+  gr_fov 32; wait 1; gr_fov 26; wait 1; gr_fov 20;<br>
+  wait 1; gr_fov 15; wait 1; gr_fov 10"<br>
+  alias set_zoom_out "bind n zoom_out"<br>
+  alias zoom_out "set_zoom_in; gr_fov 15; wait 1; gr_fov 20; wait 1;<br>
+   gr_fov 26; wait 1; gr_fov 32; wait 1; gr_fov 39;<br>
+   wait 1; gr_fov 46; wait 1; gr_fov 54; wait 1;<br>
+   gr_fov 62;  wait 1; gr_fov 71;  wait 1; gr_fov 80;<br>
+   psprites_on; wait 1; gr_fov 90"<br>
+  alias set_zoom_in "bind n zoom_in"<br>
+  bind n zoom_in<br>
+</nobr>
 </div>
 <p>
 I suggest you to put this in the autoexec.cfg file. It allows you
@@ -1804,45 +2301,32 @@ to use the n key for zooming in and out.
 </td></tr>
 
 <tr><td>
-gr_gammared | gr_gammagreen | gr_gammablue
-</td><td>int</td>
-<td>
-Set the intensities of red, green and
-blue on the scale 0-255.
-You can use them to make Legacy uniformly brighter or darker if you
-set all these variables to the same smaller or higher value.
-</td></tr>
-
-<tr><td>
 gr_mlook
 </td><td>int</td>
 <td>
-gr_mlook command is there for fixing the "mlook" bug (when you look
-up and down). The default value is 1.
+How to fix the "mlook" bug (when you look too far up and down).<br/>
+The default value is 1, "On".
 
-The "Off" (0) should only use if you don't use full mlook.
-The "On" (1) is fast and fix most of the mlook bug, but walls
+<table class="def">
+<tr><td>Off</td><td>0</td><td>Should only use if you don't use full mlook.</td></tr>
+<tr><td>On</td><td>1</td><td>Fast, fixes most of the mlook bug, but walls
 behind you can be hidden if you look at nearly 90° (up or down).
 It shouldn't be a big issue for most of you and it's the
 recommended mode for low end pc.
-The "Full" (2) is exactly the same as "On" but it fix all the
-bugs and is a little slower for angle &gt; 45 degree.
-
-The gr_mlook command has been "optimized" recently. That's why, when
+</td></tr>
+<tr><td>Full</td><td>2</td><td>The same as "On" with all the
+bugs fixed, but is a little slower for angle &gt; 45 degree.
+</td></tr>
+</table>
+<p>
+The gr_mlook command has been optimized recently. That is why, when
 you're aiming at an angle of 0, it acts like if gr_mlook was Off,
 even if gr_mlook is set to On or Full, and thus it's faster. There
 is something similar with angle less than 45: if you use gr_mlook
 Full, it act like gr_mlook On.
+</p>
 </td></tr>
 
-<tr><td>
-gr_staticlighting
-</td><td>bool</td>
-<td>
-This is an experimental variable for now since it's not yet
-optimized. I don't recommend you to use it, except if you have
-the cream of the cream PC. It's ok for some maps, though.
-</td></tr>
 <tr><td>
 gr_stats
 </td><td>-</td>
@@ -1858,34 +2342,34 @@ tries to combine vertexes that are close together.
 </td></tr>
 <tr><td>
 gr_polyshape
-</td><td>int</td>
+</td><td>enum</td>
 <td>
 Controls the polygon generation, and what shape is allowed.
 The least amount of overdraw usually gives the fastest rendering.
-<ul>
-<li>Subsector : Disables cutting the subsector polygon.
+<table class="def">
+<tr><td>Subsector</td><td>0</td><td>Disables cutting the subsector polygon.
 The polygon is the shape of the BSP subsector.
 Has the most overdraw into void areas.
-</li>
-<li>Fat : Trims void space from the subsector polygon with segs that
+</td><td>
+<tr><td>Fat</td><td>1</td><td>Trims void space from the subsector polygon with segs that
 cross the entire subsector.  Ignores short segs.
 The floor and ceiling overdraw into void areas.
-</li>
-<li>Trim : Trims the subsector polygons with the segs.
+</td></tr>
+<tr><td>Trim</td><td>2</td><td>Trims the subsector polygons with the segs.
 Combines short segs to find cuts across the entire subsector.
 When a polygon becomes non-convex, then selected vertexes are removed until
 it is convex.
 Usually generates smaller polygons than Fat, but there is still some
 overdraw into void areas where the polygon is forced to be convex.
-</li>
-<li>NotConvex : Generates polygons with the least overdraw, but some
+</td></tr>
+<tr><td>NotConvex</td><td>3</td><td>Generates polygons with the least overdraw, but some
 may be non-convex due to the shape and segs of the subsector.
 The polygons are required to be convex for hardware draw,
 but some libraries may tolerate drawing non-convex polygons.
 My nVidia supplied OpenGL library apparantly does.
 Test at your own risk, but I do not recommend using it.
-</li>
-</ul>
+</td></tr>
+</table>
 The default is Trim.
 </td></tr>
 
@@ -1899,6 +2383,55 @@ Default is enabled.
 </td></tr>
 
 </table>
+
+
+<h3 id="lighting_options">Lighting options</h3>
+
+<p>
+These variables control coronas and lighting effects.
+These controls appear in the Lighting Effects menu.
+</p>
+
+<table class="def">
+<tr><th>variable</th><th>type</th><th>definition</th></tr>
+<tr><td>corona</td><td>enum</td>
+<td>
+<table class="def">
+<tr><td>Off</td><td>Corona off</li>
+<tr><td>Special</td><td>Draws special coronas.
+     Intended for those who don't want the common coronas, but don't
+     want to miss out on the wad special effects.</td></tr>
+<tr><td>Most</td><td>Draws most coronas, selected by distance, specialness, and alpha.
+     Intended for those with CPU limitations, who need to limit draws,
+     or with wads with an extreme number of lamps.</td></tr>
+<tr><td>Dim</td><td>Dims some of the coronas.</td></tr>
+<tr><td>All</td><td>Draw all the coronas.</td></tr>
+<tr><td>Bright</td><td>Brighten some of the coronas.</td></tr>
+<tr><td>Old</td><td>Draw the coronas using the old alpha field, and no type field.</td></tr>
+</table>
+</td></tr>
+
+<tr><td>corona_draw_mode</td><td>enum</td>
+<td>Software draw corona draw control.
+<table class="def">
+<tr><td>Blend</td><td>0</td><td>Alpha blend</td></tr>
+<tr><td>Blend_BG</td><td>1</td><td>Alpha blend with constant background alpha</td></tr>
+<tr><td>Additive</td><td>2</td><td>Additive Alpha. Adds to the current pixel.</td></tr>
+<tr><td>Additive_BG</td><td>3</td><td>Additive Alpha with background alpha. Background is first faded using background alpha.</td></tr>
+<tr><td>Add_Limit</td><td>4</td><td>Additive Alpha, with Limit math. Adds to the current pixel, limiting each color to 255.</td></tr>
+</table>
+</td></tr>
+
+<tr><td>coronasize</td><td>float</td>
+<td>
+  Sets the corona size. In reality, coronas are
+  caused by the dispersion of the light by mist in air.
+  You can adjust the size to get a more realistic effect, or just to see
+  bigger coronas.<br>
+  Default: 1.0
+</td></tr>
+</table>
+
 
 
 <h3 id="sound_options">Sound options</h3>
@@ -1941,7 +2474,7 @@ from the right, but then get hit from the left.
 
 <tr><td>surround</td><td>bool</td>
 <td>
-Use a software "surround" effect?
+Use a software "surround" effect.
 </td></tr>
 
 <tr><td>precachesound</td><td>bool</td>
@@ -1950,35 +2483,23 @@ Enables loading all sounds at the map startup, to eliminate delays in playing so
 Disk drive activity to load sounds during play can be annoying.
 </td></tr>
 
-<tr><td>menusound &lt;0-3&gt;</td><td>int</td>
-<td>The sound played during menu movements.
-<br>The menu sound selections.
-<ul>
-<li>Auto: DoomLegacy will automatically select the menu sound.</li>
-<li>Legacy: Softer wooden clack sounds.</li>
-<li>Doom: Gun shots mostly.  Only when playing Doom.</li>
-<li>Heretic: Heretic clicks.  Only when playing Heretic.</li>
-</ul>
-There is a control for this in the Effects menu.
-</td></tr>
-
-<tr><td>musserv_opt</td><td>int</td>
+<tr><td>musserv_opt</td><td>enum</td>
 <td>
 This is only present in the Linux X port with the separate musserver.
 <br>Sound Device Preeference select for playing Midi music.  It determines the order
 that sound ports are tried.
 If the preferred port is not found, some other port will be used.
-<ul>
-<li>Default: </li>
-<li>Midi: Any midi synth.</li>
-<li>TiMidity: TiMidity synth.</li>
-<li>FluidSynth: FluidSynth synth.</li>
-<li>Ext Midi: An external Midi device.  When a external port is found, such as in Alsa, but there
-is no actual external midi device, the musserver will use the external port anyway (producing silent music).</li>
-<li>Synth: FM or Awe32 synth</li>
-<li>FM Synth: FM Synth such as a SoundBlaster port.</li>
-<li>Awe32 Synth: Only works if Awe32 support is compiled into the musserver.</li>
-</ul>
+<table class="def">
+<tr><td>Default</td><td>The default device.</td></tr>
+<tr><td>Midi</td><td>Any midi synth.</td></tr>
+<tr><td>TiMidity</td><td>TiMidity synth.</td></tr>
+<tr><td>FluidSynth</td><td>FluidSynth synth.</td></tr>
+<tr><td><nobr>Ext Midi</nobr></td><td>An external Midi device.  When a external port is found, such as in Alsa, but there
+is no actual external midi device, the musserver will use the external port anyway (producing silent music).</td></tr>
+<tr><td>Synth</td><td></nobr>FM or Awe32 synth.</td></tr>
+<tr><td><nobr>FM Synth</nobr></td><td>FM Synth such as a SoundBlaster port.</td></tr>
+<tr><td><nobr>Awe32 Synth</nobr></td><td>Only works if Awe32 support is compiled into the musserver.</td></tr>
+</table>
 This is the Music Pref. control in the Sound menu (only in Linux X port).
 <br> For a list of devices: "musserver -l"
 </td></tr>
@@ -2078,19 +2599,19 @@ Play audio CDs.  The track numbers start at 1.<br/>
 <h3 id="misc_options">Misc options</h3>
 
 <p>
-Variables controlling screenshot.
+Variables controlling screenshot, and the endtext.
 </p>
 
 <table class="def">
 <tr><th>variable</th><th>type</th><th>definition</th></tr>
 
-<tr><td>screenshottype</td><td>int</td>
-<td>
-<ul>
-<li>Compact: Targa file, nearest format.</li>
-<li>Full: Targa 24 bit format.</li>
-<li>PCX: PCX file (DOS only)</li>
-</ul>
+<tr><td>screenshottype</td><td>enum</td>
+<td>The screenshot file format.
+<table class="def">
+<tr><td>Compact</td><td>Targa file, nearest format.</td></tr>
+<tr><td>Full</td><td>Targa 24 bit format.</td></tr>
+<tr><td>PCX</td><td>PCX file (DOS only).</td></tr>
+</table>
 When drawing in 8 bit drawmode, the file will be saved
 in Targa colormap format.
 </td></tr>
@@ -2099,6 +2620,15 @@ in Targa colormap format.
 <td>
 The directory to save screenshots.  The default is the
 current directory.
+</td></tr>
+
+<tr><td>textout</td><td>enum</td>
+<td>Text encoding for EndText.
+<table class="def">
+<tr><td>Off</td><td>0</td><td>No EndText output.</td></tr>
+<tr><td>Vanilla</td><td>1</td><td>ASCII output encoding, Codepage 437.</td></tr>
+<tr><td>UTF8</td><td>2</td><td>UTF-8 output encoding.</td></tr>
+</table>
 </td></tr>
 
 </table>

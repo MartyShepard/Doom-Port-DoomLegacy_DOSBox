@@ -8010,7 +8010,7 @@ Release Version 1.48.3, svn 1526.
 
 *** w108_vid
 patchfile = w108_113_vid.patch
-- commit revision 1528
+- commit revision 1529
 The video mode state has turned into a can of worms.
 The current code did not pass config width and height
 to the port drivers.
@@ -8024,5 +8024,18 @@ Created a new state bit for cv_drawmode, that prevents
 the restore_user_settings code from destroying the current setting.
 Finally, the drawmode and video mode menus might behave as expected.
 
+*** w108_v1484
+patchfile = w108_114_v1484.patch
+- commit revision 1530
+Release Version 1.48.4, svn 1530.
+Current legacy.wad version bumped to 148 (new legacy.wad).
+Oldest legacy.wad version it will run with is 145 (current legacy.wad).
+
+*** w108_fullscreen
+patchfile = w108_115_fullscreen.patch
+- commit revision 1531
+Fix config fullscreen implementation.
+Add call to pass config fullscreen to video setmode, after allow_fullscreen
+gets set.
 
 

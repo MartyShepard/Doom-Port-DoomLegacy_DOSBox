@@ -14,6 +14,547 @@
 <div class="column">
 
 
+<h2>1.48.4 SVN1531 (2020-05-16)</h2>
+
+<h3>BUG FIXES 1.48.4</h3>
+<ul>
+<li>Config file width and height were not passed to the port video drivers.
+Created explicit parameters and functions
+to pass these to the port video drivers, separate from the current video state.
+This clarifies the inputs to the port video drivers.
+</li>
+<li>Prevent the command-line restore code from changing the current
+drawmode setting back to the default drawmode setting, wrongly.
+A new state bit for certain control variables now blocks command-line restore.
+This did not actually change the drawmode.
+It did change the current drawmode display in the drawmode menu.
+which deceived users, and testers.
+</li>
+<li>
+Fix the config file fullscreen setting not being passed to the port video
+drivers.
+Update the config file fullscreen setting in the video settings after
+the fullscreen enables are set.
+</li>
+</ul>
+
+
+<h2>1.48.3 SVN1526 (2020-05-08)</h2>
+
+<h3>FEATURES 1.48.3</h3>
+<ul>
+<li>
+Menu offers to create an initial drawmode config file.
+ <ul>
+ <li> Goto Video menu. </li>
+ <li> Press "F3" to enter drawmode config mode. </li>
+ <li> Select a drawmode. </li>
+ <li> Press "C" to create initial drawmode config mode. </li>
+ <li> Press "INSERT" to add a menu item to the drawmode config mode. </li>
+ <li> Press "F1" to exit drawmode config edit mode. </li>
+ </ul>
+ </li>
+</ul>
+
+<h3>BUG FIXES 1.48.3</h3>
+<ul>
+<li>Fixed some problems during modeswitch, such as a segfault
+due to a palette function not being ready to use yet.
+</li>
+<li>
+Fixed config file loading to properly record when a file has been loaded.
+Fixed the menu instructions for drawmode and video mode, as they
+were giving false information.
+</li>
+<li>
+Implemented fixes proposed by Michael Bäuer for endtext.
+Fixed endtext for big-endian (SDL port).
+Added UTF8 output for endtest.
+<br>Added textout to select between vanilla output and UTF8 output,
+because user setups differ.
+<br>
+Add "-noendtext" as command line parameter, to match the docs,
+as that is the spelling that the user is likely to use.
+The existing "-noendtxt" is left in place for compatibility.
+</li>
+<li>
+Fixed a network error indication that was not caught by tests.
+Fixes bug 0660, based on code by Adam Stylinski.
+</li>
+<li>
+Stray semicolon in sky code, removed.
+Fixes bug 0661, based on code by Adam Stylinski.
+</li>
+<li>
+Fixed type conversion after LE_SWAP, which looked suspicious.
+Fixes bug 0662, aided by Adam Stylinski, Michael Bäuer.
+</li>
+<li>
+Fixed linux_x11 compilation issues.
+Linux_x11 is still using OSS sound, and has some compile warnings.
+</li>
+<li>
+Fixed the feet-in-ground problem for OpenGL, for drawmode switch.
+The original fix did not work when switching drawmode.
+</li>
+</ul>
+
+
+<h2>1.48.2 SVN1518 (2020-04-25)</h2>
+
+<h3>BUG FIXES 1.48.2</h3>
+<ul>
+<li>
+The config file in a new install was not being written.  Fixed.
+</li>
+</ul>
+
+
+<h2>1.48.1 SVN1517 (2020-04-14)</h2>
+
+<h3>FEATURES 1.48.1</h3>
+<ul>
+<li>
+Change the submenus to use ">>" instead of "..", which is much easier to see.
+</li>
+<li>
+Add the video drawmode to the option menus.
+This allows the user to change between 8 bit paletted draw, 15 bit, 16
+bit, 24 bit, 32 bit, native draw, and OpenGL draw, at any time.
+The drawmode is saved in the config file.  It is no longer necessary
+to specify a drawmode on the commmand line.
+</li>
+<li>
+There can now be a separate config file for each video drawmode.
+<p>
+Each drawmode config file can save separate settings for video mode, fullscreen,
+gamma, and can save any other cvar that is saved to a config file.
+Each drawmode has a different name for its config file, which allows
+changes to the settings for a particular drawmode to persist.</p>
+
+<p>
+The main config file will be loaded first, and that can load all
+the saved cvar.
+Based on the drawmode selected, a drawmode config file
+will also be loaded, if available.
+The drawmode config file is optional.
+The cvar values in the drawmode config file will push down
+and hide the main config file values.</p>
+
+<p>Changing a menu value will change the current cvar value.  That value
+will be saved back to the config file that last loaded the cvar value.
+The menu interface can also edit which cvar are saved in each config file.
+The config files can always be edited using an ordinary editor
+to include anything.
+</p>
+
+Entries can be inserted and deleted:
+<ul>
+<li>F1 = normal menu</li>
+<li>F2 = Main config values only</li>
+<li>F3 = Drawmode config values only</li>
+<li>F4 = normal menu</li>
+<li>INSERT = add the menu item to the config file</li>
+<li>DEL = delete the menu item from the config file</li>
+</ul>
+<p>
+Menu entries that are not relevant to the drawmode config, like the control
+key assignments, do not have support for insert to the drawmode config file.</p>
+</li>
+<li>
+Added software draw of coronas, which uses a new alpha draw.
+</li>
+<li>
+<p>The corona menu controls are moved to a new submenu, under effects.</p>
+Corona menu control:
+<ul>
+<li>Off: Corona off</li>
+<li>Special: Draws special coronas.
+     Intended for those who don't want the common coronas, but don't
+     want to miss out on the wad special effects.</li>
+<li>Most: Draws most coronas, selected by distance, specialness, and alpha.
+     Intended for those with CPU limitations, who need to limit draws,
+     or with wads with an extreme number of lamps.</li>
+<li>Dim: Dims some of the coronas.</li>
+<li>All: Draw all the coronas.</li>
+<li>Bright: Brighten some of the coronas.</li>
+<li>Old: Draw the coronas using the old alpha field, and no type field.</li>
+</ul><br>
+</li>
+<li>
+<p>Added a menu control that selects the method for software draw of corona.</p>
+Corona Software Draw:
+<ul>
+<li>Alpha blend</li>
+<li>Alpha blend with constant background alpha</li>
+<li>Additive Alpha: Adds to the current pixel. </li>
+<li>Additive Alpha with background alpha: Background is first faded using background alpha.</li>
+<li>Additive Alpha, Limit math: Adds to the current pixel, limiting each color to 255.</li>
+</ul>
+</li>
+<li>
+<p>Upgraded the hardware and software corona generation to use the new capabilities.
+This provides a corona type field to all coronas, including fragglescript.</p>
+<p>The fire, firefly, random, and pulse types, support multiple independent lights,
+without them being synchronized.</p>
+<p>The built-in corona types have been upgraded to use the new SPLT_fire,
+and SPLT_lamp.</p>
+Corona bit enables (0x03):
+<ul>
+<li>SPLGT_corona = 0x01 : (enable corona draw)</li>
+<li>SPLGT_dynamic = 0x02 : (enable dynamic light)</li>
+</ul>
+Corona type field (0xF0): 
+<ul>
+<li>SPLT_unk = 0x00 : (plain corona, near and far fadeout)</li>
+<li>SPLT_rocket = 0x10 : (rocket corona with random flicker, near and far fadeout)</li>
+<li>SPLT_lamp = 0x20 : (lamp and corona, brighter than plain corona, different size, near and far fadeout)</li>
+<li>SPLT_fire = 0x30 : (fire and torches, slow flicker, near and far fadeout, 64 generators)</li>
+<li>SPLT_light = 0xC0 : (a light source without an object, far fadeout)</li>
+<li>SPLT_firefly = 0xD0 : (blinking firefly, far fadeout, 64 generator phases)</li>
+<li>SPLT_random = 0xE0 : (random LED, no fadeout, 32 generators)</li>
+<li>SPLT_pulse = 0xF0 : (slow pulsation, no fadeout, 256 generator phase)</li>
+</ul><br>
+</li>
+<li>
+Support for NETBSD: port fixes to the Makefile and network code.
+Optioned as NETBSD.
+<br>Feature Request 0090: based on code submitted by Michael Bäuere.
+</li>
+<li>
+<p>Improved deathmatch and coop menu selections.</p>
+The Deathmatch settings are now:
+<ul>
+<li>Coop_SP_Map: Play coop using the single player map, items, and monsters.</li>
+<li>Coop_60: Play coop, but the strong monsters added for coop are reduced.</li>
+<li>Coop_80: Play coop, but the strong monsters added for coop are reduced.</li>
+<li>Coop: Play coop, using the respawn settings in the game options menu.</li>
+<li>Coop_weapons: Play coop, using the deathmatch weapon respawn (orig coop).</li>
+<li>DM: Play Deathmatch, using the respawn settings in the game options menu.</li>
+<li>DM_weapons: Play Deathmatch, respawn weapons (orig Deathmatch 1).</li>
+<li>DM_items: Play Deathmatch, respawn items (orig Deathmatch 2).</li>
+<li>DM_both: Play Deathmatch, respawn items and weapons (orig Deathmatch 3).</li>
+</ul><br>
+</li>
+<li>
+Respawn weapons now works for Heretic too.
+</li>
+<li>
+Feature Request 0092: Added a bot menu setting to the deathmatch menu.
+Concept by Leonardo Montenegro.
+</li>
+<li>
+Bot code has been overhauled, with significant changes.  It is not
+demo compatible with previous bot code.
+If there are any important demos with Doom Legacy bots out there that need some compatibility switch,
+you must let us know.
+<br>Added controls for bot skill, bot speed, bot respawn time, and bot random number.
+<p>Some of the bot skill selections affect all bots, but the rand bot skills
+gives each individual bot an independent skill setting.
+The game selections make the skill dependent upon the game skill setting.</p>
+Bot skill:
+<ul>
+<li>crippled</li>
+<li>baby</li>
+<li>easy</li>
+<li>medium</li>
+<li>hard</li>
+<li>nightmare</li>
+<li>randmed:   (random 0 to gameskill-1)</li>
+<li>randgame:  (random 1 to gameskill)</li>
+<li>gamemed:   (use gameskill-1 setting)</li>
+<li>gameskill: (use gameskill setting)</li>
+</ul><br>
+<p>Some of the bot speed selections affect all bots, but the botskill
+selection makes the bot speed dependent upon the individual bot skill.
+The game selections make the speed dependent upon the game skill
+setting.</p>
+Bot speed:
+<ul>
+<li>walk</li>
+<li>trainer</li>
+<li>slow</li>
+<li>medium</li>
+<li>fast</li>
+<li>run</li>
+<li>gamemed:   (dependent upon gameskill-1, speed=0..4)</li>
+<li>gameskill: (dependent upon gameskill, speed=1..5)</li>
+<li>botskill:  (dependent upon bot skill, speed=0..5)</li>
+</ul><br>
+<p>
+The bots will obsess less over things they cannot reach.
+Bots attacking barrels has some regulation now so they can leave them.
+This is still a work-in-progress, and there will be furthur
+significant changes to bots.</p>
+</li>
+<li>
+Bots can now use skins, or colors.
+</li>
+<li>
+<p>Bot generation option controls how the bots are generated, and when the
+random source is reset.
+Bot random number seed sets the bot random number generator index.
+The Bot random number source is used to select the bot name, color, and skin.
+</p>
+Bot Gen:
+<ul>
+<li>Plain:        (Repeatable)</li>
+<li>Seed:         (Bot Random Seed, Each Game)</li>
+<li>Seed Random:  (Bot Random Seed, Program Start)</li>
+<li>Cfg Random:   (Config Random, Persistant)</li>
+<li>Sys Random:   (System Random, Program Start)</li>
+</ul><br>
+</li>
+<li>
+<p>There may be a local autoexec, and/or a system autoexec.
+This supports system install of Doom Legacy, where the executable
+directory is system protected.
+If there is an autoexec.cfg in doomlegacy home, it is executed,
+otherwise the autoexec.cfg with the executable is executed.
+The local file can exec the system autoexec file when preferable
+"exec autoexec.cfg".</p>
+Feature Request 93 by Leonardo Montenegro.
+</li>
+<li>
+Can play with bots in netgame, sometimes.  Sometimes they cause the
+clients to consistency fault, for reasons unknown yet.
+</li>
+<li>
+<p>Alternatives to the sky stretch, for normal sized sky textures.
+This is a work-in-progress.  Wanted to get it into the 1.48 release,
+even though it is not polished yet.  It is still better than always stretch.</p>
+ <p>This only affects Software Render yet.
+The Hardware Render (OpenGL) still stretches the sky.</p>
+Sky gen control:
+<ul>
+<li>auto:           Will look for a replacement sky first, then will make best choice, which is usually extend_bg.</li>
+<li>subst:          Will use a replacement sky. (not fully implemented yet)</li>
+<li>bg_stars:       Extend the sky, replace all of background with stars.</li>
+<li>extend_stars:   Extend the sky, replace missing background with stars.</li>
+<li>extend_bg:      Extend the sky, fill with background color.</li>
+<li>extend_fill:    Extend the sky, fill with random samples.</li>
+<li>stretch:        Stretch the sky to fit.</li>
+</ul><br>
+</li>
+</li>
+<li>
+Extend the joystick key definitions to handle gamepad, like the xbnx-style gamepad.
+This has two joysticks, 10 buttons, and 2 triggers.
+Added joystick/gamepad controls that can be defined (menuesc, pause, automap).
+Detect some of the gamepad keys for menus, game start, and other necessary operations.
+It is now possible to play Doom Legacy without a keyboard,
+if your controller has 6 or more buttons, and you stay with the basic Doom and Heretic wads.
+<br>Feature Request 0093: Concept by Leonardo Montenegro, and contains submitted code.
+</li>
+<li>
+The console help command now has help categories.
+This shows commands that are specific to the category.
+This also avoids overflowing the screen, which was not helpful.
+</li>
+<li>
+Added autoaim, crosshair, and weaponpref for player2 (splitplayer).
+Added a player menu for changing these for player1 and player2.
+</li>
+<li>
+<p>Network games can now be entered at the next level start (game start).
+This can be achieved by disabling the download savegame control, for
+the server, or for the client.
+<p>
+This will also happen if the the server and client do not
+agree in Endian (such as a BIG_ENDIAN client trying to play on an x86 Server).
+The savegame is saved in the native endian, so cannot be read by
+another endian machine.
+</p>
+</li>
+<li>
+If there are game-start waiting players, using an exit or the
+exitlevel command, will cause them to join the game during the
+intermission.<br/>
+The Map command does not support this yet, and will issue a warning
+message if there are game-start waiting players.  The server player
+needs to issue "exitlevel" to let the players join, then issue "Map".
+</li>
+</ul>
+
+<h3>BUG FIXES 1.48.1</h3>
+<ul>
+<li>
+Make the SDL sound interface use the samplerate from the sound effect header.
+Adjust the audio device number of samples for our new sample rate, like Eternity does.
+The added sounds in biowar now sound more reasonable.
+Fixes bug 0645.
+</li>
+<li>
+Fix usage of lumpnum in the flat animations.  This likely was not visible to users.
+Added many additional sanity checks.
+Made proper release of animation structures, which may fix a memory leak.
+</li>
+<li>
+Fix segfaults on a 64 bit machine when playing phobiata.wad.
+The fault was an internal fragglescript variable copy that was being sign-extended.
+Fixed to do a full 64 bit copy on 64 bit machines, without any sign extend.
+Fixes bug 0647.
+</li>
+<li>
+Turn off the DEBUG in linux_x11 sound server.
+</li>
+<li>
+Change the video driver interfaces to faciliate changing the drawmode
+and rendermode from the menus.
+The video driver no longer handles command line parameters, such as
+highcolor and truecolor, and no longer makes decisions on its own.
+This is now handled in user interface code, and is more uniform for
+all ports and modes.
+A new cv_drawmode variable will save the drawmode in the config file.
+</li>
+<li>
+Added a missing call to setup VideoDraw, to prevent segfaults on
+early console display.
+Fixed the video drivers, Get Mode Name, to prevent buffer overrun.
+</li>
+<li>
+Changed the SDL video code to create a copy of the SDL video mode information.
+Calls to SDL_VideoModeOK were causing the previously returned SDL modelist to be released, causing error messages on the Mac.
+This should fix problems on the MAC SDL port (work by Adam Stylinski), and latent bugs on others.
+</li>
+<li>
+Fixed the lindef tag storage, to use a better hash, using less memory.
+</li>
+<li>
+Corrected the fog draw for 8 bit drawing of dark fog.
+</li>
+<li>
+Reviewed and optimized much of the software draw colormap handling.
+Fixed some latent problems, which may have fixed some bugs.
+</li>
+<li>
+Adding MBF DEH capability, broke the Chex Newmaps DEH.
+Fixed to bypass frame number translation and allow new states
+when the frame number is not recognized.
+</li>
+<li>
+Fix compile errors in DEBUGFILE conditional code.
+Based on code by Adam Stylinski.
+Fixes bug 0650.
+</li>
+<li>
+Remove the backscale array from the drawsegs and give it a dynamic allocation.
+It is now allocated at the actual video width.
+This reduces the memory usage, and will allow the MAXVIDWIDTH to be increased, as requested.
+</li>
+<li>
+Deathmatch setup issued a text command that was missing a switch "-",
+making the skill setting ignored.
+Fixes Support Request 0026: based on code by Leonardo Montenegro.
+</li>
+<li>
+The draw8 implementation of the additive_alpha draw was missing the add to the current screen value.
+This created a dark circle for the corona.
+Fixes bug 0652.
+</li>
+<li>
+On big-endian machines (Mac) some of the unsigned blockmap
+values were getting sign-extended.
+This and similar uses were changed to prevent accidental sign-extension of unsigned numbers.
+Fixes bug 0653.
+</li>
+<li>
+Compressed blockmaps, such as zennode sometime creates for a large map, would cause loading errors.
+The blockmap compression reuses an empty blocklist, and puts blockmap lists out-of-order.
+Example, strg.wad Map20.
+Blockmap overflow correction detects this now and no longer is dependent upon order assumptions.
+Fixes bug 0654.
+</li>
+<li>
+Simplify the key name descriptions that appear in the menu.
+"2nd mouse b 2" ==>  "mouse2 b2"
+The description format is Device, button, action.
+Actions like double_click are appended on the end.
+
+This affects saved config file controller assignments, for mouse2.
+Will have to re-enter them.
+</li>
+<li>
+Fixed the double click detection code.
+Provides a double click control, to adjust the detection.
+</li>
+<li>
+Update to Network version 25, has different state messages.
+B_Random and E_Random are now synced in netgame.
+</li>
+<li>
+Fixed starry sky generation to handle wads with clouds in the sky.
+Fix sky wrap to handle sky where a horz row is all the same color
+(eventual segfault).
+Fixes BUG 0656.
+</li>
+<li>
+Hunt down some LE_SWAP16 that need to be unsigned for BIG_ENDIAN machines.
+Attempting to fix BUG 0633.
+</li>
+<li>
+Fixed a segfault that occurs for some operating systems that
+fail to return the progdir.
+Fixes Bug 0640, again.
+</li>
+<li>
+Most of network code has been reviewed, redesigned, and rewritten.
+Code that used hacks, had race-conditions, and other undesirable
+tricks and happen-stance, were rewritten to avoid those things.
+This was done over several network patches.
+Several new network packet types have been added to better support bots,
+new join capabilities, and support future plans.
+Existing packets have been redesigned to have explicit padding and
+alignment, so all machines get the same packet layout.
+Some 16 and 32 bit values are byte packed (using read and write
+functions), or specially aligned, avoiding read issues on some
+machines (which could not correctly read an unaligned 16 or 32 bit value).
+</li>
+<li>
+Revision of the bot create functions to make it compatible with using
+bots in network play.  The bots are created on the server, and the
+creation information is passed to the clients, using the same
+mechanisms as players.
+This fixes the problems where bots would try to take the same player slot
+as an existing player.
+</li>
+<li>
+Network repair code has been extensivly improved, with reporting of
+detected differences during the repair.
+It is not that network repair is necessary, most networks do not have
+many errors anymore.  But it is the only diagnostic tool that can tell
+us WHY the client is having consistency errors.
+This diagnostic code will be left in permantly.
+</li>
+<li>
+The netcode had some flags in the lower bits of angleturn.
+These add noise to the angle input, as they were not masked out again.
+Code option TICCMD_148, which is now enabled, adds a separate flag byte
+to the ticcmd, and removes all flag bits from angleturn.
+</li>
+<li>
+Eliminated problems with too many ticcmds and textcmds for one network packet.
+The new format can now handle 32 players, without errors.
+The Version 1.48 server tic packet format allows it to use multiple
+network packets
+to send all ticcmds and all textcmd for the selected tic range.
+</li>
+<li>
+Fixed the display of coop netgame stats, and the overlap of face pictures.
+The coop listings now show the player name and player color, similar to the
+deathmatch listings.
+</li>
+<li>
+Fixed NETVAR control var that could become inconsistent in the client.
+The deathmatch setup was not updating the itemrespawn in the client.
+Thus after the one player got an armor and it had respawned, a second player could get the
+respawned armor, but the client had not respawned any armor.
+When shot, the player died sooner in the client, which had bad side-effects.
+Changed the deathmatch setup of itemrespawn to be directly done in each client.
+</li>
+</ul>
+
+
 <h2>1.47.2 SVN1400 (2018-07-12)</h2>
 
 <h3>FEATURES 1.47.2</h3>
