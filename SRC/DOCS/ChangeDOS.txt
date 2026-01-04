@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01525 ]: w108_111 opengl
+[01524 ]: w108_110 linux_x11
 [01523 ]: w108_109 patch
 [01522 ]: w108_108 not_network game
 [01521 ]: w108_107 endtext

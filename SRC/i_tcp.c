@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1499 2020-03-17 02:27:41Z wesleyjohnson $
+// $Id: i_tcp.c 1524 2020-05-09 12:07:09Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -288,7 +288,7 @@ static boolean  ipx_select;
 // If this actually ever moved, we would have to ensure uniformity over all systems.
 #ifdef IPPORT_USERRESERVED
 # if IPPORT_USERRESERVED != 5000
-#   warn IPPORT_USERRESERVED non-standard, DoomLegacy uses sock port 5029.
+#   warning IPPORT_USERRESERVED non-standard, DoomLegacy uses sock port 5029.
 # endif
 #else
 # define IPPORT_USERRESERVED 5000

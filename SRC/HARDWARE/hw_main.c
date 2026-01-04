@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.c 1481 2019-12-13 05:16:17Z wesleyjohnson $
+// $Id: hw_main.c 1525 2020-05-09 12:07:29Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -3589,13 +3589,31 @@ static void HWR_ProjectSprite(mobj_t * thing)
 #endif
         return;
 
+#define FEET_IN_GROUND_TOPOFFSET_FIX   
+#ifdef FEET_IN_GROUND_TOPOFFSET_FIX
+    // [WDJ] Feet-in-ground adjustment moved here from r_things.
+    // There it changed topoffset at lump load time, but did not adapt to changing drawmode.
+    // spritelump is just patch header.
+    //BP: we cannot use special trick in hardware mode because feet in ground caused by z-buffer
+    // topoffset may be negative, use signed compare
+    fixed_t fig_topoffset =
+        ( (sprlump->topoffset > 0) && (sprlump->topoffset < sprlump->height) )? // not for psprite
+           // perfect is patch.height but sometime it is too high
+           min(sprlump->topoffset + (4<<FRACBITS), sprlump->height)
+         : sprlump->topoffset;
+#endif
    {
    // [WDJ] from r_things.c
    // This fixes the thing lighting in special sectors
     sector_t*		thingsector;	 // [WDJ] 11/14/2009
     int                 thingmodelsec;
     boolean	        thing_has_model;  // has a model, such as water
+#ifdef FEET_IN_GROUND_TOPOFFSET_FIX
+    fixed_t  gz_top = thing->z + fig_topoffset;  // Adjusted topoffset.
+#else
+    // Has feet-in-ground problem, due to z-buffer.
     fixed_t  gz_top = thing->z + sprlump->topoffset;
+#endif
     thingsector = thing->subsector->sector;	 // [WDJ] 11/14/2009
     if(thingsector->numlights)
     {
@@ -3664,7 +3682,11 @@ static void HWR_ProjectSprite(mobj_t * thing)
     }
 
     // set top/bottom coords
+#ifdef FEET_IN_GROUND_TOPOFFSET_FIX
+    vis->ty = FIXED_TO_FLOAT( thing->z + fig_topoffset ) - gr_viewz;
+#else
     vis->ty = FIXED_TO_FLOAT( thing->z + sprlump->topoffset ) - gr_viewz;
+#endif
 
     //CONS_Printf("------------------\nH: sprite  : %d\nH: frame   : %x\nH: type    : %d\nH: sname   : %s\n\n",
     //            thing->sprite, thing->frame, thing->type, sprnames[thing->sprite]);
