@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1514 2020-04-18 10:49:41Z wesleyjohnson $
+// $Id: d_clisrv.c 1515 2020-04-18 10:56:06Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -403,8 +403,8 @@ consvar_t cv_netrepair = {"netrepair","2", CV_SAVE, netrepair_cons_t};
 consvar_t cv_SV_netrepair = {"sv_netrepair","2", CV_SAVE, netrepair_cons_t};
 
 // consistency check, index by cv_SV_netrepair
-static byte consistency_limit_fatal[4] = { 1, 2, 6, 9 };
-static byte consistency_sg_bit[4]    = { 0, 0x02, 0x14, 0xAA };  // bit on when should req savegame
+static byte consistency_limit_fatal[4] = { 1, 2, 5, 8 };
+static byte consistency_sg_bit[4]    = { 0, 0, 0x04, 0x44 };  // bit on when should req savegame
 
 
 
@@ -1803,10 +1803,12 @@ static void SV_get_mobj( mobj_t * mo, /*OUT*/ mobj_pos_t * mpp )
 
 // By Client.
 //   mpp : mobj_pos_t in a packet message
+//   objtype : create this type of object, else 0xFFFF
 //   msg : report message header, if NULL then no reports
-//   mo : the mobj being received
+//   mo : the mobj being received, may be NULL
+//   mopp : write the new mobj, if it is created, may be NULL
 // Called by CL_player_repair, CL_player_desc_handler.
-static void  CL_set_mobj( mobj_pos_t * mpp, const char * msg, /*OUT*/ mobj_t * mo )
+static void  CL_set_mobj( mobj_pos_t * mpp, unsigned int objtype, const char * msg, /*OUT*/ mobj_t * mo, mobj_t ** mopp )
 {
     angle_t  r_angle = LE_SWAP32( mpp->angle );
     fixed_t  r_x = LE_SWAP32( mpp->x );
@@ -1815,9 +1817,39 @@ static void  CL_set_mobj( mobj_pos_t * mpp, const char * msg, /*OUT*/ mobj_t * m
     fixed_t  r_momx = LE_SWAP32( mpp->momx );
     fixed_t  r_momy = LE_SWAP32( mpp->momy );
     fixed_t  r_momz = LE_SWAP32( mpp->momz );
+    byte  setthingpos = 0;
 
+    // [WDJ] During GS_LEVEL, need mobj as position is critical.
+    // During GS_INTERMISSION, position does not matter, and mobj is not needed.
     if( ! mo )
-        return;
+    {
+        if((objtype >= NUMMOBJTYPES) || (mopp == NULL))
+            return;
+
+        // mobj is missing, create new objtype
+#if 1
+        // SpawnMobj needs sector map information.
+        // When not GS_LEVEL, cannot know if level map is present yet.
+        if( gamestate != GS_LEVEL )  return;
+
+        mo = P_SpawnMobj(r_x, r_y, r_z, objtype);
+        // set thing pos already done by P_SpawnMobj
+        *mopp = mo;  // save new mobj
+#else
+        // incomplete
+        mo = Z_Malloc(sizeof(*mobj), PU_LEVEL, NULL);
+        *mopp = mo;  // save new mobj
+        memset(pp->mo, 0, sizeof(mobj_t));
+        if( gamestate == GS_LEVEL )
+            setthingpos = 1;
+#endif
+        msg = NULL;  // no checks on new mobj
+    }
+    else if( gamestate == GS_LEVEL )
+    {
+        P_UnsetThingPosition(mo);
+        setthingpos = 1;
+    }
 
     // Only check and report when it is repair.
     if( msg )
@@ -1849,6 +1881,11 @@ static void  CL_set_mobj( mobj_pos_t * mpp, const char * msg, /*OUT*/ mobj_t * m
     mo->momx = r_momx;
     mo->momy = r_momy;
     mo->momz = r_momz;
+
+    if( setthingpos )
+    {
+        P_SetThingPosition(mo);  // set subsector, links
+    }
 }
 
 
@@ -2088,8 +2125,7 @@ void  CL_player_desc_handler( player_desc_t * pdesc, const char * msg )
         pp->armortype = pdp->armortype;
         pp->readyweapon = pdp->readyweapon;
        
-        if( pp->mo )
-            CL_set_mobj( &pdp->pos, msg, /*OUT*/ pp->mo );
+        CL_set_mobj( &pdp->pos, MT_PLAYER, msg, /*OUT*/ pp->mo, &(pp->mo) );
        
         byte flags = pdp->flags;
         if( msg )
@@ -2283,29 +2319,35 @@ static void SV_Send_player_repair( byte pn, byte severity, byte to_node )
     if( severity < 2 )  desc_flags = 0;
     if( cv_SV_netrepair.EV < 2 )  desc_flags = 0;
 
-    fill_repair_header( RQ_PLAYER );
-
     if( pn < MAXPLAYERS )
     {
         if( ! playeringame[pn] )
         {
             fail_msg = ", not in game";
-            goto fail;
+            goto msg_out;
         }
 
         mobj_t * mo = players[pn].mo;
         if( ! mo )
         {
             fail_msg = ", no mobj";
-            goto fail;
+            goto msg_out;
         }
     }
 
     // Enough to fix a small difference in player position.
+    fill_repair_header( RQ_PLAYER );
     SV_Send_player_desc( & netbuffer->u.repair.u.player_desc, desc_flags, pn, to_node );
 
-fail:
-    GenPrintf( EMSG_warn, "Server Send_player_repair: player %i%s\n", pn, fail_msg );
+msg_out:
+    if( pn < MAXPLAYERS )
+    {
+        GenPrintf( EMSG_warn, "Server Send_player_repair: player %i%s\n", pn, fail_msg );
+    }
+    else
+    {
+        GenPrintf( EMSG_warn, "Server Send_player_repair: ALL player\n", pn );
+    }
     return;
 }
 
@@ -4109,7 +4151,8 @@ void SV_Add_game_start_waiting_players( byte mode )
 
 void CL_Splitscreen_Player_Manager( void )
 {
-    if( cl_mode != CLM_connected )  return;
+    if( cl_mode != CLM_connected )
+        return;
 
     if( cv_splitscreen.EV )
     {
@@ -4360,6 +4403,8 @@ wait_for_game_start:
 
     if( nnode_state[nnode] < NOS_client )
         nnode_state[nnode] = NOS_wait_game_start;  // release network_wait
+
+    update_player_counts();
     return;
 #else
     SV_Send_Refuse(nnode, "This server cannot handle\nwait_for_game_start players");
@@ -5240,9 +5285,6 @@ static void Net_Packet_Handler(void)
                 continue;
              case PT_REPAIR:
                 repair_handler_client( nnode );  // from server
-                continue;
-             case PT_CONTROL:
-                control_msg_handler();
                 continue;
              default:
                 break;
