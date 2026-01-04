@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.c 1505 2020-03-17 02:32:01Z wesleyjohnson $
+// $Id: d_netcmd.c 1514 2020-04-18 10:49:41Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -764,6 +764,32 @@ void Command_Map_f(void)
         buf[1] &= ~0x02;
     }
 
+#ifdef WAIT_GAME_START_INTERMISSION
+    if(server && netgame && num_wait_game_start)
+    {
+#if 1
+        // [WDJ] 1.48 Warn user that Map command does not handle waiting players.       
+        GenPrintf(EMSG_warn,"Waiting players: use exitlevel\n");
+#else
+#if 0
+// [WDJ] The Map command will override any attempt to stay in Intermission, so THIS DOES NOT WORK.
+        // [WDJ] Adding players seems to only work using Intermission.
+        if( gamestate != GS_INTERMISSION )
+        {
+            G_ExitLevel();
+            if( gamestate == GS_LEVEL )
+                G_DoCompleted ();
+            G_Start_Intermission();  // setup intermission
+        }
+#endif
+        // Activate waiting clients
+	// TODO: make this work.
+        // Server won't stay in Intermission, client gets stuck in Intermission.
+        SV_Add_game_start_waiting_players( 1 );
+#endif
+    }
+#endif
+
     SV_Send_NetXCmd(XD_MAP, buf, 2 + strlen(MAPNAME) + 1); // as server
 }
 
@@ -793,6 +819,7 @@ void Got_NetXCmd_Mapcmd(xcmd_t * xc)
     strncpy(mapname, (char*)xc->curpos, MAX_WADPATH-1);
     mapname[MAX_WADPATH-1] = '\0';
     xc->curpos += strlen(mapname) + 1;
+
 #if defined( __DJGPP__ )
     CONS_Printf("Warping to map: ...\n");
 #else

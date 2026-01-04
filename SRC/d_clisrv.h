@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1513 2020-04-18 10:49:18Z wesleyjohnson $
+// $Id: d_clisrv.h 1514 2020-04-18 10:49:41Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -320,6 +320,29 @@ typedef struct {
       // variable sized entries, but each entry aligned to 4 bytes
 } player_desc_t;
 
+// PT_SERVERPLAYER
+// aligned to 4 bytes
+ typedef struct {
+    N32_t  gametic;
+    byte  serverplayer;
+    byte  skill;  // needed if any bots are to be made
+    byte  pad3, pad4;
+    byte  playerstate[MAXPLAYERS];  // PS_
+// aligned to 4 bytes
+    player_desc_t  player_desc;
+} playerstate_pak_t;
+
+// PT_SERVERLEVEL
+typedef struct {
+    byte  gamestate;
+    byte  gameepisode;
+    byte  gamemap;
+    byte  skill;
+    byte  nomonsters;
+    byte  deathmatch;
+} levelcfg_pak_t;
+
+
 // ver 1.48
 // included in other pak
 typedef struct {
@@ -438,7 +461,8 @@ typedef struct {
     byte       player_state;  // the state to put the player into
     byte       gamemap, gameepisode;  // current map
     N32_t      gametic;
-    N16_t      data;
+    N16_t      data2;
+    byte       data1;
 } control_pak_t;
 
 #define MAXSERVERNAME 32
@@ -532,6 +556,8 @@ typedef struct
       repair_pak_t       repair;
       state_pak_t        state;
       control_pak_t      control;
+      playerstate_pak_t  playerstate;
+      levelcfg_pak_t     levelcfg;
            } u;
 
 } netbuffer_t;
@@ -564,6 +590,7 @@ extern consvar_t cv_maxplayers;
 extern boolean   server;
 extern uint16_t  software_MAXPACKETLENGTH;
 
+extern byte      num_wait_game_start;  // waiting until next game
 extern boolean   cl_drone;  // is a drone client
 extern byte      cl_servernode;  // client send to server net node, 251=none (client nnode space)
 extern byte      localplayer[2];  // client player number
@@ -608,7 +635,7 @@ void    NetUpdate (void);
 void    D_PredictPlayerPosition(void);
 
 byte    SV_get_player_num( void );
-void    SV_Add_waiting_players(void);
+void    SV_Add_game_start_waiting_players( byte mode );
 void    SV_StartSinglePlayerServer(void);
 boolean SV_SpawnServer( void );
 void    SV_SpawnPlayer(byte playernum, int x, int y, angle_t angle);

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: doomdef.h 1514 2020-04-18 10:49:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -173,6 +173,10 @@
 
 // XBOX controller
 #define XBOX_CONTROLLER
+
+// Allow players to wait for game start.
+#define WAIT_GAME_START_INTERMISSION
+
 
 // Player morph canceling invisibility and MF_SHADOW, is inconsistent.
 // The Heretic vanilla behavior cancels SHADOW when turned into a chicken.

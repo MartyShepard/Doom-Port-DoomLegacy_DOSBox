@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
+// $Id: g_game.c 1514 2020-04-18 10:49:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1605,10 +1605,12 @@ void G_Ticker (void)
             case ga_completed:
                 G_DoCompleted ();
                 G_Start_Intermission();
+#ifdef WAIT_GAME_START_INTERMISSION
                 // This must be after G_Start_Intermission because it overrides
                 // wait_game_start_timer that is set to default for deathmatch.	   
                 if( server )
-                    SV_Add_waiting_players();
+                    SV_Add_game_start_waiting_players( 0 );
+#endif
                 break;
             case ga_worlddone:
                 G_DoWorldDone ();

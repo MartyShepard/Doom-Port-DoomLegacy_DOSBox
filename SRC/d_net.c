@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
+// $Id: d_net.c 1514 2020-04-18 10:49:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1075,6 +1075,11 @@ static const char *packettypename[NUMPACKETTYPE]={
     "CLIENTREADY",
     "REPAIR",
     "CONTROL",
+    "REQ_SERVERPLAYER",
+    "SERVERPLAYER",
+    "REQ_SERVERLEVEL",
+    "SERVERLEVEL",
+    "REQ_CLIENTCFG",
 };
 
 static const char * control_name[]={
@@ -1086,7 +1091,6 @@ static const char * control_name[]={
     "wait_timer",
 };
 
-#if 0
 static const char * player_state_name[]={
 // [1]
   "PLAYER",
@@ -1098,7 +1102,6 @@ static const char * player_state_name[]={
   "ADDED_COMMIT"
 // [8]
 };
-#endif
 
 
 static const char * repair_name_to_client[]={
@@ -1348,6 +1351,29 @@ static void DebugPrintpacket(char *header)
       netbuffer->u.netwait.num_netplayer, netbuffer->u.netwait.wait_netplayer, netbuffer->u.netwait.wait_tics );
     DF_PrintRand( &netbuffer->u.netwait.rs );
     break;
+   case PT_SERVERPLAYER :
+   {
+    fprintf(debugfile, "    gametic %8d serverplayer %d  skill %d\n    playerstate=",
+      DN_read_N32( & netbuffer->u.playerstate.gametic ), netbuffer->u.playerstate.serverplayer, netbuffer->u.playerstate.skill );
+    byte pn;
+    for( pn=0; pn<MAXPLAYERS; pn++ )
+    {
+      byte npst = netbuffer->u.playerstate.playerstate[pn];
+      if( (npst >=1) && (npst < 8) )
+        fprintf(debugfile, " %s,", player_state_name[npst] );
+      else
+        fprintf(debugfile, " %i,", npst );
+    }
+    fprintf(debugfile, "\n" );
+   }
+    break;
+   case PT_SERVERLEVEL :
+    fprintf(debugfile, "    gamestate %d episode %d map %d skill %d nomonsters %d deathmatch %d\n",
+      netbuffer->u.levelcfg.gamestate, netbuffer->u.levelcfg.gameepisode, netbuffer->u.levelcfg.gamemap,
+      netbuffer->u.levelcfg.skill, netbuffer->u.levelcfg.nomonsters, netbuffer->u.levelcfg.deathmatch );
+    break;
+   case PT_REQ_SERVERPLAYER :
+   case PT_REQ_SERVERLEVEL :
    case PT_REQ_CLIENTCFG :
    case PT_SERVERSHUTDOWN :
    case PT_CLIENTQUIT :

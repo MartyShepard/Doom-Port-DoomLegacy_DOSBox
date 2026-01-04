@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01514 ]: w108 100 netgamestart
 [01513 ]: w108 99 netclean2
 [01512 ]: w108 98 itemrespawn
 [01511 ]: w108 97 random2

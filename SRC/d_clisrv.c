@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
+// $Id: d_clisrv.c 1514 2020-04-18 10:49:41Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -189,7 +189,6 @@ const int  NETWORK_VERSION = 26; // separate version number for network protocol
 
 
 #define JOININGAME
-//#define WAIT_GAME_START_INTERMISSION
 
 
 #if NUM_SERVERTIC_CMD < BACKUPTICS
@@ -237,7 +236,7 @@ static byte  player_pind[MAXPLAYERS];
 static byte  num_player_used = 0;
 static byte  num_join_waiting_players = 0;
 #ifdef WAIT_GAME_START_INTERMISSION
-static byte  num_wait_game_start = 0;  // waiting until next game
+byte  num_wait_game_start = 0;  // waiting until next game
 #endif
 
 
@@ -1154,6 +1153,9 @@ static int16_t  Consistency(void);
 static void Net_Packet_Handler(void);
 static void SV_Reset_NetNode(byte nnode);
 static boolean SV_Add_Join_Waiting(void);
+static void SV_Send_player_desc( player_desc_t * pdesc, byte desc_flags, byte pn, byte to_node );
+static void CL_init_playerdesc_receive( uint32_t r_gametic );
+static void CL_player_desc_handler( player_desc_t * pdesc, const char * msg );
 
 
 // By Server
@@ -1321,6 +1323,111 @@ static boolean SV_Send_ServerConfig( byte to_node, byte command )
 }
 
 
+
+#ifdef WAIT_GAME_START_INTERMISSION
+
+// By Server.
+// Send the state of all players.
+static void SV_Send_PlayerState( byte to_node )
+{
+    // Which players are in game, which are bots.
+    // Get name and color by asking nodes for refresh.
+    update_player_counts();
+
+    netbuffer->packettype = PT_SERVERPLAYER;
+    write_N32( & netbuffer->u.playerstate.gametic, gametic );
+
+    netbuffer->u.playerstate.serverplayer = serverplayer;
+
+    // Easier to determine state when all player slots are present.
+    // byte array of player_state
+    // Identifies player and bot.
+    memcpy( &netbuffer->u.playerstate.playerstate, player_state, MAXPLAYERS );
+   
+    // Only those players that are present
+    // Sends one or more packets.
+    SV_Send_player_desc( &netbuffer->u.playerstate.player_desc, PDI_inventory, 255, to_node );
+}
+
+
+// By Client
+// PT_SERVERPLAYER
+static
+void  server_player_handler( byte nnode )
+{
+    byte pn;
+
+    // Do not know what to do with gametic yet.
+    unsigned int sph_gametic = read_N32( & netbuffer->u.playerstate.gametic );
+    // Ideally this should be done at the matching gametic.
+    CL_init_playerdesc_receive( sph_gametic );
+    
+    serverplayer = netbuffer->u.playerstate.serverplayer;
+    gameskill = netbuffer->u.playerstate.skill;  // for create bots
+   
+    // Add and remove players
+    for( pn=0; pn<MAXPLAYERS; pn++ )
+    {
+        update_player_state( pn, netbuffer->u.playerstate.playerstate[pn] );
+    }
+    update_player_counts();
+   
+    // Receive all player desc.
+    CL_player_desc_handler( &netbuffer->u.playerstate.player_desc, NULL );
+}
+#endif
+
+
+// By Server.
+// Send the level state.
+static void SV_Send_LevelCfg( byte to_node )
+{
+    netbuffer->packettype = PT_SERVERLEVEL;
+
+    // The game state, level map identity and name.
+    netbuffer->u.levelcfg.gamestate = gamestate;
+    netbuffer->u.levelcfg.gameepisode = gameepisode;
+    netbuffer->u.levelcfg.gamemap = gamemap;
+    netbuffer->u.levelcfg.skill = gameskill;
+    netbuffer->u.levelcfg.nomonsters = nomonsters;
+    netbuffer->u.levelcfg.deathmatch = cv_deathmatch.EV;
+
+#if 0   
+    // TODO: support changing mapname by server
+    // TODO: allow server to cycle through various map and map files.
+    if(game_map_filename[0])
+    {
+        // Map command external wad file.
+        strcpy(netbuffer->u.levelcfg.mapname,game_map_filename);
+    }
+    else
+    {
+        // existing map       
+        strcpy(netbuffer->u.levelcfg.mapname,G_BuildMapName(gameepisode,gamemap));
+    }
+#endif   
+
+    HSendPacket(to_node, SP_reliable|SP_queue|SP_error_handler, 0, sizeof(levelcfg_pak_t) );
+    // nothing to be done if this fails
+}
+
+// By Client
+// PT_SERVERLEVEL
+static
+void  server_level_handler( byte nnode )
+{
+    // level info should not change during game, only during intermission or pause
+    gamestate = netbuffer->u.levelcfg.gamestate;
+    gameepisode = netbuffer->u.levelcfg.gameepisode;
+    gamemap = netbuffer->u.levelcfg.gamemap;
+    gameskill = netbuffer->u.levelcfg.skill;
+    nomonsters = netbuffer->u.levelcfg.nomonsters;
+    CV_SetParam( &cv_deathmatch, netbuffer->u.levelcfg.deathmatch );
+    // TODO: support changing mapname by server
+    // TODO: allow server to cycle through various map and map files.
+}
+
+
 // ----- Control Message
 
 // Network commands
@@ -1335,18 +1442,21 @@ typedef enum {
 
 // By Server
 //   ctrl_command : net_control_e
-//   player_num : player num (may be 255)
-//   data16 : timer value or other data specific to the command
-static void SV_Send_control( byte nnode, byte ctrl_command, byte player_num, uint16_t data16 )
+//   to_gamestate : new gamestate, command dependent
+//   data1 : 8 bit value
+//   data2 : 16 bit value, timer value or other data specific to the command
+//   player_num : player num (255 when unused)
+static void SV_Send_control( byte nnode, byte ctrl_command, byte data1, uint16_t data2, byte player_num )
 {
     netbuffer->packettype = PT_CONTROL;
     netbuffer->u.control.command = ctrl_command;
     netbuffer->u.control.player_num = player_num;
     netbuffer->u.control.player_state = (player_num < MAXPLAYERS)? player_state[player_num] : PS_unused;
-    write_N32( & netbuffer->u.control.gametic, gametic );
     netbuffer->u.control.gamemap = gamemap;
     netbuffer->u.control.gameepisode = gameepisode;
-    write_N16( & netbuffer->u.control.data, data16 );
+    write_N32( & netbuffer->u.control.gametic, gametic );
+    write_N16( & netbuffer->u.control.data2, data2 );
+    netbuffer->u.control.data1 = data1;
 
     if( nnode == BROADCAST_NODE )
     {
@@ -1369,7 +1479,7 @@ static void control_msg_handler( void )
     // Command from server to client.
     byte pn = netbuffer->u.control.player_num;
     byte ps = netbuffer->u.control.player_state;
-    uint16_t ctrl_data = read_N16( & netbuffer->u.control.data );
+    uint16_t data2 = read_N16( & netbuffer->u.control.data2 );
 
     if( !server )
     {
@@ -1406,22 +1516,45 @@ static void control_msg_handler( void )
 
             wait_netplayer = 0;  // turn off wait display
             gamestate = GS_INTERMISSION;
+            // TODO: watch another player
         }
         break;
      case CTRL_game_start:
         if( cl_mode == CLM_wait_game_start )
         {
             cl_mode = CLM_connected;
-            // Warn the player, who probably has dozed off by now.	   
-            S_StartSound(sfx_menuop);  // always present
 
             if( server )  break;  // protection, should not happen
 
-            G_Start_Intermission();  // setup intermission
+	    byte mode = netbuffer->u.control.data1;
+            gametic = read_N32( & netbuffer->u.control.gametic );
+            cl_need_tic = maketic = gametic;  // sync
 
+            if( mode )
+            {
+                // Invoked by Map command at server, when there are wait_game_start players.
+#if 0
+// [WDJ] TODO: NOT WORKING YET.
+// Map command is overriding in server, but is missing in client.
+
+                // Map command will take it to GS_LEVEL.
+                gamestate = GS_NULL;
+//                G_DoLoadLevel(1);  // if can get map first ?
+#endif
+            }
+            else
+            {
+                // Server in GS_INTERMISSION.
+                G_Start_Intermission();  // setup intermission
+            }
+
+            // wait timer only works in GS_INTERMISSION
             // update from server
-            wait_game_start_timer = ctrl_data;
-//            wait_netplayer = 0;  // only want the timer display
+            wait_game_start_timer = data2;
+//          wait_netplayer = 0;  // only want the timer display
+
+            // Warn the player, who probably has dozed off by now.	   
+//            S_StartSound(sfx_menuop);  // always present
             S_StartSound(sfx_telept);  // longer sound, likely to be in all games
         }
         break;
@@ -1429,7 +1562,7 @@ static void control_msg_handler( void )
      case CTRL_wait_timer:
         if( server )  break;  // protection, should not happen
 
-        wait_game_start_timer = ctrl_data;
+        wait_game_start_timer = data2;
         break;
      default:
         break;
@@ -3921,14 +4054,20 @@ boolean SV_Add_Join_Waiting(void)
     return newplayer_added;
 }
 
+
+#ifdef WAIT_GAME_START_INTERMISSION
+
 #define GAME_START_WAIT    22
 
 // Add players waiting for game start
-void SV_Add_waiting_players( void )
+//  mode : 0= from intermission
+void SV_Add_game_start_waiting_players( byte mode )
 {
-#ifdef WAIT_GAME_START_INTERMISSION
     byte pn, nnode, cnt = 0;
+    // wait_timer must be at least 1 to escape from GS_INTERMISSION.
+    int wait_timer = (mode == 0)? TICRATE*GAME_START_WAIT : 1 ;
 
+    // This seems to only work using GS_INTERMISSION
     for( pn=0; pn<MAXPLAYERS; pn++)
     {
         if( player_state[pn] == PS_join_wait_game_start )
@@ -3938,15 +4077,24 @@ void SV_Add_waiting_players( void )
             {
                 nnode_state[nnode] = NOS_active;
                 nextsend_tic[nnode] = gametic;
+
+                SV_Send_LevelCfg( nnode );
+                SV_Send_PlayerState( nnode );
             }
 
-            SV_Send_control( nnode, CTRL_game_start, pn, TICRATE*GAME_START_WAIT );
+            // Take node out of wait_game_start.
+            SV_Send_control( nnode, CTRL_game_start, mode, wait_timer, pn );
+
+	    // Update everyone else.
             SV_Send_AddPlayer( nnode, pn, 0 );  // NetXCmd, PS_added_commit
+
+//            SV_Send_PlayerState( nnode );
             cnt++;
         }
     }
 
-    if( cnt == 0 )  return;
+    if( cnt == 0 )
+        return;
 
     // Update gametic and random state.
     SV_Send_State( paused | network_wait_pause );
@@ -3954,9 +4102,9 @@ void SV_Add_waiting_players( void )
     B_Send_all_bots_NameColor();  // Bot NameColor to everybody, by NetXCmd
 
     // Invoke the next level wait timer.
-    wait_game_start_timer = TICRATE*GAME_START_WAIT;
-#endif
+    wait_game_start_timer = wait_timer;
 }
+#endif
 
 
 void CL_Splitscreen_Player_Manager( void )
@@ -4206,7 +4354,7 @@ wait_for_game_start:
     while( num_to_join-- )
     {
         byte pn = SV_commit_player( nnode, PS_join_wait_game_start );
-        SV_Send_control( nnode, CTRL_wait_game_start, pn, 0 );
+        SV_Send_control( nnode, CTRL_wait_game_start, 0, 0, pn );
         DEBFILE(va("Client Join: node=%i, wait game start player=%i.\n", nnode, pn));
     }
 
@@ -5076,8 +5224,25 @@ static void Net_Packet_Handler(void)
                 if( !server )
                     netwait_handler();
                 continue;
+             case PT_STATE:
+                if( !server )
+                    state_handler();  // to client
+                continue;
+             case PT_SERVERPLAYER :
+#ifdef WAIT_GAME_START_INTERMISSION
+                if( ! server )
+                    server_player_handler( nnode );
+#endif
+                continue;
+             case PT_SERVERLEVEL :
+                if( ! server )
+                    server_level_handler( nnode );
+                continue;
              case PT_REPAIR:
                 repair_handler_client( nnode );  // from server
+                continue;
+             case PT_CONTROL:
+                control_msg_handler();
                 continue;
              default:
                 break;
@@ -5097,6 +5262,10 @@ static void Net_Packet_Handler(void)
                 continue;
              case PT_CONTROL:
                 control_msg_handler();
+                continue;
+             case PT_REQ_CLIENTCFG : // request client config
+                D_Send_PlayerConfig();  // Client players, via NetXCmd to everybody
+                    // client players only, does not cover bots
                 continue;
              case PT_SERVERSHUTDOWN:
                 if( ! server )
@@ -5146,6 +5315,14 @@ static void Net_Packet_Handler(void)
              case PT_CLIENTREADY:
                 ready_handler( nnode );
                 continue;
+             case PT_REQ_SERVERPLAYER :
+#ifdef WAIT_GAME_START_INTERMISSION
+                SV_Send_PlayerState( nnode );
+#endif
+                continue;
+             case PT_REQ_SERVERLEVEL :
+                SV_Send_LevelCfg( nnode );
+                continue;
              case PT_REPAIR:
                 if( nodestate >= NOS_recognized )
                     repair_handler_server( nnode );  // from client
@@ -5172,10 +5349,6 @@ static void Net_Packet_Handler(void)
                 continue;
              case PT_SERVERCFG :    // positive response of client join request
                 server_cfg_handler( nnode );
-                continue;
-             case PT_REQ_CLIENTCFG : // request client config
-                D_Send_PlayerConfig();  // Client players, via NetXCmd to everybody
-                    // client players only, does not cover bots
                 continue;
              case PT_FILEFRAGMENT :
                 // handled in d_netfil.c
@@ -5445,7 +5618,7 @@ void TryRunTics (tic_t realtics)
             if( (wait_game_start_timer & 0x1F) == 0x03 )
             {
                 // Update the wait timer, to keep everyone in sync
-                SV_Send_control( BROADCAST_NODE, CTRL_wait_timer, 255, wait_game_start_timer );
+                SV_Send_control( BROADCAST_NODE, CTRL_wait_timer, 0, wait_game_start_timer, 255 );
             }
         }
     }
