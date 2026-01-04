@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01518 ]: w108_104 config ver 1.48.2
 [01517 ]: w108 103 version 148.1
 [01516*]: w108 102 docs
 [01515 ]: w108 101 repair3

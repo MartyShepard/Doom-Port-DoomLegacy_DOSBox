@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1512 2020-04-04 08:51:13Z wesleyjohnson $
+// $Id: command.c 1518 2020-04-26 01:48:55Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -2059,7 +2059,8 @@ boolean CV_Config_check( byte cfg )
 
         if( cv->state & CS_PUSHED )
         {
-            if( CV_Get_Pushed_cvar( cv, cfg, NULL ) )  return true;
+            if( CV_Get_Pushed_cvar( cv, cfg, NULL ) )
+                return true;
         }
     }
     return false;
