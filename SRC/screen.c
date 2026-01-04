@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1529 2020-05-14 09:44:10Z wesleyjohnson $
+// $Id: screen.c 1531 2020-05-16 10:04:04Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -244,6 +244,7 @@ void SCR_SetMode (void)
     else
     {
         // Select a video mode, within the drawmode and mode list.
+        // Can switch fullscreen.
         ret_value = VID_SetMode(setmodeneeded);
             // sets vid.width, vid.height
     }
@@ -574,9 +575,11 @@ void SCR_apply_video_settings( void )
     {
         req_width = cv_scr_width.value;
         req_height = cv_scr_height.value;
-       
+#if defined (__DJGPP__)
+        // Make bit mode selectet working again
         if (req_bitpp == cv_scr_depth.value)
-            req_bitpp = cv_scr_depth.value;                             
+#endif          
+        req_bitpp = cv_scr_depth.value;                             
     }
 
     if( verbose )
@@ -604,10 +607,12 @@ void SCR_SetDefaultMode (void)
 void SCR_ChangeFullscreen (void)
 {
     // used to prevent switching to fullscreen during startup
-    if (!allow_fullscreen)
+    if (!allow_fullscreen)  // by I_RequestFullGraphics
         return;
 
-    if( graphics_state >= VGS_startup )
+//    if( graphics_state >= VGS_fullactive )  // by I_RequestFullGraphics
+//    if( graphics_state >= VGS_active )  //  by I_StartupGraphics()
+    if( graphics_state >= VGS_startup )  // by I_StartupGraphics()
     {
         mode_fullscreen = ( cv_fullscreen.value )? true : false;
         SCR_apply_video_settings();

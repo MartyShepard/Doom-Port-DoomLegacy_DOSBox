@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01531 ]: w108_115 fullscreen V1484
+[01530*]: w108_114 Version 1.48.4
 [01529 ]: w103_113 vid
           DOS: Fix Bits Mode selection. Everything would have 
           worked so well. Why does he usually break it?

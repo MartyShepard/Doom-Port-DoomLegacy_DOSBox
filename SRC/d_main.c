@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1529 2020-05-14 09:44:10Z wesleyjohnson $
+// $Id: d_main.c 1531 2020-05-16 10:04:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,22 +316,22 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1528"
+#define SVN_REV "1531"
 #endif
 
 
 // Version number: major.minor.revision
 const int  VERSION  = 148; // major*100 + minor
-const int  REVISION = 3;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 4;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 static const char VERSIONSTRING[] = "(Rev " SVN_REV ")";
 //static const char VERSIONSTRING[] = "Beta (Rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
 // [WDJ] change this if legacy.wad is changed
-const short cur_wadversion = 145;	// release wadversion
+const short cur_wadversion = 148;	// release wadversion
 // usually allow one version behind cur_wadversion, for easier testing
 // does not have to be full featured
-const short min_wadversion = 144;
+const short min_wadversion = 145;
 
 
 //
@@ -2898,6 +2898,7 @@ restart_command:
 #else
         I_RequestFullGraphics( cv_fullscreen.EV );
 #endif
+        SCR_ChangeFullscreen();  // enable fullscreen
         drawmode_recalc = false;
 
         // text only, incomplete for rendering
