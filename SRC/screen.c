@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1519 2020-05-05 03:29:02Z wesleyjohnson $
+// $Id: screen.c 1529 2020-05-14 09:44:10Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -163,7 +163,7 @@ void ASMCALL ASM_PatchRowBytes(int rowbytes);
 void (*skydrawerfunc[2]) (void);
 
 // Called from D_DoomLoop, to init
-// Called from D_Display, when setmodeneeded
+// Called from D_Display, when setmodeneeded or drawmode_recalc.
 void SCR_SetMode (void)
 {
     int ret_value = 0;
@@ -178,7 +178,7 @@ void SCR_SetMode (void)
     // Possible change of rendermode
     if( drawmode_recalc )
     {
-        // Switch the drawmode, this may change the rendermode.
+        // Switch the drawmode, this may change the rendermode, setmodeneeded.
         ret_value = V_switch_drawmode( set_drawmode, 1 );
         if( setmodeneeded.modetype == MODE_NOP )
 	{
@@ -211,6 +211,8 @@ void SCR_SetMode (void)
         // Safe to switch to the new rendermode patch storage..
         HWR_patchstore = (rendermode > render_soft);
 #endif
+
+        I_Rendermode_setup();
     }
 
     // VID_SetMode will clear vid.draw_ready if it has print messages.
@@ -218,9 +220,8 @@ void SCR_SetMode (void)
     {
       // Disable fullscreen so can switch to debugger at breakpoints.
       mode_fullscreen = false;
-      if( rendermode_recalc )
+      if( drawmode_recalc )
       {
-          I_Rendermode_setup();
           ret_value = I_RequestFullGraphics( false );
       }
       modenum_t mode800 = VID_GetModeForSize(800,600, MODE_window);  // debug window
@@ -229,10 +230,10 @@ void SCR_SetMode (void)
     }
 #else
     // video system interface, sets vid.recalc
-    if( rendermode_recalc )
+    if( drawmode_recalc )
     {
-        I_Rendermode_setup();
         // Graphics drawmode setup, get video modes
+        // param: req_drawmode, req_bitpp, req_alt_bitpp, req_width, req_height.
         ret_value = I_RequestFullGraphics( cv_fullscreen.EV && allow_fullscreen );
 
         if( ret_value < 0 && cv_fullscreen.EV )
@@ -244,6 +245,7 @@ void SCR_SetMode (void)
     {
         // Select a video mode, within the drawmode and mode list.
         ret_value = VID_SetMode(setmodeneeded);
+            // sets vid.width, vid.height
     }
 #endif
    
@@ -562,45 +564,28 @@ void SCR_Recalc (void)
 }
 
 
-// Check for screen cmd-line parms : to force a resolution.
-//
-// Set the video mode to set at the 1st display loop (setmodeneeded)
-//
-void SCR_CheckDefaultMode (void)
+// Apply the config video settings.
+void SCR_apply_video_settings( void )
 {
-    int p;
-    int scr_forcex, scr_forcey;     // resolution asked from the cmd-line
     byte modetype = mode_fullscreen ? MODE_fullscreen : MODE_window;
-
-    if(dedicated)
-        return;
-
-    // 0 means not set at the cmd-line
-    scr_forcex = 0;
-    scr_forcey = 0;
-
-    p = M_CheckParm("-width");
-    if (p && p < myargc-1)
-        scr_forcex = atoi(myargv[p+1]);
-
-    p = M_CheckParm("-height");
-    if (p && p < myargc-1)
-        scr_forcey = atoi(myargv[p+1]);
-
-    if (scr_forcex && scr_forcey)
+ 
+    // command line settings have precedence
+    if( ! req_command_video_settings )
     {
-        CONS_Printf("Using resolution: %d x %d\n", scr_forcex, scr_forcey );
-        // returns -1 if not found, (no mode change)
-        setmodeneeded = VID_GetModeForSize( scr_forcex, scr_forcey, modetype);
-        //if (scr_forcex!=BASEVIDWIDTH || scr_forcey!=BASEVIDHEIGHT)
+        req_width = cv_scr_width.value;
+        req_height = cv_scr_height.value;
+       
+        if (req_bitpp == cv_scr_depth.value)
+            req_bitpp = cv_scr_depth.value;                             
     }
-    else
+
+    if( verbose )
     {
-        CONS_Printf("Default resolution: %d x %d (%d bits)\n",
-             cv_scr_width.value, cv_scr_height.value, cv_scr_depth.value );
-        // see note above
-        setmodeneeded = VID_GetModeForSize( cv_scr_width.value, cv_scr_height.value, modetype);
+        CONS_Printf("Request video: %d x %d (%d bits)\n", req_width, req_height, req_bitpp);
     }
+      
+    // returns -1 if not found, (no mode change)   
+    setmodeneeded = VID_GetModeForSize( req_width, req_height, modetype );       
 }
 
 
@@ -625,7 +610,6 @@ void SCR_ChangeFullscreen (void)
     if( graphics_state >= VGS_startup )
     {
         mode_fullscreen = ( cv_fullscreen.value )? true : false;
-        byte modetype = mode_fullscreen ? MODE_fullscreen : MODE_window;
-        setmodeneeded = VID_GetModeForSize(cv_scr_width.value,cv_scr_height.value, modetype);
+        SCR_apply_video_settings();
     }
 }

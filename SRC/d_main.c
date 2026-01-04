@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1526 2020-05-09 12:08:20Z wesleyjohnson $
+// $Id: d_main.c 1529 2020-05-14 09:44:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1526"
+#define SVN_REV "1528"
 #endif
 
 
@@ -622,7 +622,7 @@ void D_Display(void)
         SCR_Recalc();
           // setsizeneeded -> redrawsbar
           // con_recalc, stbar_recalc, am_recalc
-        drawmode_recalc = 0;
+        drawmode_recalc = false;
     }
 
     // change the view size if needed
@@ -967,7 +967,7 @@ void D_DoomLoop(void)
         // This may also execute accumulated commands.
         SCR_SetMode();      // change video mode
         SCR_Recalc();
-        drawmode_recalc = 0;
+        drawmode_recalc = false;
     }
     if( rendermode_recalc )
     {
@@ -1044,7 +1044,7 @@ void D_DoomLoop(void)
             // Sound mixing for the buffer is snychronous.
             I_UpdateSound();
 #endif
-        // Synchronous sound output is explicitly called.
+            // Synchronous sound output is explicitly called.
 #ifndef SNDINTR
             // Update sound output.
             I_SubmitSound();
@@ -1253,6 +1253,18 @@ void D_DoAdvanceDemo(void)
     return;
 }
 
+// Disable demos
+// Called when load game or init new game
+void D_DisableDemo(void)
+{
+    if( demoplayback )
+        G_StopDemo();
+    // stop DEMO_seq_advance, but preserve DEMO_seq_playdemo so can abort it
+    demo_ctrl = (demo_ctrl & DEMO_seq_playdemo) | DEMO_seq_disabled;
+}
+
+// =========================================================================
+
 //
 // D_StartTitle
 //
@@ -1265,8 +1277,8 @@ void D_DoAdvanceDemo(void)
 // Called by M_Responder and M_Setup_prevMenu, when exiting menu and not playing game
 void D_StartTitle(void)
 {
-    if( command_EV_param )
-        CV_Restore_User_Settings();  // remove temp settings     
+    D_End_commandline();
+
     gameaction = ga_nothing;
     playerdeadview = false;
     displayplayer = consoleplayer = statusbarplayer = 0;
@@ -1278,15 +1290,12 @@ void D_StartTitle(void)
     D_AdvanceDemo();
 }
 
-
-// Disable demos
-// Called when load game or init new game
-void D_DisableDemo(void)
+// End commandline game setup.
+void D_End_commandline( void )
 {
-    if( demoplayback )
-        G_StopDemo();
-    // stop DEMO_seq_advance, but preserve DEMO_seq_playdemo so can abort it
-    demo_ctrl = (demo_ctrl & DEMO_seq_playdemo) | DEMO_seq_disabled;
+    // Does not affect video settings (CS_EV_PROT)
+    if( command_EV_param )
+        CV_Restore_User_Settings();  // remove temp settings     
 }
 
 
@@ -2482,7 +2491,7 @@ restart_command:
         {
             const char * cfgstr;
             // user specific config file
-           if( devparm )
+            if( devparm )
             {
                 // example: /home/user/.legacy/devdataconfig.cfg
                 cfgstr = DEVDATA CONFIGFILENAME;
@@ -2789,8 +2798,7 @@ restart_command:
     }
     else
     {
-        set_drawmode = cv_drawmode.EV;
-#if !defined( __DJGPP__ )          
+        set_drawmode = cv_drawmode.EV;       
         req_bitpp = 0;  // because of launcher looping
         req_alt_bitpp = 0;
 
@@ -2860,17 +2868,37 @@ restart_command:
         // This cannot change the drawmode, but can load screen sizes.
         M_LoadConfig( CFG_drawmode, configfile_drawmode );        // WARNING : this do a "COM_BufExecute()"
 
+        // 0 means not set at the cmd-line
+        req_width = 0;
+        req_height = 0;
+
+        p = M_CheckParm("-width");
+        if (p && p < myargc-1)
+            req_width = atoi(myargv[p+1]);
+
+        p = M_CheckParm("-height");
+        if (p && p < myargc-1)
+            req_height = atoi(myargv[p+1]);
+
+        req_command_video_settings = ((req_width > 0) && (req_height > 0));
+
         //--------------------------------------------------------- CONSOLE
         // setup loading screen
         CONS_Printf("RequestFullGraphics...\n");
         V_switch_drawmode( set_drawmode, 0 );  // command line, do not change config files
+
+        // set user default mode or mode set at cmdline
+        SCR_apply_video_settings();  // command line settings, or config file settings.
+
         I_Rendermode_setup();  // need HWR_SetPalette
+
+        // param: req_drawmode, req_bitpp, req_alt_bitpp, req_width, req_height.
 #ifdef DEBUG_WINDOWED
         I_RequestFullGraphics( false );
 #else
         I_RequestFullGraphics( cv_fullscreen.EV );
 #endif
-#endif  //== END #if !defined( __DJGPP__ )
+        drawmode_recalc = false;
 
         // text only, incomplete for rendering
 #if !defined ( __DJGPP__ )
@@ -2973,13 +3001,8 @@ restart_command:
 
     B_Init_Bots();       //added by AC for acbot
 
-    //--------------------------------------------------------- CONFIG.CFG
-//    M_FirstLoadConfig();        // WARNING : this do a "COM_BufExecute()"
-
-    // set user default mode or mode set at cmdline
-    SCR_CheckDefaultMode();
-
     wipegamestate = gamestate;
+
     //------------------------------------------------ COMMAND LINE PARAMS
 
 #ifdef CDMUS
@@ -3197,9 +3220,14 @@ restart_command:
                 COM_BufAddText(va("map \"%s\"\n", G_BuildMapName(startepisode, startmap)));
         }
         else
+        {
+	    // Cancel commandline, restore cv_ var.
             D_StartTitle();     // start up intro loop
+        }
 
     }
+
+    drawmode_recalc = false;
     Clear_SoftError();
     // This leaves commands for the first COM_BufExecute in D_DoomLoop to execute.
 }

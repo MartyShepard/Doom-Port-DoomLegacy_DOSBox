@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_video.c 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: I_video.c 1529 2020-05-14 09:44:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -108,6 +108,8 @@ static   unsigned long  nombre = TICRATE*10;
 #endif
 //profile stuff ---------------------------------------------------------
 
+//Proto
+void SwitchBitMode(byte BitModus,byte BitsColor);
 
 //
 // I_FinishUpdate
@@ -341,9 +343,8 @@ int set_vesa1_mode( int width, int height )
 // Initialize the graphics system, with a initial window.
 void I_StartupGraphics( void )
 {
-	  // EOUT_flags: ohne EOUT_con in DOS Starten
-	  EOUT_flags = EOUT_text | EOUT_log;
-    char BitName[20];
+    // EOUT_flags: ohne EOUT_con in DOS Starten
+    EOUT_flags = EOUT_text | EOUT_log;
 		
     modenum_t initial_mode = {MODE_window, 0};
     // pre-init by V_Init_VideoControl
@@ -357,10 +358,8 @@ void I_StartupGraphics( void )
     native_bitpp = 8;
     native_bytepp = 1;
    
-   
     //added:26-01-98: VID_Init() must be done only once,
-    //                use VID_SetMode() to change vid mode while in the game.
-    
+    //                use VID_SetMode() to change vid mode while in the game.    
     GenPrintf( EMSG_info, "Vid_Init...\n");
     VID_Init();
 
@@ -373,6 +372,147 @@ void I_StartupGraphics( void )
     BitsColor = 8;
     //req_bitpp = 8;
     //req_drawmode = DRM_8pal;
+    
+    SwitchBitMode(req_bitpp, BitsColor);
+			
+    
+    // set the startup window
+    VID_GetModes( req_drawmode, req_bitpp );
+
+    VID_InitVGAModes();
+    if( VID_SetMode ( initial_mode ) < 0 )
+    {  
+        initial_mode.index = 1;  // 320
+        if( VID_SetMode ( initial_mode ) < 0 )  goto abort_error;
+    };
+
+    graphics_state = /*VGS_active*/VGS_fullactive;
+    CONS_Printf( "Vid_Init...Successfully\n");
+
+    // Add EOUT_con
+    EOUT_flags |= EOUT_con;
+    return;
+
+abort_error:
+    // cannot return without a display screen
+    I_Error("StartupGraphics Abort\n");
+}
+
+// Called to start rendering graphic screen according to the request switches.
+// Fullscreen modes are possible.
+// param: req_drawmode, req_bitpp, req_alt_bitpp, req_width, req_height.
+// Returns FAIL_select, FAIL_end, FAIL_create, of status_return_e, 1 on success;
+int I_RequestFullGraphics( byte select_fullscreen )
+{
+    byte select_bitpp = 0;
+    int ret_value;
+    modenum_t initial_mode = {MODE_window, 0};
+    /*
+    switch(req_drawmode)
+    {
+     case DRM_native:
+       if( V_CanDraw( native_bitpp )) {
+           select_bitpp = native_bitpp;
+       }else{
+	   // Use 8 bit and do the palette lookup.
+           GenPrintf(EMSG_ver, "Native %i bpp rejected\n", native_bitpp );
+	   select_bitpp = 8;
+       }
+       break;
+     case DRM_explicit_bpp:
+       select_bitpp = req_bitpp;
+       break;
+     default:
+       goto no_modes;
+       break;
+    }
+
+   
+    ret_value = VID_GetModes( req_drawmode, select_bitpp );
+    if( ret_value < 0 )
+        return ret_value;
+      
+    // DOS did not have windows, but this may run under Windows.
+    if( num_full_vidmodes == 0 )
+        goto no_modes;
+    */
+    
+    allow_fullscreen = true;
+    mode_fullscreen = select_fullscreen;  // initial startup
+    vid.width = req_width;
+    vid.height = req_height;
+    // set the startup screen
+    initial_mode = VID_GetModeForSize( req_width, req_height,
+				       (select_fullscreen ? MODE_fullscreen: MODE_window));
+    ret_value = VID_SetMode ( initial_mode );
+    graphics_state = VGS_fullactive;
+    
+    return ret_value;  // have video mode
+
+no_modes:
+    return FAIL_select;
+}
+
+// Setup HWR calls according to rendermode.
+int I_Rendermode_setup( void )
+{
+    return 1;
+}
+
+
+#if 0
+// See VID_Query_Modelist in Vid_vesa.c
+
+//   request_drawmode : vid_drawmode_e
+//   request_fullscreen : true if want fullscreen modes
+//   request_bitpp : bits per pixel
+// Return true if there are viable modes.
+boolean  VID_Query_Modelist( byte request_drawmode, boolean request_fullscreen, byte request_bitpp )
+{
+    int ret_value;
+    byte  old_loaded_driver = loaded_driver; // must put this back
+
+    // Require modelist before rendermode is set.
+   
+    // if '-win' is specified on the command line, do not add DirectDraw modes
+    req_win = M_CheckParm ("-win");
+
+    if( req_win || ! request_fullscreen )
+        return true;  // uses window modes
+   
+    // Fullscreen modes
+    // This may change the video driver.
+    ret_value = VID_load_driver( request_drawmode );
+    if( ret_value < 0 )
+        return ret_value;
+
+    ret_value = VID_GetModes( request_drawmode, request_bitpp );
+   
+    if( loaded_driver != old_loaded_driver )
+    {
+        // restore the driver
+	VID_load_driver( old_loaded_driver );
+    }
+
+    if( ret_value < 0 )
+        return false; 
+    
+    return ( num_full_vidmodes > 0 );
+}
+#endif
+
+// for debuging
+void IO_Color( byte color, byte r, byte g, byte b )
+{
+  outportb( 0x03c8 , color );              // registre couleur
+  outportb( 0x03c9 , (r>>2) & 0x3f );     // R
+  outportb( 0x03c9 , (g>>2) & 0x3f );     // G
+  outportb( 0x03c9 , (b>>2) & 0x3f );     // B
+}
+
+void SwitchBitMode(byte BitModus, byte BitsColor)
+{
+    char BitName[20];
 /*
     if( req_drawmode == REQ_highcolor)
     {
@@ -387,7 +527,7 @@ void I_StartupGraphics( void )
     }else if( req_drawmode == REQ_specific)
     {
       */
-       switch(req_bitpp)
+       switch(BitModus)
        {
           case 15:
            highcolor = true;
@@ -422,125 +562,7 @@ void I_StartupGraphics( void )
 /*        
     }else
     sprintf (BitName, "%dbit", BitsColor);
- */
-			
-    GenPrintf( EMSG_info, "Vid_Init %s Modes...\n",BitName);
-    // set the startup window 
-    VID_GetModes( req_drawmode, req_bitpp );        
-    VID_InitVGAModes();    
-    if( VID_SetMode ( initial_mode ) < 0 )
-    {  
-        initial_mode.index = 1;  // 320
-        if( VID_SetMode ( initial_mode ) < 0 )  goto abort_error;
-    };
-    graphics_state = /*VGS_active*/VGS_fullactive;
-		CONS_Printf( "Vid_Init...Successfully\n");
-
-    // Add EOUT_con
-		EOUT_flags |= EOUT_con;
-    return;
-
-abort_error:
-    // cannot return without a display screen
-    I_Error("StartupGraphics Abort\n");
-}
-
-// Called to start rendering graphic screen according to the request switches.
-// Fullscreen modes are possible.
-int I_RequestFullGraphics( byte select_fullscreen )
-{
-   
-    byte select_bitpp = 0;
-    int ret_value;
-    modenum_t initial_mode = {MODE_window, 0};
-    /*
-    switch(req_drawmode)
-    {
-     case DRM_native:
-       if( V_CanDraw( native_bitpp )) {
-           select_bitpp = native_bitpp;
-       }else{
-	   // Use 8 bit and do the palette lookup.
-           GenPrintf(EMSG_ver, "Native %i bpp rejected\n", native_bitpp );
-	   select_bitpp = 8;
-       }
-       break;
-     case DRM_explicit_bpp:
-       select_bitpp = req_bitpp;
-       break;
-     default:
-       goto no_modes;
-       break;
-    }
-   */
-   /*
-    ret_value = VID_GetModes( req_drawmode, select_bitpp );
-    if( ret_value < 0 )
-        return ret_value;
-   */
-    // DOS did not have windows, but this may run under Windows.
-    //if( num_full_vidmodes == 0 )
-    //    goto no_modes;
-   
-    allow_fullscreen = true;
-    mode_fullscreen = select_fullscreen;  // initial startup
-    // set the startup screen
-    initial_mode = VID_GetModeForSize( vid.width, vid.height,
-				       (select_fullscreen ? MODE_fullscreen: MODE_window));
-    ret_value = VID_SetMode ( initial_mode );
-    graphics_state = VGS_fullactive;
-    return ret_value;  // have video mode
-no_modes:
-    return FAIL_select;
-}
-
-// Setup HWR calls according to rendermode.
-int I_Rendermode_setup( void )
-{
-    return 1;
-}
-
-#if 0
-// See VID_Query_Modelist in Vid_vesa.c
-//   request_drawmode : vid_drawmode_e
-//   request_fullscreen : true if want fullscreen modes
-//   request_bitpp : bits per pixel
-// Return true if there are viable modes.
-boolean  VID_Query_Modelist( byte request_drawmode, boolean request_fullscreen, byte request_bitpp )
-{
-    int ret_value;
-    byte  old_loaded_driver = loaded_driver; // must put this back
-    // Require modelist before rendermode is set.
-   
-    // if '-win' is specified on the command line, do not add DirectDraw modes
-    req_win = M_CheckParm ("-win");
-    if( req_win || ! request_fullscreen )
-        return true;  // uses window modes
-   
-    // Fullscreen modes
-    // This may change the video driver.
-    ret_value = VID_load_driver( request_drawmode );
-    if( ret_value < 0 )
-        return ret_value;
-    ret_value = VID_GetModes( request_drawmode, request_bitpp );
-   
-    if( loaded_driver != old_loaded_driver )
-    {
-        // restore the driver
-	VID_load_driver( old_loaded_driver );
-    }
-    if( ret_value < 0 )
-        return false; 
-    
-    return ( num_full_vidmodes > 0 );
-}
-#endif
-
-// for debuging
-void IO_Color( byte color, byte r, byte g, byte b )
-{
-  outportb( 0x03c8 , color );              // registre couleur
-  outportb( 0x03c9 , (r>>2) & 0x3f );     // R
-  outportb( 0x03c9 , (g>>2) & 0x3f );     // G
-  outportb( 0x03c9 , (b>>2) & 0x3f );     // B
+ */  
+   req_bitpp = BitsColor;
+   GenPrintf( EMSG_info, "Vid_Init %s Modes...\n",BitName);
 }

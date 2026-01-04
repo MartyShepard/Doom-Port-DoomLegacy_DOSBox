@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1514 2020-04-18 10:49:41Z wesleyjohnson $
+// $Id: g_game.c 1529 2020-05-14 09:44:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -3580,10 +3580,11 @@ void playdemo_restore_settings( void )
     {
         cv_respawnmonsterstime.value = pdss_respawnmonsterstime;
         cv_itemrespawntime.value = pdss_itemrespawntime;
+
+        // only restore when demo has changed some settings
+        G_restore_user_settings();
     }
     pdss_settings_valid = 0;  // so user can change settings between demos
-
-    G_restore_user_settings();
 }
 
 

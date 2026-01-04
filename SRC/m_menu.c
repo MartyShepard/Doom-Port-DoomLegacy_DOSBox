@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1520 2020-05-05 03:29:56Z wesleyjohnson $
+// $Id: m_menu.c 1529 2020-05-14 09:44:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1253,6 +1253,8 @@ void M_ConnectMenu(int choice)
 {
     if( M_already_playing(0) )  return;
 
+    D_End_commandline();
+   
     Push_Setup_Menu(&Connectdef);
     M_Refresh(0);
 }
@@ -1413,6 +1415,8 @@ void M_StartServerMenu(int choice)
 {
     if( M_already_playing(0) )  return;
 
+    D_End_commandline();
+   
     ServerMenu[0] = (gamemode==doom2_commercial)?
          ServerMenu_Map  // Doom2
        : ServerMenu_EpisodeMap;  // Ult doom, Heretic
@@ -2073,6 +2077,8 @@ void M_SingleNewGame(int choice)
 
     if( M_already_playing(1) )  return;
 
+    D_End_commandline();
+   
     if ( gamemode == doom2_commercial
          || (gamemode == chexquest1 && !modifiedgame) //DarkWolf95: Support for Chex Quest
          )
@@ -3337,6 +3343,7 @@ void M_VideoMode_key_handler (int key)
 void M_DrawVideoMode(void);             //added:30-01-98:
 
 byte  video_test_key_handler( int key );
+byte  drawmode_test_key_handler( int key );
 
 menuitem_t VideoModeMenu[]=
 {
@@ -3568,6 +3575,7 @@ byte  video_test_key_handler( int key )
       case 'S':
       case 's':
         S_StartSound(menu_sfx_enter);
+        req_command_video_settings = 0;  // disable command line video settings
         goto change_mode;
 
       case 'T':
@@ -3581,6 +3589,7 @@ byte  video_test_key_handler( int key )
         // current active mode becomes the default mode.
         S_StartSound(menu_sfx_action);
         SCR_SetDefaultMode ();
+        req_command_video_settings = 0;  // disable command line video settings
         goto used_key;
 
       default:

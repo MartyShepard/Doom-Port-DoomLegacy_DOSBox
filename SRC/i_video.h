@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_video.h 1433 2019-04-26 10:33:53Z wesleyjohnson $
+// $Id: i_video.h 1529 2020-05-14 09:44:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -121,6 +121,8 @@ extern byte req_drawmode;  // vid_drawmode_e
 extern byte req_bitpp;
 // Parameter to V_switch_drawmode
 extern byte req_alt_bitpp;
+extern byte req_command_video_settings;
+extern uint16_t req_width, req_height;
 // From video drivers.
 extern byte native_drawmode;  // vid_drawmode_e
 extern byte native_bitpp;

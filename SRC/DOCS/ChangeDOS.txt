@@ -1,5 +1,11 @@
 * Not need to Compile.
 
+[01529 ]: w103_113 vid
+          DOS: Fix Bits Mode selection. Everything would have 
+          worked so well. Why does he usually break it?
+					
+[01528*]: Version numbers updated to 1.48. Copyright statements updated to 2020. Typos fixed.
+[01527*]: w108 docs
 [01526 ]: w108_112 ver 1.48.3
 [01525 ]: w108_111 opengl
 [01524 ]: w108_110 linux_x11

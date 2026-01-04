@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.c 1518 2020-04-26 01:48:55Z wesleyjohnson $
+// $Id: command.c 1529 2020-05-14 09:44:10Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1403,6 +1403,9 @@ void CV_Restore_User_Settings( void )
     // Check for modified cvar
     for (cvar=consvar_vars; cvar; cvar = cvar->next)
     {
+        if( cvar->state & CS_EV_PROT )  // protected EV value
+            continue;
+
         if((cvar->state & CS_CONFIG) > CFG_other )
         {
             // Undo a push of NETVAR

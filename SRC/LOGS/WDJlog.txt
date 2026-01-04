@@ -7979,7 +7979,7 @@ It got missed by the check for NE_fail, and the test for NE_empty.
 The test for doomcom->remotenode was not adequate too.
 Put in all the necessary tests to catch this condition.
 
-*** w109_patch
+*** w108_patch
 patchfile = w108_109_patch.patch
 - commit revision 1523
 Fixes bug 0661, by Adam Stylinski.
@@ -7990,20 +7990,39 @@ Would need a C Manual, and 3 programmer opinions, to figure out
 if it actually does the correct operation.
 More trustworthy conversions are used.
 
-*** w110_linux_x11
+*** w108_linux_x11
 patchfile = w108_110_linux_x11.patch
 - commit revision 1524
 Fix some Linux_x11 compile issues.
 Linux_x11 is still using OSS sound, and has some compile warnings.
 
-*** w111_opengl
+*** w108_opengl
 patchfile = w108_111_opengl.patch
 - commit revision 1525
 Fix the feet-in-ground problem for OpenGL, for drawmode switch.
 The original fix did not work when switching drawmode.
 It had to be moved from sprite load, to sprite project.
 
-*** w112_v1483
+*** w108_v1483
 patchfile = w108_112_v1483.patch
 - commit revision 1526
 Release Version 1.48.3, svn 1526.
+
+*** w108_vid
+patchfile = w108_113_vid.patch
+- commit revision 1528
+The video mode state has turned into a can of worms.
+The current code did not pass config width and height
+to the port drivers.
+Created explicit req_width, req_height parameters into
+the port video drivers.
+Created a function to pass the config width and height
+to the req_width, req_height.
+The port drivers are responsible for setting vid.width and vid.height,
+along with everything else vid.
+Created a new state bit for cv_drawmode, that prevents
+the restore_user_settings code from destroying the current setting.
+Finally, the drawmode and video mode menus might behave as expected.
+
+
+

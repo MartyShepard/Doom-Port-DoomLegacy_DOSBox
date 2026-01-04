@@ -53,7 +53,7 @@
 #include "console.h"
 #include "command.h"            //added:21-03-98: vid_xxx commands
 #include "i_video.h"
-
+#include "v_video.h"
 
 // PROTOS
 static vmode_t *VID_GetModePtr (modenum_t modenum);
@@ -481,6 +481,48 @@ int VID_SetMode (modenum_t modenum)
     vid.bytepp = currentmode_p->bytesperpixel;
     // vid.bitpp = (vid.bytepp==1)? 8:15;
 
+    debug_Printf("currentmode_p->bytesperpixel==%d, vid.bytepp=%d req_bitpp=%d vid.drawmode=%d cv_drawmode.ev=%d\n",currentmode_p->bytesperpixel,vid.bytepp*8,req_bitpp,vid.drawmode,cv_drawmode.EV);
+	/*
+    switch (cv_drawmode.EV)
+    {
+      case DRM_8pal:
+      case DRM_native:
+        req_bitpp = 8;
+        vid.bitpp = 8;
+         vid.bytepp=1;
+        vid.drawmode = DRAW8PAL;
+        break;
+      case DRM_15:
+        req_bitpp = 15;
+        vid.bitpp = 15;
+         vid.bytepp=2;
+        vid.drawmode = DRAW15;
+        break;      
+      case DRM_16:
+        req_bitpp = 16;
+        vid.bitpp = 16;
+         vid.bytepp=2;
+        vid.drawmode = DRAW16;
+        break; 
+      case DRM_24:
+        req_bitpp = 24;
+        vid.bitpp = 24;
+         vid.bytepp=3;
+        vid.drawmode = DRAW24;
+        break;      
+      case DRM_32:
+        req_bitpp = 32;
+        vid.bitpp = 32;
+         vid.bytepp=4;
+        vid.drawmode = DRAW32;
+        break;
+      default:
+        req_bitpp = 8;
+        vid.bitpp = 8;      
+        vid.bytepp=1;
+        vid.drawmode = DRAW8PAL;      
+    }
+    */
 	
     // Using Updated Commandline
     /*

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1521 2020-05-05 03:30:31Z wesleyjohnson $
+// $Id: v_video.c 1529 2020-05-14 09:44:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -175,6 +175,8 @@ byte  HWR_patchstore = false;
 byte  req_drawmode = DRM_none;  // vid_drawmode_e
 byte  req_bitpp = 0;  // DRM_explicit_bpp param
 byte  req_alt_bitpp = 0;  // DRM_explicit_bpp param
+byte  req_command_video_settings;  // command line
+uint16_t  req_width, req_height;
 
 // Driver state
 byte  graphics_state = VGS_off; // Is used in console.c and screen.c
@@ -187,7 +189,7 @@ boolean allow_fullscreen = false;
 boolean mode_fullscreen = false;
 
 
-void Setmode_OnChange( void );
+void Set_drawmode_OnChange( void );
 
 // values from vid_drawmode_e
 CV_PossibleValue_t drawmode_sel_t[] = {
@@ -206,12 +208,12 @@ CV_PossibleValue_t drawmode_sel_t[] = {
 #endif
 #endif
    {0,NULL} };
-consvar_t cv_drawmode = { "drawmode", "Software 8bit", CV_SAVE | CV_CALL | CV_CFG1, drawmode_sel_t, Setmode_OnChange  };
+consvar_t cv_drawmode = { "drawmode", "Software 8bit", CV_SAVE | CV_CALL | CV_CFG1, drawmode_sel_t, Set_drawmode_OnChange  };
 
 byte set_drawmode = 255;  // vid_drawmode_e
 const byte num_drawmode_sel = 8;
 
-void Setmode_OnChange( void )
+void Set_drawmode_OnChange( void )
 {
     drawmode_recalc = true;
 }
@@ -323,14 +325,34 @@ const char * rendermode_name[] = {
 
 
 
+// Not used, conflict.
+// There is a DRM_explicit_bpp config file.
+// But there is not a DRM_explicit_bpp menu selection.
+//#define CONVERT_BP_TO_DRM
+
+#ifdef CONVERT_BP_TO_DRM
+// Find the cv_drawmode for a bitpp.
+static byte  bpp_to_drawmode( byte bitpp )
+{
+    byte dm;
+    for( dm=0; dm<DRM_END; dm++ )
+    {
+        if( drawmode_to_bpp[dm] == bitpp )
+	    return dm;
+    }
+    return 99;  // invalid
+}
+#endif
+
+
 // Set rendermode
 //  drawmode : vid_drawmode_e
 //  change_config : boolean
 // Called by D_DoomMain, SCR_SetMode
 byte  V_switch_drawmode( byte drawmode, byte change_config )
 {
-    unsigned int old_drawmode = cv_drawmode.EV;
-    unsigned int old_render = rendermode;
+    byte old_drawmode = cv_drawmode.EV;
+    byte old_render = rendermode;
 
 #ifdef DEBUG_DRAWMODE
     GenPrintf( EMSG_debug, "V_switch_drawmode  ( %i )\n", drawmode );
@@ -393,6 +415,11 @@ byte  V_switch_drawmode( byte drawmode, byte change_config )
 
         req_drawmode = DRM_explicit_bpp;
         rendermode = render_soft;
+
+#ifdef CONVERT_BP_TO_DRM
+        // Convert to drawmode valid for cv_drawmode.
+        drawmode = bpp_to_drawmode( req_bitpp );
+#endif
     }
 
     // Setup HWR calls so can set values.
@@ -411,7 +438,7 @@ byte  V_switch_drawmode( byte drawmode, byte change_config )
     if( change_config )
     {
         // Need to change the configfile_drawmode.
-        if( old_drawmode <= DRM_END )
+        if( old_drawmode < DRM_END )
         {
             M_SaveConfig( CFG_drawmode, configfile_drawmode );
         }
@@ -419,19 +446,24 @@ byte  V_switch_drawmode( byte drawmode, byte change_config )
         // Remove the config values from the previous drawmode.
         M_ClearConfig( CFG_drawmode );
 
-        if( drawmode <= DRM_END )
+        if( drawmode < DRM_END )
         {
+#ifdef DEBUG_DRAWMODE
+            GenPrintf( EMSG_debug, "V_switch_drawmode  LoadConfig\n" );
+#endif
             // Change to the new drawmode config file.
             M_Set_configfile_drawmode( drawmode );
             // WARNING : this do a "COM_BufExecute()"
             M_LoadConfig( CFG_drawmode, configfile_drawmode );
+            SCR_apply_video_settings();  // setmodeneeded
         }
     }
 
-    if( drawmode <= DRM_END )
+    if( drawmode < DRM_END )
     {
         // save the new drawmode as temporary
         cv_drawmode.EV = drawmode;
+        cv_drawmode.state |= CS_EV_PROT;  // protect against restore
         // To change the save value:  CV_SetValue( &cv_drawmode, cv_drawmode.EV );
     }
 

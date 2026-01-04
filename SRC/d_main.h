@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.h 1388 2018-04-15 02:10:08Z wesleyjohnson $
+// $Id: d_main.h 1529 2020-05-14 09:44:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -88,10 +88,12 @@ void D_PageTicker (void);
 void D_PageDrawer (const char* pagename);
 void D_AdvanceDemo (void);
 void D_DisableDemo (void);
-void D_StartTitle (void);
 
 // demo seq controls
 enum { DEMO_seq_advance = 1, DEMO_seq_playdemo = 2, DEMO_seq_disabled = 8 };  // bits
 extern byte demo_ctrl;
+
+void D_StartTitle (void);
+void D_End_commandline(void);
 
 #endif //__D_MAIN__
