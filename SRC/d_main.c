@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1518 2020-04-26 01:48:55Z wesleyjohnson $
+// $Id: d_main.c 1519 2020-05-05 03:29:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1518"
+#define SVN_REV "1519"
 #endif
 
 
@@ -3316,12 +3316,12 @@ void D_Quit_Save ( quit_severity_e severity )
         vid.draw_ready = 0;        
         I_ShutdownGraphics();
         HU_Release_Graphics();
+#ifdef HWRENDER
         if( HWR_patchstore )
         {
-#ifdef HWRENDER
             HWR_Shutdown_Render();
-#endif       
         }
+#endif
     }
     if( quitseq < 22 )
     {

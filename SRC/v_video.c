@@ -527,8 +527,7 @@ static void put_gammatable( int i, float fv )
     // roundf is ISOC99
     int gv = (int) roundf( fv );
 #else
-    //int gv = (int) rint( fv );
-    int gv = (int) roundf( fv );  
+    int gv = (int) rint( fv );
 #endif
     if( gv < 0 )
         gv = 0; 

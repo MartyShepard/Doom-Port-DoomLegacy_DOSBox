@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: screen.c 1519 2020-05-05 03:29:02Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -198,17 +198,19 @@ void SCR_SetMode (void)
         WI_Release_Data();
         R_Release_Corona();
 
+#ifdef HWRENDER
         if( HWR_patchstore )
         {
-#ifdef HWRENDER
             HWR_Shutdown_Render();
-#endif       
         }
+#endif
 
         Z_FreeTags( PU_PURGELEVEL, PU_UNLOCK_CACHE);
 
+#ifdef HWRENDER
         // Safe to switch to the new rendermode patch storage..
         HWR_patchstore = (rendermode > render_soft);
+#endif
     }
 
     // VID_SetMode will clear vid.draw_ready if it has print messages.
@@ -420,13 +422,18 @@ void SCR_SetMode (void)
 
     if( rendermode_recalc )
     {
+#ifdef HWRENDER
         byte new_HWR_patchstore = HWR_patchstore;
         // must release with the proper patchstore setting
-	HWR_patchstore = old_HWR_patchstore;
+        HWR_patchstore = old_HWR_patchstore;
+#endif
+
         HU_Release_Graphics();  // need this until last second, for fonts
        
         // Setup patch load, again.
+#ifdef HWRENDER
         HWR_patchstore = new_HWR_patchstore;
+#endif
         HU_Load_Graphics();
         ST_Load_Graphics();  // Doom and Heretic
         WI_Load_Data();

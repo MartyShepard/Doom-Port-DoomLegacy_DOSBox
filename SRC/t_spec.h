@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_spec.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: t_spec.h 1112 2014-06-03 21:54:41Z smite-meister $
 //
 // Copyright(C) 2000 Simon Howard
 //

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_look.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: b_look.h 1112 2014-06-03 21:54:41Z smite-meister $
 //
 // Copyright (C) 2002 by DooM Legacy Team.
 //

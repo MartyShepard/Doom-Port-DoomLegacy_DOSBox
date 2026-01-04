@@ -17,8 +17,6 @@
 //
 //
 // $Log: screen.h,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.14  2004/05/16 20:34:47  hurdler
 //
 // Revision 1.13  2004/05/16 19:11:44  hurdler
@@ -279,7 +277,4 @@ void SCR_Startup (void);
 
 void SCR_ChangeFullscreen (void);
 
-#if defined( __DJGPP__ )
-byte  HWR_patchstore;  // patches are stored in HWR format
-#endif
 #endif // SCREEN_H

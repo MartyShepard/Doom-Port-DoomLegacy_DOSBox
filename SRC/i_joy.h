@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_joy.h 1035 2013-08-14 00:38:40Z wesleyjohnson $
+// $Id: i_joy.h 1112 2014-06-03 21:54:41Z smite-meister $
 //
 // Copyright (C) 1998-2010 by DooM Legacy Team.
 //
