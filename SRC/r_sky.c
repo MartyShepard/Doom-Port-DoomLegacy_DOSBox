@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_sky.c 1473 2019-10-05 10:19:20Z wesleyjohnson $
+// $Id: r_sky.c 1523 2020-05-09 12:06:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -428,7 +428,7 @@ patch_t * R_Generate_Sky( int texnum )
         sl_horizon = sky_top_align * 4 / 5;
 //        sky_color = ci_black;
     }
-    else if(cv_sky_gen.EV == 12);  // extend_bg
+    else if(cv_sky_gen.EV == 12)  // extend_bg
     {
         en_background_transparent = 1;
         sl_horizon = sky_top_align / 2;

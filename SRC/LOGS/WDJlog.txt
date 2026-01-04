@@ -7712,7 +7712,7 @@ repair does not seem to fix the problem, thus we need more diagnostic
 reporting to identify what is happening.  This diagnostic code will
 be left in permantly.
 
-*** w108_netrepair2
+*** w108_angleturn
 patchfile = w108_88_angleturn.patch
 - commit revision 1502
 This option is TICCMD_148, which is now enabled.
@@ -7789,9 +7789,6 @@ NetXCmd channel, to update the bot names, color, and skins, in
 any client that should join the netgame.
 The server now uses this NetXCmd to update the bots in clients, the
 same as players.
-
-
-
 
 *** w108_sendtic1
 patchfile = w108_92_sendtic1.patch
@@ -7886,3 +7883,127 @@ Deathmatch code had been relying on cv_itemrespawn being updated due
 to being a NETVAR, and that did not work.
 Changed the deathmatch setup of itemrespawn to be directly done
 in each client.
+
+*** w108_netclean2
+patchfile = w108_99_netclean2.patch
+- commit revision 1513
+Cleanup of minor things throughout network code.
+Bring debugging printout up to current network message formating.
+
+*** w108_netgamestart
+patchfile = w108_100_netgamestart.patch
+- commit revision 1514
+Complete some of the WAIT_GAME_START_INTERMISSION stuff.
+WAIT_GAME_START_INTERMISSION allows a client to join the game at the
+start of the next level.
+This avoids needing to download a savegame, which BIG_ENDIAN machines
+cannot do on a little endian server, due to savegame endian issues.
+Add message PT_SERVERPLAYER, that updates all the player information
+for a client joining the game at game start.  The client will create
+and remove players to match the indicated player state.
+Player health, armor, weapons, and inventory, are sent.
+Add message PT_SERVERLEVEL, that updates all the level information
+needed to join the game.  This essentially is the same information
+that the map command needed.
+
+The Map command does not support the start-game waiting players yet.
+After many many failed attempts, it has a warning message now.
+The Map command in the server forces it to start game immediately,
+preventing using GS_INTERMISSION state.
+The clients seem to get stuck in an intermission state,
+waiting for the Map command.
+
+*** w108_repair3
+patchfile = w108_101_repair3.patch
+- commit revision 1515
+Make some better messages for repair player.
+Move some network message handler tests, to ensure they get executed.
+Fix the set_mobj to create proper mobj, and update.
+
+*** w108_docs
+patchfile = w108_102_docs.patch
+- commit revision 1516
+
+*** w108_v1481
+patchfile = w108_103_v1481.patch
+- commit revision 1517
+Update to rev. 1.48.1.
+
+*** w108_config_v1482
+patchfile = w108_104_config.patch
+- commit revision 1518
+Config file was not being written in new install.  Fixed.
+Update to rev. 1.48.2.
+
+*** w108_modeswitch
+patchfile = w108_105_modeswitch.patch
+- commit revision 1519
+Fix some problems during modeswitch, such as a segfault
+due to a palette function not being ready to use yet.
+Fix uses of HWR_patchstore to be protected by HWRENDER, as that
+variable only exists within HWRENDER.
+
+*** w108_config2
+patchfile = w108_106_config2.patch
+- commit revision 1520
+Fix config file loading to properly record when a file has been
+loaded, and to clear that indication when the data is cleared,
+and when config file names are changed.
+Fix the menu instructions for drawmode and video mode, as they
+were giving false information.
+Add a menu command to create an initial drawmode config file,
+and populate it with some initial settings.
+
+*** w108_endtext
+patchfile = w108_107_endtext.patch
+- commit revision 1521
+Implemented fixes proposed by Michael Bauerle for endtext (with
+some modifications).
+Fix endtext for big-endian (SDL port).
+Added UTF8 output for endtest.
+Added cv_textout to select between vanilla output and UTF8 output,
+because user setups differ.
+
+Add "-noendtext" as command line parameter, to match the docs,
+as that is the spelling that the user is likely to use.
+The existing "-noendtxt" is left in place for compatibility.
+
+*** w108_not_network_game
+patchfile = w108_108_not_network_game.patch
+- commit revision 1522
+Fixes bug 0660, by Adam Stylinski.
+The NE_not_netgame error indication got moved around, and ended up
+right after NE_empty.  This error is returned by the Internal_Get function,
+which does not get any packets.
+It got missed by the check for NE_fail, and the test for NE_empty.
+The test for doomcom->remotenode was not adequate too.
+Put in all the necessary tests to catch this condition.
+
+*** w109_patch
+patchfile = w108_109_patch.patch
+- commit revision 1523
+Fixes bug 0661, by Adam Stylinski.
+Stray semicolon in sky code, removed.
+Fixes bug 0662, by Adam Stylinski.
+Type conversion after LE_SWAP looks suspicious.
+Would need a C Manual, and 3 programmer opinions, to figure out
+if it actually does the correct operation.
+More trustworthy conversions are used.
+
+*** w110_linux_x11
+patchfile = w108_110_linux_x11.patch
+- commit revision 1524
+Fix some Linux_x11 compile issues.
+Linux_x11 is still using OSS sound, and has some compile warnings.
+
+*** w111_opengl
+patchfile = w108_111_opengl.patch
+- commit revision 1525
+Fix the feet-in-ground problem for OpenGL, for drawmode switch.
+The original fix did not work when switching drawmode.
+It had to be moved from sprite load, to sprite project.
+
+*** w112_v1483
+patchfile = w108_112_v1483.patch
+- commit revision 1526
+Release Version 1.48.3, svn 1526.
