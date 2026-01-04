@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1511 2020-04-04 08:50:49Z wesleyjohnson $
+// $Id: p_user.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -204,7 +204,11 @@ void P_CalcHeight (player_t* player)
     }
 
     if( EV_legacy )
+#ifdef CLIENTPREDICTION2
       angle = (FINEANGLES/20*localgametic/NEWTICRATERATIO)&FINEMASK;
+#else     
+      angle = (FINEANGLES/20*leveltime/NEWTICRATERATIO)&FINEMASK;
+#endif
     else
       angle = (FINEANGLES/20*leveltime)&FINEMASK;
     bob = FixedMul ( player->bob/2, finesine[angle]);

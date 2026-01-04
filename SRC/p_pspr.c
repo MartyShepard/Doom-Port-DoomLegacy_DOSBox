@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
+// $Id: p_pspr.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -423,7 +423,8 @@ void A_WeaponReady ( player_t*     player,
     }
     else
         player->attackdown = false;
-#ifndef CLIENTPREDICTION2    
+#ifdef CLIENTPREDICTION2
+#else
     {
         int  angf;
         // bob the weapon based on movement speed, in a half arc
@@ -444,7 +445,11 @@ void A_TicWeapon(player_t*     player,
         int angf;
         
         // bob the weapon based on movement speed
+#ifdef CLIENTPREDICTION2
         angf = (128*localgametic/NEWTICRATERATIO) & FINEMASK;
+#else
+        angf = (128*leveltime/NEWTICRATERATIO) & FINEMASK;
+#endif
         psp->sx = FRACUNIT + FixedMul (player->bob, finecosine[angf]);
         angf &= (FINE_ANG180-1);  // mask to limit it to ANG180
         psp->sy = WEAPONTOP + FixedMul (player->bob, finesine[angf]);

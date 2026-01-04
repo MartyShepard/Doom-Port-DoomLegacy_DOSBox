@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_main.c 1512 2020-04-04 08:51:13Z wesleyjohnson $
+// $Id: d_main.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1512"
+#define SVN_REV "1513"
 #endif
 
 
@@ -924,7 +924,7 @@ void D_Display(void)
 //   D_DoomLoop
 // =========================================================================
 
-tic_t rendergametic, oldentertics;
+tic_t rendergametic;  // The last gametic that was rendered.
 #ifdef CLIENTPREDICTION2
 boolean spirit_update;
 #endif

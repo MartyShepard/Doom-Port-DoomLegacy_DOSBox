@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_net.c 1507 2020-04-04 08:48:54Z wesleyjohnson $
+// $Id: d_net.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -997,6 +997,24 @@ static uint32_t  Netbuffer_Checksum (void)
 
 #ifdef DEBUGFILE
 
+// Align to 4 byte
+#define ALIGN4(p) (byte *)(((uintptr_t)(p) + 3) & ~0x03)
+
+static inline
+uint16_t  DN_read_N16( N16_t * vf )
+{
+    // LSB first
+    return (((uint16_t)(vf->b[1]))<<8) | vf->b[0];
+}
+
+static inline
+uint32_t  DN_read_N32( N32_t * vf )
+{
+    // LSB first
+    return (((((((uint32_t)(vf->b[3]))<<8) | vf->b[2])<<8) | vf->b[1])<<8) | vf->b[0];
+}
+
+
 static void fprintfstring(byte *s,byte len)
 {
     int i;
@@ -1025,13 +1043,13 @@ static void fprintfstring(byte *s,byte len)
     fprintf(debugfile,"\n");
 }
 
-static char *packettypename[NUMPACKETTYPE]={
+static const char *packettypename[NUMPACKETTYPE]={
     "NOTHING",
     "SERVERCFG",
     "CLIENTCMD",
     "CLIENTMIS",
-    "CLIENT2CMD",
-    "CLIENT2MIS",
+    "CLIENT2CMD",  // NO LONGER USED
+    "CLIENT2MIS",  // NO LONGER USED
     "NODEKEEPALIVE",
     "NODEKEEPALIVEMIS",
     "SERVERTICS",
@@ -1050,16 +1068,16 @@ static char *packettypename[NUMPACKETTYPE]={
 
     "FILEFRAGMENT",
     "TEXTCMD",
-    "TEXTCMD2",
+    "TEXTCMD2",  // NO LONGER USED
     "CLIENTJOIN",
     "NODETIMEOUT",
-    "WAITINFO",
+    "NETWAITINFO",
     "CLIENTREADY",
     "REPAIR",
     "CONTROL",
 };
 
-static char * control_name[]={
+static const char * control_name[]={
     "state",  // no node command
     "normal",
     "download_savegame",
@@ -1068,10 +1086,126 @@ static char * control_name[]={
     "wait_timer",
 };
 
-static void DebugPrintRand( random_state_t * rs )
+#if 0
+static const char * player_state_name[]={
+// [1]
+  "PLAYER",
+  "PLAYER_FROM_SERVER",
+  "PLAYER_FROM_SAVEGAME",
+  "BOT",
+  "JOIN_WAIT_GAME_START",
+  "ADDED",
+  "ADDED_COMMIT"
+// [8]
+};
+#endif
+
+
+static const char * repair_name_to_client[]={
+  "NULL",
+  "PLAYER",
+  "SUG_SAVEGAME",
+#if 0   
+  "MONSTER",  // not yet implemented
+  "OBJECT",   // not yet implemented
+#endif
+};
+// to server [32]
+static const char * repair_name_to_server[]={
+  "REQ_TO_SERVER",
+  "REQ_SAVEGAME",
+  "REQ_PLAYER",
+  "REQ_ALLPLAYER",
+};
+// Ack/Nak [64]
+static const char * repair_name_ack[]={
+  "CLOSE_ACK",
+  "CLOSE_NACK",
+  "SAVEGAME_REJ",
+};
+
+
+static void DF_PrintRand( random_state_t * rs )
 {
-    fprintf(debugfile, "     P_rand index %i, B_rand_index %i, E_rand1 %4X E_rand2 %4X\n", rs->p_rand_index, rs->b_rand_index, rs->e_rand1, rs->e_rand2 );
+  fprintf(debugfile, "     P_rand index %i, B_rand_index %i, E_rand1 %4X E_rand2 %4X\n",
+    rs->p_rand_index, rs->b_rand_index, DN_read_N32(&rs->e_rand1), DN_read_N32(&rs->e_rand2) );
 }
+
+static void DF_Print_textbuf( textbuf_t * tp )
+{
+  fprintf(debugfile, " len %d text=", tp->len );
+  fprintfstring( (byte*)&tp->text, tp->len );
+//  return  sizeof_textbuf_t(tp->len);
+}
+
+static unsigned int DF_Print_textitem( textcmd_item_t * ti )
+{
+  fprintf(debugfile, "    player %d", ti->pn );
+  DF_Print_textbuf( &ti->textbuf );
+  return  sizeof_textcmd_item_t( ti->textbuf.len );
+}
+
+static unsigned int DF_Print_servertic_textcmd( servertic_textcmd_t * stcp )
+{
+  int stlen = DN_read_N16( & stcp->len );
+  fprintf(debugfile, "    servertic_textcmd tic %8d len %d\n", ExpandTics(stcp->tic), stlen );
+  byte * bp = (byte*) & stcp->textitem;
+  byte * endbp = bp + stlen;
+  while( bp < endbp )
+  {
+    bp += DF_Print_textitem( (textcmd_item_t*) bp );
+  }
+  return  sizeof_servertic_textcmd_t( stlen );
+}
+
+static void DF_Print_MobjPos( mobj_pos_t * mp )
+{
+  fprintf(debugfile, "    x %i.%i, y %i.%i, z %i.%i, momx %i.%i, momy %i.%i, momz %i,%i, angle %0x\n",
+      mp->x >> 16, mp->x & 0xFFFF,
+      mp->y >> 16, mp->y & 0xFFFF,
+      mp->z >> 16, mp->z & 0xFFFF,
+      mp->momx >> 16, mp->momx & 0xFFFF,
+      mp->momy >> 16, mp->momy & 0xFFFF,
+      mp->momz >> 16, mp->momz & 0xFFFF,
+      mp->angle );
+}
+
+static void DF_Print_PlayerDesc( player_desc_t * pdsp )
+{
+  byte * bp = (byte*) &pdsp->pd;
+  byte cnt = pdsp->entry_count;
+  byte desc_flags = pdsp->desc_flags;
+  fprintf(debugfile, "    player desc: desc_flags %d, entry_count %d\n",  desc_flags, cnt );
+ 
+  while(cnt--) 
+  {
+    int i;
+    bp = ALIGN4(bp); // align to 4 bytes
+    pd_player_t * pdp = (pd_player_t*) bp;
+
+    fprintf(debugfile, "    id_num %d state %d flags %X health %d armortype %d armor %d weapon %d\n",
+      pdp->pid, pdp->playerstate, pdp->flags, LE_SWAP16(pdp->health), pdp->armortype, LE_SWAP16(pdp->armor), pdp->readyweapon );
+    DF_Print_MobjPos(& pdp->pos );
+    fprintf(debugfile, "    ammo:");
+    for( i=0; i<NUMAMMO; i++ )
+    {
+      fprintf(debugfile, " %d/%d", LE_SWAP16( pdp->ammo[i] ), LE_SWAP16( pdp->maxammo[i] ) );
+    }
+    bp += offsetof( pd_player_t, optional );
+
+    if( desc_flags & PDI_inventory )
+    {
+       pd_inventory_t * pi = (pd_inventory_t*) bp;
+       fprintf(debugfile, "    inventory: slot %d  ", pi->inventoryslotnum );
+       for( i=0; i<NUMINVENTORYSLOTS; i++ )
+       {
+         fprintf(debugfile, " (%d,%d)", pi->inventory[i].type, pi->inventory[i].count );
+       }
+       bp += sizeof(pd_inventory_t);
+    }
+  }
+}
+
 
 static void DebugPrintpacket(char *header)
 {
@@ -1095,14 +1229,21 @@ static void DebugPrintpacket(char *header)
       netbuffer->u.clientcfg.flags );
     break;
    case PT_SERVERTICS:
-    fprintf(debugfile, "    firsttic %d plyslots %d tics %d ntxtcmd %d\n    ",
-      ExpandTics (netbuffer->u.serverpak.starttic),
-      netbuffer->u.serverpak.numplayerslots,
-      netbuffer->u.serverpak.numtics,
-      (int)(&((char *)netbuffer)[doomcom->datalength] - (char *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numplayerslots*netbuffer->u.serverpak.numtics]) );
-    fprintfstring(
-      (byte *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numplayerslots*netbuffer->u.serverpak.numtics],
-      &((char *)netbuffer)[doomcom->datalength] - (char *)&netbuffer->u.serverpak.cmds[netbuffer->u.serverpak.numplayerslots*netbuffer->u.serverpak.numtics] );
+   {
+    byte num_cmd = netbuffer->u.serverpak.num_cmds_present;
+    byte num_txt = netbuffer->u.serverpak.num_textcmd;
+    byte * bp;
+    fprintf(debugfile, "    firsttic %8d num_tics %d cmd_player_mask %X flags %X cmds_offset %i num_cmd %i num_textcmd %i\n",
+      ExpandTics (netbuffer->u.serverpak.starttic), netbuffer->u.serverpak.numtics,
+      DN_read_N32(&netbuffer->u.serverpak.cmd_player_mask), netbuffer->u.serverpak.flags,
+      netbuffer->u.serverpak.cmds_offset, num_cmd, num_txt );
+    // textcmd
+    bp = (byte *)&netbuffer->u.serverpak.cmds[num_cmd];
+    while(num_txt--)
+    {
+      bp += DF_Print_servertic_textcmd( (servertic_textcmd_t *)bp );
+    }
+   }
     break;
    case PT_CLIENTCMD:
    case PT_CLIENT2CMD:
@@ -1110,35 +1251,40 @@ static void DebugPrintpacket(char *header)
    case PT_CLIENT2MIS:
    case PT_NODEKEEPALIVE:
    case PT_NODEKEEPALIVEMIS:
-    fprintf(debugfile, "    tic %4d resendfrom %d localtic %d\n",
+    fprintf(debugfile, "    tic %8d resendfrom %4d pind_mask %X\n",
       ExpandTics (netbuffer->u.clientpak.client_tic),
       ExpandTics (netbuffer->u.clientpak.resendfrom),
-      0 /*netbuffer->u.clientpak.cmd.localtic*/ );
+      netbuffer->u.clientpak.pind_mask );
     break;
    case PT_TEXTCMD:
    case PT_TEXTCMD2:
-    fprintf(debugfile, "    length %d\n    ",
-      netbuffer->u.textcmdpak.len );
-    fprintfstring(netbuffer->u.textcmdpak.text,netbuffer->u.textcmdpak.len);
+   {
+    byte num_txt = netbuffer->u.textcmdpak.num_textitem;
+    byte * bp = (byte*)&netbuffer->u.textcmdpak.textitem;
+    while(num_txt--)
+    {
+      bp += DF_Print_textitem( (textcmd_item_t*) bp );
+    }
+   }
     break;
    case PT_SERVERCFG:
-    fprintf(debugfile, "    playermask %x numplayers %d clientnode %d serverplayer %d gametic %lu gamestate %d command %s\n",
-      (unsigned int)netbuffer->u.servercfg.playerdetected,
+    fprintf(debugfile, "    playermask %X numplayers %d clientnode %d serverplayer %d gametic %8u gamestate %d command %s\n",
+      DN_read_N32(&netbuffer->u.servercfg.playerdetected),
       netbuffer->u.servercfg.num_game_players,
       netbuffer->u.servercfg.clientnode,
       netbuffer->u.servercfg.serverplayer,
-      (unsigned long)netbuffer->u.servercfg.gametic,
+      DN_read_N32(&netbuffer->u.servercfg.gametic),
       netbuffer->u.servercfg.gamestate,
       control_name[netbuffer->u.servercfg.command] );
     break;
    case PT_SERVERINFO :
-    fprintf(debugfile, "    '%s' player %i/%i, map %s, filenum %d, time %u \n",
+    fprintf(debugfile, "    '%s' player %i/%i, map %s, filenum %d, time %u, deathmatch %d \n",
       netbuffer->u.serverinfo.servername,
-      netbuffer->u.serverinfo.num_active_players,
-      netbuffer->u.serverinfo.maxplayer,
+      netbuffer->u.serverinfo.num_active_players, netbuffer->u.serverinfo.maxplayer,
       netbuffer->u.serverinfo.mapname,
       netbuffer->u.serverinfo.num_fileneed,
-      (unsigned int)netbuffer->u.serverinfo.trip_time );
+      (unsigned int)netbuffer->u.serverinfo.trip_time,
+      netbuffer->u.serverinfo.deathmatch );
     fprintfstring(netbuffer->u.serverinfo.fileneed,(char *)netbuffer+doomcom->datalength-(char *)netbuffer->u.serverinfo.fileneed);
     break;
    case PT_SERVERREFUSE :
@@ -1146,37 +1292,66 @@ static void DebugPrintpacket(char *header)
       netbuffer->u.stringpak.str );
     break;
    case PT_REPAIR :
-    fprintf(debugfile, "    repairtype %d, tic %i,\n (id_num %d, angle %x, x %i.%i, y %i.%i, z %i.%i, momx %i.%i, momy %i.%i, momz %i,%i\n",
-      netbuffer->u.repair.repair_type, netbuffer->u.repair.gametic,
-      netbuffer->u.repair.pos.id_num, netbuffer->u.repair.pos.angle,
-      netbuffer->u.repair.pos.x >> 16, netbuffer->u.repair.pos.x & 0xFFFF,
-      netbuffer->u.repair.pos.y >> 16, netbuffer->u.repair.pos.y & 0xFFFF,
-      netbuffer->u.repair.pos.z >> 16, netbuffer->u.repair.pos.z & 0xFFFF,
-      netbuffer->u.repair.pos.momx >> 16, netbuffer->u.repair.pos.momx & 0xFFFF,
-      netbuffer->u.repair.pos.momy >> 16, netbuffer->u.repair.pos.momy & 0xFFFF,
-      netbuffer->u.repair.pos.momz >> 16, netbuffer->u.repair.pos.momz & 0xFFFF );
-    DebugPrintRand( &netbuffer->u.repair.rs );
+   {
+    byte repairtype = netbuffer->u.repair.repair_type;
+    const char * rtstr = NULL;
+    if( repairtype < 3 )
+      rtstr = repair_name_to_client[repairtype];
+    else if( (repairtype >= 32) && (repairtype < (32+4)) )
+      rtstr = repair_name_to_server[repairtype - 32];
+    else if( (repairtype >= 64) && (repairtype < (64+3)) )
+      rtstr = repair_name_ack[repairtype - 64];
+
+    if( rtstr )
+      fprintf(debugfile, "    %s", rtstr );
+    else
+      fprintf(debugfile, "    repairtype %i", repairtype );
+
+    fprintf(debugfile, " tic %8d", DN_read_N32(&netbuffer->u.repair.gametic) );
+    DF_PrintRand( &netbuffer->u.repair.rs );
+    switch(netbuffer->u.repair.repair_type)
+    {
+     case RQ_REQ_PLAYER:
+       fprintf(debugfile, " player %d\n", netbuffer->u.repair.u.player_id );
+       break;
+     case RQ_PLAYER:
+       DF_Print_PlayerDesc( & netbuffer->u.repair.u.player_desc );
+       break;
+     default:
+       fprintf(debugfile, "\n" );
+       break;
+    };
+   }
     break;
    case PT_STATE :
-    fprintf(debugfile, "    tic %i, sever_pause %d\n",
-      netbuffer->u.state.gametic, netbuffer->u.state.server_pause );
-    DebugPrintRand( &netbuffer->u.repair.rs );
+    fprintf(debugfile, "    tic %8d, sever_pause %d\n",
+      DN_read_N32(&netbuffer->u.state.gametic), netbuffer->u.state.server_pause );
+    DF_PrintRand( &netbuffer->u.repair.rs );
     break;
    case PT_CONTROL :
-    fprintf(debugfile, "    %s: tic %i, gameepisode %d, gamemap %d, data %i, player %d player_state %d\n",
-      control_name[netbuffer->u.control.command], netbuffer->u.control.gametic,
+    fprintf(debugfile, "    %s: tic %8d, gameepisode %d, gamemap %d, data %i\n",
+      control_name[netbuffer->u.control.command], DN_read_N32(&netbuffer->u.control.gametic),
       netbuffer->u.control.gameepisode, netbuffer->u.control.gamemap,
-      netbuffer->u.control.data,
-      netbuffer->u.control.player_num, netbuffer->u.control.player_state );
+      DN_read_N16(&netbuffer->u.control.data) );
+    if( netbuffer->u.control.player_num < MAXPLAYERS )
+      fprintf(debugfile, "    player %d player_state %d\n",
+        netbuffer->u.control.player_num, netbuffer->u.control.player_state );
     break;
    case PT_FILEFRAGMENT :
-    fprintf(debugfile, "    fileid %d datasize %d position %lu\n",
+    fprintf(debugfile, "    fileid %d position %8lu datasize %d\n",
       netbuffer->u.filetxpak.fileid,
-      netbuffer->u.filetxpak.size,
-      (unsigned long)netbuffer->u.filetxpak.position );
+      (unsigned long)netbuffer->u.filetxpak.position,
+      netbuffer->u.filetxpak.size );
     break;
    case PT_NETWAIT :
-    DebugPrintRand( &netbuffer->u.netwait.rs );
+    fprintf(debugfile, "    num_netplayer %d wait_netplayer %d  wait_tics %d\n",
+      netbuffer->u.netwait.num_netplayer, netbuffer->u.netwait.wait_netplayer, netbuffer->u.netwait.wait_tics );
+    DF_PrintRand( &netbuffer->u.netwait.rs );
+    break;
+   case PT_REQ_CLIENTCFG :
+   case PT_SERVERSHUTDOWN :
+   case PT_CLIENTQUIT :
+   case PT_CLIENTREADY :
     break;
    case PT_REQUESTFILE :
    case PT_NODE_TIMEOUT :

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
+// $Id: t_func.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -826,6 +826,7 @@ void SF_SkinColor(void)
 //            Send_NameColor_pind( 1 );
 	}
 #else
+        // This will affect user settings, and trigger a NetXCmd send to other clients.
         if( playernum == displayplayer )
             CV_SetValue (&cv_playercolor[0], colour);  // affects user config value
         else  if( playernum == displayplayer2 )

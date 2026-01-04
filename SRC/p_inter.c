@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
+// $Id: p_inter.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2517,7 +2517,7 @@ boolean P_DamageMobj ( mobj_t*   target,
         if( target->health < -target->info->spawnhealth )
             P_KillMobj ( target, inflictor, source );  // to gibs
         // Keep corpse from ticking the P_Random in the pain test.
-        goto ret_true;    
+        goto ret_true;
     }
 
     // target player specific

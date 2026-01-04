@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_saveg.c 1489 2019-12-16 06:33:11Z wesleyjohnson $
+// $Id: p_saveg.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2017 by DooM Legacy Team.
@@ -551,7 +551,7 @@ typedef enum
     PD_CHICKENPECK = 0x8000,
     PD_FLAMECOUNT  = 0x10000,
     PD_FLYHEIGHT   = 0x20000,
-    PD_BOT         = 0x40000,
+    PD_BOT         = 0x40000,  // not used
 } player_diff;
 
 //

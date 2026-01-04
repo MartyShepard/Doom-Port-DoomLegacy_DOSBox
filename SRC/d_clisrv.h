@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1508 2020-04-04 08:49:28Z wesleyjohnson $
+// $Id: d_clisrv.h 1513 2020-04-18 10:49:18Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -349,6 +349,7 @@ typedef enum   {
 
 // Server update of client.
 // ver 1.48
+// PT_REPAIR
 // aligned to 4 bytes
 typedef struct {
     byte        repair_type;
@@ -363,6 +364,7 @@ typedef struct {
 } repair_pak_t;
 
 // ver 1.48
+// PT_STATE
 // aligned to 4 bytes
 typedef struct {
    N32_t       gametic;
@@ -373,6 +375,7 @@ typedef struct {
 // [WDJ] As of 9/2016 there are 37 CV_NETVAR.
 // Ver 1.48 (10/2019) there are 49 CV_NETVAR.
 #define NETVAR_BUFF_LEN  4096
+// PT_SERVERCFG
 // aligned to 4 bytes
 typedef struct {
    byte        version;    // exe from differant version don't work
@@ -404,6 +407,7 @@ typedef struct {
    byte        flags;  // NF_drone, NF_download_savegame
 } clientconfig_pak_t;
 
+// PT_FILEFRAGMENT
 // aligned to 4 bytes
 typedef struct {
    char        fileid;
@@ -416,6 +420,7 @@ typedef struct {
 } filetx_pak_t;
 
 // ver 1.48
+// PT_NETWAIT
 // aligned to 4 bytes
 typedef struct {
     byte       num_netplayer;  // count players due to 2 player nodes
@@ -425,6 +430,7 @@ typedef struct {
 } netwait_pak_t;
 
 // ver 1.48
+// PT_CONTROL
 // aligned to 4 bytes
 typedef struct {
     byte       command;  // net_control_command_e
@@ -437,6 +443,7 @@ typedef struct {
 
 #define MAXSERVERNAME 32
 #define FILENEED_BUFF_LEN  4096
+// PT_SERVERINFO
 // [WDJ] Do not change this, so older server version can be identified.
 // aligned to 4 bytes
 typedef struct {
@@ -558,7 +565,7 @@ extern boolean   server;
 extern uint16_t  software_MAXPACKETLENGTH;
 
 extern boolean   cl_drone;  // is a drone client
-extern byte      cl_servernode;  // the server net node, 251=none
+extern byte      cl_servernode;  // client send to server net node, 251=none (client nnode space)
 extern byte      localplayer[2];  // client player number
 
 
@@ -641,6 +648,6 @@ void    ReadLmpExtraData(byte **demo_pointer,int playernum);
 // Name can be player number, or player name.
 // Return player number.
 // Return 255, and put msg to console, when name not found.
-byte player_name_to_num(char *name);
+byte  player_name_to_num( const char * name );
 
 #endif

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1506 2020-04-04 08:48:20Z wesleyjohnson $
+// $Id: d_netfil.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -456,7 +456,7 @@ reqfile_e  Send_RequestFile(void)
         // debug_Printf("free byte %d\n",availablefreespace);
         if(totalfreespaceneeded > availablefreespace)  goto insufficient_space;
 
-        byte errcode = HSendPacket(cl_servernode, true, 0, p - netbuffer->u.bytepak.b);
+        byte errcode = HSendPacket(cl_servernode, SP_reliable, 0, p - netbuffer->u.bytepak.b);
         if( errcode >= NE_fail )
             return RFR_send_fail;
 
@@ -867,7 +867,7 @@ found:
         netbuffer->packettype=PT_FILEFRAGMENT;
 
         // Reliable SEND
-        byte errcode = HSendPacket(nn, true, 0, FILETX_HEADER_SIZE + send_size );
+        byte errcode = HSendPacket(nn, SP_reliable, 0, FILETX_HEADER_SIZE + send_size );
         if( errcode >= NE_fail )
         { // not sent for some odd reason
             // retry at next call
@@ -1001,7 +1001,8 @@ void Got_Filetxpak(void)
 
     if(++stat_cnt==4)
     {
-        Net_Send_AcksPacket(cl_servernode);  // a packet of acks
+        // Client send to server.
+        Net_Send_AcksPacket( cl_servernode );  // a packet of acks
         stat_cnt=0;
     }
     return;

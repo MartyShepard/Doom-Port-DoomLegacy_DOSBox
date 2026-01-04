@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: mserv.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
+// $Id: mserv.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -242,7 +242,7 @@ static con_state_e  con_state = MSCS_NONE;
 // MS_PINGNODE: use this special node so to not tie up a player net node.
 // This allows having all 32 players.
 
-static int msnode = -1;  // net node for pinging the MasterServer.
+static byte msnode = 255;  // net node for pinging the MasterServer.
 
 // MasterServer communications.
 static SOCKET               ms_socket_fd = -1;  // TCP/IP socket
@@ -516,11 +516,11 @@ static void MS_open_UDP_Socket()
 
         sprintf(hostname, "%s:%d", inet_ntoa(ms_addr.sin_addr), ping_port );
         msnode = I_NetMakeNode(hostname);
-          // errors are neg numbers
+          // errors are > MAXNETNODES+2
 #endif
     }
     else
-        msnode = -1;
+        msnode = 255;
 }
 
 // By Server.
@@ -560,7 +560,7 @@ void MS_SendPing_MasterServer( tic_t cur_time )
 
         // Keep-alive tick to the MasterServer on MasterServer port+1.
         // cur_time is just a dummy data to send
-        if( msnode < 0 )
+        if( msnode > MAXNETNODES+1 )
             return;  // no UDP connection
 
         *((tic_t *)netbuffer) = cur_time;

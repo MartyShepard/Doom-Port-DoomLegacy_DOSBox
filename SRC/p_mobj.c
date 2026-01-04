@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1512 2020-04-04 08:51:13Z wesleyjohnson $
+// $Id: p_mobj.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -3056,7 +3056,7 @@ void P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z)
 static mobj_t *bloodthing;
 static fixed_t bloodspawnpointx, bloodspawnpointy;
 
-   
+
 #ifdef WALLSPLATS
 static byte  EN_bloodsplat_prandom;    // optional blood splat use of prandom
 
