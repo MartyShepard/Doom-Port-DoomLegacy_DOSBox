@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1539 2020-06-30 06:41:28Z wesleyjohnson $
+// $Id: g_game.c 1541 2020-07-06 20:50:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -530,6 +530,9 @@ consvar_t cv_allowautoaim     = {"allowautoaim","1",CV_NETVAR,CV_YesNo};
 consvar_t cv_allowrocketjump  = {"allowrocketjump","0",CV_NETVAR,CV_YesNo};
 consvar_t cv_allowmlook       = {"allowmlook"  ,"1",CV_NETVAR,CV_YesNo};
 consvar_t cv_allowexitlevel   = {"allowexitlevel", "1", CV_NETVAR, CV_YesNo, NULL };
+
+// oof when hit 2s line (in PrBoom enabled by ! comp_sound)
+consvar_t cv_oof_2s = {"oof_2s", "0", CV_SAVE|CV_CALL, CV_OnOff, DemoAdapt_p_map};
 
 #if MAXPLAYERS>32
 #error please update "player_name" table using the new value for MAXPLAYERS
@@ -3252,6 +3255,7 @@ boolean G_Downgrade(int version)
     DemoAdapt_p_enemy(); // local enables of p_enemy
     DemoAdapt_p_fab();   // local enables of p_fab
     DemoAdapt_p_floor(); // local enables of p_floor, TNT MAP30 fix
+    DemoAdapt_p_map();   // local enables of p_map
     DemoAdapt_bots();    // local enables of bots
     return true;
 }

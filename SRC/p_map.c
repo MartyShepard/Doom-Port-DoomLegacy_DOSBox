@@ -102,6 +102,9 @@
   //SoM: 3/15/2000
 
 
+// Replacement for PRBOOM_OOF_2S
+#define OOF_2S
+
 // TryMove, thing map global vars
 fixed_t         tm_bbox[4];	// box around the thing
 mobj_t        * tm_thing;	// the thing itself
@@ -153,6 +156,22 @@ msecnode_t * sector_list = NULL;
 // In Lost Soul checks, from_ is Pain Elemental position, targ_ is Lost Soul spawn
 static int from_x, from_y;
 static int targ_x, targ_y;
+
+
+
+#ifdef OOF_2S
+// [WDJ] only used in P_UseLines
+static byte     oof_2s_arm = 0x80;  // 0 when enabled, 0x80 when disabled
+static byte     oof_2s_hit;     // hit 2s line, replaces PrBoom 2s noway test
+#endif
+
+
+void DemoAdapt_p_map( void )
+{
+#ifdef OOF_2S
+    oof_2s_arm = (cv_oof_2s.EV && EN_boom)? 0 : 0x80;  // 0 is armed, 0x80 is disabled
+#endif
+}
 
 
 //
@@ -2855,12 +2874,13 @@ mobj_t*         usething;
 
 boolean PTR_UseTraverse (intercept_t* in)
 {
-    int         side;
+    line_t *  ld = in->d.line;
+    int       side;
 
     tm_thing = NULL;
-    if (!in->d.line->special)
+    if( ! ld->special )
     {
-        P_LineOpening (in->d.line);
+        P_LineOpening( ld );
         if (openrange <= 0)
         {
             if( EN_doom_etc )
@@ -2869,15 +2889,30 @@ boolean PTR_UseTraverse (intercept_t* in)
             // can't use through a wall
             return false;
         }
+
+#ifdef OOF_2S
+        // [WDJ] Replace PrBoom 2s line oof test.
+        // if (openrange <= 0) then the above test has already made a sound.
+        if( oof_2s_hit == 0 )  // still enabled
+        {
+	    if( ( ld->flags & ML_BLOCKING )   // Always blocking
+                || (openbottom > (usething->z + 24*FRACUNIT))     // Too high it blocks
+                || (opentop < (usething->z + usething->height)) ) // Too low it blocks
+                oof_2s_hit = 2;
+            // Need to keep looking for special lines.
+        }
+#endif
+
         // not a special line, but keep checking
         return true ;
     }
 
+    // Special line
     side = 0;
-    if (P_PointOnLineSide (usething->x, usething->y, in->d.line) == 1)
+    if( P_PointOnLineSide( usething->x, usething->y, ld ) == 1 )
         side = 1;
 
-    if( P_UseSpecialLine (usething, in->d.line, side) )
+    if( P_UseSpecialLine( usething, ld, side ) )
     {
         // [WDJ] Attempt to track player that triggers voodoo doll
         if((voodoo_mode >= VM_target) && (usething->player))
@@ -2890,13 +2925,58 @@ boolean PTR_UseTraverse (intercept_t* in)
         }
     }
 
-    // can't use for than one special line in a row
-    // SoM: USE MORE THAN ONE!
-    if(EN_boom && (in->d.line->flags&ML_PASSUSE))
-      return true;
-    else
-      return false;
+    // Normally can't use for than one special line.
+    if(EN_boom && (ld->flags&ML_PASSUSE))  // SoM: USE MORE THAN ONE!  Boom passthru.
+        return true;
+
+    // found a special line, stop
+    return false;
 }
+
+// From PrBoom, by Lee Killough
+// An "oof" sound should be made because of a blocking linedef.
+// Makes 2s middles which are impassable, as well as 2s uppers
+// and lowers which block the player, cause the sound effect when the
+// player tries to activate them. Specials are excluded, although it is
+// assumed that all special linedefs within reach have been considered
+// and rejected already (see P_UseLines).
+// [WDJ] In PrBoom this search was done using PTR_NoWayTraverse, but
+// Legacy code sets oof_2s_hit during PTR_UseTraverse.
+
+#ifdef PRBOOM_NOWAY
+boolean PTR_NoWayTraverse( intercept_t* in )
+{
+    line_t *ld = in->d.line;
+
+    // [WDJ] In PrBoom this was, of course, crammed all into one expression.
+    // This linedef
+    if( ld->special )    // Ignore specials
+        return true;
+   
+    if( ld->flags & ML_BLOCKING )   // Always blocking
+        return false;  // hit
+
+    P_LineOpening(ld);  // Find openings
+   
+    return
+    !(
+        openrange <= 0                       // No opening
+        || openbottom > (usething->z + 24*FRACUNIT)    // Too high it blocks
+        || opentop < (usething->z + usething->height)  // Too low it blocks
+     );
+}
+
+// In P_UseLines
+    // From PrBoom
+    // Make the "oof" sound work on 2s lines -- killough
+    if( P_PathTraverse ( x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse )
+    {
+        // Hit nothing
+        if( !comp[comp_sound]
+	    && !P_PathTraverse ( x1, y1, x2, y2, PT_ADDLINES, PTR_NoWayTraverse ) )
+            S_StartSound (usething, sfx_noway);
+    }
+#endif
 
 
 //
@@ -2917,7 +2997,19 @@ void P_UseLines (player_t* player)
     x2 = x1 + (USERANGE>>FRACBITS)*finecosine[angf];
     y2 = y1 + (USERANGE>>FRACBITS)*finesine[angf];
 
+#ifdef OOF_2S
+    // Make the "oof" sound work on 2s lines
+    // Avoid calling PathTraverse twice (like PrBoom) by doing it all the first time.
+    oof_2s_hit = oof_2s_arm;  // 0 when enabled, 0x80 disabled ( !comp[comp_sound] )
+    if( P_PathTraverse ( x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse ) )
+    {
+        // Did not hit any specials.
+        if( oof_2s_hit == 2 )  // hit a 2s line
+            S_StartObjSound (usething, sfx_noway);
+    }
+#else
     P_PathTraverse ( x1, y1, x2, y2, PT_ADDLINES, PTR_UseTraverse );
+#endif
 }
 
 

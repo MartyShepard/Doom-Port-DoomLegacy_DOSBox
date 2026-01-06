@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: m_menu.c 1529 2020-05-14 09:44:10Z wesleyjohnson $
+// $Id: m_menu.c 1541 2020-07-06 20:50:52Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -560,8 +560,8 @@ menu_t MainDef, SoundDef, EpiDef, NewDef,
   SingleMultiDef, TwoPlayerDef, MultiPlayerDef, SetupMultiPlayerDef,
   ReadDef2, ReadDef1, SaveDef, LoadDef, 
   ControlDef, ControlDef2, ControlDef3, MControlDef, JoystickOptionsDef,
-  OptionsDef, EffectsOptionsDef, GameOptionDef, AdvOption1Def, AdvOption2Def,
-  MenuOptionsDef, LightingDef, BotDef,
+  OptionsDef, EffectsOption1Def, EffectsOption2Def, AdvOption1Def, AdvOption2Def,
+  GameOptionDef, MenuOptionsDef, LightingDef, BotDef,
   NetOptionDef, ConnectOptionDef, ServerOptionsDef,
   MPOptionDef;
 
@@ -2131,7 +2131,7 @@ menuitem_t OptionsMenu[]=
     {IT_STRING | IT_CVAR,0,"Autoaim"         ,&cv_autoaim[0]      ,0},
 #endif
 
-    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"Effects Options >>",&EffectsOptionsDef ,50},
+    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"Effects Options >>",&EffectsOption1Def ,50},
     {IT_CALL    | IT_WHITESTRING,0,"Game Options >>"  ,M_GameOption       ,0},
     {IT_SUBMENU | IT_WHITESTRING,0,"Connect Options >>",&ConnectOptionDef ,0},
     {IT_CALL    | IT_WHITESTRING,0,"Network Options >>",M_NetOption     ,0},
@@ -2206,8 +2206,9 @@ menu_t  MenuOptionsDef =
 //                        Effects OPTIONS MENU
 //===========================================================================
 
-menuitem_t EffectsOptionsMenu[]=
+menuitem_t EffectsOption1Menu[]=
 {
+    {IT_SUBMENU | IT_WHITESTRING, 0, "Light Options >>"  , &LightingDef  , 'l'},
     {IT_STRING | IT_CVAR,0, "Translucency"    , &cv_translucency  , 0},
     {IT_STRING | IT_CVAR,0, "Fuzzy Shadow"    , &cv_fuzzymode     , 0},
     {IT_STRING | IT_CVAR,0, "Splats"          , &cv_splats        , 0},
@@ -2215,22 +2216,40 @@ menuitem_t EffectsOptionsMenu[]=
     {IT_STRING | IT_CVAR,0, "BloodTime"       , &cv_bloodtime     , 0},
     {IT_STRING | IT_CVAR,0, "Sprites limit"   , &cv_spritelim     , 0},
     {IT_STRING | IT_CVAR,0, "Pickup Flash"    , &cv_pickupflash   , 0},
-    {IT_STRING | IT_CVAR,0, "Boom Colormap"   , &cv_boom_colormap , 0},
     {IT_STRING | IT_CVAR,0, "Sky"             , &cv_sky_gen       , 0},
-    {IT_STRING | IT_CVAR,0, "Invul skymap"    , &cv_invul_skymap  , 0},
     {IT_STRING | IT_CVAR,0, "Water Effect"    , &cv_water_effect  , 0},
     {IT_STRING | IT_CVAR,0, "Fog Effect"      , &cv_fog_effect    , 0},
-    {IT_SUBMENU | IT_WHITESTRING, 0, "Light Options >>"  , &LightingDef  , 'l'},
+    {IT_SUBMENU | IT_WHITESTRING | IT_YOFFSET, 0,"Next"  , &EffectsOption2Def,130},
 };
 
-menu_t  EffectsOptionsDef =
+menuitem_t EffectsOption2Menu[]=
+{
+    {IT_STRING | IT_CVAR,0, "Invul skymap"    , &cv_invul_skymap  , 0},
+    {IT_STRING | IT_CVAR,0, "Boom Colormap"   , &cv_boom_colormap , 0},
+    {IT_STRING | IT_CVAR,0, "Sound oof 2s"    , &cv_oof_2s , 0},
+};
+
+
+menu_t  EffectsOption1Def =
 {
     "M_OPTTTL",
     "Effects",
-    EffectsOptionsMenu,
+    EffectsOption1Menu,
     M_DrawGenericMenu,
     NULL,
-    sizeof(EffectsOptionsMenu)/sizeof(menuitem_t),
+    sizeof(EffectsOption1Menu)/sizeof(menuitem_t),
+    60,40,
+    0
+};
+
+menu_t  EffectsOption2Def =
+{
+    "M_OPTTTL",
+    "Effects",
+    EffectsOption2Menu,
+    M_DrawGenericMenu,
+    NULL,
+    sizeof(EffectsOption2Menu)/sizeof(menuitem_t),
     60,40,
     0
 };
@@ -6152,6 +6171,7 @@ void M_Init (void)
     CV_RegisterVar(&cv_SV_download_savegame);
     CV_RegisterVar(&cv_SV_netrepair);
     CV_RegisterVar(&cv_menusound);
+    CV_RegisterVar(&cv_oof_2s);
 }
 
 // Called once after gamemode has been determined, game dependent
