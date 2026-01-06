@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: r_segs.c 1471 2019-10-04 08:59:55Z wesleyjohnson $
 //
@@ -18,8 +19,6 @@
 //
 //
 // $Log: r_segs.c,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.32  2003/05/04 04:15:09  sburke
 // Wrap patch->width, patch->height references in SHORT for big-endian machines.
 //

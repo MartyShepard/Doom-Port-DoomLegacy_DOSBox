@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: g_input.h 1481 2019-12-13 05:16:17Z wesleyjohnson $
 //
@@ -17,8 +18,6 @@
 //
 //
 // $Log: g_input.h,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.8  2002/08/24 22:42:03  hurdler
 // Apply Robert Hogberg patches
 //

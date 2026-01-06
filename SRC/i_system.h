@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: i_system.h 1257 2016-09-20 17:14:21Z wesleyjohnson $
 //
@@ -18,8 +19,6 @@
 //
 //
 // $Log: i_system.h,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.8  2001/04/27 13:32:14  bpereira
 // Revision 1.7  2001/02/24 13:35:20  bpereira
 // Revision 1.6  2000/10/21 08:43:29  bpereira

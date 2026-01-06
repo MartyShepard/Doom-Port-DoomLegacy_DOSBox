@@ -113,9 +113,8 @@ char  *Z_StrDup (const char *in);
 extern  boolean  dedicated;  // dedicated server
 
 // g_game.h
-extern  boolean devparm;                // development mode (-devparm)
-
 extern  byte    verbose;   // 1, 2
+extern  byte    devparm;   // 1, 2, 3  // development mode (-devparm)
 
 // demo version when playback demo, or the current VERSION
 // used to enable/disable selected features for backward compatibility

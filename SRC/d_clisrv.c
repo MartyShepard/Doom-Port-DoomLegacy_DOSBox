@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1539 2020-06-30 06:41:28Z wesleyjohnson $
+// $Id: d_clisrv.c 1542 2020-08-22 02:35:24Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -5673,7 +5673,7 @@ void SV_Maketic(void)
 
             DEBFILE(va("MISS tic %4u for node %d\n", maketic, nnode));
 #ifdef PARANOIA
-            if( devparm )
+            if( devparm > 1 )
                 GenPrintf(EMSG_dev, "\2Client %d Miss tic %d\n", nnode, maketic);
 #endif
             // Copy the previous tic

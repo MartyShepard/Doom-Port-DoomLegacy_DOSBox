@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: i_joy.h 1112 2014-06-03 21:54:41Z smite-meister $
 //
@@ -17,8 +18,6 @@
 //
 //
 // $Log: i_joy.h,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.2  2000/02/27 00:42:10  hurdler
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler
 // Initial import into CVS (v1.29 pr3)

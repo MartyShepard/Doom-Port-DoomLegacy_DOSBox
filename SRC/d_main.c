@@ -1,7 +1,8 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1540 2020-07-06 20:50:17Z wesleyjohnson $
+// $Id: d_main.c 1542 2020-08-22 02:35:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -18,8 +19,6 @@
 //
 //
 // $Log: d_main.c,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.66  2005/12/20 14:58:25  darkwolf95
 // Monster behavior CVAR - Affects how monsters react when they shoot each other
 //
@@ -316,7 +315,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1540"
+#define SVN_REV "1542"
 #endif
 
 
@@ -351,9 +350,6 @@ void Heretic_PatchEngine(void);
 char * startupwadfiles[MAX_WADFILES+1];
 
 // command line switches
-boolean devparm = false;        // started game with -devparm
-    // devparm enables development mode, with CONS messages reporting
-    // on memory usage and other significant events.
 boolean nomonsters;             // checkparm of -nomonsters
 
 boolean singletics = false;     // timedemo
@@ -364,6 +360,10 @@ boolean nosoundfx; // had clash with WATCOM i86.h nosound() function
 boolean dedicated = false;  // dedicated server
 
 byte    verbose = 0;
+byte    devparm = 0;
+    // set by -devparm, plus verbose level.
+    // devparm enables development mode, with CONS messages reporting
+    // on memory usage and other significant events.
 
 byte    demo_ctrl;
 byte    init_sequence = 0;
@@ -1673,7 +1673,9 @@ void IdentifyVersion()
     // debug_Printf("MAX_PATH: %i\n", _MAX_PATH);
 
     boolean  other_names = 0;	// indicates -iwad other names
-    boolean  devgame = false;   // indicates -devgame <game>    
+#ifdef DEVPARM_LOADING
+    boolean  devgame = false;   // indicates -devgame <game>
+#endif
 
     int gamedesc_index = NUM_GDESC; // nothing
     int gmi;
@@ -1747,16 +1749,24 @@ void IdentifyVersion()
 
     // [WDJ] were too many chained ELSE. Figured it out once and used direct goto.
 
+#ifdef DEVPARM_LOADING
     // [WDJ] Old switches -shdev, -regdev, -comdev are now -devgame <game>
     // Earlier did direct test of -devparm, do not overwrite it.
     devgame = M_CheckParm("-devgame");
     // [WDJ] search for one of the listed GDESC_ forcing switches
     if ( devgame || M_CheckParm("-game") )
+#else
+    if( M_CheckParm("-game") )
+#endif
     {
         char *temp = M_GetNextParm();
         if( temp == NULL )
         {
+#ifdef DEVPARM_LOADING
             I_SoftError( "Switch  -game <name> or -devgame <name>\n" );
+#else
+            I_SoftError( "Switch  -game <name>\n" );
+#endif
             goto fatal_err;
         }
         for( gmi=0; gmi<GDESC_other; gmi++ )
@@ -1774,10 +1784,11 @@ void IdentifyVersion()
         gamedesc = game_desc_table[gamedesc_index]; // copy the game descriptor
         if (gamedesc.gameflags & GD_unsupported)  goto unsupported_wad;
 
+#ifdef DEVPARM_LOADING
         // handle the recognized special -devgame switch
         if( devgame )
         {
-            devparm = true;
+            devparm = 1 + verbose;
 #if 0
             M_Set_configfile_main( DEVDATA CONFIGFILENAME );
             // [WDJ] Old, irrelevant, and it was interfering with new
@@ -1810,6 +1821,7 @@ void IdentifyVersion()
             }
 #endif
         }
+#endif       
     }
    
 
@@ -2085,7 +2097,9 @@ void D_CheckWadVersion()
 void D_DoomMain()
 {
     int p, wdi;
+#ifdef DEVPARM_LOADING
     char fbuf[FILENAME_SIZE];
+#endif
     char dirbuf[_MAX_PATH ];
     char cfgbuf[_MAX_PATH ];
 
@@ -2326,9 +2340,13 @@ restart_command:
     V_SetupFont( 1, NULL, 0 );  // Startup font size
     EOUT_flags = EOUT_text | EOUT_log | EOUT_con;
 
-    devparm |= M_CheckParm("-devparm");  // -devparm or -devgame
+    // -devgame is handled later, by IdentifyVersion
+    devparm = M_CheckParm("-devparm");  // -devparm
     if (devparm)
+    {
+      devparm += verbose;  // levels of devparm
       CONS_Printf(D_DEVSTR);
+    }
 
     if( verbose > 1 )
         CONS_Printf("Find HOME\n");
@@ -2491,12 +2509,14 @@ restart_command:
         {
             const char * cfgstr;
             // user specific config file
+#ifdef DEVPARM_LOADING
             if( devparm )
             {
                 // example: /home/user/.legacy/devdataconfig.cfg
                 cfgstr = DEVDATA CONFIGFILENAME;
             }
             else
+#endif	     
             {
                 // example: /home/user/.legacy/config.cfg
                 cfgstr = CONFIGFILENAME;
@@ -2559,11 +2579,8 @@ restart_command:
     if( gametitle )
       GenPrintf(EMSG_info, "%s\n", gametitle);
 
-    // add any files specified on the command line with -file wadfile
-    // to the wad list
-    //
+#ifdef DEVPARM_LOADING
     // convenience hack to allow -wart e m to add a wad file
-    // prepend a tilde to the filename so wadfile will be reloadable
     p = M_CheckParm("-wart");
     if (p)
     {
@@ -2571,12 +2588,19 @@ restart_command:
         myargv[p][4] = 'p';
 
         // Map name handling.  Form wad name from map/episode numbers.
+#ifdef WADFILE_RELOAD
+        // prepend a tilde to the filename so wadfile will be reloadable
+#endif
         switch (gamemode)
         {
             case doom_shareware:
             case ultdoom_retail:
             case doom_registered:
+#ifdef WADFILE_RELOAD
                 sprintf(fbuf, "~" DEVMAPS "E%cM%c.wad", myargv[p + 1][0], myargv[p + 2][0]);
+#else
+                sprintf(fbuf,  DEVMAPS "E%cM%c.wad", myargv[p + 1][0], myargv[p + 2][0]);
+#endif
                 GenPrintf(EMSG_info, "Warping to Episode %s, Map %s.\n", myargv[p + 1], myargv[p + 2]);
                 break;
 
@@ -2584,15 +2608,26 @@ restart_command:
             default:
                 p = atoi(myargv[p + 1]);
                 if (p < 10)
+#ifdef WADFILE_RELOAD
                     sprintf(fbuf, "~" DEVMAPS "cdata/map0%i.wad", p);
+#else
+                    sprintf(fbuf, DEVMAPS "cdata/map0%i.wad", p);
+#endif
                 else
+#ifdef WADFILE_RELOAD
                     sprintf(fbuf, "~" DEVMAPS "cdata/map%i.wad", p);
+#else
+                    sprintf(fbuf, DEVMAPS "cdata/map%i.wad", p);
+#endif
                 break;
         }
         D_AddFile(fbuf);
         // continue and execute -warp
     }
+#endif
 
+    // add any files specified on the command line with -file wadfile
+    // to the wad list
     if (M_CheckParm("-file"))
     {
         // the parms after p are wadfile/lump names,
@@ -2798,7 +2833,7 @@ restart_command:
     }
     else
     {
-        set_drawmode = cv_drawmode.EV;       
+        set_drawmode = cv_drawmode.EV;
         req_bitpp = 0;  // because of launcher looping
         req_alt_bitpp = 0;
 
@@ -2867,6 +2902,7 @@ restart_command:
         // Conditional on name defined and file existing.
         // This cannot change the drawmode, but can load screen sizes.
         M_LoadConfig( CFG_drawmode, configfile_drawmode );        // WARNING : this do a "COM_BufExecute()"
+
 
         // 0 means not set at the cmd-line
         req_width = 0;
@@ -3532,9 +3568,11 @@ static void Help( void )
      printf
        (
         "-devparm        Develop mode\n"
+#ifdef DEVPARM_LOADING
         "-devgame gamename  Develop mode, and specify game\n"
         "-wart 3 1       Load file devmaps/E3M1.wad, then warp to it\n"
         "-wart 13        Load file devmaps/cdata/map13.wad, then warp to it\n"
+#endif
         "-timedemo file  Timedemo from file\n"
         "-nodraw         Timedemo without draw\n"
         "-noblit         Timedemo without blit\n"

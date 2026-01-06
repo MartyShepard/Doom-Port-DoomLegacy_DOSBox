@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: dstrings.c 1141 2015-04-03 13:41:01Z wesleyjohnson $
 //
@@ -18,8 +19,6 @@
 //
 //
 // $Log: dstrings.c,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.13  2004/08/26 23:15:45  hurdler
 // add FS functions in console (+ minor linux fixes)
 //

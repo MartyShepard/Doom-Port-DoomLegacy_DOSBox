@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: r_defs.h 1471 2019-10-04 08:59:55Z wesleyjohnson $
 //
@@ -18,8 +19,6 @@
 //
 //
 // $Log: r_defs.h,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.35  2003/05/04 04:14:08  sburke
 // Prevent misaligned access on Solaris/Sparc.
 //

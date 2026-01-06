@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01542 ]: w109_007 devmode
+          DJGPP Compile fix Comments
+
 [01541 ]: w109_006 Boom oof 2s lines
 [01540 ]: w109_005 moonwalk monsters
 [01539 ]: w109_004 demo2 format

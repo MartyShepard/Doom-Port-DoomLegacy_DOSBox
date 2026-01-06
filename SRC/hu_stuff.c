@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: hu_stuff.c 1504 2020-03-17 02:31:22Z wesleyjohnson $
 //
@@ -18,8 +19,6 @@
 //
 //
 // $Log: hu_stuff.c,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.18  2003/11/22 00:22:09  darkwolf95
 // get rid of FS hud pics on level exit and new game, also added exl's fix
 // for clearing hub variables on new game

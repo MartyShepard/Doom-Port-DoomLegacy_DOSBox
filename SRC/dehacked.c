@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1537 2020-06-16 05:30:37Z wesleyjohnson $
+// $Id: dehacked.c 1542 2020-08-22 02:35:24Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -144,7 +144,7 @@ char* myfgets(char *buf, int bufsize, myfile_t *f)
 #endif
     //debug_Printf( "fgets [0]=%d [1]=%d '%s'\n",buf[0],buf[1],buf);
 
-    if( (devparm && verbose) || (verbose>1) )
+    if( (devparm > 2) || (verbose>1) )
     {
         // List DEH lines, but not blank lines.
         if( i > 1 )
@@ -1167,7 +1167,7 @@ static void readtext(myfile_t* f, int len1, int len2 )
     str2 = &s[len1];
     s[len1+len2]='\0';
 
-    if( devparm && verbose )
+    if( devparm > 1 )
     {
         // Readable listing of DEH text replacement.
         // Make copy of str1 so can terminate string.
@@ -1288,7 +1288,7 @@ static void readtext(myfile_t* f, int len1, int len2 )
                return;
            }
        }
-       if( devparm && verbose )
+       if( devparm > 1 )
            GenPrintf(EMSG_errlog, "Text hash= 0x%08x :", hash);
     }
 

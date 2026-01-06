@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: console.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
 //
@@ -17,8 +18,6 @@
 //
 //
 // $Log: console.c,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.23  2003/08/11 13:50:03  hurdler
 // go final + translucent HUD + fix spawn in net game
 //

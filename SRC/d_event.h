@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: d_event.h 1224 2016-04-07 17:27:33Z wesleyjohnson $
 //
@@ -18,8 +19,6 @@
 //
 //
 // $Log: d_event.h,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.3  2001/03/03 06:17:33  bpereira
 // Revision 1.2  2000/02/27 00:42:10  hurdler
 // Revision 1.1.1.1  2000/02/22 20:32:32  hurdler

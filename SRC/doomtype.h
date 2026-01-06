@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: doomtype.h 1503 2020-03-17 02:30:45Z wesleyjohnson $
 //
@@ -18,8 +19,6 @@
 //
 //
 // $Log: doomtype.h,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.8  2001/05/16 22:33:34  bock
 // Initial FreeBSD support.
 //

@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: s_sound.c 1422 2019-01-29 08:05:39Z wesleyjohnson $
 //
@@ -18,8 +19,6 @@
 //
 //
 // $Log: s_sound.c,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.33  2003/07/14 21:22:24  hurdler
 // go RC1
 //
@@ -187,7 +186,7 @@ consvar_t cv_precachesound = { "precachesound", "0", CV_SAVE, CV_OnOff };
 CV_PossibleValue_t soundvolume_cons_t[] = { {0, "MIN"}, {31, "MAX"}, {0, NULL} };
 
 // actual general (maximum) sound & music volume, saved into the config
-consvar_t cv_soundvolume = { "soundvolume", "15", CV_SAVE, soundvolume_cons_t };
+consvar_t cv_soundvolume = { "soundvolume", /*15*/"25", CV_SAVE, soundvolume_cons_t };
 consvar_t cv_musicvolume = { "musicvolume", "15", CV_SAVE, soundvolume_cons_t };
 consvar_t cv_rndsoundpitch = { "rndsoundpitch", "Off", CV_SAVE, CV_OnOff };
 

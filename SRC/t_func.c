@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
+// $Id: t_func.c 1542 2020-08-22 02:35:24Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -4341,7 +4341,7 @@ void SF_SetCorona(void)
 
 #ifdef SHOW_COLOR_SETTING
                 // Show the corona color setting.
-                if( devparm && verbose )
+                if( devparm > 2 )
                 {
                     if(t_argv[2].type == FSVT_string)
                        debug_Printf( "CORONA_COLOR = %s, rgba=%x\n",
@@ -4375,7 +4375,7 @@ void SF_SetCorona(void)
 
 #ifdef SHOW_COLOR_SETTING
                 // Show the dynamic color setting.
-                if( devparm && verbose )
+                if( devparm > 2 )
                 {
                     if(t_argv[2].type == FSVT_string)
                        debug_Printf( "LIGHT_COLOR = %s, rgba=%x\n",
@@ -4426,7 +4426,7 @@ void SF_SetCorona(void)
 
 #ifdef SHOW_COLOR_SETTING
         // Show the corona color setting.
-        if( devparm && verbose )
+        if( devparm > 2 )
         {
             if(t_argv[4].type == FSVT_string)
                debug_Printf( "CORONA_COLOR = %s, rgba=%x\n",

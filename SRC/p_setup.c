@@ -1,7 +1,8 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: p_setup.c 1473 2019-10-05 10:19:20Z wesleyjohnson $
+// $Id: p_setup.c 1542 2020-08-22 02:35:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -18,8 +19,6 @@
 //
 //
 // $Log: p_setup.c,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.49  2004/07/27 08:19:37  exl
 // New fmod, fs functions, bugfix or 2, patrol nodes
 //
@@ -1918,8 +1917,10 @@ boolean P_SetupLevel (int      to_episode,
     P_Init_Thinkers ();
 
     // Loading new level map.
+#ifdef WADFILE_RELOAD
     // if working with a devlopment map, reload it
     W_Reload ();
+#endif
 
     // Load the map from existing game resource or external wad file.
     if (map_wadname && map_wadname[0] )

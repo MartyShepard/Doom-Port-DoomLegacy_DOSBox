@@ -1,6 +1,6 @@
-
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: p_spec.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
 //
@@ -19,8 +19,6 @@
 //
 //
 // $Log: p_spec.c,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.45  2003/07/23 17:26:36  darkwolf95
 // SetLineTexture function for Fraggle Script
 //

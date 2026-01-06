@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: m_misc.c 1520 2020-05-05 03:29:56Z wesleyjohnson $
 //
@@ -18,8 +19,6 @@
 //
 //
 // $Log: m_misc.c,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.10  2004/04/18 12:40:14  hurdler
 // Jive's request for saving screenshots
 //

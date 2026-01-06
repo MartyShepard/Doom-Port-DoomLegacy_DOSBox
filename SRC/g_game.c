@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: g_game.c 1541 2020-07-06 20:50:52Z wesleyjohnson $
 //
@@ -18,8 +19,6 @@
 //
 //
 // $Log: g_game.c,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.50  2004/09/12 19:40:05  darkwolf95
 // additional chex quest 1 support
 //

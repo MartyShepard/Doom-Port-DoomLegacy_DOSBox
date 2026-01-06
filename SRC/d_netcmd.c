@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: d_netcmd.c 1514 2020-04-18 10:49:41Z wesleyjohnson $
 //
@@ -17,8 +18,6 @@
 //
 //
 // $Log: d_netcmd.c,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.36  2005/12/20 14:58:25  darkwolf95
 // Monster behavior CVAR - Affects how monsters react when they shoot each other
 //

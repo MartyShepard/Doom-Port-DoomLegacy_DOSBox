@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: d_player.h 1366 2017-11-01 01:14:15Z wesleyjohnson $
 //
@@ -18,8 +19,6 @@
 //
 //
 // $Log: d_player.h,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.7  2004/07/27 08:19:34  exl
 // New fmod, fs functions, bugfix or 2, patrol nodes
 //

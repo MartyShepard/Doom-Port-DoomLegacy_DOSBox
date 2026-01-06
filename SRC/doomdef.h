@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1514 2020-04-18 10:49:41Z wesleyjohnson $
+// $Id: doomdef.h 1542 2020-08-22 02:35:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -181,6 +181,22 @@
 // Player morph canceling invisibility and MF_SHADOW, is inconsistent.
 // The Heretic vanilla behavior cancels SHADOW when turned into a chicken.
 // #define PLAYER_CHICKEN_KEEPS_SHADOW
+
+// Special handling for devparm is somewhat dated.
+// Most users do not ever use it.
+#define DEVPARM_LOADING
+
+// File reload at level start when filename starts with "~"
+// A fragile development hack that has been mostly disabled for years.
+// ** Broken.
+#define WADFILE_RELOAD
+
+// Loading disk icon.
+// Disk accesses are too fast for this to be useful anymore.
+// ** Broken
+#define LOADING_DISK_ICON
+
+
 
 // =========================================================================
 

@@ -8127,8 +8127,81 @@ Make an oof sound when hit a 2s line, just like when hit a 1s line.
 PrBoom added a dedicated line search for this,
 but I did the 2s line detection in the existing search loop.
 
+*** w109_devmode
+patchfile = w109_007_devmode.patch
+- commit revision 1542
+Make optional, and disabled, some old development hacks.
+Option DEVPARM_LOADING:
+  Loading development wads from a special directory.
+  Also switches  -wart, -devgame (even older -shdev, -regdev, -comdev).
+  I doubt anyone remembers how to use it.
+Option WADFILE_RELOAD
+  If a filename started with a tilde "~", it was taken as an indication
+  to reload the file on every lump access.
+  This was to enable leaving doom running while changing wad files.
+  Another hack that would no longer be used, due to the loading time
+  from disk being faster now.
+Option LOADING_DISK_ICON
+  Not implemented in any port anyway.
+  This removes the hooks.
 
+*** w109_fullscreen
+patchfile = w109_008_fullscreen.patch
+- commit revision 1543
+The Full Graphics startup was fragile, requiring constant fixing.
 
+Removed mode_fullscreen, an indirect indication of fullscreen, that
+existed as a means to apply allow_fullscreen during startup.
+Now it modifies cv_fullscreen.EV to do a similar thing. 
 
+Changed allow_fullscreen to be controlled by main code.
+Added command line switch "-window" that forces window mode,
+as a way to recover from a bad fullscreen video mode.
+Video drivers no longer directly block fullscreen.
+If one drawmode cannot find modes,
+that should not block fullscreen for all drawmodes.
+This allows using the Query function to discover what is capable.
 
+Startup Full Graphics is now done by SCR_SetMode, instead of
+having a near duplicate of the same code that was repeatedly
+a source of bugs. Added a parameter to SCR_SetMode to control
+the few differences, init vrs change existing setup.
+It now fully starts up the graphics including the draw routines.
 
+Fixed use_font1 to be controlled by the main code, instead of
+being buried in a loading function.  This was after chasing
+down a setfault (due to whitemap not loaded) when the font
+loading got called too soon.  There was a similar problem if
+it got called too late.  Now the main code tests the flags
+and makes the decision cleanly.
+
+Video startup now changes directly to the config modes,
+which is faster and cleaner.  It does not need to do two
+intermediate video changes.
+
+A few other cleanups of video code.
+
+*** w109_zip1
+patchfile = w109_009_zip1.patch
+- commit revision 1544
+Add zip file reading, for Linux only.
+It is option ZIPWAD.
+This requires lib libzip.
+It will load the wad, deh, bex files in a zip archive.
+If searching for a file, it will also search in
+a zip archive of the same name.
+This has not been totally integrated with net play yet.
+For other ports, will have to find a libzip.
+
+There is also ZIPWAD_OPTIONAL, which will use dlopen to
+optionally load libzip.  The ZIPWAD_OPTIONAL requires lib dlopen.
+It detects that libzip is loaded, and enables the zip functionality.
+This prevents libzip from being a hard requirement.
+It makes lib dlopen a hard requirement, but that is lib that is
+normally present.
+
+The libzip before version 1.2 do not have the seek function.
+This is detected, and a local version of seek is substituted.
+I currently have libzip-1.0.1, so I need this and others may too.
+
+==== commit

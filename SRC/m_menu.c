@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: m_menu.c 1541 2020-07-06 20:50:52Z wesleyjohnson $
 //
@@ -18,8 +19,6 @@
 //
 //
 // $Log: m_menu.c,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.55  2005/12/20 14:58:25  darkwolf95
 // Monster behavior CVAR - Affects how monsters react when they shoot each other
 //

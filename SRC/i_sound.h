@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: i_sound.h 1417 2019-01-29 08:00:14Z wesleyjohnson $
 //
@@ -18,8 +19,6 @@
 //
 //
 // $Log: i_sound.h,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.8  2002/12/13 22:34:27  ssntails
 // MP3/OGG support!
 //

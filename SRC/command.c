@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: command.c 1529 2020-05-14 09:44:10Z wesleyjohnson $
 //
@@ -17,8 +18,6 @@
 //
 //
 // $Log: command.c,v $
-// Include: DOS DJGPP Fixes
-//
 // Revision 1.15  2005/05/21 08:41:23  iori_
 // May 19, 2005 - PlayerArmor FS function;  1.43 can be compiled again.
 //
@@ -832,7 +831,7 @@ static void COM_Help_f (void)
 
     con_Printf("\2\nRead the console docs for more or type help <command or variable>\n");
 
-    if( devparm )
+    if( devparm > 1 )
             con_Printf("\2Total : %d\n",i);
 }
 
