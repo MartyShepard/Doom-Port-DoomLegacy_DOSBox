@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1544 2020-08-22 02:40:35Z wesleyjohnson $
+// $Id: r_things.c 1546 2020-09-02 13:24:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1094,9 +1094,14 @@ fixed_t         dm_windowtop, dm_windowbottom;
 fixed_t         dm_texturemid;
 
 
+// Called by R_RenderMaskedSegRange, R_RenderThickSideRange, R_RenderFog
 void R_DrawMaskedColumn ( byte * column_data )
 {
     fixed_t     top_post_sc, bottom_post_sc;  // fixed_t screen coord.
+#ifdef DEEPSEA_TALL_PATCH
+    // [MB (M. Bauerle), from crispy Doom]  Support for DeePsea tall patches, [WDJ]
+    int         cur_topdelta = -1;  // [crispy]
+#endif
 
     column_t * column = (column_t*) column_data;
    
@@ -1105,7 +1110,27 @@ void R_DrawMaskedColumn ( byte * column_data )
     {
         // calculate unclipped screen coordinates
         //  for post
+#ifdef DEEPSEA_TALL_PATCH
+        // [crispy] [MB] [WDJ] DeePsea tall patch.
+        // DeepSea allows the patch to exceed 254 height.
+        // A Doom patch has monotonic ascending topdelta values, 0..254.
+        // DeePsea tall patches have an optional relative topdelta.	
+        // When the column topdelta is <= the current topdelta,
+        // it is a DeePsea tall patch relative topdelta.
+        if( (int)column->topdelta <= cur_topdelta )
+        {
+            cur_topdelta += column->topdelta;  // DeePsea relative topdelta
+        }
+        else
+        {
+            cur_topdelta = column->topdelta;  // Normal Doom patch
+        }
+        top_post_sc = dm_top_patch + (dm_yscale * cur_topdelta);
+#else
+        // Normal patch
         top_post_sc = dm_top_patch + dm_yscale*column->topdelta;
+#endif
+
         bottom_post_sc = (dm_bottom_patch == FIXED_MAX) ?
             top_post_sc + dm_yscale*column->length
             : dm_bottom_patch + dm_yscale*column->length;
@@ -1154,8 +1179,15 @@ void R_DrawMaskedColumn ( byte * column_data )
 #endif
 
             dc_source = (byte *)column + 3;
+#ifdef DEEPSEA_TALL_PATCH
+            // [crispy] Support for DeePsea tall patches
+            dc_texturemid = dm_texturemid - (cur_topdelta<<FRACBITS);
+            // dc_source = (byte *)column + 3 - cur_topdelta;
+#else
+            // Normal patch	     
             dc_texturemid = dm_texturemid - (column->topdelta<<FRACBITS);
             // dc_source = (byte *)column + 3 - column->topdelta;
+#endif
             fog_col_length = column->length;
 
             // Drawn by either R_DrawColumn

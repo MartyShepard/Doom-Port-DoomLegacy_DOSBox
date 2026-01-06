@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1544 2020-08-22 02:40:35Z wesleyjohnson $
+// $Id: doomdef.h 1546 2020-09-02 13:24:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -190,6 +190,11 @@
 #endif
 #endif
 #endif
+
+// DeePsea tall patches.
+// Allows patches that exceed 254 height.
+// Not used by many wads, but not much extra code either.  Relatively safe.
+#define DEEPSEA_TALL_PATCH
 
 
 // Player morph canceling invisibility and MF_SHADOW, is inconsistent.

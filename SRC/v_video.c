@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1543 2020-08-22 02:36:35Z wesleyjohnson $
+// $Id: v_video.c 1546 2020-09-02 13:24:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1395,6 +1395,10 @@ void V_DrawMappedPatch(int x, int y, patch_t * patch, byte * colormap)
     byte *desttop, *dest;  // within video buffer
 
     int count;
+#ifdef DEEPSEA_TALL_PATCH
+    // [MB] [WDJ]  Support for DeePsea tall patches.
+    int cur_topdelta;
+#endif
     fixed_t col, wf, ofs;
 
     // draw a hardware converted patch
@@ -1424,10 +1428,31 @@ void V_DrawMappedPatch(int x, int y, patch_t * patch, byte * colormap)
     {
         column = (column_t *) ((byte *) patch + patch->columnofs[col >> FRACBITS]);
 
+#ifdef DEEPSEA_TALL_PATCH
+        cur_topdelta = -1;
+#endif
         while (column->topdelta != 0xff)
         {
             source = (byte *) column + 3;
+#ifdef DEEPSEA_TALL_PATCH
+            // [MB] [WDJ] DeePsea tall patch.
+            // DeepSea allows the patch to exceed 254 height.
+            // A Doom patch has monotonic ascending topdelta values, 0..254.
+            // DeePsea tall patches have an optional relative topdelta.	
+            // When the column topdelta is <= the current topdelta,
+            // it is a DeePsea tall patch relative topdelta.
+            if( (int)column->topdelta <= cur_topdelta )
+            {
+                cur_topdelta += column->topdelta;  // DeePsea relative topdelta
+            }
+            else
+            {
+                cur_topdelta = column->topdelta;  // Normal Doom patch
+            }
+            dest = desttop + (cur_topdelta * drawinfo.ybytes);
+#else
             dest = desttop + (column->topdelta * drawinfo.ybytes);
+#endif
             count = column->length * drawinfo.dupy;
 
             ofs = 0;
@@ -1473,6 +1498,10 @@ void V_DrawMappedPatch_Box(int x, int y, patch_t * patch, byte * colormap, int b
     byte *dest;  // within video buffer
 
     int count, draw_x, draw_y, draw_y1, bx1, bx2, by1, by2;
+#ifdef DEEPSEA_TALL_PATCH
+    // [MB] [WDJ]  Support for DeePsea tall patches.
+    int cur_topdelta;
+#endif
     fixed_t col, wf, ofs;
 
     // draw a hardware converted patch
@@ -1513,10 +1542,31 @@ void V_DrawMappedPatch_Box(int x, int y, patch_t * patch, byte * colormap, int b
     {
         column = (column_t *) ((byte *) patch + patch->columnofs[col >> FRACBITS]);
 
+#ifdef DEEPSEA_TALL_PATCH
+        cur_topdelta = -1;
+#endif
         while (column->topdelta != 0xff)
         {
             source = (byte *) column + 3;
+#ifdef DEEPSEA_TALL_PATCH
+            // [MB] [WDJ] DeePsea tall patch.
+            // DeepSea allows the patch to exceed 254 height.
+            // A Doom patch has monotonic ascending topdelta values, 0..254.
+            // DeePsea tall patches have an optional relative topdelta.	
+            // When the column topdelta is <= the current topdelta,
+            // it is a DeePsea tall patch relative topdelta.
+            if( (int)column->topdelta <= cur_topdelta )
+            {
+                cur_topdelta += column->topdelta;  // DeePsea relative topdelta
+            }
+            else
+            {
+                cur_topdelta = column->topdelta;  // Normal Doom patch
+            }
+            draw_y = draw_y1 + (cur_topdelta * drawinfo.ybytes);
+#else
             draw_y = draw_y1 + (column->topdelta * drawinfo.ybytes);
+#endif
             count = column->length * drawinfo.dupy;
             column = (column_t *) ((byte *) column + column->length + 4);  // next column in patch
             ofs = 0;
@@ -1592,6 +1642,10 @@ void V_DrawScaledPatch(int x, int y, patch_t * patch)
     // vid : from video setup
     // drawinfo : from V_SetupDraw
     int count;
+#ifdef DEEPSEA_TALL_PATCH
+    // [MB] [WDJ]  Support for DeePsea tall patches.
+    int cur_topdelta;
+#endif
     fixed_t col = 0;
     column_t *column;
     byte *source;  // within column
@@ -1664,10 +1718,31 @@ void V_DrawScaledPatch(int x, int y, patch_t * patch)
         column = (column_t *) ((byte *) patch + patch->columnofs[col >> FRACBITS]);
         col += colfrac;
 
+#ifdef DEEPSEA_TALL_PATCH
+        cur_topdelta = -1;
+#endif
         while (column->topdelta != 0xff)
         {
             source = (byte *) column + 3;
+#ifdef DEEPSEA_TALL_PATCH
+            // [MB] [WDJ] DeePsea tall patch.
+            // DeepSea allows the patch to exceed 254 height.
+            // A Doom patch has monotonic ascending topdelta values, 0..254.
+            // DeePsea tall patches have an optional relative topdelta.	
+            // When the column topdelta is <= the current topdelta,
+            // it is a DeePsea tall patch relative topdelta.
+            if( (int)column->topdelta <= cur_topdelta )
+            {
+                cur_topdelta += column->topdelta;  // DeePsea relative topdelta
+            }
+            else
+            {
+                cur_topdelta = column->topdelta;  // Normal Doom patch
+            }
+            dest = desttop + (cur_topdelta * drawinfo.ybytes);
+#else
             dest = desttop + (column->topdelta * drawinfo.ybytes);
+#endif
             count = column->length * drawinfo.dupy;
 
             ofs = 0;
@@ -1825,6 +1900,10 @@ void V_DrawTranslucentPatch(int x, int y, patch_t * patch)
     // vid : from video setup
     // drawinfo : from V_SetupDraw
     int count;
+#ifdef DEEPSEA_TALL_PATCH
+    // [MB] [WDJ]  Support for DeePsea tall patches.
+    int cur_topdelta;
+#endif
     column_t *column;
     byte *source;  // within column
     byte *desttop, *dest;  // within video buffer
@@ -1862,10 +1941,31 @@ void V_DrawTranslucentPatch(int x, int y, patch_t * patch)
     {
         column = (column_t *) ((byte *) patch + patch->columnofs[col >> FRACBITS]);
 
+#ifdef DEEPSEA_TALL_PATCH
+        cur_topdelta = -1;
+#endif
         while (column->topdelta != 0xff)
         {
             source = (byte *) column + 3;
+#ifdef DEEPSEA_TALL_PATCH
+            // [MB] [WDJ] DeePsea tall patch.
+            // DeepSea allows the patch to exceed 254 height.
+            // A Doom patch has monotonic ascending topdelta values, 0..254.
+            // DeePsea tall patches have an optional relative topdelta.	
+            // When the column topdelta is <= the current topdelta,
+            // it is a DeePsea tall patch relative topdelta.
+            if( (int)column->topdelta <= cur_topdelta )
+            {
+                cur_topdelta += column->topdelta;  // DeePsea relative topdelta
+            }
+            else
+            {
+                cur_topdelta = column->topdelta;  // Normal Doom patch
+            }
+            dest = desttop + (cur_topdelta * drawinfo.ybytes);
+#else
             dest = desttop + (column->topdelta * drawinfo.ybytes);
+#endif
             count = column->length * drawinfo.dupy;
 
             ofs = 0;
@@ -1956,6 +2056,10 @@ void V_DrawPatch(int x, int y, int scrn, patch_t * patch)
     byte *source;  // within column
     byte *desttop, *dest;  // within video buffer
     int count;
+#ifdef DEEPSEA_TALL_PATCH
+    // [MB] [WDJ]  Support for DeePsea tall patches.
+    int cur_topdelta;
+#endif
     int col, wi;
 
     // draw an hardware converted patch
@@ -1994,11 +2098,33 @@ void V_DrawPatch(int x, int y, int scrn, patch_t * patch)
     {
         column = (column_t *) ((byte *) patch + patch->columnofs[col]);
 
+#ifdef DEEPSEA_TALL_PATCH
+        cur_topdelta = -1;
+#endif
+
         // step through the posts in a column
         while (column->topdelta != 0xff)
         {
             source = (byte *) column + 3;
+#ifdef DEEPSEA_TALL_PATCH
+            // [MB] [WDJ] DeePsea tall patch.
+            // DeepSea allows the patch to exceed 254 height.
+            // A Doom patch has monotonic ascending topdelta values, 0..254.
+            // DeePsea tall patches have an optional relative topdelta.	
+            // When the column topdelta is <= the current topdelta,
+            // it is a DeePsea tall patch relative topdelta.
+            if( (int)column->topdelta <= cur_topdelta )
+            {
+                cur_topdelta += column->topdelta;  // DeePsea relative topdelta
+            }
+            else
+            {
+                cur_topdelta = column->topdelta;  // Normal Doom patch
+            }
+            dest = desttop + (cur_topdelta * vid.ybytes);
+#else
             dest = desttop + (column->topdelta * vid.ybytes);
+#endif
             count = column->length;
 
             while (count--)

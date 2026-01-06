@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1473 2019-10-05 10:19:20Z wesleyjohnson $
+// $Id: r_data.c 1546 2020-09-02 13:24:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -613,6 +613,10 @@ void R_DrawColumnInCache ( column_t*     colpost,	// source, list of 0 or more p
 {
     int         count;
     int         position;  // dest
+#ifdef DEEPSEA_TALL_PATCH
+    // [MB] [WDJ]  Support for DeePsea tall patches,
+    int   cur_topdelta = -1;
+#endif
     byte*       source;
 //    byte*       dest;
 
@@ -626,7 +630,21 @@ void R_DrawColumnInCache ( column_t*     colpost,	// source, list of 0 or more p
         // and has extra byte before and after pixel data
         source = (byte *)colpost + 3;	// pixel data after post header
         count = colpost->length;
+
+#ifdef DEEPSEA_TALL_PATCH
+        // When the column topdelta is <= the current topdelta,
+        // it is a DeePsea tall patch relative topdelta.
+        int topdelta = colpost->topdelta;
+        if( topdelta <= cur_topdelta )
+        {
+             // DeePsea relative topdelta
+             topdelta += cur_topdelta;
+        }
+        cur_topdelta = topdelta;
+        position = originy + topdelta;  // position in dest
+#else
         position = originy + colpost->topdelta;  // position in dest
+#endif
 
         if (position < 0)
         {
@@ -677,6 +695,10 @@ typedef struct {
     int   nxt_y, bot_y;		// current post segment in dest coord.
     int   width;
     int   originx, originy;	// add to patch to get texture
+#ifdef DEEPSEA_TALL_PATCH
+    // [MB] [WDJ]  Support for DeePsea tall patches,
+    int   cur_topdelta;
+#endif
     post_t *  postptr;		// post within that patch
     patch_t * patch;     	// patch source
     // [WDJ] Generate_Texture can now reuse columns (as done in Requiem compacted patches).
@@ -684,6 +706,16 @@ typedef struct {
     // [WDJ] Bad patch detection
     int   patchsize;
 } compat_t;
+
+#ifdef DEEPSEA_TALL_PATCH
+// [MB] [WDJ] DeePsea tall patch.
+// DeepSea allows the patch to exceed 254 height.
+// A Doom patch has monotonic ascending topdelta values, 0..254.
+// DeePsea tall patches have an optional relative delta detected
+// when col->topdelta < cur_topdelta.
+// When the column topdelta is less than the current topdelta,
+// it is a DeePsea tall patch relative topdelta.
+#endif
 
 
 
@@ -712,6 +744,9 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren )
     unsigned int patchcount;
     unsigned int compostsize;
     texture_model_e  texture_model;
+#ifdef DEEPSEA_TALL_PATCH
+    int seg_topdelta;  // current seg_topdelta
+#endif
     int patchsize;
     int	colofs_size;
     int x, x1, x2, i, p;
@@ -1059,6 +1094,10 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren )
         segnxt_y = INT_MAX - 10;	// init to very large, but less than disabled
         segbot_y = INT_MAX - 10;
 
+#ifdef DEEPSEA_TALL_PATCH
+        seg_topdelta = -1;  // current dest topdelta
+#endif
+       
         // setup the columns, active or inactive
         for (p=0; p<patchcount; p++ )
         {
@@ -1077,6 +1116,10 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren )
                 if ( cp->postptr->topdelta == 0xFF )
                     goto patch_off;
 
+#ifdef DEEPSEA_TALL_PATCH
+                cp->cur_topdelta = -1;
+#endif
+	       
                 // To handle Requiem compacted patches, where column data is reused.
                 // Empty columns may be shared too, but they are very small,
                 // and it really adds to logic complexity, so only look at non-empty.
@@ -1155,7 +1198,20 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren )
                 }
                 livepatchcount++;
 
+#ifdef DEEPSEA_TALL_PATCH
+                // When the column topdelta is <= the current topdelta,
+                // it is a DeePsea tall patch relative topdelta.
+                int topdelta = cp->postptr->topdelta;
+                if( topdelta <= cp->cur_topdelta )
+                {
+                    // DeePsea relative topdelta
+                    topdelta += cp->cur_topdelta;
+                }
+                cp->cur_topdelta = topdelta;
+                cp->nxt_y = cp->originy + topdelta;
+#else
                 cp->nxt_y = cp->originy + cp->postptr->topdelta;
+#endif
                 cp->bot_y = cp->nxt_y + cp->postptr->length;
             }else{
                patch_off: // empty post
@@ -1206,7 +1262,21 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren )
                         cp->bot_y = INT_MAX;
                         break;
                     }
+
+#ifdef DEEPSEA_TALL_PATCH
+                    // When the column topdelta is <= the current topdelta,
+                    // it is a DeePsea tall patch relative topdelta.
+		    int topdelta = cp->postptr->topdelta;
+                    if( topdelta <= cp->cur_topdelta )
+                    {
+                        // DeePsea relative topdelta
+                        topdelta += cp->cur_topdelta;
+                    }
+                    cp->cur_topdelta = topdelta;
+                    cp->nxt_y = cp->originy + topdelta;
+#else
                     cp->nxt_y = cp->originy + cp->postptr->topdelta;
+#endif
                     cp->bot_y = cp->nxt_y + cp->postptr->length;
                 }
 
@@ -1265,10 +1335,31 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren )
 
             if( postlength == 0 )
             {
+                // Start a new post
                 if( destpixels + 3 >= texture_end )  goto exceed_alloc_error;
+
+#ifdef DEEPSEA_TALL_PATCH
+                if( segnxt_y > 254 )
+                {
+                    // Can also create a DeePsea patch.
+                    // When the column topdelta is <= the current topdelta,
+                    // it is a DeePsea tall patch relative topdelta.
+                    int ds_topdelta = segnxt_y - seg_topdelta;
+                    if( ds_topdelta > seg_topdelta )  goto exceed_topdelta;
+                    // DeePsea relative topdelta successful.
+                    destpost->topdelta = ds_topdelta;
+                }
+                else
+                {
+                    // new post header and 0 pad byte
+                    destpost->topdelta = segnxt_y;
+                }
+                seg_topdelta = segnxt_y;
+#else
                 if( segnxt_y > 254 )   goto exceed_topdelta;
                 // new post header and 0 pad byte
                 destpost->topdelta = segnxt_y;
+#endif
                 // append at
                 destpixels = (byte*)destpost + 3;
                 destpixels[-1] = 0;	// pad 0

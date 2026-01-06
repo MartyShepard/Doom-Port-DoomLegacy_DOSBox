@@ -8053,6 +8053,9 @@ monsters of the same species.
 Some other ports (Boom, MBF, eternity engine) do not have the
 infight test, so their monsters are always invulnerable to missiles
 from their own species.
+Add "Full Infight" to monster infighting.
+Implement "Full Infight" setting as in PrBoom, with missile damage.
+Implement other infight without missile damage.
 Fixes BUG 0664.
 
 Add MBF infight logic to A_PosRefire and A_SpidRefire.
@@ -8061,12 +8064,14 @@ This stops firing on friends.
 *** w109_demo
 patchfile = w109_003_demo.patch
 - commit revision 1538
-Legacy demo would fail to start due to blocked textcmd from
-the demo.  Legacy demo issue a map textcmd to load the map.
+Legacy demo would fail to start due to blocking the textcmd to load
+the map.
+The Legacy demo was recorded with player 0 issuing the map textcmd.
 Player 0 was not in the game yet, and this was detected as
 a textcmd from a non-existant player.
 The demo needed to use SERVER_ID for textcmd
 issued before player 0 is in the game.
+Fixed demo read to redirect player 0 demo textcmd to SERVER_ID.
 Fixes BUG 0665.
 
 *** w109_demo2
@@ -8135,13 +8140,13 @@ Option DEVPARM_LOADING:
   Loading development wads from a special directory.
   Also switches  -wart, -devgame (even older -shdev, -regdev, -comdev).
   I doubt anyone remembers how to use it.
-Option WADFILE_RELOAD
+Option WADFILE_RELOAD:
   If a filename started with a tilde "~", it was taken as an indication
   to reload the file on every lump access.
   This was to enable leaving doom running while changing wad files.
   Another hack that would no longer be used, due to the loading time
   from disk being faster now.
-Option LOADING_DISK_ICON
+Option LOADING_DISK_ICON:
   Not implemented in any port anyway.
   This removes the hooks.
 
@@ -8183,7 +8188,7 @@ A few other cleanups of video code.
 
 *** w109_zip1
 patchfile = w109_009_zip1.patch
-- commit revision 1544
+- commit revision 1544, 1545
 Add zip file reading, for Linux only.
 It is option ZIPWAD.
 This requires lib libzip.
@@ -8204,4 +8209,44 @@ The libzip before version 1.2 do not have the seek function.
 This is detected, and a local version of seek is substituted.
 I currently have libzip-1.0.1, so I need this and others may too.
 
-==== commit
+*** w109_deepsea
+patchfile = w109_010_deepsea.patch
+- commit revision 1546
+Recognize and handle DeePsea Tall patches.
+Enable with compile option DEEPSEA_TALL_PATCH.
+Michael Bauerle submitted a patch, derived from crispy doom,
+but that only handled 2 of the 10 places that handle patches.
+This fixes the trees and tall sprites of BUG_0663.
+
+It does not fix the violet line in some of the wall textures.
+That is also a DeePsea tall patch artifact, but DoomLegacy
+wall drawers assume that the patch is one column, so they
+do not process patch posts.
+Have start fixing that problem, but it is a much more extensive change.
+
+*** w109_deepsea2
+patchfile = w109_011_deepsea2.patch
+- commit revision 1547
+The use of DeePsea patches on walls has made a latent problem to fester.
+The DeePsea patche used on walls draw with a violet line, which is the
+DeePsea post being drawn as pixels.  The wall drawing routines cannot
+handle patches, as they expect monolithic pixel columns.
+
+This requires that the usage be recognized and to GenerateTexture
+as a TM_Picture.
+
+Some patches are used both in masked draw and in wall drawing.
+They require different texture formats in the cache.
+They either thrash, or one of them gets the wrong format.
+To handle a texture that requires two different formats, had
+to create Extra texren, with a complete allocation system.
+This is enabled by option  TEXTURE_RENDER_EXTRA_FULL.
+The default will try to use one common texren, and will
+thrash if there are too many texture needing to use it.
+
+In a well designed wad, these should not be needed.
+
+The texture_model is removed from the texture,
+and only stored in the texren.
+Upon a reload, a picture texture_model in the texture
+would prevent generating the correct data for masked draw.
