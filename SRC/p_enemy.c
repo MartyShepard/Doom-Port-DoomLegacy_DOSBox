@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1511 2020-04-04 08:50:49Z wesleyjohnson $
+// $Id: p_enemy.c 1537 2020-06-16 05:30:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -113,16 +113,35 @@ consvar_t cv_monstergravity =
   {"monstergravity","2", CV_NETVAR | CV_SAVE, mongravity_cons_t };
 
 // DarkWolf95: Monster Behavior
+// Values saved in demo, so do not change existing values.
 CV_PossibleValue_t monbehavior_cons_t[]={
    {0,"Normal"},
    {1,"Coop"},
+   {8,"No Infight"},
    {2,"Infight"},
+   {6,"Full Infight"},
    {3,"Force Coop"},
+   {5,"Force No Infight"},
    {4,"Force Infight"},
-   {5,"No Infight"},
+   {7,"Force Full Infight"},
    {0,NULL}};
 consvar_t cv_monbehavior =
   { "monsterbehavior", "0", CV_NETVAR | CV_SAVE | CV_CALL, monbehavior_cons_t, CV_monster_OnChange };
+
+// Doom normal is infight, no coop (see Boom).
+// Indexed by monbehavior_cons_t values.
+static byte monbehav_to_infight[] =
+{
+  INFT_infight,      // 0  Normal  (infight)
+  INFT_coop,         // 1  Coop default
+  INFT_infight,      // 2  Infight default
+  INFT_coop | INFT_force,         // 3  Coop forced
+  INFT_infight | INFT_force,      // 4  Infight forced
+  INFT_none | INFT_force,         // 5  No Infight forced
+  INFT_full_infight, // 6  Full Infight default
+  INFT_full_infight | INFT_force, // 7  Full Infight forced
+  INFT_none,         // 8  No Infight
+};
 
 CV_PossibleValue_t monsterfriction_t[] = {
    {0,"None"},
@@ -349,29 +368,11 @@ void CV_monster_OnChange(void)
 
     // Demo sets infight through cv_monbehavior.
     // Monster Infight enables, can be changed during game.
-    // Doom normal is infight, no coop (see Boom).
-    monster_infight = monster_infight_deh;  // from DEH
-    switch( cv_monbehavior.EV )  // from menu option, or demo
-    {
-     case 0: // Normal  (infight)
-     case 2: // Infight default
-       if( monster_infight_deh == INFT_none )  // no input
-         monster_infight = INFT_infight;
-       break;
-     case 1: // Coop default
-       if( monster_infight_deh == INFT_none )  // no input
-         monster_infight = INFT_coop;
-       break;
-     case 3: // Coop forced
-       monster_infight = INFT_coop;
-       break;
-     case 4: // Infight forced
-       monster_infight = INFT_infight;
-       break;
-     case 5: // No Infight
-       monster_infight = INFT_none;
-       break;
-    }
+    byte mbif = monbehav_to_infight[ cv_monbehavior.EV ];
+    monster_infight = ((mbif & INFT_force) || (monster_infight_deh == INFT_none))?
+        mbif // cv_monbehavior has precedence
+      : monster_infight_deh;  // from DEH
+    monster_infight &= ~INFT_force;  // clean up transient bit
 }
 
 
@@ -588,8 +589,8 @@ static boolean P_CheckMissileRange (mobj_t* actor)
              &&( !(target->flags & MF_FRIEND)
                  || (target->player ?
                      // PrBoom, MBF, EternityEngine use P_Random(pr_defect)
-                     ((monster_infight == INFT_infight) || (PP_Random(pr_defect)>128))
-                     : !(target->flags & MF_JUSTHIT) && PP_Random(pr_defect)>128)
+                     (MONSTER_INFIGHTING || (PP_Random(pr_defect)>128))
+                     : !(target->flags & MF_JUSTHIT) && PP_Random(pr_defect)>128  )
                 )
            );
     }
@@ -2130,7 +2131,7 @@ void A_Chase (mobj_t*   actor)
                 ||( (cv_mbf_pursuit.EV || multiplayer)
                     && ! ( ( ! SAME_FRIEND(actor->target, actor)
                              ||( !(actor->flags & MF_FRIEND)
-                                 && monster_infight == INFT_infight
+                                 && MONSTER_INFIGHTING
                                )
                             )
                             && P_CheckSight(actor, actor->target)
@@ -2315,16 +2316,36 @@ void A_CPosRefire (mobj_t* actor)
     // keep firing unless target got out of sight
     A_FaceTarget (actor);
 
-    if( PP_Random(pr_cposrefire) < 40 )
-        return;
-
-    if (!actor->target
-        || actor->target->health <= 0
-//        || actor->target->flags & MF_CORPSE  // corpse health < 0
-        || !P_CheckSight (actor, actor->target) )
+    // MBF: Simplified, HitFriend only true when friend.
+    if( actor->flags & MF_FRIEND )
     {
-        P_SetMobjState (actor, actor->info->seestate);
+        // Killough: stop firing if a friend has gotten in the way
+        if( P_HitFriend(actor) )
+            goto stop_refire;
     }
+
+    mobj_t * target = actor->target;
+
+    if( PP_Random(pr_cposrefire) < 40 )
+    {
+        // MBF:
+        // Killough: Prevent firing on friends continuously.
+        if( target && BOTH_FRIEND( actor, target ) )
+            goto stop_refire;	
+
+        return;
+    }
+
+    if( !target
+        || (target->health <= 0)
+//      || target->flags & MF_CORPSE  // corpse health < 0
+        || ! P_CheckSight( actor, target ) )
+        goto stop_refire;
+
+    return;
+   
+stop_refire:   
+    P_SetMobjState( actor, actor->info->seestate );
 }
 
 
@@ -2333,16 +2354,29 @@ void A_SpidRefire (mobj_t* actor)
     // keep firing unless target got out of sight
     A_FaceTarget (actor);
 
+    // MBF: Simplified, HitFriend only true when friend.
+    if( actor->flags & MF_FRIEND )
+    {
+        // Killough: stop firing if a friend has gotten in the way
+        if( P_HitFriend(actor) )
+            goto stop_refire;
+    }
+
     if( PP_Random(pr_spidrefire) < 10 )
         return;
 
-    if (!actor->target
-        || actor->target->health <= 0
-//        || actor->target->flags & MF_CORPSE  // corpse health < 0
-        || !P_CheckSight (actor, actor->target) )
-    {
-        P_SetMobjState (actor, actor->info->seestate);
-    }
+    mobj_t * target = actor->target;
+    if( !target
+        || (target->health <= 0)
+//      || target->flags & MF_CORPSE  // corpse health < 0
+        || BOTH_FRIEND( actor, target )
+        || ! P_CheckSight( actor, target ) )
+        goto stop_refire;
+
+    return;
+
+stop_refire:   
+    P_SetMobjState( actor, actor->info->seestate );
 }
 
 void A_BspiAttack (mobj_t *actor)

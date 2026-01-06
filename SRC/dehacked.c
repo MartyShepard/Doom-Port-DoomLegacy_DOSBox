@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1435 2019-04-26 10:36:07Z wesleyjohnson $
+// $Id: dehacked.c 1537 2020-06-16 05:30:37Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -2366,17 +2366,20 @@ static void readmisc(myfile_t *f)
           // cannot confirm any specific valid numbers
           switch( value )
           {
-           case 221: // value=221 -> on (prboom)
            case 0: // previous behavior: default to on
            case 1: // if user tries to set it on
               monster_infight_deh = INFT_infight; // infight on
               break;
+           case 3: // extended behavior, coop monsters
+              monster_infight_deh = INFT_coop;
+              break;
+           case 221: // value=221 -> on (prboom)
+              // PrBoom implements full infight	     
+              monster_infight_deh = INFT_full_infight; // infight on
+              break;
            case 202: // value=202 -> off (prboom)
            default:  // off
               monster_infight_deh = INFT_infight_off; // infight off
-              break;
-           case 3: // extended behavior, coop monsters
-              monster_infight_deh = INFT_coop;
               break;
           }
       }

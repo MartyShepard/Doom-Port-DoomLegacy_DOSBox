@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1536 2020-06-16 05:29:38Z wesleyjohnson $
+// $Id: g_game.c 1537 2020-06-16 05:30:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -4084,6 +4084,12 @@ void G_DoPlayDemo (const char *defdemoname)
         friction_model = *demo_p++;
         cv_rndsoundpitch.EV = *demo_p++;  // uses M_Random
         cv_monbehavior.EV = *demo_p++;
+        if( demoversion_rev < VERREV(148,5) )
+        {
+	    // Previous versions implemented full infight.
+            if( cv_monbehavior.EV == 2 )  cv_monbehavior.EV = 6;
+            else if( cv_monbehavior.EV == 4 )  cv_monbehavior.EV = 7;
+	}
         cv_doorstuck.EV = *demo_p++;
         cv_monstergravity.EV = *demo_p++;
         // Boom and MBF derived controls.

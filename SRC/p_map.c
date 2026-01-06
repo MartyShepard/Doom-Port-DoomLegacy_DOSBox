@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_map.c 1511 2020-04-04 08:50:49Z wesleyjohnson $
+// $Id: p_map.c 1537 2020-06-16 05:30:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -656,7 +656,8 @@ static boolean PIT_CheckThing (mobj_t* thing)
             {
                 // Boom - Let players missile other players. ??
                 // [WDJ] these are monsters, not players.
-                if( monster_infight != INFT_infight )  // when not infighting
+                // PrBoom and DoomLegacy allow infighting with missile damage.
+                if( monster_infight != INFT_full_infight )  // when not missile infighting
                     goto ret_blocked;  // Explode, but do no damage.
             }
         }

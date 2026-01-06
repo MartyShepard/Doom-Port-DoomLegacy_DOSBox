@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
+// $Id: p_inter.c 1537 2020-06-16 05:30:37Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2694,15 +2694,14 @@ boolean P_DamageMobj ( mobj_t*   target,
         target->reactiontime = 0;           // we're awake now...
     }
 
-    if ( (!target->threshold || target->type == MT_VILE)
-         && source && source != target  // fixes bug where monster attacks self
+    if ( source && source != target  // fixes bug where monster attacks self
          && source->type != MT_VILE
+         && (!target->threshold || target->type == MT_VILE)
          && !(source->flags2 & MF2_BOSS)
-         && !( EN_mbf
-              && monster_infight != INFT_infight
-              && SAME_FRIEND(source, target)
-             )
-         && !(target->type == MT_SORCERER2 && source->type == MT_WIZARD)
+         && !(source->type == MT_WIZARD && target->type == MT_SORCERER2)
+         && ( MONSTER_INFIGHTING
+              || ! (EN_mbf && SAME_FRIEND(source, target))
+            )
        )
     {
         // killough 2/15/98: remember last enemy, to prevent sleeping early
@@ -2712,8 +2711,8 @@ boolean P_DamageMobj ( mobj_t*   target,
             || target->lastenemy->health <= 0
             ||( EN_mbf ?
                   ( target->target != source
-                    && SAME_FRIEND(target, target->lastenemy) )
-                : ! target->lastenemy->player
+                    && SAME_FRIEND(target, target->lastenemy) )  // MBF
+                : ! target->lastenemy->player  // Vanilla
               )
           )
         {
