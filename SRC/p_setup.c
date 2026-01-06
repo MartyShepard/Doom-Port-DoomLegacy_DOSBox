@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: p_setup.c 1542 2020-08-22 02:35:24Z wesleyjohnson $
+// $Id: p_setup.c 1544 2020-08-22 02:40:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1720,13 +1720,17 @@ boolean  P_CheckHeaderLumps(int lump)
 
   filen = WADFILENUM(lump);
   if( filen > numwadfiles )  goto fail;
+  
+  int numlump = wadfiles[filen]->numlups;
+  lumpinfo_t * lump_p = wadfiles[filen]->lumpinfo;
+
   lumpn = LUMPNUM(lump);
 
   for(i=ML_THINGS; i<=ML_BLOCKMAP; i++)
   {
       int li = lumpn + i;
-      if( li > wadfiles[filen]->numlumps )  goto fail;
-      if( strncmp(wadfiles[filen]->lumpinfo[li].name, levellumps[i], 8) )  goto fail;
+      if( li > numlump )  goto fail;
+      if( strncmp( lump_p[li].name, levellumps[i], 8) )  goto fail;
   }
   return true;
 
@@ -1745,8 +1749,15 @@ int  P_CheckLumpName(int lump, int ml)
   int  filen, lumpn;
 
   filen = WADFILENUM(lump);
-  if( filen > numwadfiles )  goto fail;
+  if( filen > numwadfiles )
+      goto fail;
+
   lumpn = LUMPNUM(lump);
+  if( lumpn > wadfiles[filen]->numlumps )
+      goto fail;
+
+  lumpinfo_t * lump_p = wadfiles[filen]->lumpinfo;
+  const char * lump_name = lump_p[lumpn].name;
 
   ml2 = ml;
   if( ml == 0)
@@ -1754,10 +1765,10 @@ int  P_CheckLumpName(int lump, int ml)
       ml = ML_THINGS;
       ml2 = ML_BEHAVIOR;
   }
+
   for( ; ml<=ml2; ml++)
   {
-      if( lumpn > wadfiles[filen]->numlumps )  goto fail;
-      if( strncmp(wadfiles[filen]->lumpinfo[lumpn].name, levellumps[ml], 8) == 0 )
+      if( strncmp( lump_name, levellumps[ml], 8) == 0 )
           return ml;
   }
 fail:
@@ -1917,6 +1928,7 @@ boolean P_SetupLevel (int      to_episode,
     P_Init_Thinkers ();
 
     // Loading new level map.
+
 #ifdef WADFILE_RELOAD
     // if working with a devlopment map, reload it
     W_Reload ();
@@ -2105,6 +2117,8 @@ load_reject:
 }
 
 
+static void  P_process_wadfile( int wadfilenum, /*OUT*/ level_id_t * firstmap_out );
+
 // Add a wadfile to the active wad files,
 // replace sounds, musics, patches, textures, sprites and maps
 //
@@ -2113,28 +2127,59 @@ load_reject:
 // Called by Command_Addfile, CL_Load_ServerFiles.
 boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
 {
-    int         wadfilenum;
-    wadfile_t*  wadfile;
-    lumpinfo_t* lumpinfo;
-    char*       name;
-    int         firstmapreplaced;
-    int         i,j,num;
-    int         replace_cnt;
+    int  wadfilenum;
 
     if( firstmap_out )
        firstmap_out->mapname = NULL;
 
-    if ((wadfilenum = W_Load_WadFile (wadfilename))==-1)
+    wadfilenum = W_Load_WadFile( wadfilename );
+    if( wadfilenum == -1 )
     {
         GenPrintf(EMSG_warn, "could not load wad file %s\n", wadfilename);
         return false;
     }
-    wadfile = wadfiles[wadfilenum];
+
+#ifdef ZIPWAD
+    wadfile_t * wadfile = wadfiles[wadfilenum];
+    if( wadfile->classify == FC_zip )
+    {
+        // A zip file
+        int num = wadfile->archive_num_wadfile;
+        while( num-- )
+        {
+            // all wadfile in archive follow it in sequence
+            wadfilenum ++;
+            P_process_wadfile( wadfilenum, /*OUT*/ firstmap_out );
+        }
+        return true;
+    }
+#endif
+
+    P_process_wadfile( wadfilenum, /*OUT*/ firstmap_out );
+    return true;
+}
+
+
+//   wadfilenum : from W_Load_WadFile  (eventually need it for making a lumpnum)
+//   firstmap_out : see P_SetupLevel
+static
+void  P_process_wadfile( int wadfilenum, /*OUT*/ level_id_t * firstmap_out )
+{
+    wadfile_t *  wadfile;
+    lumpinfo_t * lumpinfo;
+    char*       name;
+    int         first_map_replaced, map_num;
+    int         i,j;
+    int         replace_cnt;
 
     //
     // search for sound replacements
     //
+    wadfile = wadfiles[wadfilenum];
     lumpinfo = wadfile->lumpinfo;
+    if( lumpinfo == NULL )
+        return;
+
     replace_cnt = 0;
     for (i=0; i<wadfile->numlumps; i++,lumpinfo++)
     {
@@ -2201,52 +2246,53 @@ boolean P_AddWadFile (char* wadfilename, /*OUT*/ level_id_t * firstmap_out )
     // search for maps
     //
     lumpinfo = wadfile->lumpinfo;
-    firstmapreplaced = INT_MAX;  // invalid
+    first_map_replaced = INT_MAX;  // invalid
     for (i=0; i<wadfile->numlumps; i++,lumpinfo++)
     {
         name = lumpinfo->name;
-        num = 0;  // invalid
+        // map_num format:  Episode: 8 bits, map: 8 bits
+        //  which allows test for lowest in one operation.
+        map_num = 0;  // invalid
         if (gamemode==doom2_commercial)       // Doom2
         {
-            if (name[0]=='M' &&
-                name[1]=='A' &&
-                name[2]=='P')
+            if(    name[0]=='M'
+                && name[1]=='A'
+                && name[2]=='P' )
             {
-                num = (name[3]-'0')*10 + (name[4]-'0');
-                GenPrintf(EMSG_info, "Map %d\n", num);
+                map_num = (name[3]-'0')*10 + (name[4]-'0');
+                GenPrintf(EMSG_info, "Map %d\n", map_num);
             }
         }
         else
         {
-            if (name[0]=='E' &&
-                ((unsigned)name[1]-'0')<='9' &&   // a digit
-                name[2]=='M' &&
-                ((unsigned)name[3]-'0')<='9' &&
-                name[4]==0)
+            if (   name[0]=='E'
+                && ((unsigned)name[1]-'0')<='9'   // a digit
+                && name[2]=='M'
+                && ((unsigned)name[3]-'0')<='9'
+                && name[4]==0   )
             {
-                num = ((name[1]-'0')<<8) + (name[3]-'0');
+                map_num = ((name[1]-'0')<<8) + (name[3]-'0');
                 GenPrintf(EMSG_info, "Episode %d map %d\n", name[1]-'0',
                                                     name[3]-'0');
             }
         }
         // The lowest numbered map is the first map. No map 0.
-        if ( (num>0) && (num < firstmapreplaced) )
+        if ( (map_num > 0) && (map_num < first_map_replaced) )
         {
-            firstmapreplaced = num;
+            first_map_replaced = map_num;
             if(firstmap_out)  /* OUT */
             {
                 firstmap_out->mapname = name;
-                firstmap_out->episode = num >> 8;
-                firstmap_out->map = num & 0xFF;
+                firstmap_out->episode = map_num >> 8;
+                firstmap_out->map = map_num & 0xFF;
             }
         }
     }
-    if ( firstmapreplaced >= 0xFFFF )  // invalid
+
+    if ( first_map_replaced >= 0xFFFF )  // invalid
         GenPrintf(EMSG_info, "No maps added\n");
 
     // reload status bar (warning should have valid player !)
     if( gamestate == GS_LEVEL )
         ST_Start();
-
-    return true;
 }

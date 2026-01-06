@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1542 2020-08-22 02:35:24Z wesleyjohnson $
+// $Id: doomdef.h 1544 2020-08-22 02:40:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -176,6 +176,20 @@
 
 // Allow players to wait for game start.
 #define WAIT_GAME_START_INTERMISSION
+
+#ifdef LINUX
+// For now Linux only because it requires libzip.
+#ifdef HAVE_LIBZIP
+// Read zip wads.
+// This requires  HAVE_LIBZIP  be set in make_options to get linking.
+#define ZIPWAD
+#ifdef HAVE_DLOPEN
+// Test for optional ziplib.  Requires lib dlopen.
+// This requires  HAVE_DLOPEN  be set in make_options to get linking.
+#define ZIPWAD_OPTIONAL
+#endif
+#endif
+#endif
 
 
 // Player morph canceling invisibility and MF_SHADOW, is inconsistent.

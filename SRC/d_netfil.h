@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.h 1492 2019-12-19 07:51:00Z wesleyjohnson $
+// $Id: d_netfil.h 1544 2020-08-22 02:40:35Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -58,16 +58,6 @@ typedef enum {
     TAH_MALLOC_FREE,  // free with free
     TAH_NOTHING       // do nothing
 } TAH_e;
-
-typedef enum {
-    FS_NOTFOUND,
-    FS_FOUND,
-    FS_REQUESTED,
-    FS_DOWNLOADING,
-    FS_OPEN,        // is opened and used in w_wad
-    FS_MD5SUMBAD,
-    FS_SECURITY  // rejected for security reasons
-} filestatus_e;
 
 extern byte netfile_download;  // user test
 extern byte cl_num_fileneed;
@@ -136,8 +126,9 @@ filestatus_e  checkfile_md5( const char * filename, const byte * wantedmd5sum);
 //  filename: the search file
 //  search_depth: if > 0 then search subdirectories to that depth
 //  completepath: the file name buffer, must be length MAX_WADPATH
-// Return true when found, with the file path in the completepath parameter.
-boolean  Search_doomwaddir( const char * filename, int search_depth,
+// Return FS_FOUND when found, with the file path in the completepath parameter.
+// Return FS_ZIP when alternative zip file is found.
+filestatus_e  Search_doomwaddir( const char * filename, int search_depth,
                  /* OUT */  char * completepath );
 
 // Determine if the filename is simple, or has an inherent file path.

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
+// $Id: d_netfil.c 1544 2020-08-22 02:40:35Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -105,6 +105,10 @@
 #ifdef __DJGPP__
 #include <dir.h>
 #include <utime.h>
+#endif
+
+#ifdef ZIPWAD
+#include <zip.h>
 #endif
 
 #include "doomincl.h"
@@ -583,7 +587,7 @@ boolean  CL_Load_ServerFiles(void)
         {
             P_AddWadFile(fnp->filename,NULL);
             fnp->status = FS_OPEN;
-            CONS_Printf("\2File %s found but with differant md5sum\n", fnp->filename);
+            CONS_Printf("\2File %s found but with different md5sum\n", fnp->filename);
         }
         else
         {
@@ -1106,34 +1110,64 @@ boolean fileexist(char *filename, time_t chk_time)
 }
 #endif
 
+
 //  filename : check the md5 sum of this file
 //  wantedmd5sum : compare to this md5 sum, NULL if no check
 // Return :
+//   FS_NOTFOUND : file not found
 //   FS_FOUND : when md5 sum matches, or if no check when file opens for reading
 //   FS_MD5SUMBAD : when md5 sum does not match
 filestatus_e  checkfile_md5( const char * filename, const byte * wantedmd5sum)
 {
-    FILE *fhandle;
     unsigned char md5sum[16];
     filestatus_e return_val = FS_NOTFOUND;
 
-    if((fhandle = fopen(filename,"rb")))
+#ifdef ZIPWAD
+    // if ! ziplib_present, then cannot have archive_open
+    if( archive_open )
     {
-        if(wantedmd5sum)
+        if( wantedmd5sum )
         {
-            md5_stream(fhandle,md5sum);
-            fclose(fhandle);
-            if(!memcmp(wantedmd5sum, md5sum, 16))
-                return_val = FS_FOUND;
-            else
-                return_val = FS_MD5SUMBAD; 
+            // Find file in archive, then check md5 sum.
+            return_val = WZ_md5_stream( filename, md5sum );
+            if( return_val == FS_FOUND )
+                goto compare_md5_sums;
         }
         else
         {
-            return_val = FS_FOUND;
+            // Just check that file exists.
+            if( WZ_find_file_in_archive( filename, NULL ) == FS_FOUND )
+                return FS_FOUND;
         }
+        // Not found in archive, so check file system too.
+    }
+#endif
+
+    {
+        FILE * fhandle = fopen(filename,"rb");
+        if( fhandle == NULL )
+            goto done;
+
+        return_val = FS_FOUND;
+
+        if( wantedmd5sum )
+        {
+            md5_stream( fhandle, md5sum );
+        }
+
+        fclose(fhandle);
     }
 
+    if( ! wantedmd5sum )  // Just check that file exists.
+        goto done; // FOUND, NOTFOUND, or worse
+
+#ifdef ZIPWAD
+compare_md5_sums:
+#endif
+    if( memcmp(wantedmd5sum, md5sum, 16) )
+        return_val = FS_MD5SUMBAD;
+
+done:
     return return_val;
 }
 
@@ -1170,12 +1204,40 @@ filestatus_e  FullSearch_doomwaddir( const char * filename, int search_depth,
 //  filename: the search file
 //  search_depth: if > 0 then search subdirectories to that depth
 //  completepath: the file name buffer, must be length MAX_WADPATH
-// Return true when found, with the file path in the completepath parameter.
-boolean  Search_doomwaddir( const char * filename, int search_depth,
+// Return FS_FOUND when found, with the file path in the completepath parameter.
+// Return FS_ZIP when alternative zip file is found.
+// Called by: Check_wad_filenames, Identify_Version (legacy.wad and iwad).
+filestatus_e  Search_doomwaddir( const char * filename, int search_depth,
                  /* OUT */  char * completepath )
 {
-    return( FullSearch_doomwaddir( filename, search_depth, NULL,
-                               /*OUT*/ completepath ) == FS_FOUND );
+    // Search normal.
+    if( FullSearch_doomwaddir( filename, search_depth, NULL,
+                               /*OUT*/ completepath ) == FS_FOUND )
+        return FS_FOUND;
+   
+    // Not found.
+
+#ifdef ZIPWAD
+#ifdef ZIPWAD_OPTIONAL   
+    if( ! ziplib_present )
+        return FS_NOTFOUND;
+#endif
+   
+    // If not searching directories, then don't search archives either.
+    if( search_depth > 0 )
+    {
+        // Look for an archive file of the same name.
+        char * arch_filename = WZ_make_archive_name( filename );
+        if( arch_filename )
+        {
+            if( FullSearch_doomwaddir( arch_filename, search_depth, NULL,
+                               /*OUT*/ completepath ) == FS_FOUND )
+            return FS_ZIP;
+        }
+    }
+#endif
+
+    return FS_NOTFOUND;
 }
 
 
@@ -1249,7 +1311,11 @@ filestatus_e  findfile( const char * filename, const byte * wantedmd5sum,
         const char * extension = &filename[strlen(filename)-3];
         if( strcasecmp( extension,"wad")!=0
            && strcasecmp( extension,"deh")!=0
-           && strcasecmp( extension,"bex")!=0 )
+           && strcasecmp( extension,"bex")!=0
+#ifdef ZIPWAD
+           && strcasecmp( extension,"zip")!=0
+#endif
+          )
            return FS_SECURITY;
        
         // Net is only allowed access to public wad directories.

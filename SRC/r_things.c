@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1525 2020-05-09 12:07:29Z wesleyjohnson $
+// $Id: r_things.c 1544 2020-08-22 02:40:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -551,6 +551,9 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
     // scan the lumps,
     //  filling in the frames for whatever is found
     lumpinfo = wadfiles[wadnum]->lumpinfo;
+    if( lumpinfo == NULL )
+        return false;
+
     if( endlump > wadfiles[wadnum]->numlumps )
         endlump = wadfiles[wadnum]->numlumps;
 
@@ -3433,12 +3436,13 @@ void  SetPlayerSkin (int playernum, const char *skinname)
 // the first 6 characters (this is so we can have S_SKIN1, S_SKIN2..
 // for wad editors that don't like multiple resources of the same name)
 //
+static
 int W_CheckForSkinMarkerInPwad (int wadid, int startlump)
 {
     lump_name_t name8;
     uint64_t mask6;  // big endian, little endian
-    int         i;
-    lumpinfo_t* lump_p;
+    int  numlumps = wadfiles[wadid]->numlumps;
+    lumpinfo_t * lumpinfo = wadfiles[wadid]->lumpinfo;
 
     name8.namecode = -1; // make 6 char mask
     name8.s[6] = name8.s[7] = 0;
@@ -3447,10 +3451,11 @@ int W_CheckForSkinMarkerInPwad (int wadid, int startlump)
     numerical_name( "S_SKIN", & name8 );  // fast compares
 
     // scan forward, start at <startlump>
-    if (startlump < wadfiles[wadid]->numlumps)
+    if( (startlump < numlumps) && lumpinfo )
     {
-        lump_p = wadfiles[wadid]->lumpinfo + startlump;
-        for (i = startlump; i<wadfiles[wadid]->numlumps; i++,lump_p++)
+        lumpinfo_t * lump_p = & lumpinfo[ startlump ];
+        int i;
+        for (i = startlump; i < numlumps; i++,lump_p++)
         {
             // Only check first 6 characters.
             if( (*(uint64_t *)lump_p->name & mask6) == name8.namecode )
@@ -3600,6 +3605,8 @@ next_token:
         {
             lumpn++;
             lumpinfo = wadfiles[wadnum]->lumpinfo;
+            if( lumpinfo == NULL )
+                return;
 
             // get the base name of this skin's sprite (4 chars)
             sprname = lumpinfo[lumpn].name;

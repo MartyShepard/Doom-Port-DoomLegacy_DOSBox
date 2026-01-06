@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: w_wad.h 1544 2020-08-22 02:40:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -55,6 +55,8 @@
 #ifndef W_WAD_H
 #define W_WAD_H
 
+#include "doomdef.h"
+  // ZIPWAD
 #include "doomtype.h"
 
 #include "r_defs.h"
@@ -162,16 +164,30 @@ typedef enum {
 
 #define lumpcache_t  void*
 
+typedef enum {
+    FC_other,  // generic file
+    FC_wad,
+    FC_deh,
+    FC_bex,
+    FC_zip,
+} file_classify_e;
+
 typedef struct wadfile_s
 {
-    char             *filename;
-    lumpinfo_t*      lumpinfo;
-    lumpcache_t*     lumpcache;
+    char *           filename;
+    lumpinfo_t *     lumpinfo;
+    lumpcache_t *    lumpcache;
 #ifdef HWRENDER
-    MipPatch_t*      hwrcache;   // patches are cached in renderer's native format
+    MipPatch_t *     hwrcache;   // patches are cached in renderer's native format
+#endif
+#ifdef ZIPWAD
+    // Immediately after the archive wadfile_t are the wadfile_t for files within the archive.
+    byte             classify;   // file_classify_e
+    byte             archive_parent;    // archive wadfile index,  0xFF= unused
+    byte             archive_num_wadfile; // number of wadfile in this archive, 0= unused
 #endif
     int              numlumps;   // this wad's number of resources
-    int              handle;
+    int              handle;     // from system
     uint32_t         filesize;   // for network
     unsigned char    md5sum[16];
 } wadfile_t;
@@ -184,6 +200,10 @@ wadfile_t * lumpnum_to_wad( lumpnum_t lumpnum );
 
 // [WDJ] Indicates cache miss, new lump read requires endian fixing.
 extern boolean lump_read;
+
+// return file_classify_e
+byte  W_filename_classify( const char * filename );
+
 
 
 // =========================================================================
@@ -209,7 +229,9 @@ int     W_Load_WadFile (const char *filename);
 //added 4-1-98 initmultiplefiles now return 1 if all ok 0 else
 //             so that it stops with a message if a file was not found
 //             but not if all is ok.
-int     W_Init_MultipleFiles (char** filenames);
+int     W_Init_MultipleFiles( char** filenames );
+
+//  WADFILE_RELOAD
 void    W_Reload (void);
 
 //  Return lump id, or NO_LUMP if name not found.
@@ -287,5 +309,46 @@ typedef struct {
   int         numlumps;
 } lumplist_t;
                     
-void    W_Load_DehackedLumps( int wadnum );                    
+void    W_Load_DehackedLumps( int wadnum );
+
+
+
+#ifdef ZIPWAD
+
+// zip wad
+typedef enum {
+    FH_none,
+    FH_file = 0x70, // generic file
+    FH_zip_file = 0x80,
+    FH_zip_archive = 0xF0,
+    FH_mask = 0xF0,
+} file_handle_e;
+
+extern byte  ziplib_present;
+extern byte  archive_open;
+extern byte  archive_filenum;
+
+void  WZ_available( void );
+byte  WZ_filename_cmp( const char * filename1, const char * filename2 );
+byte  WZ_find_file_in_archive( const char * filename, const char * archive_name );
+// Return filename with extension, otherwise NULL.
+char *  WZ_make_name_with_extension( const char * filename, const char * extension, /*OUT*/ char * buf );
+void    WZ_save_archive_name( const char * filename );
+char *  WZ_make_archive_name( const char * filename );
+unsigned int  WZ_filesize( const char * filename );
+void  WZ_open_archive( const char * archive_name );
+void  WZ_close_archive( void );
+byte  WZ_open_file_z( const char * filename );
+byte  WZ_open( const char * filename );
+void  WZ_close( byte handle );
+void  WZ_close_all( void );
+int  WZ_seek( byte handle, uint32_t offset );
+int  WZ_read( byte handle, uint32_t read_count, /*OUT*/ byte * dest );
+int  WZ_read_archive_file( uint32_t offset, uint32_t read_size, /*OUT*/ byte * dest );
+int  WZ_read_wadfile_from_archive_file_offset( byte fn, wadfile_t * wf, uint32_t offset, uint32_t read_size, /*OUT*/ byte * dest );
+int  WZ_Load_zip_archive( const char * filename, int as_archive_filenum );
+filestatus_e  WZ_md5_stream( const char * filename, byte * digest_block );
+#endif
+
+
 #endif // __W_WAD__

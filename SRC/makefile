@@ -1020,6 +1020,22 @@ ifdef CDMUS
    OPTS+=-DCDMUS
 endif
 
+# LIBZIP
+# For now, Linux only.
+ifeq ($(OS), LINUX)
+  ifdef HAVE_LIBZIP
+    # Option ZIPWAD_OPTIONAL uses lib dlopen.
+    LIBS+=-lzip
+    OPTS+=-DHAVE_LIBZIP=$(HAVE_LIBZIP)
+  endif
+  ifdef HAVE_DLOPEN
+    # Option ZIPWAD_OPTIONAL uses lib dlopen.
+    LIBS+=-ldl
+    OPTS+=-DHAVE_DLOPEN
+  endif
+endif
+
+
 # compiler and linker flags
 CFLAGS+=$(WFLAGS)
 
@@ -1089,7 +1105,7 @@ md5.o \
 m_menu.o m_misc.o m_argv.o m_bbox.o m_fixed.o m_swap.o m_cheat.o m_random.o \
 console.o command.o \
 p_saveg.o \
-tables.o info.o dstrings.o dehacked.o w_wad.o \
+tables.o info.o dstrings.o dehacked.o w_wad.o w_zip.o\
 d_netcmd.o d_clisrv.o d_net.o d_netfil.o i_tcp.o \
 d_items.o d_main.o
 

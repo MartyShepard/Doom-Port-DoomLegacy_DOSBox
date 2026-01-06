@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: w_wad.c 1542 2020-08-22 02:35:24Z wesleyjohnson $
+// $Id: w_wad.c 1544 2020-08-22 02:40:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -135,7 +135,8 @@
 //                                                                    GLOBALS
 //===========================================================================
 int          numwadfiles;             // number of active wadfiles
-wadfile_t*   wadfiles[MAX_WADFILES];  // 0 to numwadfiles-1 are valid
+wadfile_t *  wadfiles[MAX_WADFILES];  // 0 to numwadfiles-1 are valid
+  // wadfile_t are Z_MALLOC
 
 
 // Return the wadfile info for the lumpnum
@@ -156,14 +157,19 @@ wadfile_t * lumpnum_to_wad( lumpnum_t lumpnum )
 // being ejected
 void W_Shutdown(void)
 {
+#ifdef ZIP_WAD   
+    WZ_close_all();
+#endif
     while (numwadfiles--)
     {
-        close(wadfiles[numwadfiles]->handle);
+        wadfile_t * wf = wadfiles[numwadfiles];
+        if( wf->handle >= 0 )
+            close(wf->handle);
     }
 }
 
 //===========================================================================
-//                                                        LUMP BASED ROUTINES
+//                                                        WAD ROUTINES
 //===========================================================================
 
 // Lump Markers
@@ -205,6 +211,27 @@ void  numerical_name( const char * name, lump_name_t * numname )
     // numname.namecode can now be used for compares as uint64_t
 }
 
+// Return FC_ indicator
+byte  W_filename_classify( const char * filename )
+{
+    const char * extp = strrchr( filename, '.' );
+    if( extp )
+    {
+        // has a dot extension
+        extp ++;
+        if( strcasecmp( extp, "wad" ) == 0 )
+            return FC_wad;
+        if( strcasecmp( extp, "deh" ) == 0 )
+            return FC_deh;
+        if( strcasecmp( extp, "bex" ) == 0 )
+            return FC_bex;
+        if( strcasecmp( extp, "zip" ) == 0 )
+            return FC_zip;
+    }
+    return FC_other;
+}
+
+
 
 // W_AddFile
 // All files are optional, but at least one file must be
@@ -238,95 +265,161 @@ static char*  reload_filename = NULL;
 //
 // BP: Can now load dehacked files (ext .deh)
 // Called by W_Init_MultipleFiles, P_AddWadFile.
-int W_Load_WadFile (const char *filename)
+int W_Load_WadFile ( const char * filename )
 {
-    int              filenum = numwadfiles;  // return value
-    filestatus_e     fs;
-    int              handle;
-    FILE             *fhandle;
-    int              numlumps;
-    lumpinfo_t*      lumpinfo;
-    lumpcache_t*     lumpcache;
-    wadfile_t*       wadfile;
-    int              i, m;
-    int              length;
-    struct stat      bufstat;
     // findfile requires a buffer of (at least) MAX_WADPATH
     char             filenamebuf[MAX_WADPATH];
+    char *           msg;
+    lumpinfo_t *     lumpinfo;
+    lumpcache_t *    lumpcache;
+    wadfile_t *      wadfile;
 #ifdef HWRENDER    
-    MipPatch_t*      grPatch;
+    MipPatch_t *     grPatch;
 #endif
+    int              filenum;  // return value
+    int              numlumps;
+    int              handle = -1;
+    filestatus_e     fs;
+    int              i, m;
+    int              length;
+    unsigned int     file_size;
     lump_namespace_e within_namespace = LNS_global;
+   
+    byte fc = W_filename_classify( filename );
+    if( fc == FC_other )
+        goto return_fail;
 
     //
     // check if limit of active wadfiles
     //
-    if (filenum>=MAX_WADFILES)
+    filenum = numwadfiles;
+    if( filenum >= MAX_WADFILES )
     {
-        GenPrintf(EMSG_warn, "Maximum wad files reached\n");
-        return -1;
+        msg = "Maximum wad files reached";
+        goto return_fail_msg;
     }
 
     strncpy(filenamebuf, filename, MAX_WADPATH-1);
     filenamebuf[MAX_WADPATH-1] = '\0';
 
-    // open wad file
-    handle = open (filenamebuf, O_RDONLY|O_BINARY, 0666);
-    if( handle == -1 )
+#ifdef ZIPWAD
+    // When not ziplib_present, then cannot have archive_open.
+    if( archive_open )
     {
-        // not in cur dir, must search
-        nameonly(filenamebuf); // only search for the name
-
-        // findfile returns dir+filename
-        // Owner security permissions.
-        fs = findfile(filenamebuf, NULL, false, /*OUT*/ filenamebuf);
-        if( fs == FS_NOTFOUND )
+        handle = WZ_open_file_z( filename );
+        if( handle == FH_none )
         {
-            GenPrintf(EMSG_warn, "File %s not found.\n", filenamebuf);
-            return -1;
+            msg = "Cannot open";
+            goto return_fail_msg;
         }
 
+        file_size = WZ_filesize( filenamebuf );
+
+        handle = -3;
+    }
+    else
+#endif
+    {
+        struct stat      bufstat;
+
+        // open wad file
         handle = open (filenamebuf, O_RDONLY|O_BINARY, 0666);
         if( handle == -1 )
         {
-            GenPrintf(EMSG_warn, "Can't open %s\n", filenamebuf);
-            return -1;
+            // not in cur dir, must search
+            nameonly(filenamebuf); // only search for the name
+
+            // findfile returns dir+filename
+            // Owner security permissions.
+            fs = findfile(filenamebuf, NULL, false, /*OUT*/ filenamebuf);
+            if( fs == FS_NOTFOUND )
+            {
+                msg = "Not found";
+                goto return_fail_msg;
+            }
+
+            handle = open (filenamebuf, O_RDONLY|O_BINARY, 0666);
+            if( handle == -1 )
+            {
+                msg = "Cannot open";
+                goto return_fail_msg;
+            }
         }
+     
+        // Get the filesize
+        fstat(handle,&bufstat);
+        file_size = bufstat.st_size;
     }
 
+    if( fc == FC_zip )
+    {
+#ifdef ZIPWAD
+        if( ! ziplib_present )
+        {
+            msg = "Cannot read zip file, ziplib not present.";
+                goto read_failure;
+        }
+
+        // Other files are keep open until shutdown,
+        // but zip files are not accessed by handle.
+        close( handle );
+        handle = -2;
+        numlumps = 0;
+        lumpinfo = NULL;
+#else
+        msg = "Cannot read zip file, do not have ziplib option.";
+            goto read_failure;
+#endif
+    }
+    else
+
     // detect dehacked file with the "deh" extension, or bex files
-    char * extension = &filenamebuf[strlen(filenamebuf)-3];
-    if( strcasecmp( extension,"deh")==0
-       || strcasecmp( extension,"bex")==0 )
+    if( fc == FC_deh || fc == FC_bex )
     {
         // This code emulates a wadfile with one lump name "DEHACKED" 
         // at position 0 and size of the whole file.
         // This allow deh file to be copied by network and loaded at the
         // console, like wad files.
-        fstat(handle,&bufstat);
         numlumps = 1; 
         lumpinfo = Z_Malloc (sizeof(lumpinfo_t),PU_STATIC,NULL);
         lumpinfo->position = 0;
-        lumpinfo->size = bufstat.st_size;
+        lumpinfo->size = file_size;
         lumpinfo->lump_namespace = LNS_dehacked;
         strncpy(lumpinfo->name, "DEHACKED", 8);
     }
-    else 
-    {   // assume wad file
+    else if( fc == FC_wad )
+    {
+        // wad file
         wadinfo_t        header;
         lumpinfo_t*      lump_p;
         filelump_t*      fileinfo;
         filelump_t*      flp;
+        int   rs;
 
         // read the header
-        read (handle, &header, sizeof(header));
+#ifdef ZIPWAD       
+        if( archive_open )
+        {
+            // read file in zip archive
+            rs = WZ_read_archive_file( 0, sizeof(header), (byte*)&header );
+            if( rs < 0 )
+                goto read_failure;
+        }
+        else
+#endif
+        {
+            rs = read (handle, &header, sizeof(header));
+            if( rs < 0 )
+                goto read_failure;
+        }
+
         if (strncmp(header.identification,"IWAD",4))
         {
             // Homebrew levels?
             if (strncmp(header.identification,"PWAD",4))
             {
-                GenPrintf(EMSG_warn, "%s doesn't have IWAD or PWAD id\n", filenamebuf);
-                return -1;
+                msg = "Does not have IWAD or PWAD id";
+                goto close_with_msg;
             }
             // ???modifiedgame = true;
         }
@@ -337,8 +430,24 @@ int W_Load_WadFile (const char *filename)
         length = header.numlumps * sizeof(filelump_t);
         fileinfo = calloc (length, sizeof(*fileinfo));  // temp alloc, zeroed
 
-        lseek (handle, header.infotableofs, SEEK_SET);
-        read (handle, fileinfo, length);
+        // Read fileinfo at offset specified in header.
+#ifdef ZIPWAD       
+        if( archive_open )
+        {
+            // read file (already open) in zip archive
+            rs = WZ_read_archive_file( header.infotableofs, length, (byte*)fileinfo );
+            if( rs < 0 )
+                goto read_failure;
+        }
+        else
+#endif
+        {
+            lseek (handle, header.infotableofs, SEEK_SET);
+            rs = read (handle, fileinfo, length);
+            if( rs < 0 )
+                goto read_failure;
+        }
+
         numlumps = header.numlumps;
         
         within_namespace = LNS_global;  // each wad starts in global namespace
@@ -366,32 +475,89 @@ int W_Load_WadFile (const char *filename)
         }
         free(fileinfo);
     }
+
     //
     //  link wad file to search files
     //
-    fstat(handle,&bufstat);
     wadfile = Z_Malloc (sizeof (wadfile_t),PU_STATIC,NULL);
     wadfile->filename = Z_StrDup(filenamebuf);
     wadfile->handle = handle;
     wadfile->numlumps = numlumps;
     wadfile->lumpinfo = lumpinfo;
-    wadfile->filesize = bufstat.st_size;
+    wadfile->filesize = file_size;
+
+    //
+    //  add the wadfile
+    //
+    wadfiles[filenum] = wadfile;
+    numwadfiles++;
 
     //
     //  generate md5sum
     // 
-    fhandle = fopen(filenamebuf, "rb");
     {
-        int t=I_GetTime();
-        md5_stream (fhandle, wadfile->md5sum);
-        if( devparm )
+#ifdef DEBUG_MESSAGES_ON
+        // [WDJ] Do not know why timing the md5 calc was important, ever.
+        int t;
+        if( devparm >= 3 )
+            t = I_GetTime();
+#endif
+
+#ifdef ZIPWAD
+        if( archive_open )
         {
-            GenPrintf(EMSG_dev, "md5 calc for %s took %f second\n",
-                        wadfile->filename,(float)(I_GetTime()-t)/TICRATE);
+            // Need to get proper md5 because client may have same files,
+            // but not in a zip archive.  They may have unzipped them.
+            WZ_md5_stream( filenamebuf, wadfile->md5sum );
+        }
+        else
+#endif
+        {
+            FILE * fhandle = fopen(filenamebuf, "rb");
+            md5_stream (fhandle, wadfile->md5sum);
+            fclose(fhandle);
+        }
+
+#ifdef DEBUG_MESSAGES_ON
+        if( devparm >= 3 )
+        {
+            GenPrintf(EMSG_dev, "Load_WadFile %s: md5 calc took %f second\n",
+                        filenamebuf, (float)(I_GetTime()-t)/TICRATE);
+        }
+#endif
+    }
+    
+#ifdef ZIPWAD
+    wadfile->classify = fc;
+    wadfile->lumpcache = NULL;
+    wadfile->hwrcache = NULL;
+    // Immediately after the archive wadfile_t are the wadfile_t for files within the archive.
+    wadfile->archive_num_wadfile = 0;  // number of wadfile in this archive
+    wadfile->archive_parent = 0xFF;  // contained in archive wadfile index,  0xFF= normal file
+
+    if( fc == FC_zip )
+    {
+        // New zip file.
+        // This is indirect recursive call, that alters this wadfile (by filenum), so it must be setup first.
+        int numfile = WZ_Load_zip_archive( filenamebuf, filenum );
+        if( numfile <= 0 )
+            goto return_fail;  // no files
+       
+        return filenum;
+    }
+    else if( archive_open )
+    {
+        // File is in zip archive, link to the parent zip archive.
+        if( archive_filenum < filenum )  // file in zip archive
+        {
+            wadfile->archive_parent = archive_filenum;  // contained in archive wadfile index,  0xFF= normal file
+            wadfiles[archive_filenum]->archive_num_wadfile++;
         }
     }
-    fclose(fhandle);
-    
+#endif
+
+    // Load the file data
+   
     //
     //  set up caching
     //
@@ -417,15 +583,26 @@ int W_Load_WadFile (const char *filename)
     wadfile->hwrcache = grPatch;
 #endif
 
-    //
-    //  add the wadfile
-    //
-    wadfiles[filenum] = wadfile;
-    numwadfiles++;
-
     GenPrintf(EMSG_info, "Added file %s (%i lumps)\n", filenamebuf, numlumps);
     W_Load_DehackedLumps( filenum );
+
     return filenum;
+
+read_failure:
+    msg = "read failure";
+   
+close_with_msg:
+    if( handle >= 0 )
+        close( handle );
+#ifdef ZIPWAD
+    if( archive_open )
+        WZ_close( FH_zip_file );
+#endif
+
+return_fail_msg:
+    GenPrintf(EMSG_warn, "File %s: %s\n", filenamebuf, msg );
+return_fail:
+    return -1;  // fail
 }
 
 
@@ -454,7 +631,8 @@ void W_Reload (void)
     if (!reload_filename)
         return;
 
-    if ( (handle = open (reload_filename,O_RDONLY | O_BINARY)) == -1)
+    handle = open (reload_filename,O_RDONLY | O_BINARY);
+    if( handle == -1)
         I_Error ("W_Reload: couldn't open %s",reload_filename);
 
     read (handle, &header, sizeof(header));
@@ -504,7 +682,8 @@ void W_Reload (void)
 //  does override all earlier ones.
 //
 // Return 0 when any file load does not succeed
-int W_Init_MultipleFiles (char** filenames)
+// Called by: D_DoomMain
+int W_Init_MultipleFiles ( char ** filenames )
 {
     int  rc = 1;
 
@@ -531,6 +710,10 @@ int W_Init_MultipleFiles (char** filenames)
 }
 
 
+//===========================================================================
+//                                                        LUMP BASED ROUTINES
+//===========================================================================
+
 //
 //  W_CheckNumForName
 //  Lists are currently used by flats and colormaps.
@@ -553,6 +736,8 @@ lumpnum_t  W_Check_Namespace (const char* name, lump_namespace_e within_namespac
     {
         // Scan forward within a wad file.
         lump_p = wadfiles[i]->lumpinfo;
+        if( ! lump_p )  continue;
+
         for (j = 0; j<wadfiles[i]->numlumps; j++,lump_p++)
         { 
             // Fast numerical name compare.
@@ -576,6 +761,7 @@ lumpnum_t  W_Check_Namespace (const char* name, lump_namespace_e within_namespac
     // Return first matching lump found in any namespace.
     if( alternate != NO_LUMP )
       return alternate;
+
     return NO_LUMP;
 }
 
@@ -609,6 +795,9 @@ lumpnum_t  W_CheckNumForNamePwad (const char* name, int wadid, int startlump)
     if (startlump < wadfiles[wadid]->numlumps)
     {
         lump_p = wadfiles[wadid]->lumpinfo + startlump;
+        if( ! lump_p )
+            return NO_LUMP;
+
         for (i = startlump; i<wadfiles[wadid]->numlumps; i++,lump_p++)
         {
             // Fast numerical name compare.
@@ -661,6 +850,8 @@ lumpnum_t  W_CheckNumForNameFirst (const char* name)
     for (i = 0; i<numwadfiles; i++)
     {
         lump_p = wadfiles[i]->lumpinfo;
+        if( ! lump_p )  continue;
+
         for (j = 0; j<wadfiles[i]->numlumps; j++,lump_p++)
         {
             if ( *(uint64_t *)lump_p->name == name8.namecode )
@@ -702,7 +893,11 @@ int W_LumpLength (lumpnum_t lump)
     if (LUMPNUM(lump) >= wadfiles[WADFILENUM(lump)]->numlumps)
         I_Error ("W_LumpLength: %i >= numlumps",lump);
 #endif
-    return wadfiles[WADFILENUM(lump)]->lumpinfo[LUMPNUM(lump)].size;
+    lumpinfo_t * lump_p = wadfiles[WADFILENUM(lump)]->lumpinfo;
+    if( lump_p == NULL )
+        return 0;
+
+    return lump_p[ LUMPNUM(lump) ].size;
 }
 
 
@@ -718,12 +913,13 @@ int  W_ReadLumpHeader ( lumpnum_t     lump,
 {
     lumpinfo_t* lif;
     wadfile_t * wf;
-    int  ln1;
+    int  ln1, wn1;
     int  handle;
     int  bytesread = 0;
-   
+
     ln1 = LUMPNUM(lump);
-    wf = wadfiles[WADFILENUM(lump)];
+    wn1 = WADFILENUM(lump);
+    wf = wadfiles[ wn1 ];
    
 #ifdef PARANOIA
 //    if (lump<0) I_Error("W_ReadLumpHeader: lump not exist\n");
@@ -733,6 +929,9 @@ int  W_ReadLumpHeader ( lumpnum_t     lump,
     if( ln1 >= wf->numlumps )
         I_Error ("W_ReadLumpHeader: %i >= numlumps",lump);
 #endif
+
+    if( wf->lumpinfo == NULL )
+        return 0;
 
     lif = & wf->lumpinfo[ ln1 ];
 
@@ -745,7 +944,9 @@ int  W_ReadLumpHeader ( lumpnum_t     lump,
     I_BeginRead ();
     // After this point must go thorugh I_EndRead() before can return.
 #endif
-   
+
+    handle = wf->handle; //lif->handle;
+
 #ifdef WADFILE_RELOAD
 #if defined( __DJGPP__ )
     // Du meinst wohl eher wadfile_t structure. in lumpinfo_t gibt es kein "handle" ....
@@ -762,18 +963,30 @@ int  W_ReadLumpHeader ( lumpnum_t     lump,
             goto done;
         }
     }
-    else
-        handle = wf->handle; //lif->handle;
-#else
-    handle = wf->handle; //lif->handle;
 #endif
 
     // 0 size means read all the lump
     if (!size || size>lif->size)
         size = lif->size;
-    
-    lseek (handle, lif->position, SEEK_SET);
-    bytesread = read (handle, dest, size);
+
+    // Read lump at offset.
+#ifdef ZIPWAD
+    if( wf->archive_num_wadfile )
+    {
+        // An archive, cannot read lump.
+        return 0;
+    }
+    else if( wf->archive_parent < 0xFF )  // valid parent archive
+    {
+        // From file in zip archive.
+        bytesread = WZ_read_wadfile_from_archive_file_offset( wn1, wf, lif->position, size, /*OUT*/ dest );
+    }
+    else
+#endif
+    {
+        lseek (handle, lif->position, SEEK_SET);
+        bytesread = read (handle, dest, size);
+    }
 
 #ifdef WADFILE_RELOAD
 #if defined( __DJGPP__ )
@@ -967,8 +1180,10 @@ void* W_CachePatchNum_Endian ( lumpnum_t lump, int ztag )
 // Called from many draw functions
 void* W_CachePatchNum ( lumpnum_t lumpnum, int ztag )
 {
-#ifdef HWRENDER
+#if !defined (__DJGPP__)
     MipPatch_t*   grPatch;
+#endif
+#ifdef HWRENDER
 
 
     if( ! HWR_patchstore ) {
@@ -981,7 +1196,7 @@ void* W_CachePatchNum ( lumpnum_t lumpnum, int ztag )
 #ifdef PARANOIA
     // check the return value of a previous W_CheckNumForName()
     if ( ( ! VALID_LUMP(lumpnum) )
-	 || (LUMPNUM(lumpnum) >= wadfiles[WADFILENUM(lumpnum)]->numlumps) )
+         || (LUMPNUM(lumpnum) >= wadfiles[WADFILENUM(lumpnum)]->numlumps) )
         I_Error ("W_CachePatchNum: %i >= numlumps", LUMPNUM(lumpnum));
 #endif
 
@@ -1001,7 +1216,11 @@ void* W_CachePatchNum ( lumpnum_t lumpnum, int ztag )
     return (void*)grPatch;
 #else
     // Software renderer only, simplified
+#if defined (__DJGPP__)
     return W_CachePatchNum_Endian( lumpnum, ztag );
+#else
+    return W_CachePatchNum_Endian( lump, ztag );
+#endif
 #endif
 }
 
@@ -1014,7 +1233,7 @@ void* W_CacheMappedPatchNum ( lumpnum_t lumpnum, uint32_t drawflags )
 #ifdef PARANOIA
     // check the return value of a previous W_CheckNumForName()
     if ( ( ! VALID_LUMP(lumpnum) )
-	 || (LUMPNUM(lumpnum) >= wadfiles[WADFILENUM(lumpnum)]->numlumps) )
+         || (LUMPNUM(lumpnum) >= wadfiles[WADFILENUM(lumpnum)]->numlumps) )
         I_Error ("W_CacheMappedPatchNum: %i >= numlumps", LUMPNUM(lumpnum));
 #endif
 
