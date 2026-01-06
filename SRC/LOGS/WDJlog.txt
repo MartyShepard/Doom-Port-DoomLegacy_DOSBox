@@ -8103,3 +8103,32 @@ The demoversion will be the only control for the demo format.
 It uses SERVER_PID in the textcmd to identify server textcmd.
 It will get recorded into demos.
 Changed the SERVER_PID to 250 now, for future expansion of players.
+This fixes bug 0665.
+
+*** w109_moonwalk
+patchfile = w109_005_moonwalk.patch
+- commit revision 1540
+Fixes moonwalk bug, where monsters would sometimes walk backward.
+This was due to error in translation of Killough's everything-in-one-expression
+to more maintainable code.  He puts assigns in his expressions, with a comma.
+There was an assignment in the expression for monster-avoid-hazard,
+but it did not have a comma, and the dest needed to be tested too.
+This ran the avoid code whenever monster_avoid_hazard was enabled.
+
+Regressed some other code inherited from PrBoom back to something
+that can more easily be compared to PrBoom code, for easier maintenance.
+Subtle differences might hide other bugs.
+
+*** w109_oof2s
+patchfile = w109_006_oof2s.patch
+- commit revision 1541
+From PrBoom, Killough enhancement.
+Make an oof sound when hit a 2s line, just like when hit a 1s line.
+PrBoom added a dedicated line search for this,
+but I did the 2s line detection in the existing search loop.
+
+
+
+
+
+

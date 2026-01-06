@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1537 2020-06-16 05:30:37Z wesleyjohnson $
+// $Id: p_enemy.c 1540 2020-07-06 20:50:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -182,11 +182,9 @@ typedef enum
 //
 // P_NewChaseDir related LUT.
 //
-static dirtype_t opposite[] =
-{
-  DI_WEST, DI_SOUTHWEST, DI_SOUTH, DI_SOUTHEAST,
-  DI_EAST, DI_NORTHEAST, DI_NORTH, DI_NORTHWEST, DI_NODIR
-};
+
+// Add 180 degrees, same as  (di+4) & 0x0F
+#define  DI_OPPOSITE( di )   ((di) ^ 4)
 
 static dirtype_t diags[] =
 {
@@ -680,7 +678,8 @@ boolean P_IsOnLift( const mobj_t *actor )
 
     // Check to see if it is in a sector which can be activated as a lift.
     line.tag = sec->tag;
-    if( line.tag == 0 )  return false;
+    if( line.tag == 0 )
+        return false;
    
     for( l = -1; (l = P_FindLineFromLineTag(&line, l)) >= 0; )
     {
@@ -737,6 +736,7 @@ static const fixed_t yspeed[8] = {0,47000,FRACUNIT,47000,0,-47000,-FRACUNIT,-470
 // Only called for actor things, not players, nor missiles.
 //  dropoff : 0, 1, 2 dog jump
 // Formerly P_Move.
+// Return false when move is blocked.
 static boolean P_MoveActor (mobj_t* actor, byte dropoff)
 {
     fixed_t  tryx, tryy;
@@ -916,12 +916,28 @@ static boolean P_MoveActor (mobj_t* actor, byte dropoff)
                 good = (PP_Random(pr_opendoor) >= 230) ^ (hit_block);  // MBF
             else
                 good = PP_Random(pr_trywalk) & 3;  // Boom jff, 25% fail
+                // Causes monsters to back out when they should not,
+                // and causes secondary stickiness.
         }
         return good;
     }
     else  // TryMove
     {
         // successful move
+
+#if 0
+        // Boom ice, from PrBoom
+        if( got_friction > ORIG_FRICTION )
+        {
+            // Let normal momentum carry them across ice.	    
+            actor->x = origx;
+            actor->y = origy;
+            movefactor *= FRACUNIT / ORIG_FRICTION_FACTOR / 4;
+            actor->momx += FixedMul( dx, movefactor );
+            actor->momy += FixedMul( dy, movefactor );
+        }
+#endif
+
         if( EN_monster_momentum && tmr_dropoffline )
         {
             // [WDJ] last move sensed dropoff
@@ -956,8 +972,8 @@ static boolean P_SmartMove(mobj_t *actor)
 {
     mobj_t * target = actor->target;
     byte  on_lift;
-    byte  under_damage = 0;
     byte  dropoff = 0;  // 0,1,2
+    int   under_damage = 0;  // -1,0,1
 
     // killough 9/12/98: Stay on a lift if target is on one
     on_lift = cv_mbf_staylift.EV
@@ -1004,7 +1020,8 @@ static boolean P_SmartMove(mobj_t *actor)
     {
         // Get away from damage
         under_damage = P_IsUnderDamage(actor);
-        if( (under_damage < 0) || (PP_Random(pr_avoidcrush) < 200) )
+        if( under_damage
+            && ((under_damage < 0) || (PP_Random(pr_avoidcrush) < 200)) )
             goto avoid_damage;
     }
 
@@ -1138,31 +1155,23 @@ static fixed_t P_AvoidDropoff(mobj_t *actor)
 static
 void P_NewChaseDir_P2 (mobj_t * actor, fixed_t deltax, fixed_t deltay )
 {
-    dirtype_t   d[3];
-
-    int         tdir;
+    int8_t      xdir, ydir, tdir;  // dirtype_t  0..9
     dirtype_t   olddir = actor->movedir;
-    dirtype_t   turnaround = opposite[olddir];
+    dirtype_t   turnaround = DI_OPPOSITE( olddir );
 
     trywalk_dropoffline = NULL;  // clear dropoff record
 
-    if( deltax > 10*FRACUNIT )
-        d[1]= DI_EAST;
-    else if( deltax < -10*FRACUNIT )
-        d[1]= DI_WEST;
-    else
-        d[1]= DI_NODIR;
+    xdir = ( deltax > 10*FRACUNIT )?   DI_EAST
+         : ( deltax < -10*FRACUNIT )?  DI_WEST
+         : DI_NODIR ;
 
-    if( deltay < -10*FRACUNIT )
-        d[2]= DI_SOUTH;
-    else if( deltay > 10*FRACUNIT )
-        d[2]= DI_NORTH;
-    else
-        d[2]= DI_NODIR;
+    ydir = ( deltay < -10*FRACUNIT )? DI_SOUTH
+         : ( deltay > 10*FRACUNIT )?  DI_NORTH
+         : DI_NODIR ;
 
     // try direct route
-    if (   d[1] != DI_NODIR
-        && d[2] != DI_NODIR)
+    if (   xdir != DI_NODIR
+        && ydir != DI_NODIR)
     {
         actor->movedir = diags[((deltay<0)<<1)+(deltax>0)];
         if( actor->movedir != turnaround
@@ -1174,19 +1183,19 @@ void P_NewChaseDir_P2 (mobj_t * actor, fixed_t deltax, fixed_t deltay )
     if( PP_Random(pr_newchase) > 200
         ||  abs(deltay) > abs(deltax))
     {
-        tdir=d[1];
-        d[1]=d[2];
-        d[2]=tdir;
+        tdir=xdir;
+        xdir=ydir;
+        ydir=tdir;
     }
 
-    if( d[1] == turnaround)
-        d[1] = DI_NODIR;
-    if( d[2] == turnaround)
-        d[2] = DI_NODIR;
+    if( xdir == turnaround)
+        xdir = DI_NODIR;
+    if( ydir == turnaround)
+        ydir = DI_NODIR;
 
-    if( d[1] != DI_NODIR )
+    if( xdir != DI_NODIR )
     {
-        actor->movedir = d[1];
+        actor->movedir = xdir;
         if( P_TryWalk(actor) )
         {
             // either moved forward or attacked
@@ -1194,9 +1203,9 @@ void P_NewChaseDir_P2 (mobj_t * actor, fixed_t deltax, fixed_t deltay )
         }
     }
 
-    if( d[2] != DI_NODIR )
+    if( ydir != DI_NODIR )
     {
-        actor->movedir = d[2];
+        actor->movedir = ydir;
         if( P_TryWalk(actor) )
             goto accept_move;
     }
@@ -1224,7 +1233,7 @@ void P_NewChaseDir_P2 (mobj_t * actor, fixed_t deltax, fixed_t deltay )
     }
     else
     {
-        for( tdir = DI_SOUTHEAST; tdir >= DI_EAST; tdir-- )
+        for( tdir = DI_SOUTHEAST; tdir >= DI_EAST; tdir-- )  // signed tdir
         {
             if( tdir != turnaround )
             {
@@ -1235,12 +1244,30 @@ void P_NewChaseDir_P2 (mobj_t * actor, fixed_t deltax, fixed_t deltay )
         }
     }
 
+#define PRBOOM2_TURNAROUND
+#ifdef PRBOOM2_TURNAROUND
+    // As in PrBoom
+    // Rearranged to work with monster_momentum test below.
+    actor->movedir = turnaround;
+    if( turnaround != DI_NODIR )
+    {
+        if( P_TryWalk(actor) )
+	    goto accept_move;
+            // accept move, movdir != DI_NODIR
+       
+        actor->movedir = DI_NODIR;
+    }
+    // assert actor->movedir == DI_NODIR
+#else
+    // [WDJ] This seems to be functionally the same as above
+    // due to failure setting NODIR anyway.
     if( turnaround != DI_NODIR )
     {
         actor->movedir = turnaround;
         if( P_TryWalk(actor) )
             goto accept_move;
     }
+#endif
 
     // [WDJ] to not glide off ledges, unless conveyor
     if( EN_monster_momentum && trywalk_dropoffline )
@@ -1302,8 +1329,7 @@ accept_move:
 static void P_NewChaseDir(mobj_t *actor)
 {
     mobj_t *  target = actor->target;
-    fixed_t deltax = target->x - actor->x;
-    fixed_t deltay = target->y - actor->y;
+    fixed_t deltax, deltay;
 
     if( !target )
     {
@@ -1311,6 +1337,9 @@ static void P_NewChaseDir(mobj_t *actor)
         return;
     }
 
+    deltax = target->x - actor->x;
+    deltay = target->y - actor->y;
+   
     // killough 8/8/98: sometimes move away from target, keeping distance
     //
     // 1) Stay a certain distance away from a friend, to avoid being in their way
@@ -1864,7 +1893,7 @@ void A_Look (mobj_t* actor)
   seeyou:
     if (actor->info->seesound)
     {
-        int             sound;
+        int  sound;
 
         switch (actor->info->seesound)
         {
@@ -1924,7 +1953,7 @@ void A_KeepChasing(mobj_t *actor)
 //
 void A_Chase (mobj_t*   actor)
 {
-    int         delta;
+    int  delta;
 
     if (actor->reactiontime)
     {
