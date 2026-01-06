@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1514 2020-04-18 10:49:41Z wesleyjohnson $
+// $Id: d_clisrv.h 1539 2020-06-30 06:41:28Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -618,7 +618,8 @@ void    Send_NetXCmd_pind(byte cmd_id, void *param, int param_len, byte pind);
 void    Send_NetXCmd_auto( byte cmd_id, void *param, int param_len, byte textcmd_pind, byte pn );
 
 // Server textcmd uses separate channel, SERVER_PID.
-#define SERVER_PID  MAXPLAYERS
+// This appears in Demo 1.48, must be above MAXPLAYERS.
+#define SERVER_PID   250
 // default, always SERVER_PID
 void    SV_Send_NetXCmd(byte cmd_id, void *param, int param_len);
 //  pn : SERVER_PID, or player pid (bots)

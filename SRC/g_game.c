@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1538 2020-06-16 05:31:32Z wesleyjohnson $
+// $Id: g_game.c 1539 2020-06-30 06:41:28Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -3285,6 +3285,11 @@ void G_setup_VERSION( void )
 #define ZT_CHAT         0x20    // no more used
 #define ZT_EXTRADATA    0x40
 #define DEMOMARKER      0x80    // demoend
+
+// SERVER_ID appears in Demo 1.48
+#if SERVER_PID < MAXPLAYERS
+#  error "SERVER_PID must be > MAXPLAYERS"
+#endif
 
 ticcmd_t oldcmd[MAXPLAYERS];
 

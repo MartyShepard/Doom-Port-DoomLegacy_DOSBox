@@ -8040,13 +8040,13 @@ gets set.
 
 *** w109_verrev
 patchfile = w109_001_verrev.patch
-- commit revision 1533
+- commit revision 1536
 Add recording in demo of version and revision numbers,
 and capability of testing revision using VERREV().
 
 *** w109_infight
 patchfile = w109_002_infight.patch
-- commit revision 1534
+- commit revision 1537
 DoomLegacy has used PrBoom as a reference, and PrBoom has a test for
 monster_infighting in its test for missile invulnerability between
 monsters of the same species.
@@ -8060,7 +8060,7 @@ This stops firing on friends.
 
 *** w109_demo
 patchfile = w109_003_demo.patch
-- commit revision 1535
+- commit revision 1538
 Legacy demo would fail to start due to blocked textcmd from
 the demo.  Legacy demo issue a map textcmd to load the map.
 Player 0 was not in the game yet, and this was detected as
@@ -8069,4 +8069,37 @@ The demo needed to use SERVER_ID for textcmd
 issued before player 0 is in the game.
 Fixes BUG 0665.
 
+*** w109_demo2
+patchfile = w109_004_demo2.patch
+- commit revision 1539
+During record demo, commands for each player are saved independently.
+Most textcmd will be within the 255 provided by an ordinary textbuf.
 
+Ver 1.48 has a very long combined textbuf, containing all players.
+Also the commands to create a player are now issued by SERVER_PID,
+where in older demos they were issued by player 0, before player 0 existed.
+Legacy demo could not be fixed and stay compatible with older formats.
+
+Separating the textcmd into separate players, and appending it again
+upon reading is extra work, without any benefit.
+SERVER_PID does not have a slot in the demo, nor a way to identify them.
+It is also now possible for textcmd to run over 255 bytes, even it would
+almost never happen.
+Several ways to deal with these problems were considered,
+all with flaws, and few actual benefits.
+
+LEGACY 1.48 LONG TEXTCMD FORMAT
+Decided to just put all textcmd into the player 0 slot, which is being
+used by the demo for server textcmds anyways.  No need to separate
+them into individual buffers again.
+This textcmd format has a two byte length and has player pid for
+each textcmd within it.
+There are no format conversions needed this way, and this demo format
+is only used for DoomLegacy, not compatible with other ports anyway.
+There are few textcmd in a demo, so this probably only costs 8 more bytes
+in an actual demo.
+The demoversion will be the only control for the demo format.
+
+It uses SERVER_PID in the textcmd to identify server textcmd.
+It will get recorded into demos.
+Changed the SERVER_PID to 250 now, for future expansion of players.

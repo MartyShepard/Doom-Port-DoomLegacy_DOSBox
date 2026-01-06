@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1538 2020-06-16 05:31:32Z wesleyjohnson $
+// $Id: d_clisrv.c 1539 2020-06-30 06:41:28Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -928,8 +928,16 @@ void ExtraDataTicker(void)
 #endif
 
         pn = ip->pn;  // player pid for the textcmd
-        if( pn < SERVER_PID )
+
+        // This test causes problems for demos, where some textcmd are issued by player 0
+        // before that player is created.
+        if( netgame
+            && !demoplayback
+            && (pn < MAXPLAYERS) )
+        {
+            // Protection against fake textcmds in netgame.
             if( ! playeringame[pn] )  continue;   // only if player quit the game suddenly
+        }
 
         // Commands can have 0 strings, 1 string, or 2 strings.
         // Inventory has just a byte number.
@@ -1025,22 +1033,78 @@ void ExtraDataTicker(void)
 //   byte   | autoaim : true if use the old autoaim system
 // endif
 
+// LEGACY 1.48 LONG TEXTCMD FORMAT
+// [WDJ] During record demo, commands for each player are saved independently.
+// Most textcmd will be within the 255 provided by an ordinary textbuf.
+// But 1.48 has a very long combined textbuf, containing all players.
+// Also the commands to create a player are now issued by SERVER_PID,
+// where in older demos they were issued by player 0, before player 0 existed.
+
+// For Ver 1.48, all textcmd are appended into one textcmd buffer.
+// Separating it into separate players, appending it again is just extra work,
+// without any benefit.  And SERVER_PID does not have a slot in the demo.
+// It is also now possible for textcmd to run over 255 bytes, even it would
+// almost never happen.
+// Several ways to deal with this were considered, all with flaws, and few
+// actual benefits.
+// Decided to just put all textcmd into the player 0 slot, which is being
+// used by the demo for server textcmds anyways.  No need to separate
+// them into individual buffers again.
+// The player id are embedded in the text command format already.
+// There are no format conversions needed this way, and this demo format
+// is only used for DoomLegacy, not compatible with other ports anyway.
+// The demoversion will be the only control for the demo format.
+
 // Save textcmd to demo using textbuf_t format.
 boolean AddLmpExtradata(byte **demo_point, int playernum)
 {
     textcmdbuff_t * tcbuf;
-    byte * bufp, * endbufp;
-    int  btic = BTIC_INDEX( gametic );
-    boolean r = false;
-    unsigned int  textlen;
+    byte * dp;  // textcmd text
    
-    // [WDJ] Transistion code to keep same demo code, for now.
+    int btic = BTIC_INDEX( gametic );
     tcbuf = & textcmdbuff[btic];
     if( tcbuf->len == 0 )  // anything in the buffer
         return false;
 
+#if 1
+    // DoomLegacy 1.48 Textcmd Format Only
+    // All textcmd are in player 0.
+    if( playernum != 0 )
+        return false;
+
+    dp = *demo_point;
+   
+    // Uses two byte length, MSB first
+    unsigned int textlen = tcbuf->len;
+    dp[0] = textlen >> 8; // MSB first
+    dp[1] = textlen & 0xFF;
+
+    memcpy( &dp[2], &tcbuf->buff, textlen );  // text
+    dp += textlen + 2;
+#endif
+
+   
+#if 0
+    // Standard Textcmd Format in demo:
+    //  length: byte
+    //  textbuf with multiple commands
+    textcmd_t * dtc;  // textcmd in demo
+    byte * bufp, * endbufp;
+    unsigned int  textlen;
+    unsigned int  dt_len;
+    byte  dt_cnt;
+
     bufp = & tcbuf->buff[0];
     endbufp = & tcbuf->buff[ tcbuf->len ];
+
+    dp = *demo_point;
+    dt_cnt = 0;
+
+    // Demo format matches textbuf_t, length limited to 255.
+    dtc = dp; // textcmd in demo
+    dp = &dtc->text;
+    dt_len = 0;
+   
     while( bufp < endbufp )
     {
         textcmd_item_t * ip = (textcmd_item_t *)bufp;
@@ -1051,22 +1115,45 @@ boolean AddLmpExtradata(byte **demo_point, int playernum)
         if( ip->pn == SERVER_PID )
         {
             // SERVER_PID into player[0], for now.
+            // Cannot identify them to change them back to SERVER_PID though.
             // The demo needs to have a player[0].
             if( playernum != 0 )
                 continue;
         }
-        if( ip->pn != playernum )
+        else if( ip->pn != playernum )
             continue;  // wrong player
 
         if( textlen == 0 )  // anything in the buffer
             continue;
 
-        // Demo format matches textbuf_t, length limited
-        memcpy(*demo_point, &ip->textbuf, textlen+1);  // len,text
-        *demo_point += textlen+1;
-        r = true;
+        // Append together when total length < 255.
+        dt_len += textlen;  // appended length
+        if( (dt_len > 255) && dt_cnt )
+        {
+            // Overruns the max textcmd in demo.
+        // Need a code to indicate that there is more textcmd
+        // but the next byte is the next players bit enables, which
+        // conflicts with every coding.
+        // This forces another byte to be used within the textcmd,
+        // which violates it being compatible with the old textcmd format.
+            // Start another textcmd
+            dtc = dp;
+            dp = &dtc->text;
+            dt_len = textlen;
+        }
+       
+        memcpy( dp, &ip->textbuf.text, textlen );  // text
+        dp += textlen;
+        dtc->len = dt_len;
+        dt_cnt++;
     }
-    return r;
+
+    if( dt_cnt == 0 )
+        return false;
+#endif   
+
+    *demo_point = dp;  // update the demo ptr
+    return true;
 }
 
 void ReadLmpExtraData(byte **demo_pointer, int playernum)
@@ -1075,7 +1162,7 @@ void ReadLmpExtraData(byte **demo_pointer, int playernum)
     textcmdbuff_t * tcbuf;
     textcmd_item_t * ip;
     unsigned int buflen;
-    unsigned int extra_len;
+    unsigned int dt_len;
     int btic = BTIC_INDEX( gametic );
 
     if(!demo_pointer)  goto no_text_cmd;
@@ -1083,23 +1170,51 @@ void ReadLmpExtraData(byte **demo_pointer, int playernum)
     dp = *demo_pointer;
     if( dp == NULL )  goto no_text_cmd;
 
-    extra_len = dp[0];   // textbuf->len
-
-    // [WDJ] Transistion code to keep same demo code, for now.
-    // See Clean up textcmd, in TryRunTics, that allows this to just append.
     tcbuf = & textcmdbuff[btic];
     buflen = tcbuf->len;
     
-    if( (buflen + extra_len) >= (MAX_TEXTCMD_BUFF - 2) )
-        goto no_text_cmd; // will not fit
-
-    // [WDJ] needed to start external demo play.
-    if( (playernum == 0) && !playeringame[0] )
+    // [WDJ] DoomLegacy 1.48.
+    // SERVER_PID commands have been written to player 0.
+    // There are no markers to change them back to SERVER_PID again.
+    // Fixed in execute, by disabling safety checks when playing demos.
+    // Can execute server textcmd as player 0, as long as can get past checks.
+    // Executing player 0 textcmd as SERVER_PID would cause errors.
+#if 0
+    if( (playernum == 0) && ??? )
         playernum = SERVER_PID; // because of checks
+#endif
 
+#if 1
+    if( (demoversion >= 148) && (playernum == 0) )
+    {
+        // DoomLegacy 1.48 Textcmd Format Only
+        // All textcmd are in player 0, enforced by writer.
+
+        // Uses two byte length, MSB first
+        unsigned int textlen = (dp[0] << 8) + dp[1];
+
+        if( textlen > MAX_TEXTCMD_BUFF )
+            return; // cannot be valid textcmd
+
+        // Do not have to append as only the demo can be entering textcmds.
+        memcpy( &tcbuf->buff, &dp[2], textlen );  // text
+        tcbuf->len = textlen;
+        dp += textlen + 2;
+        goto read_done;
+    }
+#endif
+
+
+    // [WDJ] Read older demo code.
+    // See Clean up textcmd, in TryRunTics, that allows this to just append.
     ip = (textcmd_item_t *)  & tcbuf->buff[ buflen ];
     ip->pn = playernum;
-   
+
+    dt_len = dp[0];   // demo textbuf->len
+
+    if( (buflen + dt_len) >= (MAX_TEXTCMD_BUFF - 2) )
+        goto no_text_cmd; // will not fit
+
     // [WDJ] Clean separation of old and new formating.
     if(demoversion==112) // support old demos v1.12
     {
@@ -1109,15 +1224,16 @@ void ReadLmpExtraData(byte **demo_pointer, int playernum)
         byte  ex;
         unsigned int textlen = 0;
 
-        // extra_len is length of extra data, incl length.
+        // dt_len is length of extra data, incl length.
         ex = p[1];  // XCmd bits
-        p += 2;  // skip extra_len and XCmd
+        p += 2;  // skip dt_len and XCmd
         if(ex & 1)
         {
             *(bufp++) = XD_NAMEANDCOLOR;
             memcpy( bufp, p, MAXPLAYERNAME+1);
             p+=MAXPLAYERNAME+1;
             textlen += MAXPLAYERNAME+1;
+            bufp += MAXPLAYERNAME+1;
         }
         if(ex & 2)
         {
@@ -1131,15 +1247,19 @@ void ReadLmpExtraData(byte **demo_pointer, int playernum)
     }
     else
     {
+        // DoomLegacy <= 1.47
         // Demo format matches textbuf_t, length limited.
-        // extra_len is textbuf->len, excluding len field.
-        extra_len ++;
-        memcpy( &ip->textbuf, dp, extra_len);  // len,text
-        buflen += extra_len + 1;
+        // dt_len is textbuf->len, excluding len field.
+        dt_len ++;
+        memcpy( &ip->textbuf, dp, dt_len);  // len,text
+        buflen += dt_len + 1;
     }
     tcbuf->len = buflen;
+    dp += dt_len;
+
+read_done:
     // update demo pointer
-    *demo_pointer = dp + extra_len;
+    *demo_pointer = dp;
     return;
 
 no_text_cmd:
@@ -4131,7 +4251,7 @@ void SV_Add_game_start_waiting_players( byte mode )
             // Take node out of wait_game_start.
             SV_Send_control( nnode, CTRL_game_start, mode, wait_timer, pn );
 
-	    // Update everyone else.
+            // Update everyone else.
             SV_Send_AddPlayer( nnode, pn, 0 );  // NetXCmd, PS_added_commit
 
 //            SV_Send_PlayerState( nnode );
