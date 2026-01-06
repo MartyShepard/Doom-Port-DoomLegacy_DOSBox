@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1529 2020-05-14 09:44:10Z wesleyjohnson $
+// $Id: v_video.c 1543 2020-08-22 02:36:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -161,7 +161,7 @@
 // someone stuck in an extra screen ptr
 byte *screens[NUMSCREENS+1];
 
-rendermode_e   rendermode = render_soft;
+rendermode_e   rendermode = render_init;
 byte  rendermode_recalc = false;  // signal a change
 
 byte  drawmode_recalc = false;
@@ -184,9 +184,8 @@ byte  native_bitpp;
 byte  native_bytepp;
 byte  native_drawmode; // vid_drawmode_e
 
-// To disable fullscreen at startup; is set in VID_PrepareModeList
-boolean allow_fullscreen = false;
-boolean mode_fullscreen = false;
+// To disable fullscreen at startup. 
+byte  allow_fullscreen = false;
 
 
 void Set_drawmode_OnChange( void );
@@ -209,6 +208,9 @@ CV_PossibleValue_t drawmode_sel_t[] = {
 #endif
    {0,NULL} };
 consvar_t cv_drawmode = { "drawmode", "Software 8bit", CV_SAVE | CV_CALL | CV_CFG1, drawmode_sel_t, Set_drawmode_OnChange  };
+
+// fullscreen or window
+const byte vid_mode_table[2] = { MODE_window, MODE_fullscreen };
 
 byte set_drawmode = 255;  // vid_drawmode_e
 const byte num_drawmode_sel = 8;
@@ -338,7 +340,7 @@ static byte  bpp_to_drawmode( byte bitpp )
     for( dm=0; dm<DRM_END; dm++ )
     {
         if( drawmode_to_bpp[dm] == bitpp )
-	    return dm;
+            return dm;
     }
     return 99;  // invalid
 }
@@ -347,7 +349,7 @@ static byte  bpp_to_drawmode( byte bitpp )
 
 // Set rendermode
 //  drawmode : vid_drawmode_e
-//  change_config : boolean
+//  change_config : boolean, save current config file, load another
 // Called by D_DoomMain, SCR_SetMode
 byte  V_switch_drawmode( byte drawmode, byte change_config )
 {
@@ -984,8 +986,6 @@ void V_Init_VideoControl( void )
     vid.bitpp = 8;
 
     vid.modenum = (modenum_t){ MODE_window, 0 };
-    mode_fullscreen = false;
-
     rendermode = render_soft;
    
     CV_RegisterVar(&cv_vidwait);

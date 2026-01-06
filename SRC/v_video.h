@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.h 1521 2020-05-05 03:30:31Z wesleyjohnson $
+// $Id: v_video.h 1543 2020-08-22 02:36:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -101,6 +101,8 @@ extern byte drawmode_sel_avail[];
 #if 0
 extern const char * rendermode_name[];
 #endif
+
+extern const byte vid_mode_table[2];  // window, fullscreen
 
 //  drawmode : drawmode_sel_t
 byte  V_switch_drawmode( byte drawmode, byte change_config );

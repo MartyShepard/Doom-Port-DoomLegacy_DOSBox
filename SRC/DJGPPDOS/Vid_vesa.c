@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: Vid_vesa.c 1471 2019-10-04 08:59:55Z wesleyjohnson $
+// $Id: Vid_vesa.c 1543 2020-08-22 02:36:35Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -57,7 +57,7 @@
 
 // PROTOS
 static vmode_t *VID_GetModePtr (modenum_t modenum);
-int  VID_VesaGetModeInfo (int modenum, byte gmi_req_bitpp);
+static int  VID_VesaGetModeInfo (int modenum, byte gmi_req_bitpp);
 void VID_VesaGetExtraModes ( byte request_bitpp );
 int  VID_VesaInitMode (viddef_t *lvid, vmode_t *currentmode_p);
 
@@ -207,7 +207,7 @@ static void append_full_vidmodes( vmode_t* newmodes, int nummodes )
 //   request_fullscreen : true if want fullscreen modes
 //   request_bitpp : bits per pixel
 // Return true if there are viable modes.
-boolean  VID_Query_Modelist( byte request_drawmode, boolean request_fullscreen, byte request_bitpp )
+boolean  VID_Query_Modelist( byte request_drawmode, byte request_fullscreen, byte request_bitpp )
 {
     // Require modelist before rendermode is set.
     if( request_drawmode >= DRM_opengl )
@@ -481,77 +481,24 @@ int VID_SetMode (modenum_t modenum)
     vid.bytepp = currentmode_p->bytesperpixel;
     // vid.bitpp = (vid.bytepp==1)? 8:15;
 
-    debug_Printf("currentmode_p->bytesperpixel==%d, vid.bytepp=%d req_bitpp=%d vid.drawmode=%d cv_drawmode.ev=%d\n",currentmode_p->bytesperpixel,vid.bytepp*8,req_bitpp,vid.drawmode,cv_drawmode.EV);
-	/*
-    switch (cv_drawmode.EV)
+    debug_Printf("VID_SetMode: [File: %-28s in Line:%4d ]\n"
+                         "\t currentmode_p->bytesperpixel = %d\n"
+                         "\t vid.bytepp*8                 = %d\n"
+                         "\t req_bitpp                    = %d\n"
+                         "\t vid.drawmode                 = %d\n"
+                         "\t cv_drawmode.EV               = %d\n",
+                         __FILE__,__LINE__,currentmode_p->bytesperpixel, vid.bytepp*8, req_bitpp,vid.drawmode, cv_drawmode.EV);
+
+    switch(req_bitpp)
     {
-      case DRM_8pal:
-      case DRM_native:
-        req_bitpp = 8;
-        vid.bitpp = 8;
-         vid.bytepp=1;
-        vid.drawmode = DRAW8PAL;
-        break;
-      case DRM_15:
-        req_bitpp = 15;
-        vid.bitpp = 15;
-         vid.bytepp=2;
-        vid.drawmode = DRAW15;
-        break;      
-      case DRM_16:
-        req_bitpp = 16;
-        vid.bitpp = 16;
-         vid.bytepp=2;
-        vid.drawmode = DRAW16;
-        break; 
-      case DRM_24:
-        req_bitpp = 24;
-        vid.bitpp = 24;
-         vid.bytepp=3;
-        vid.drawmode = DRAW24;
-        break;      
-      case DRM_32:
-        req_bitpp = 32;
-        vid.bitpp = 32;
-         vid.bytepp=4;
-        vid.drawmode = DRAW32;
-        break;
-      default:
-        req_bitpp = 8;
-        vid.bitpp = 8;      
-        vid.bytepp=1;
-        vid.drawmode = DRAW8PAL;      
+      case 8 : vid.bitpp =  8; vid.drawmode = DRAW8PAL; vid.bytepp=1;break;
+      case 15: vid.bitpp = 15; vid.drawmode = DRAW15; vid.bytepp=2;  break;
+      case 16: vid.bitpp = 16; vid.drawmode = DRAW16; vid.bytepp=2;  break;						
+      case 24: vid.bitpp = 24; vid.drawmode = DRAW24; vid.bytepp=3;  break;
+      case 32: vid.bitpp = 32; vid.drawmode = DRAW32; vid.bytepp=4;  break;
+      default: vid.bitpp = 8;  vid.drawmode = DRAW8PAL;  vid.bytepp=1;break;
     }
-    */
-	
-    // Using Updated Commandline
-    /*
-    if( req_drawmode == REQ_highcolor)
-    {
-        vid.bitpp = 15; vid.drawmode = DRAW15; vid.bytepp=2;
-    }
-    else if( req_drawmode == REQ_truecolor)
-    {
-        vid.bitpp = 32; vid.drawmode = DRAW32;; vid.bytepp=4;
-    }
-    else if( req_drawmode == REQ_specific)
-    {
-      */
-        switch(req_bitpp)
-        {
-          case 15: vid.bitpp = 15; vid.drawmode = DRAW15; vid.bytepp=2;  break;
-          case 16: vid.bitpp = 16; vid.drawmode = DRAW16; vid.bytepp=2;  break;						
-          case 24: vid.bitpp = 24; vid.drawmode = DRAW24; vid.bytepp=3;   break;
-          case 32: vid.bitpp = 32; vid.drawmode = DRAW32; vid.bytepp=4;   break;
-          default: vid.bitpp = 8;  vid.drawmode = DRAW8PAL; vid.bytepp=1;  break;
-        }
-    /*
-    }
-    else
-    {
-        vid.bitpp = 8; vid.drawmode = DRAW8PAL; vid.bytepp=1;  
-    }
-		*/
+
     /* Nicht die 3 weiteren Zeilen entfernen. Sonst stürzt das Bild ab.*/
     vid.direct_rowbytes = currentmode_p->rowbytes;
     vid.widthbytes = vid.width * vid.bytepp;
@@ -695,6 +642,7 @@ int VID_VesaGetModeInfo (int modenum, byte gmi_req_bitpp)
 
         // we only work with linear frame buffers, except for 320x200,
         // which is linear when banked at 0xA000
+
         if (!(vesamodeinfo.ModeAttributes & LINEAR_FRAME_BUFFER))
         {
             if ((vesamodeinfo.XResolution != 320) ||

@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: console.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
+// $Id: console.c 1543 2020-08-22 02:36:35Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -94,8 +94,6 @@
 #include "z_zone.h"
 #include "d_main.h"
 
-#include "r_local.h"
-  // CLIP_IN_BAND
 #if defined( __DJGPP__ )	
 int     con_keymap;      //0 english, 1 french
 
@@ -309,7 +307,7 @@ static void CONS_Bind_f(void)
 
 // Prepare a colormap for GREEN ONLY translucency over background
 //
-byte*   whitemap;
+byte*   whitemap = NULL;
 byte*   greenmap;
 byte*   graymap;
 

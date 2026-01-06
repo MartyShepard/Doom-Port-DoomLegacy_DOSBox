@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 1529 2020-05-14 09:44:10Z wesleyjohnson $
+// $Id: screen.h 1543 2020-08-22 02:36:35Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -264,8 +264,12 @@ extern consvar_t cv_fuzzymode;
 // quick fix for tall/short skies, depending on bytesperpixel
 extern void (*skydrawerfunc[2]) (void);
 
+#ifdef PARNOIA
+void SCR_Set_dummy_draw(void);
+#endif
+
 // Change video mode, only at the start of a refresh.
-void SCR_SetMode (void);
+void SCR_SetMode( byte change_flag );
 // Recalc screen size dependent stuff
 void SCR_Recalc (void);
 // Apply config or command line settings.

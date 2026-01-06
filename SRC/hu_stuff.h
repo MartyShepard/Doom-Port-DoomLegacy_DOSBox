@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hu_stuff.h 1482 2019-12-13 05:16:47Z wesleyjohnson $
+// $Id: hu_stuff.h 1543 2020-08-22 02:36:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -72,6 +72,7 @@ extern char    french_shiftxform[];
 #define HU_MAXMSGLEN    80
 
 extern patch_t*       hu_font[HU_FONTSIZE];
+extern byte  hu_fonts_loaded; // 1=partially loaded, 2=fully loaded
 
 //set true by hu_ when entering a chat message
 extern boolean chat_on; 

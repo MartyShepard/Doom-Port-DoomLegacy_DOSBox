@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1509 2020-04-04 08:49:54Z wesleyjohnson $
+// $Id: wi_stuff.c 1543 2020-08-22 02:36:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -386,7 +386,7 @@ static int              me;
 static byte            state;  // state_e
 
 // contains information passed into intermission
-static wb_start_t     * wbs;
+static wb_start_t     * wbs = NULL;
 
 static wb_player_t    * wb_plyr;  // wbs->plyr[]
 

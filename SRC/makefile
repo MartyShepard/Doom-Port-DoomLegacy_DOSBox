@@ -1350,8 +1350,8 @@ depend:  $(DD)/main1.dep $(DD)/main3.dep $(DD)/main4.dep $(DD)/main5.dep \
 
 $(DD)/main1.dep : $(SD)a*.c $(SD)b*.c $(SD)c*.c
 $(DD)/main3.dep : $(SD)q*.c $(SD)s*.c
-$(DD)/main4.dep : $(SD)f*.c $(SD)g*.c $(SD)h*.c
-$(DD)/main5.dep : $(SD)v*.c $(SD)z*.c $(SD)i*.c
+$(DD)/main4.dep : $(SD)f*.c $(SD)g*.c $(SD)h*.c $(SD)i*.c
+$(DD)/main5.dep : $(SD)v*.c $(SD)w*.c $(SD)z*.c
 $(DD)/main_d.dep : $(SD)d*.c
 $(DD)/main_m.dep : $(SD)m*.c
 $(DD)/main_p1.dep : $(SD)p_c*.c $(SD)p_d*.c $(SD)p_e*.c $(SD)p_f*.c
@@ -1360,7 +1360,7 @@ $(DD)/main_p3.dep : $(SD)p_p*.c $(SD)p_s*.c $(SD)p_t*.c $(SD)p_u*.c
 $(DD)/main_ph.dep : $(SD)p_h*.c
 $(DD)/main_r.dep : $(SD)r*.c
 $(DD)/main_t.dep : $(SD)t*.c
-# none: e*.c j*.c k*.c l*.c n*.c o*.c
+# none: e*.c j*.c k*.c l*.c n*.c o*.c u*.c x*.c y*.c
 
 ifdef INTERFACE
 depend: $(DD)/$(INTERFACE).dep

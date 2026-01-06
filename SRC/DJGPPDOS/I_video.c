@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_video.c 1529 2020-05-14 09:44:10Z wesleyjohnson $
+// $Id: I_video.c 1543 2020-08-22 02:36:35Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -60,10 +60,21 @@
   // cv_fullscreen etc..
 
 
+
+// This has the modelist in Vid_vesa.
+static byte  mode_bitpp;  // bitpp of modelist
+
+#if 0
+// unused
 //dosstuff -newly added
-unsigned long dascreen;
+static unsigned long dascreen;
+#endif
+/*
+   Wird benötigt...
+   DJGPPDOS_NATIVE/i_video.c:157: error: `gfx_use_vesa1' undeclared (first use in this function)
+*/
 static int gfx_use_vesa1;
-extern byte graphics_state;
+
 
 #define SCREENDEPTH   1     // bytes per pixel, do NOT change.
 
@@ -201,7 +212,8 @@ void I_SetPalette (RGBA_t* palette)
     }
 }
 
-
+#if 0
+// Not used.
 //added 29-12-1997
 /*==========================================================================*/
 // I_BlastScreen : copy the virtual screen buffer to the physical screen mem
@@ -237,6 +249,7 @@ void I_BlitScreenVesa1(void)
    }
 
 }
+#endif
 
 
 //added:08-01-98: now we use Allegro's set_gfx_mode, but we want to
@@ -292,6 +305,8 @@ void I_ShutdownGraphics (void)
 }
 
 
+#if 0
+// Not used.
 //added:08-01-98:
 //  Set VESA1 video mode, coz Allegro set_gfx_mode a larger screenwidth...
 //
@@ -332,6 +347,7 @@ int set_vesa1_mode( int width, int height )
 
     return 0;
 }
+#endif
 
 
 //added:08-01-98: now uses Allegro to setup Linear Frame Buffer video modes.
@@ -408,6 +424,10 @@ int I_RequestFullGraphics( byte select_fullscreen )
     int ret_value;
     modenum_t initial_mode = {MODE_window, 0};
     /*
+      Alter.. das mach mich wahnsinnig. In DOS.. Fullscreen kein Fullscreen und Fenstermodus? ALTER...
+    */
+    byte select_fullscreen_mode;
+    /*
     switch(req_drawmode)
     {
      case DRM_native:
@@ -437,16 +457,21 @@ int I_RequestFullGraphics( byte select_fullscreen )
         goto no_modes;
     */
     
-    allow_fullscreen = true;
-    mode_fullscreen = select_fullscreen;  // initial startup
     vid.width = req_width;
     vid.height = req_height;
+
     // set the startup screen
-    initial_mode = VID_GetModeForSize( req_width, req_height,
-				       (select_fullscreen ? MODE_fullscreen: MODE_window));
+    select_fullscreen_mode = vid_mode_table[select_fullscreen];
+    GenPrintf( EMSG_ver, "I_RequestFullGraphics: [File: %-28s in Line:%4d ] Selectet Mode: %s\n",__FILE__,__LINE__,(select_fullscreen_mode==MODE_fullscreen?"FullScreen":"Window"));
+
+    initial_mode = VID_GetModeForSize( req_width, req_height, select_fullscreen_mode );
     ret_value = VID_SetMode ( initial_mode );
+    GenPrintf( EMSG_ver, "I_RequestFullGraphics: [File: %-28s in Line:%4d ] VID_SetMode(x) Return Value : '%d'\n",__FILE__,__LINE__,ret_value);
+
+    if( ret_value < 0 )
+        return ret_value;
+
     graphics_state = VGS_fullactive;
-    
     return ret_value;  // have video mode
 
 no_modes:
@@ -467,7 +492,7 @@ int I_Rendermode_setup( void )
 //   request_fullscreen : true if want fullscreen modes
 //   request_bitpp : bits per pixel
 // Return true if there are viable modes.
-boolean  VID_Query_Modelist( byte request_drawmode, boolean request_fullscreen, byte request_bitpp )
+boolean  VID_Query_Modelist( byte request_drawmode, byte request_fullscreen, byte request_bitpp )
 {
     int ret_value;
     byte  old_loaded_driver = loaded_driver; // must put this back

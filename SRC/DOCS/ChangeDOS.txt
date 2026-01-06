@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01543 ]: w109_008 fullscreen
+          PS: Der geht mir so auf den sack mit seinem 
+          Villbidlschirm/ Fenstermodus
+
 [01542 ]: w109_007 devmode
           DJGPP Compile fix Comments
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1531 2020-05-16 10:04:04Z wesleyjohnson $
+// $Id: screen.c 1543 2020-08-22 02:36:35Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -162,9 +162,37 @@ void ASMCALL ASM_PatchRowBytes(int rowbytes);
 //  Short and Tall sky drawer, for the current color mode
 void (*skydrawerfunc[2]) (void);
 
-// Called from D_DoomLoop, to init
+
+#ifdef PARANOID       
+void R_DrawDummy( void )
+{
+   printf( "R_DrawDummy\n" );
+}
+
+void SCR_Set_dummy_draw( void )
+{
+  colfunc = basecolfunc = R_DrawDummy;
+  skincolfunc = transcolfunc = shadecolfunc = R_DrawDummy;
+  fogcolfunc = R_DrawDummy;
+#ifdef ENABLE_DRAW_ALPHA       
+  alpha_colfunc = R_DrawDummy;
+#endif
+
+  spanfunc = basespanfunc = R_DrawDummy;
+  fogspanfunc = transspanfunc = R_DrawDummy;
+  skintranscolfunc = R_DrawDummy;
+
+  skydrawerfunc[0] = R_DrawDummy;
+  skydrawerfunc[1] = R_DrawDummy;
+}
+#endif
+
+
+// Called from D_DoomMain, to start Full Graphics.
+// Called from D_DoomLoop, when setmodeneeded or drawmode_recalc.
 // Called from D_Display, when setmodeneeded or drawmode_recalc.
-void SCR_SetMode (void)
+//   change_flag : 0=initial setup, 1=change existing setup
+void SCR_SetMode( byte change_flag )
 {
     int ret_value = 0;
     byte old_HWR_patchstore = HWR_patchstore;
@@ -172,40 +200,40 @@ void SCR_SetMode (void)
     if(dedicated)
         goto done;
 
-    if( (setmodeneeded.modetype == MODE_NOP) && (!drawmode_recalc) )
-        return;                 //should never happen
-
     // Possible change of rendermode
-    if( drawmode_recalc )
+    if( drawmode_recalc && set_drawmode )
     {
         // Switch the drawmode, this may change the rendermode, setmodeneeded.
-        ret_value = V_switch_drawmode( set_drawmode, 1 );
+        ret_value = V_switch_drawmode( set_drawmode, change_flag );
         if( setmodeneeded.modetype == MODE_NOP )
-	{
+        {
             if( ! ret_value )  goto done;
             setmodeneeded = vid.modenum;
-	}
+        }
     }
 
     // triggered by V_switch_drawmode
     if( rendermode_recalc )
     {
-        // Tear down of structures dependent upon rendermode
-        // Release using old HWR_patchstore setting.
-        SB_Heretic_Release_Graphics();
-        ST_Release_Graphics();
-        ST_Release_FaceGraphics();
-        WI_Release_Data();
-        R_Release_Corona();
+        if( change_flag )
+        {
+            // Tear down of structures dependent upon rendermode
+            // Release using old HWR_patchstore setting.
+            SB_Heretic_Release_Graphics();
+            ST_Release_Graphics();
+            ST_Release_FaceGraphics();
+            WI_Release_Data();
+            R_Release_Corona();
 
 #ifdef HWRENDER
-        if( HWR_patchstore )
-        {
-            HWR_Shutdown_Render();
-        }
+            if( HWR_patchstore )
+            {
+                HWR_Shutdown_Render();
+            }
 #endif
 
-        Z_FreeTags( PU_PURGELEVEL, PU_UNLOCK_CACHE);
+            Z_FreeTags( PU_PURGELEVEL, PU_UNLOCK_CACHE);
+        }
 
 #ifdef HWRENDER
         // Safe to switch to the new rendermode patch storage..
@@ -219,11 +247,12 @@ void SCR_SetMode (void)
 #ifdef DEBUG_WINDOWED
     {
       // Disable fullscreen so can switch to debugger at breakpoints.
-      mode_fullscreen = false;
+      cv_fullscreen.EV = 0;
       if( drawmode_recalc )
       {
           ret_value = I_RequestFullGraphics( false );
       }
+      CONS_Printf("Debug Graphics Window...\n");
       modenum_t mode800 = VID_GetModeForSize(800,600, MODE_window);  // debug window
       VID_SetMode(mode800);
       vid.modenum = setmodeneeded; // fix the display
@@ -234,12 +263,15 @@ void SCR_SetMode (void)
     {
         // Graphics drawmode setup, get video modes
         // param: req_drawmode, req_bitpp, req_alt_bitpp, req_width, req_height.
-        ret_value = I_RequestFullGraphics( cv_fullscreen.EV && allow_fullscreen );
-
+        cv_fullscreen.EV = cv_fullscreen.value && allow_fullscreen;
+        ret_value = I_RequestFullGraphics( cv_fullscreen.EV );
+        if( ret_value < 0 )
+            GenPrintf(EMSG_error, "Change Graphics failed: err=%i, fullscreen=%i\n", ret_value, cv_fullscreen.EV );
         if( ret_value < 0 && cv_fullscreen.EV )
         {
+            cv_fullscreen.EV = 0;
             ret_value = I_RequestFullGraphics( 0 );  // window mode
-	}
+        }
     }
     else
     {
@@ -431,13 +463,14 @@ void SCR_SetMode (void)
         HWR_patchstore = old_HWR_patchstore;
 #endif
 
+        // release (if already loaded)
         HU_Release_Graphics();  // need this until last second, for fonts
        
         // Setup patch load, again.
 #ifdef HWRENDER
         HWR_patchstore = new_HWR_patchstore;
 #endif
-        HU_Load_Graphics();
+        HU_Load_Graphics();  // Load the console fonts.
         ST_Load_Graphics();  // Doom and Heretic
         WI_Load_Data();
 #ifdef HWRENDER
@@ -568,8 +601,6 @@ void SCR_Recalc (void)
 // Apply the config video settings.
 void SCR_apply_video_settings( void )
 {
-    byte modetype = mode_fullscreen ? MODE_fullscreen : MODE_window;
- 
     // command line settings have precedence
     if( ! req_command_video_settings )
     {
@@ -584,11 +615,11 @@ void SCR_apply_video_settings( void )
 
     if( verbose )
     {
-        CONS_Printf("Request video: %d x %d (%d bits)\n", req_width, req_height, req_bitpp);
+        CONS_Printf("Request video: %d x %d (%d bits)\n", req_width, req_height, req_bitpp );
     }
-      
-    // returns -1 if not found, (no mode change)   
-    setmodeneeded = VID_GetModeForSize( req_width, req_height, modetype );       
+
+    // returns -1 if not found, (no mode change)
+    setmodeneeded = VID_GetModeForSize( req_width, req_height, vid_mode_table[cv_fullscreen.EV] );
 }
 
 
@@ -608,13 +639,17 @@ void SCR_ChangeFullscreen (void)
 {
     // used to prevent switching to fullscreen during startup
     if (!allow_fullscreen)  // by I_RequestFullGraphics
+    {
+        cv_fullscreen.EV = 0;
         return;
+    }
 
 //    if( graphics_state >= VGS_fullactive )  // by I_RequestFullGraphics
 //    if( graphics_state >= VGS_active )  //  by I_StartupGraphics()
     if( graphics_state >= VGS_startup )  // by I_StartupGraphics()
     {
-        mode_fullscreen = ( cv_fullscreen.value )? true : false;
+        // I_RequestFullGraphics can cancel allow_fullscreen
+        cv_fullscreen.EV = cv_fullscreen.value;
         SCR_apply_video_settings();
     }
 }
