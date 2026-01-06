@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.c 1537 2020-06-16 05:30:37Z wesleyjohnson $
+// $Id: g_game.c 1538 2020-06-16 05:31:32Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -3350,8 +3350,11 @@ void G_ReadDemoTiccmd (ticcmd_t* cmd,int playernum)
 
         if(ziptic & ZT_EXTRADATA)
             ReadLmpExtraData(&demo_p,playernum);
+#if 0
+// only used to clear textcmd, which is now done in TryRunTics       
         else
             ReadLmpExtraData(0,playernum);
+#endif
 
         memcpy(cmd,&(oldcmd[playernum]),sizeof(ticcmd_t));
     }
@@ -4141,7 +4144,9 @@ void G_DoPlayDemo (const char *defdemoname)
     else
     {
         // wait map command in the demo
-        gamestate = wipegamestate = GS_WAITINGPLAYERS;
+//        gamestate = wipegamestate = GS_WAITINGPLAYERS;  // will display waiting counter
+//        gamestate = wipegamestate = GS_DEMOSCREEN;  // will advance to next demo
+        gamestate = wipegamestate = GS_NULL;
     }
 
     CON_ToggleOff (); // may be also done at the end of map command
