@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01536 ]: w109 001 VERREV
 [01535 ]: scripts/README.rst updated.
 [01534 ]: legacy.wad version bumped to 1.48.0
 [01533 ]: FS corona constants updated.

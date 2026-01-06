@@ -8038,4 +8038,35 @@ Fix config fullscreen implementation.
 Add call to pass config fullscreen to video setmode, after allow_fullscreen
 gets set.
 
+*** w109_verrev
+patchfile = w109_001_verrev.patch
+- commit revision 1533
+Add recording in demo of version and revision numbers,
+and capability of testing revision using VERREV().
+
+*** w109_infight
+patchfile = w109_002_infight.patch
+- commit revision 1534
+DoomLegacy has used PrBoom as a reference, and PrBoom has a test for
+monster_infighting in its test for missile invulnerability between
+monsters of the same species.
+Some other ports (Boom, MBF, eternity engine) do not have the
+infight test, so their monsters are always invulnerable to missiles
+from their own species.
+Fixes BUG 0664.
+
+Add MBF infight logic to A_PosRefire and A_SpidRefire.
+This stops firing on friends.
+
+*** w109_demo
+patchfile = w109_003_demo.patch
+- commit revision 1535
+Legacy demo would fail to start due to blocked textcmd from
+the demo.  Legacy demo issue a map textcmd to load the map.
+Player 0 was not in the game yet, and this was detected as
+a textcmd from a non-existant player.
+The demo needed to use SERVER_ID for textcmd
+issued before player 0 is in the game.
+Fixes BUG 0665.
+
 

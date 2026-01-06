@@ -121,11 +121,13 @@ extern  byte    verbose;   // 1, 2
 // used to enable/disable selected features for backward compatibility
 // (where possible)
 extern  byte    demoversion;
+extern  uint16_t  demoversion_rev;  // VERREV(demoversion, revision)
+#define  VERREV(v,r)   (((int)(v)<<8)+(r))
 
 // version numbering
 // [WDJ] For separate libs that cannot access VERSION var
-// 1.46
-#define DOOMLEGACY_COMPONENT_VERSION   14600
+// 1.48
+#define DOOMLEGACY_COMPONENT_VERSION   14800
 
 extern const int  VERSION;
 extern const int  REVISION;
