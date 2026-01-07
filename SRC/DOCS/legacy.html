@@ -1418,13 +1418,17 @@ The following are valid game-names, but the mode is not supported yet.
 <tr>
 <td>-iwad &lt;filename&gt;</td>
 <td>Set the main IWAD file to use. This also determines the game mode when
--game is not used.</td>
+-game is not used.
+</td>
 </tr>
 
 <tr>
 <td id="file">-file &lt;filename1&gt; [&lt;filename2&gt;...]</td>
 <td>Load one or more additional PWAD or DeHackEd files, possibly
   replacing some of the IWAD data.
+<br>Zip archives can be loaded (Linux Only, with ZIPWAD compile option).
+When a zip archive is loaded, all the wad, deh, and bex files within
+the archive are loaded.
 </td>
 </tr>
 

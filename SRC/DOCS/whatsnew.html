@@ -14,6 +14,146 @@
 <div class="column">
 
 
+<h2>1.48.6 SVN1550 (2020-09-09)</h2>
+
+<h3>FEATURES 1.48.6</h3>
+
+<ul>
+<li>
+DoomLegacy can read zip archives (Linux Only, enabled by compile option ZIPWAD).
+When an load file is a zip archive, all loadable files within the
+archive are loaded.
+When searching for a known file, zip archives of the
+same name (but with .zip) are also searched.
+<br>
+This uses library libzip.
+When built with compile option ZIPWAD_OPTIONAL, DoomLegacy detects if the
+libzip library is present on the user machine.
+This allows DoomLegacy to run without the feature, when the user does not have libzip.
+<br>
+A libzip before version 1.2 does not have a seek function.
+A compile option will provide our own zip_seek function, so libzip 1.0
+can be used.
+</li>
+<li>
+Recorded Demos now include both the Version and Revision numbers,
+so revision specific behaviors can be enabled.
+DoomLegacy 1.48.6 has modified its native demo format, which
+is revision specific.  Older demo formats are still playable.
+</li>
+<li>
+Recognize and handle DeePsea Tall patches.
+Enabled with compile option DEEPSEA_TALL_PATCH.
+Michael Bauerle submitted the orignial patch, derived from crispy doom.
+</li>
+</ul>
+
+<h3>BUG FIXES 1.48.6</h3>
+<ul>
+<li>
+DoomLegacy and PrBoom monster infighting does not have
+missile invulnerability between monsters of the same species.
+Some other ports (Boom, MBF, Eternity engine) do not have the
+infight test, so their monsters are always invulnerable to missiles
+from their own species.
+<br>
+Added another item to the infight control to select the behavior.
+<br>
+Implements "Full Infight" setting with missile damage (Legacy, PrBoom).
+<br>
+Implements other infight settings without missile damage (Boom, MBF, Eternity).
+<br>
+Fixes BUG 0664.
+<p>
+Added MBF infight logic, thats stops monsters from firing on friends.
+</li>
+<li>
+Legacy demo would fail to start due to blocking the textcmd that loads
+the map.
+<p>
+The Legacy 1.48.4 demo was recorded with player 0 issuing the map textcmd.
+Player 0 was not in the game yet, and this was detected as
+a textcmd from a non-existant player, which got caught by new security code.
+For textcmd issued before player 0 is in the game, the demo needs to use SERVER_PID.
+<br>
+Fixed demo read to redirect player 0 demo textcmd to SERVER_PID.
+<p>
+DoomLegacy 1.48 has a single long combined textbuf, containing the textcmd
+from all players.
+Within the combined textbuf, there are individual textcmd marked with the player id.
+Individual textcmd are still limited to 255 chars as in an ordinary textbuf.
+The DoomLegacy 1.48.6 demo format has been changed to store the entire combined textbuf buffer
+into the player 0 slot.  This is simpler for recording and playback,
+has the same effect, and allows SERVER_PID textcmd, which the
+previous demo format did not.
+<p>
+The commands to create a player (and other server actions) are now issued by SERVER_PID,
+where in older demos they were issued by player 0, before player 0 existed.
+DoomLegacy 1.48 has better protection against malicious network traffic than previous versions,
+and checking textcmd validity is part of the security protection.
+This fixes demo playback to work with the security checking.
+<p>
+Changed the SERVER_PID to 250 now, for future expansion of players.
+<p>
+This fixes bug 0665.
+</li>
+<li>
+Fixed the moonwalk bug, where monsters would sometimes walk backward.
+This was due to a bad translation of an everything-in-one-expression
+to more maintainable code.
+</li>
+<li>
+Make an oof sound when hit a 2s line, just like when hit a 1s line.
+Adopted from PrBoom, a Killough enhancement.
+</li>
+<li>
+Make optional, and disabled, some old development hacks.
+<br>
+Option DEVPARM_LOADING:
+<br>
+  Loaded development wads from a special directory.
+  This used switches  -wart, -devgame (even older -shdev, -regdev, -comdev).
+<br>
+Option WADFILE_RELOAD:
+<br>
+  If a filename started with a tilde "~", it was taken as an indication
+  to reload the file on every lump access.
+  This was to enable leaving doom running while changing wad files.
+<br>
+Option LOADING_DISK_ICON:
+<br>
+  Not implemented in any port anyway.
+</li>
+<li>
+The Full Graphics startup was fragile, requiring constant fixing.
+Video startup now changes directly to the config modes,
+which is faster and cleaner.  Removed some antiquated code and interactions,
+adopting an interface that puts the main code in control.
+</li>
+<li>
+Fixed the violet line, trees, and tall sprites of "Lost civilization" wad.
+This required being able to save the same texture as both a transparent patch texture,
+for drawing hanging vines,
+and as a picture format texture, for drawing tiled walls.
+This fixes Bug 0663.
+</li>
+<li>
+The fast drawing of wall textures required them to be
+a power-of-2 in width, so they could be tiled.
+To handle the case where it is not a power-of-2 in width,
+it now uses a slower masked draw similar to that in PrBoom,
+which also handles a negative offset.
+This fixes the large tree in "Lost civilization".
+</li>
+<li>
+Fixed some old code to use POSIX fcntl, which allows it
+to compile on SunOS.
+Patches submitted by Michael Bauerle.
+Fixes Bug 0666,
+</li>
+</ul>
+
+
 <h2>1.48.4 SVN1531 (2020-05-16)</h2>
 
 <h3>BUG FIXES 1.48.4</h3>

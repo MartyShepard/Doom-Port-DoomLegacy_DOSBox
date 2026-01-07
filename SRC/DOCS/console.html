@@ -11,7 +11,7 @@
 
 <body>
 <h1>Doom Legacy 1.48 Console Reference</h1>
-<h1 class="tagline">Last updated 2020-04-14</h1>
+<h1 class="tagline">Last updated 2020-08-25</h1>
 
 <div class="floatbox">
 <h2>Contents</h2>
@@ -1392,20 +1392,32 @@ Choose if monster are "fast" like with the original -fastparm
 Select the mode of monster infighting.
 <table class="def">
 <tr><td>Normal</td><td>0</td><td>Monsters retaliate by default, as in vanilla Doom.
-   DEH settings in the wad can override this.</td></tr>
+  </td></tr>
 <tr><td>Coop</td><td>1</td><td>Monsters cooperate by default.
-  DEH settings in the wad can override this.
   This is the same setting as the -coopmonsters command line switch.</td></tr>
+<tr><td><nobr>No Infight</nobr></td><td>8</td><td>Monsters take damage, but do not retaliate.
+  Missiles of their own species do no damage.</td></tr>
 <tr><td>Infight</td><td>2</td><td>Monsters retaliate by default.
-  DEH settings in the wad can override this.
+  Missiles from their own species do no damage (as in Boom, MBF, Eternity).
   This is the same setting as the -infight command line switch.</td></tr>
+<tr><td><nobr>Full Infight</nobr></td><td>6</td><td>Monsters
+  retaliate, and can be damaged by their own specie's missiles (DoomLegacy, PrBoom).
+  </td></tr>
 <tr><td><nobr>Force Coop</nobr></td><td>3</td><td>Monsters cooperate.
-  This overrides DEH infight settings.</td></tr>
-<tr><td><nobr>Force Infight</nobr></td><td>4</td><td>Monsters retailiate and damage each other.
-  This overrides DEH infight settings.</td></tr>
-<tr><td><nobr>No Infight</nobr></td><td>5</td><td>Monsters take damage from missiles, but do not retaliate.</td></tr>
+  <br>Overrides DEH infight setting.</td></tr>
+<tr><td><nobr>Force No Infight</nobr></td><td>5</td><td>Monsters take damage, but do not retaliate.
+  Missiles of their own species do no damage.
+  <br>Overrides DEH infight setting.</td></tr>
+<tr><td><nobr>Force Infight</nobr></td><td>4</td><td>Monsters retailiate, and damage each other.
+  Missiles from their own species do no damage (as in Boom, MBF, Eternity).
+  <br>Overrides DEH infight setting.</td></tr>
+<tr><td><nobr>Force Full Infight</nobr></td><td>7</td><td>Monsters retailiate, and damage each other.
+  They can be damaged by their own specie's missiles (DoomLegacy, PrBoom).
+  <br>Overrides DEH infight setting.</td></tr>
 </table>
 Default is Normal.
+<br>DEH settings in the wad can override the default monsterbehavior setting,
+but the "Force" settings override any DEH infight settings.
 </td></tr>
 
 <tr><td>monsterfriction</td><td>enum</td>

@@ -8251,8 +8251,6 @@ and only stored in the texren.
 Upon a reload, a picture texture_model in the texture
 would prevent generating the correct data for masked draw.
 
-==== commit
-
 *** w109_noblock
 patchfile = w109_012_noblock.patch
 - commit revision 1548
@@ -8274,3 +8272,11 @@ and tries to tile the draw.  This is noticable for a tree.
 Adopt a masked draw column select similar to PrBoom,
 which handles negative offset and odd texture widths.
 Keep the masked tiling for power-of-2 width textures.
+
+*** w109_maskedtile
+patchfile = w109_014_ver1486
+- commit revision 1549
+Update to 1.48.6.
+Update docs and make_options.
+
+==== commit
