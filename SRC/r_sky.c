@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_sky.c 1547 2020-09-02 13:27:13Z wesleyjohnson $
+// $Id: r_sky.c 1554 2020-11-17 23:29:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -88,7 +88,7 @@ int     sky_texturemid;
 uint32_t sky_widthmask = 0;
 patch_t * sky_patch = NULL;  // ZMalloc, PU_STATIC
 
-fixed_t sky_height;
+int     sky_height;
 fixed_t sky_scale;
 byte    sky_240=0;  // 0=std 128 sky, 1=240 high sky
 
@@ -834,7 +834,7 @@ void R_Setup_SkyDraw (void)
     {
         sky_patch = (patch_t*) R_GenerateTexture2( sky_texture, & texture_render[sky_texture], TM_none );
         sky_240 = 1;
-        sky_height = SKY_HEIGHT<<FRACBITS;
+        sky_height = SKY_HEIGHT;
         // horizon line on 256x240 freelook textures of Legacy or heretic
         sky_texturemid = 200<<FRACBITS;
     }
@@ -852,7 +852,7 @@ void R_Setup_SkyDraw (void)
             // Extend sky
             sky_patch = R_Generate_Sky( sky_texture );
             sky_240 = 1;
-            sky_height = SKY_HEIGHT<<FRACBITS;
+            sky_height = SKY_HEIGHT;
             sky_texturemid = 200<<FRACBITS;
         }
         else
@@ -860,7 +860,7 @@ void R_Setup_SkyDraw (void)
             // Stretch sky
             sky_patch = (patch_t*) R_GenerateTexture2( sky_texture, & texture_render[sky_texture], TM_none );
             sky_240 = 0;
-            sky_height = max_height<<FRACBITS;
+            sky_height = max_height;
             // the horizon line in a 256x128 sky texture
             sky_texturemid = 100<<FRACBITS;
         }

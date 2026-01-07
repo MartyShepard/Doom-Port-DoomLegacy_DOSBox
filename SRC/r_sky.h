@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_sky.h 1463 2019-09-29 07:36:51Z wesleyjohnson $
+// $Id: r_sky.h 1554 2020-11-17 23:29:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -53,7 +53,7 @@
 extern patch_t * sky_patch;
 extern int     sky_texture;
 extern int     sky_texturemid;
-extern fixed_t sky_height;
+extern int     sky_height;
 extern fixed_t sky_scale;
 extern uint32_t sky_widthmask;
 extern byte    sky_240;  // 0=std 128 sky, 1=240 high sky

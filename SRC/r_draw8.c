@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw8.c 1455 2019-09-11 12:25:21Z wesleyjohnson $
+// $Id: r_draw8.c 1554 2020-11-17 23:29:23Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 // Portions Copyright (C) 2000-2016 by DooM Legacy Team.
@@ -85,6 +85,11 @@
 
 // [WDJ] Window limit checks have been added to all the callers of colfunc().
 
+// [WDJ] Combine the Boom enhancements into our draw functions,
+// so modifications do not have to be made in two functions.
+#define USEBOOMFUNC
+
+
 // ==========================================================================
 // COLUMNS
 // ==========================================================================
@@ -92,10 +97,8 @@
 //  A column is a vertical slice/span of a wall texture that uses
 //  a has a constant z depth from top to bottom.
 //
-#define USEBOOMFUNC
 
 #ifndef USEASM
-#ifndef USEBOOMFUNC
 void R_DrawColumn_8(void)
 {
     register int count;
@@ -104,10 +107,8 @@ void R_DrawColumn_8(void)
     register fixed_t fracstep;
 
     count = dc_yh - dc_yl + 1;
-
-    // Zero length, column does not exceed a pixel.
     if (count <= 0)
-        return;
+        return;  // Zero length, column does not exceed a pixel.
 
 #ifdef RANGECHECK
     // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
@@ -131,56 +132,8 @@ void R_DrawColumn_8(void)
     // Inner loop that does the actual texture mapping,
     //  e.g. a DDA-lile scaling.
     // This is as fast as it gets.
-    do
-    {
-        // Re-map color indices from wall texture column
-        //  using a lighting/special effects LUT.
-        *dest = dc_colormap[dc_source[(frac >> FRACBITS) & 127]];
-
-        dest += vid.ybytes;
-        frac += fracstep;
-
-    }
-    while (--count);
-}
-#else //USEBOOMFUNC
-// SoM: Experiment to make software go faster. Taken from the Boom source
-void R_DrawColumn_8(void)
-{
-    int count;
-    register byte *dest;
-    register fixed_t frac;
-    fixed_t fracstep;
-
-    count = dc_yh - dc_yl + 1;
-
-    if (count <= 0)     // Zero length, column does not exceed a pixel.
-        return;
-
-#ifdef RANGECHECK
-    // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
-    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight)
-    {
-        I_SoftError("R_DrawColumn: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
-        return;
-    }
-#endif
-
-    // Framebuffer destination address.
-    // Use ylookup LUT to avoid multiply with ScreenWidth.
-    // Use columnofs LUT for subwindows? 
-
-    dest = ylookup[dc_yl] + columnofs[dc_x];
-
-    // Determine scaling, which is the only mapping to be done.
-
-    fracstep = dc_iscale;
-    frac = dc_texturemid + (dc_yl - centery) * fracstep;
-
-    // Inner loop that does the actual texture mapping,
-    //  e.g. a DDA-lile scaling.
-    // This is as fast as it gets.
-
+#ifdef USEBOOMFUNC
+    // Do two pixels per loop when possible.
     {
         register const byte *source = dc_source;
         register const lighttable_t *colormap = dc_colormap;
@@ -224,12 +177,25 @@ void R_DrawColumn_8(void)
                 *dest = colormap[source[(frac >> FRACBITS) & heightmask]];
         }
     }
+#else
+    // Simple loop.  Fixed tile 128.
+    do
+    {
+        // Re-map color indices from wall texture column
+        //  using a lighting/special effects LUT.
+        *dest = dc_colormap[dc_source[(frac >> FRACBITS) & 127]];
+
+        dest += vid.ybytes;
+        frac += fracstep;
+
+    }
+    while (--count);
+#endif
 }
-#endif //USEBOOMFUNC
 #endif
 
+
 #ifndef USEASM
-#ifndef USEBOOMFUNC
 void R_DrawSkyColumn_8(void)
 {
     register int count;
@@ -237,11 +203,17 @@ void R_DrawSkyColumn_8(void)
     register fixed_t frac;
     register fixed_t fracstep;
 
+#ifdef USEBOOMFUNC
+    count = dc_yh - dc_yl + 1;
+    if (count <= 0)
+        return;  // Zero length, column does not exceed a pixel.
+    // while(--count)
+#else   
     count = dc_yh - dc_yl;
-
-    // Zero length, column does not exceed a pixel.
     if (count < 0)
-        return;
+        return;  // Zero length, column does not exceed a pixel.
+    // while(count--)
+#endif
 
 #ifdef RANGECHECK
     // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
@@ -265,56 +237,10 @@ void R_DrawSkyColumn_8(void)
     // Inner loop that does the actual texture mapping,
     //  e.g. a DDA-lile scaling.
     // This is as fast as it gets.
-    do
-    {
-        // Re-map color indices from wall texture column
-        //  using a lighting/special effects LUT.
-        *dest = dc_colormap[dc_source[(frac >> FRACBITS) & 255]];
 
-        dest += vid.ybytes;
-        frac += fracstep;
-
-    }
-    while (count--);
-}
-#else
-// Boom source
-void R_DrawSkyColumn_8(void)
-{
-    int count;
-    register byte *dest;
-    register fixed_t frac;
-    fixed_t fracstep;
-
-    count = dc_yh - dc_yl + 1;
-
-    if (count <= 0)     // Zero length, column does not exceed a pixel.
-        return;
-
-#ifdef RANGECHECK
-    // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
-    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight)
-    {
-        I_SoftError("R_DrawSkyColumn: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
-        return;
-    }
-#endif
-
-    // Framebuffer destination address.
-    // Use ylookup LUT to avoid multiply with ScreenWidth.
-    // Use columnofs LUT for subwindows? 
-
-    dest = ylookup[dc_yl] + columnofs[dc_x];
-
-    // Determine scaling, which is the only mapping to be done.
-
-    fracstep = dc_iscale;
-    frac = dc_texturemid + (dc_yl - centery) * fracstep;
-
-    // Inner loop that does the actual texture mapping,
-    //  e.g. a DDA-lile scaling.
-    // This is as fast as it gets.
-
+    // [WDJ] FIXME: heightmask=255 is wrong, height is 128 or 240.  Looking up, this could segfault.
+#ifdef USEBOOMFUNC
+    // Do two pixels per loop when possible.
     {
         register const byte *source = dc_source;
         register const lighttable_t *colormap = dc_colormap;
@@ -358,8 +284,21 @@ void R_DrawSkyColumn_8(void)
                 *dest = colormap[source[(frac >> FRACBITS) & heightmask]];
         }
     }
+#else
+    // Simple loop.  Fixed tile 256.
+    do
+    {
+        // Re-map color indices from wall texture column
+        //  using a lighting/special effects LUT.
+        *dest = dc_colormap[dc_source[(frac >> FRACBITS) & 255]];
+
+        dest += vid.ybytes;
+        frac += fracstep;
+
+    }
+    while (count--);
+#endif
 }
-#endif // USEBOOMFUNC
 #endif
 
 //  The standard Doom 'fuzzy' (blur, shadow) effect
@@ -382,10 +321,9 @@ void R_DrawFuzzColumn_8(void)
         dc_yh = rdraw_viewheight - 2;
 
     count = dc_yh - dc_yl;
-
-    // Zero length.
     if (count < 0)
-        return;
+        return;  // Zero length, column does not exceed a pixel.
+    // while(count--)
 
 #ifdef RANGECHECK
     // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
@@ -682,7 +620,6 @@ void R_DrawAlphaColumn_8(void)
 //
 // [WDJ] asm does not have latest changes
 #ifndef USEASM
-#ifndef USEBOOMFUNC
 void R_DrawTranslucentColumn_8(void)
 {
     register int count;
@@ -695,9 +632,15 @@ void R_DrawTranslucentColumn_8(void)
 //    if ((dc_yl < 0) || (dc_x >= vid.width))
 //        return;
 
+#ifdef USEBOOMFUNC
+    count = dc_yh - dc_yl + 1;
+    if (count <= 0)
+        return;  // Zero length, column does not exceed a pixel.
+#else
     count = dc_yh - dc_yl;
     if (count < 0)
-        return;
+        return;  // Zero length, column does not exceed a pixel.
+#endif
 
 #ifdef RANGECHECK
     // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
@@ -709,73 +652,18 @@ void R_DrawTranslucentColumn_8(void)
 #endif
     // FIXME. As above.
     //src  = ylookup[dc_yl] + columnofs[dc_x+2];
-    dest = ylookup[dc_yl] + columnofs[dc_x];
-
-    // Looks familiar.
-    fracstep = dc_iscale;
-    frac = dc_texturemid + (dc_yl - centery) * fracstep;
-
-    if( dr_alpha < TRANSLU_REV_ALPHA )
-    {
-      // Here we do an additional index re-mapping.
-      do
-      {
-        *dest = dc_colormap[ dc_translucentmap[ (dc_source[frac >> FRACBITS] << 8) + (*dest) ]];
-        dest += vid.ybytes;
-        frac += fracstep;
-      }
-      while (count--);
-    }
-    else
-    {
-      do
-      {
-        // alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
-        *dest = dc_colormap[ dc_translucentmap[ (dc_source[frac >> FRACBITS]) + ((*dest) << 8) ]];
-        dest += vid.ybytes;
-        frac += fracstep;
-      }
-      while (count--);
-    }
-}
-#else
-// [WDJ] Boom source, modified several times
-void R_DrawTranslucentColumn_8(void)
-{
-    register int count;
-    register fixed_t frac;
-    register fixed_t fracstep;
-    register byte *dest;
-
-    count = dc_yh - dc_yl + 1;
-
-    if (count <= 0)     // Zero length, column does not exceed a pixel.
-        return;
-
-#ifdef RANGECHECK
-    // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
-    if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight)
-    {
-        I_SoftError("R_DrawTranslucentColumn: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
-        return;
-    }
-#endif
 
     // Framebuffer destination address.
     // Use ylookup LUT to avoid multiply with ScreenWidth.
     // Use columnofs LUT for subwindows? 
-
     dest = ylookup[dc_yl] + columnofs[dc_x];
 
     // Determine scaling, which is the only mapping to be done.
-
     fracstep = dc_iscale;
     frac = dc_texturemid + (dc_yl - centery) * fracstep;
 
-    // Inner loop that does the actual texture mapping,
-    //  e.g. a DDA-lile scaling.
-    // This is as fast as it gets.
-
+#ifdef USEBOOMFUNC
+    // Do two pixels per loop when possible.
     {
         register const byte *source = dc_source;
         register int heightmask = dc_texheight - 1;
@@ -851,8 +739,32 @@ void R_DrawTranslucentColumn_8(void)
           }
         }
     }
+#else
+    // Simple loops.  No Tile.
+    if( dr_alpha < TRANSLU_REV_ALPHA )
+    {
+      // Here we do an additional index re-mapping.
+      do
+      {
+        *dest = dc_colormap[ dc_translucentmap[ (dc_source[frac >> FRACBITS] << 8) + (*dest) ]];
+        dest += vid.ybytes;
+        frac += fracstep;
+      }
+      while (count--);
+    }
+    else
+    {
+      do
+      {
+        // alpha >= TRANSLU_REV_ALPHA, reversed translucent table usage
+        *dest = dc_colormap[ dc_translucentmap[ (dc_source[frac >> FRACBITS]) + ((*dest) << 8) ]];
+        dest += vid.ybytes;
+        frac += fracstep;
+      }
+      while (count--);
+    }
+#endif
 }
-#endif // USEBOOMFUNC
 #endif
 
 // New spiffy function.

@@ -8283,7 +8283,7 @@ Update docs and make_options.
 
 *** w109_savebuffer
 patchfile = w109_015_savebuffer
-- commit revision 1551
+- commit revision 1553
 The SG_Writebuf in P_ArchiveThinkers was misplaced.
 Due to continue stmts, it was getting skipped, and the
 savebuffer was overrun (Antaresian Reliquary Map04).
@@ -8293,7 +8293,7 @@ Fixes Bug 0667.
 
 *** w109_skyheight
 patchfile = w109_016_skyheight
-- commit revision 1552
+- commit revision 1554
 The sky draw had been passing a fixed_t value of sky height to
 the draw functions, which expected an int sky height.
 Fixed the sky texture height in the sky setup functions to be an int.
@@ -8307,7 +8307,7 @@ chunk of code.
 
 *** w109_highcolormap
 patchfile = w109_017_highcolormap
-- commit revision 1553
+- commit revision 1555
 Removed the HIGHCOLORMAP and HICOLORMAP optional code.
 It was never completed.
 It would have used a large colormap directly to 16, 24, or 32 bit RGB.
@@ -8319,7 +8319,7 @@ do the extra lookup operation far faster than a main memory access.
 
 *** w109_freedoom
 patchfile = w109_018_freedoom
-- commit revision 1554
+- commit revision 1556
 Changed the freedoom wad names, avoiding
 doom wad names as that was conflicting with doom2 gamemode.
 Freedoom: "freedoom2.wad", "freedoom.wad", and "fdoom2.wad".
@@ -8327,7 +8327,7 @@ Ultimate freedoom: "freedoom1.wad", "freedu.wad", "fdoomu.wad".
 
 *** w109_rangecheck
 patchfile = w109_019_rangecheck
-- commit revision 1555
+- commit revision 1557
 Separated the drawing limits rangechecks to  RANGECHECK_DRAW_LIMITS.
 These are no longer enabled by default.
 
@@ -8337,7 +8337,7 @@ defines get turned off for release code.
 
 *** w109_skypict
 patchfile = w109_020_skypict
-- commit revision 1556
+- commit revision 1558
 The software mode sky draw has had line artifacts above and below the sky.
 Due to using a patch to draw the sky texture, which is treated
 like a wall texture, the artifacts are the post headers being drawn.

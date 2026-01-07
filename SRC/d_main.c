@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1553 2020-11-17 23:27:17Z wesleyjohnson $
+// $Id: d_main.c 1554 2020-11-17 23:29:23Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1553"
+#define SVN_REV "1554"
 #endif
 
 
