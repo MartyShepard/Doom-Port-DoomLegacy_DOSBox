@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01552 ]: README.rst updated.
+[01551 ]: Wadtool updated to remove compiler warnings.
+          Gilt nicht für die C version
+
 [01550 ]: w109_014 ver 1.48.6
 [01549 ]: w109_013 maskedtile
 [01548 ]: w109_012 NoBlock
