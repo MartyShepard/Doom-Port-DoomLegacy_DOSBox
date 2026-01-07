@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: i_tcp.c 1524 2020-05-09 12:07:09Z wesleyjohnson $
+// $Id: i_tcp.c 1548 2020-09-29 10:26:04Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -124,6 +124,7 @@
 #ifdef __OS2__
   // sys/types.h is also included unconditionally by doomincl.h
 # include <sys/types.h>
+  // [MB] 2020-06-18: Maybe required for old Unix too
 # include <sys/time.h>
 #endif // __OS2__
 
@@ -146,6 +147,8 @@
 // non-windows includes
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <fcntl.h>
+  // [MB] 2020-06-18: For fcntl()
 #include <unistd.h>
 #include <netdb.h>
 #include <sys/ioctl.h>
@@ -355,7 +358,12 @@ byte  generic_hashaddr( mysockaddr_t *a )
 // htons: host to net byte order
 // ntohs: net to host byte order
 
-#if defined( WIN32) || defined( __OS2__) || defined( SOLARIS)
+#if defined( SOLARIS)
+// [WDJ] Was using init_aton defined below ..., DoomLegacy 1.48 and before.
+// [MB] 2020-06-18: Use native inet_aton() on Solaris
+// Solaris has inet_aton() in libresolv since version 2.6 from 1997
+#endif
+#if defined( WIN32) || defined( __OS2__)
 // [WDJ] Also defined in mserv.c, but too small, will be inlined anyway.
 static inline
 int inet_aton(const char *hostname,
@@ -943,7 +951,6 @@ err_return:
 
 
 
-//
 // UDPsocket
 // Server or Client.
 //
@@ -951,6 +958,7 @@ err_return:
 //   Called by: CL_Update_ServerList, Command_connect
 static SOCKET  UDP_Socket (void)
 {
+    const char * msg = "";
     SOCKET s;
     struct sockaddr_in  address;
 #if defined(WIN32) && defined(__MINGW32__)
@@ -966,7 +974,7 @@ static SOCKET  UDP_Socket (void)
     s = socket (PF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (s<0 || s==INVALID_SOCKET)
     {
-        I_SoftError("UDP_socket: Create socket failed: %s\n", strerror(errno));
+        msg = "Create socket failed";
         goto no_socket;
     }
 
@@ -1000,13 +1008,32 @@ retry_bind:
             goto retry_bind;
         }
 #endif
-        I_SoftError("UDP_Socket: Bind failed: %s\n", strerror(errno));
+        msg = "Bind failed";
         goto close_socket;
     }
     CONS_Printf("Network port: %d\n", my_sock_port);
 
     // make it non blocking
+#ifdef LINUX
+    // [MB] 2020-06-18: Use portable POSIX way to enable non-blocking mode
+    // https://pubs.opengroup.org/onlinepubs/9699919799/functions/fcntl.html
+    // [WDJ] POSIX.1-2001 : F_SETFL
+    // Windows: Winsock does not have fcntl.
+    {
+        int res = fcntl(s, F_SETFL, O_NONBLOCK);
+        if( res == -1 )
+        {
+            msg = "Switch to non-blocking mode failed";
+            goto close_socket;
+        }
+    }
+#else
+    // [WDJ] DoomLegacy 1.48.4 and before.
+    // Does not work on: SunOS (SmartOS and maybe Solaris).
+    // Linux: still defined in asm-generic/ioctls.h
+    // Needed for Windows, and older ports.
     ioctl (s, FIONBIO, &trueval);
+#endif
 
     // make it broadcastable
 #ifdef LINUX
@@ -1036,7 +1063,7 @@ retry_bind:
                       sizeof(trueval));  // length of value
 #endif
 #endif
-   
+
     // Set Network receive buffer size.
     optlen=sizeof(optval);  // Linux: gets modified
     // optval: gets the value of the option
@@ -1106,6 +1133,7 @@ retry_bind:
     return s;
 
 close_socket:
+    // Print error msg in no_socket.
 #ifdef __DJGPP__
     // bug in libsocket 0.7.4 beta 4 onder winsock 1.1 (win95)
 #else
@@ -1113,6 +1141,8 @@ close_socket:
 #endif
    
 no_socket:
+    // [WDJ] Common error, to control bloat.
+    I_SoftError("UDP_socket: %s: %s\n", msg, strerror(errno));
     return -1;
 }
 

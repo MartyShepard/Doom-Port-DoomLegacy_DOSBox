@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_prepro.h 1391 2018-05-31 04:51:23Z wesleyjohnson $
+// $Id: t_prepro.h 1548 2020-09-29 10:26:04Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -43,18 +43,6 @@
 #ifndef T_PREPRO_H
 #define T_PREPRO_H
 
-#ifdef FREEBSD
-#if __FreeBSD__ < 5
-#include <machine/types.h>
-#endif
-#if __FreeBSD__ > 4
-typedef struct label_s label_t;
-#endif
-#endif
-
-#if !defined(FREEBSD) && !defined(SOLARIS)
-typedef struct label_s label_t;
-#endif
 
 #define SECTIONSLOTS 17
 #define LABELSLOTS 17
@@ -97,6 +85,24 @@ typedef enum    // section types
 
 /****** goto labels ***********/
 
+#if 0
+// Unused, no body.
+// label_t is not present on Linux, or other major OS.
+
+#ifdef FREEBSD
+#if __FreeBSD__ < 5
+#include <machine/types.h>
+#endif
+#if __FreeBSD__ > 4
+typedef struct label_s label_t;
+#endif
+#endif
+
+#if !defined(FREEBSD) && !defined(SOLARIS)
+typedef struct label_s label_t;
+#endif
+
 label_t * labelforname(char *labelname);
+#endif
 
 #endif

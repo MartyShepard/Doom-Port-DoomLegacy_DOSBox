@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: mserv.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
+// $Id: mserv.c 1548 2020-09-29 10:26:04Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -117,22 +117,34 @@
 #include "doomincl.h"
 
 #ifdef WIN32
-# include <winsock2.h>     // socket(),...
-# include <ws2tcpip.h>    // socklen_t
+# include <winsock2.h>
+  // socket(),...
+# include <ws2tcpip.h>
+  // socklen_t
 #else
 # include <unistd.h>
 # ifdef __OS2__
 #  include <sys/types.h>
+     // [MB] 2020-06-16: Maybe required for old Unix too
 # endif
-# include <sys/socket.h>  // socket(),...
-# include <sys/time.h>    // timeval,... (TIMEOUT)
-# include <netinet/in.h>  // sockaddr_in
-# include <arpa/inet.h>   // inet_addr(),...
-# include <netdb.h>       // gethostbyname(),...
+# include <sys/socket.h>
+  // socket(),...
+# include <sys/time.h>
+  // timeval,... (TIMEOUT)
+# include <netinet/in.h>
+  // sockaddr_in
+# include <arpa/inet.h>
+  // inet_addr(),...
+# include <fcntl.h>
+  // [MB] 2020-06-16: For fcntl()
+# include <netdb.h>
+  // gethostbyname(),...
 # include <sys/ioctl.h>
 # include <errno.h>
-//#include <string.h>      // memset(),...
-//#include <sys/types.h>   // socket(),...
+//#include <string.h>
+  // memset(),...
+//#include <sys/types.h>
+  // socket(),...
 #endif
 
 #include "doomdata.h"
@@ -210,7 +222,11 @@ struct Copy_CVarMS_t
 #define close closesocket
 #endif
 
-#if defined( WIN32) || defined( __OS2__) || defined( SOLARIS)
+#if defined( SOLARIS)
+// [MB] 2020-06-16: Use native inet_aton() on Solaris
+// Solaris has inet_aton() in libresolv since version 2.6 from 1997
+#endif
+#if defined( WIN32) || defined( __OS2__)
 // it seems windows doesn't define that... maybe some other OS? OS/2
 static inline
 int inet_aton(const char *hostname,
@@ -639,11 +655,24 @@ static int MS_Connect(char *ip_addr, char *str_port, int async_flag)
     if(async_flag) // do asynchronous connection
     {
         // Set ms_socket as non-blocking.
-#ifdef WIN32
+#ifdef LINUX
+        // [WDJ] DoomLegacy 1.48.6
+        // [MB] 2020-06-16: Use portable POSIX way to enable non-blocking mode
+        // https://pubs.opengroup.org/onlinepubs/9699919799/functions/fcntl.html
+        // [WDJ] POSIX.1-2001 : F_SETFL
+        // Windows: Winsock does not have fcntl.
+        res = fcntl(ms_socket_fd, F_SETFL, O_NONBLOCK);
+        if( res == -1 )
+            goto fail_close;
+
+#elif  defined( WIN32 )
         // winsock.h:  int ioctlsocket(SOCKET,long,u_long *);
         u_long test = 1; // [smite] I have no idea what this type is supposed to be
         ioctlsocket(ms_socket_fd, FIONBIO, &test);
 #else
+        // Does not work on: SunOS (SmartOS and maybe Solaris).
+        // Linux: still defined in asm-generic/ioctls.h
+        // Needed for older ports.
         res = 1;  // non-blocking true
         ioctl(ms_socket_fd, FIONBIO, &res);
 #endif
@@ -651,16 +680,15 @@ static int MS_Connect(char *ip_addr, char *str_port, int async_flag)
         if (res < 0)
         {
 #ifdef WIN32
-            // humm, on win32 it doesn't work with EINPROGRESS (stupid windows)
+            // Winsock uses WSA prefix.
+	    // Socket returns EWOULDBLOCk, different value than EINPROGRESS.
             if (WSAGetLastError() != WSAEWOULDBLOCK)
+                goto fail_close;
 #else
+            // Linux: EWOULDBLOCK has same value as EINPROGRESS (pref).
             if (errno != EINPROGRESS)
+                goto fail_close; // Socket is nonblock, and operation cannot be completed immediately.
 #endif
-            {
-                con_state = MSCS_FAILED;
-                MS_Close_socket();
-                return MS_CONNECT_ERROR;
-            }
         }
         con_state = MSCS_WAITING;
     }
@@ -672,6 +700,11 @@ static int MS_Connect(char *ip_addr, char *str_port, int async_flag)
     }
 
     return 0;
+
+fail_close:
+    con_state = MSCS_FAILED;
+    MS_Close_socket();
+    return MS_CONNECT_ERROR;
 }
 
 

@@ -8250,3 +8250,27 @@ The texture_model is removed from the texture,
 and only stored in the texren.
 Upon a reload, a picture texture_model in the texture
 would prevent generating the correct data for masked draw.
+
+==== commit
+
+*** w109_noblock
+patchfile = w109_012_noblock.patch
+- commit revision 1548
+Bug 0666, Patches by Michael Bauerle.
+SunOS does not have FIONBIO ioctrl.
+For Linux and SunOS use POSIX fcntl.
+
+An unused function uses "label_t"
+which is also undefined, even on SunOS now.
+Disable the header declaration.
+
+*** w109_maskedtile
+patchfile = w109_013_maskedtile.patch
+- commit revision 1549
+A large tree in "lost civilization" is a texture which is
+not a power of 2 in width.
+The masked draw setup selects a tiling width less than the texture width
+and tries to tile the draw.  This is noticable for a tree.
+Adopt a masked draw column select similar to PrBoom,
+which handles negative offset and odd texture widths.
+Keep the masked tiling for power-of-2 width textures.
