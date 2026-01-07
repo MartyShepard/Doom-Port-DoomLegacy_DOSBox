@@ -8273,10 +8273,85 @@ Adopt a masked draw column select similar to PrBoom,
 which handles negative offset and odd texture widths.
 Keep the masked tiling for power-of-2 width textures.
 
-*** w109_maskedtile
+*** w109_ver1486
 patchfile = w109_014_ver1486
-- commit revision 1549
+- commit revision 1550
 Update to 1.48.6.
 Update docs and make_options.
 
 ==== commit
+
+*** w109_savebuffer
+patchfile = w109_015_savebuffer
+- commit revision 1551
+The SG_Writebuf in P_ArchiveThinkers was misplaced.
+Due to continue stmts, it was getting skipped, and the
+savebuffer was overrun (Antaresian Reliquary Map04).
+Moved SG_Writebuf to top of loop.
+Max buffer usage is now 67K, half of savebuffer.
+Fixes Bug 0667.
+
+*** w109_skyheight
+patchfile = w109_016_skyheight
+- commit revision 1552
+The sky draw had been passing a fixed_t value of sky height to
+the draw functions, which expected an int sky height.
+Fixed the sky texture height in the sky setup functions to be an int.
+
+We have been maintaining an old legacy draw function, and
+a copy of a Boom draw function.
+Combined the inherited Boom drawing code into our draw functions,
+and removed the unused draw function.
+The draw option is maintained, but it switches a much smaller
+chunk of code.
+
+*** w109_highcolormap
+patchfile = w109_017_highcolormap
+- commit revision 1553
+Removed the HIGHCOLORMAP and HICOLORMAP optional code.
+It was never completed.
+It would have used a large colormap directly to 16, 24, or 32 bit RGB.
+This would have used a large amount of cache during drawing, to
+only save an additional array lookup.
+Keeping the 256 byte colormap lookup in cache is more reasonable.
+The current drawing code is working well, and modern processors can
+do the extra lookup operation far faster than a main memory access.
+
+*** w109_freedoom
+patchfile = w109_018_freedoom
+- commit revision 1554
+Changed the freedoom wad names, avoiding
+doom wad names as that was conflicting with doom2 gamemode.
+Freedoom: "freedoom2.wad", "freedoom.wad", and "fdoom2.wad".
+Ultimate freedoom: "freedoom1.wad", "freedu.wad", "fdoomu.wad".
+
+*** w109_rangecheck
+patchfile = w109_019_rangecheck
+- commit revision 1555
+Separated the drawing limits rangechecks to  RANGECHECK_DRAW_LIMITS.
+These are no longer enabled by default.
+
+Made separate debugging defines in doomdef.h for DEBUG mode, and
+for normal compile.  This will better ensure that the debugging
+defines get turned off for release code.
+
+*** w109_skypict
+patchfile = w109_020_skypict
+- commit revision 1556
+The software mode sky draw has had line artifacts above and below the sky.
+Due to using a patch to draw the sky texture, which is treated
+like a wall texture, the artifacts are the post headers being drawn.
+This also caused the sky to be misaligned, from what is seen in PrBoom.
+
+Changed the sky to be a TM_picture format, which is suitable for drawing
+a wall, as it has no transparent regions.
+Updated R_Create_Patch to create TM_picture and other variations.
+
+Limit the sky drawing to the texture, so to not tile the sky draw.
+Created a skytop_flat for above the sky, and a ground_flat for below the
+sky.  These are drawn when the sky draw exceeds the bounds of the
+sky texture.
+For now, these flats are created as solid textures.  Any pattern
+looks like a wall.
+
+Added a vanilla sky draw mode.
