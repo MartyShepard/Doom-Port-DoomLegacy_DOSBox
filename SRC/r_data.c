@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1547 2020-09-02 13:27:13Z wesleyjohnson $
+// $Id: r_data.c 1549 2020-09-29 10:27:02Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -992,9 +992,9 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
 
         if( texture_req == TM_picture_column )
         {
-	    if( detect_hole )
+            if( detect_hole )
                 goto multipatch_combine;
-	    if( detect_post )
+            if( detect_post )
                 goto multipatch_combine;
         }
 
@@ -1469,12 +1469,12 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
                // Combined with Detect.
                if( segnxt_y > bottom )
                {
-	           detect_hole = TD_hole;  // whole texture
-		   if( bottom > 0 )   postlength = 0;  // start new post
+                   detect_hole = TD_hole;  // whole texture
+                   if( bottom > 0 )   postlength = 0;  // start new post
                }
                if( postlength + seglen > 255 )   // if postlength would be too long
                {
-		   detect_post = TD_post;  // whole texture
+                   detect_post = TD_post;  // whole texture
                    postlength = 0;  // start new post
                }
                if( postlength == 0 )
@@ -1968,11 +1968,25 @@ void R_Load_Textures (void)
         }
 
         // determine width power of 2
+#if 1
+        // [WDJ] only need to determine if exact power of 2.
+        j = 1;
+        while (j < texture->width)
+            j<<=1;
+#else
+        // Largest power of 2 that fits within width.
         j = 1;
         while (j*2 <= texture->width)
             j<<=1;
-
+#endif
+        if( j != texture->width )
+        {
+	    // Odd width
+	    texture->detect |= TD_odd_width;
+            j = 1;  // make width_tile_mask = 0
+	}
         texture_render[i].width_tile_mask = j-1;
+        texture_render[i].width = texture->width;
         textureheight[i] = texture->height<<FRACBITS;
     }
 
