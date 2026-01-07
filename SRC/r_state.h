@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_state.h 1435 2019-04-26 10:36:07Z wesleyjohnson $
+// $Id: r_state.h 1547 2020-09-02 13:27:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -101,7 +101,7 @@ extern lighttable_t*    reg_colormaps;
 //SoM: 4/7/2000: Had to put a limit on colormaps :(
 //#define                 MAXCOLORMAPS 30
 // [WDJ]: 5/17/2010 hth2.wad uses 38 colormaps
-// To little memory to save to use dynamic methods.
+// Too little memory to save to use dynamic methods.
 #define                 MAXCOLORMAPS 64
 
 // defined colormap lightmaps descriptors
@@ -116,7 +116,9 @@ extern int              firstflat;
 extern int              firstwaterflat; //added:18-02-98:WATER!
 
 // for global animation
+#if 0
 extern int*             flattranslation;
+#endif
 extern int*             texturetranslation;
 
 

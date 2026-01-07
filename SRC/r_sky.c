@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_sky.c 1523 2020-05-09 12:06:39Z wesleyjohnson $
+// $Id: r_sky.c 1547 2020-09-02 13:27:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -349,9 +349,8 @@ patch_t * R_Generate_Sky( int texnum )
     byte db;
    
 
-    texture->texture_model = TM_picture;  // forces R_GenerateTexture
     // This puts ptr in texren->cache
-    pic_header_t * sky_pic = (pic_header_t*) R_GenerateTexture( & texture_render[texnum] );
+    pic_header_t * sky_pic = (pic_header_t*) R_GenerateTexture2( texnum, & texture_render[texnum], TM_picture );
 
     th = texture->height; // should be 128
     tw = texture->width;  // 256, 512, or 1024
@@ -830,10 +829,10 @@ void R_Setup_SkyDraw (void)
     }
 
     // DIRTY : should set the routine depending on colormode in screen.c
-    textures[sky_texture]->texture_model = TM_none;  // let R_GenerateTexture be automatic
+    texture_render[sky_texture].texture_model = TM_none;  // let R_GenerateTexture be automatic
     if(max_height > 128)
     {
-        sky_patch = (patch_t*) R_GenerateTexture( & texture_render[sky_texture] );
+        sky_patch = (patch_t*) R_GenerateTexture2( sky_texture, & texture_render[sky_texture], TM_none );
         sky_240 = 1;
         sky_height = SKY_HEIGHT<<FRACBITS;
         // horizon line on 256x240 freelook textures of Legacy or heretic
@@ -859,7 +858,7 @@ void R_Setup_SkyDraw (void)
         else
         {
             // Stretch sky
-            sky_patch = (patch_t*) R_GenerateTexture( & texture_render[sky_texture] );
+            sky_patch = (patch_t*) R_GenerateTexture2( sky_texture, & texture_render[sky_texture], TM_none );
             sky_240 = 0;
             sky_height = max_height<<FRACBITS;
             // the horizon line in a 256x128 sky texture

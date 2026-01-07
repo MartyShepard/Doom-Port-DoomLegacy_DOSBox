@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: r_segs.c 1471 2019-10-04 08:59:55Z wesleyjohnson $
+// $Id: r_segs.c 1547 2020-09-02 13:27:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -163,6 +163,10 @@ static fixed_t         rw_midtexturemid;
 static fixed_t         rw_toptexturemid;
 static fixed_t         rw_bottomtexturemid;
 
+#ifndef TEXTURE_LOCK
+static int             rw_texture_num;  // to restore texture cache
+#endif
+
 // [WDJ] 2/22/2010 actually is fixed_t in all usage
 static fixed_t         worldtop;	// front sector
 static fixed_t         worldbottom;
@@ -200,18 +204,11 @@ void* portable_realloc(void* mem, size_t siz)
 // Define  colfunc_2s_t
 typedef  void (* colfunc_2s_t) (byte *);
 
-#ifdef PIXEL_DATA_OFFSET
-#else
-static byte column_to_pixel_offset[7] = {
-   0, // TM_none
-   3, // TM_patch
-   0, // TM_picture
-   3, // TM_combine_patch
-   3, // TM_multi_patch
-   3, // TM_masked
-   0, // TM_invalid
-};
+#ifdef RANGECHECK
+static byte  rangecheck_id;
+static const char *  rangecheck_draw_name[] = { "top", "mid", "bottom" };
 #endif
+
 
 // [WDJ] For the 1-sided wall drawer, which only wants a monolithic column of pixels.
 // This is only used in three places.
@@ -219,23 +216,128 @@ static byte column_to_pixel_offset[7] = {
 // This is a specialized usage.  The burden of an additional lookup and add should be here
 // and not upon the other hacked-up operations that were needed.
 // It also allows this to be inline, which saves on the call overhead.
+
+// [WDJ] Setup wall drawer, outside of column loops.
+// Can afford to create cached textures here, and other overhead.
 static inline
-byte * R_GetPixelColumn ( texture_render_t * texren, int colnum )
+texture_render_t *  R_WallTexture_setup( int texture_num )
 {
-    // Number of index [texnum]: 0
-    // Number of struct accesses: 4
+    texture_render_t * texren;
+
+    if( textures[ texture_num ] == NULL )
+         return NULL;
+
+    texren = & texture_render[ texture_num ];
+   
+    // The texture must be setup for monolithic column draw.
+    // Cannot use masked draw because it does not tile on walls.
+    if( ! texren->cache
+        || (texren->detect & (TD_post | TD_hole)) )
+    {
+        if( texren->detect & TD_masked )
+        {
+            // Some masked draw is using the patch, so cannot convert this texren to a picture.
+            // Switch to one of the extra texren to make a picture format.
+            texren = R_Get_extra_texren( texture_num, texren, TM_picture );
+            if( texren->cache
+                && ! (texren->detect & (TD_post | TD_hole)) )
+                goto done;  // found existing
+        }
+
+        // Texture cache may have been freed by other operations using Z_Malloc.
+        // This drawer has fixed requirements, and other drawers will not tile.
+        // Puts ptr in texture_render cache.
+        R_GenerateTexture2( texture_num, texren, TM_picture_column );
+    }
+
+done:   
+#ifdef TEXTURE_LOCK
+    Z_ChangeTag( texren->data, PU_IN_USE );
+#endif
+    return texren;  // OK to draw
+}
+
+
+// [WDJ] Draw code only works when patch has one post monolithic columns, or picture.
+// This causes visual artifacts for some wads with strange patches, that work for other ports.
+// Forcing the texture into a picture results in turning transparent areas into black,
+// so that must be kept separate from texren used by masked draw.
+// This functions handles the gory details.
+static
+void  R_Draw_WallColumn( texture_render_t * texren, int colnum )
+{
+    // Does not know if TM_picture or TM_patch.
+    byte * data = texren->cache;
+   
+#ifdef TEXTURE_LOCK
+#else
+    if( ! data )
+    {
+        // This must be here because cache can be freed by other operations.
+        // To prevent must lock individual texture cache on every draw.
+        // Messy update, but probably never executed.
+	// The detect used to select texren would not have changed
+        // during SegLoop, so do not try to change texren.
+        R_GenerateTexture2( rw_texture_num, texren, TM_picture_column );
+    }
+#endif
+   
+    colnum &= texren->width_tile_mask;  // set by GenerateTexture
+    data += texren->columnofs[colnum];  // column data
+
+    // Draw as monolithic column, ignore posts.
+    dc_source = data + texren->pixel_data_offset;
+
+#ifdef RANGECHECK
+    // Temporary check code.
+    // Due to better clipping, this extra clip should no longer be needed.
+    if( dc_yl < 0 )
+    {
+        printf( "RenderSeg %s: dc_yl  %i < 0\n", rangecheck_draw_name[rangecheck_id], dc_yl );
+        dc_yl = 0;
+    }
+    if ( dc_yh >= rdraw_viewheight )
+    {
+        printf( "RenderSeg %s: dc_yh  %i > rdraw_viewheight\n", rangecheck_draw_name[rangecheck_id], dc_yh );
+        dc_yh = rdraw_viewheight - 1;
+    }
+#endif
+
+#ifdef CLIP2_LIMIT
+    //[WDJ] phobiata.wad has many views that need clipping
+    if( dc_yl < 0 )   dc_yl = 0;
+    if( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
+#endif
+   
+#ifdef HORIZONTALDRAW
+    hcolfunc ();
+#else
+    colfunc ();
+#endif
+}
+ 
+ 
+// R_GetPatchColumn
+// Masked draw, full patches, 2sided.
+static inline
+byte* R_GetPatchColumn ( texture_render_t * texren, int colnum )
+{
+    // Get raw column ptr, one cache array structure.
     byte * data = texren->cache;
 
     if( !data )
-        data = R_GenerateTexture( texren ); // puts ptr in texture_render cache
+    {
+        // This must be done here because cache can be freed by other operations,
+        // and we do not have the ability to lock individual texture cache.
+        // Puts ptr in texture_render cache.
+        data = R_GenerateTexture( texren, TM_masked );
+    }
 
     colnum &= texren->width_tile_mask; // set by GenerateTexture
-#ifdef PIXEL_DATA_OFFSET
-    return data + texren->columnofs[colnum] + texren->pixel_data_offset;
-#else
-    return data + texturecolumnofs[texnum][colnum] + column_to_pixel_offset[ texren->texture_model ];
-#endif
+    return data + texren->columnofs[colnum];
 }
+
+
 
 
 // ==========================================================================
@@ -408,10 +510,12 @@ static void R_DrawSplatColumn (column_t* column)
     fixed_t     top_post_sc, bottom_post_sc;  // fixed_t screen coord.
 
     // dc_x is limited to 0..rdraw_viewwidth by caller x1,x2
-//    if ( (unsigned) dc_x >= rdraw_viewwidth )   return;
 #ifdef RANGECHECK
-    if ( (unsigned) dc_x >= rdraw_viewwidth )   return;
-        I_Error ("R_DrawSplatColumn dc_x: %i\n", dc_x);
+    if ( (unsigned) dc_x >= rdraw_viewwidth )
+    {
+        I_SoftError ("R_DrawSplatColumn: dc_x= %i\n", dc_x);
+        return;
+    }
 #endif
 
     // over all column posts for this column
@@ -448,7 +552,7 @@ static void R_DrawSplatColumn (column_t* column)
     }
     if ( dc_yh >= rdraw_viewheight )
     {
-        printf( "DrawSplat dc_yh  %i > rdraw_viewheight\n", dc_yh );
+        printf( "DrawSplat dc_yh  %i >= rdraw_viewheight\n", dc_yh );
         dc_yh = rdraw_viewheight - 1;
     }
 #endif
@@ -733,7 +837,8 @@ void  expand_openings( size_t  need )
 static int  column2s_length;     // column->length : for multi-patch on 2sided wall = texture->height
 
 // The colfunc_2s function for TM_picture
-void R_Render2sidedMultiPatchColumn ( byte* column_data )
+static
+void R_Render_PictureColumn ( byte * column_data )
 {
     fixed_t  top_post_sc, bottom_post_sc; // patch on screen, fixed_t screen coords.
 
@@ -792,11 +897,12 @@ void R_Render2sidedMultiPatchColumn ( byte* column_data )
 
 
 
+// indexed by texture_model_e
 colfunc_2s_t  colfunc_2s_masked_table[] =
 {
     NULL,  // TM_none
     R_DrawMaskedColumn,  // TM_patch, render the usual 2sided single-patch packed texture
-    R_Render2sidedMultiPatchColumn,  // TM_picture, render multipatch with no holes (no post_t info)
+    R_Render_PictureColumn,  // TM_picture, render multipatch with no holes (no post_t info)
     R_DrawMaskedColumn,  // TM_combine_patch, render combined as 2sided single-patch packed texture
       // The rest have no drawers
     NULL,  // TM_multi_patch
@@ -841,6 +947,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
     // midtexture, 0=no-texture, otherwise valid
     texnum = texturetranslation[curline->sidedef->midtexture];
     texren = & texture_render[texnum];
+    texren->detect |= TD_masked;  // to protect patch
 
     dm_windowbottom = dm_windowtop = dm_bottom_patch = FIXED_MAX; // default no clip
     windowclip_top = windowclip_bottom = FIXED_MAX;
@@ -891,7 +998,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
         // Display fog sheet (128 high) as transparent middle texture.
         // Only where there is a middle texture (in place of it).
         colfunc = fogcolfunc; // R_DrawFogColumn_8 16 ..
-        fog_col_length = (textures[texnum]->texture_model == TM_masked)? 2: textures[texnum]->height;
+        fog_col_length = (texren->texture_model == TM_picture)? textures[texnum]->height : 2;
         fog_index = fog_tic % fog_col_length;  // pixel selection
         fog_init = 1;
         dr_alpha = 64;  // default
@@ -909,7 +1016,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
     // [WDJ] multi-patch transparent texture restored
     if( texren->cache == NULL )
     {
-        R_GenerateTexture( texren );	// first time
+        R_GenerateTexture( texren, TM_masked ); // first time
     }
 
     colfunc_2s = colfunc_2s_masked_table[ texren->texture_model ];
@@ -1024,7 +1131,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
     }
     // top of texture, relative to viewer, with rowoffset, world coord.
     dm_texturemid += curline->sidedef->rowoffset;
-    dc_texturemid = dm_texturemid; // for using R_Render2sidedMultiPatchColumn
+    dc_texturemid = dm_texturemid; // for using R_Render_PictureColumn
      // R_DrawMaskedColumn uses dm_texturemid to make dc_texturemid
 
     // [WDJ] Initialize dc_colormap.
@@ -1054,7 +1161,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
             realbot = dm_windowbottom = FixedMul(texheightz, dm_yscale) + dm_top_patch;
             dc_iscale = 0xffffffffu / (unsigned)dm_yscale;
             
-            col_data = R_GetColumn(texren, maskedtexturecol[dc_x]);
+            col_data = R_GetPatchColumn(texren, maskedtexturecol[dc_x]);
 
             // top floor colormap, or fixedcolormap
             dc_colormap = dc_lightlist[0].rcolormap;
@@ -1161,7 +1268,7 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
           dc_iscale = 0xffffffffu / (unsigned)dm_yscale;
 
           // draw texture, as clipped
-          col_data = R_GetColumn(texren, maskedtexturecol[dc_x]);
+          col_data = R_GetPatchColumn(texren, maskedtexturecol[dc_x]);
           colfunc_2s( col_data );
 
         } // if (maskedtexturecol[dc_x] != SHRT_MAX)
@@ -1222,6 +1329,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     if( texnum == 0 )  return;  // no texture to display (when 3Dslab is missing side texture)
     texnum = texturetranslation[texnum];
     texren = & texture_render[texnum];
+    texren->detect |= TD_masked;  // to protect patch
 
     colfunc = basecolfunc;
 
@@ -1239,7 +1347,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     {
       colfunc = fogcolfunc;  // R_DrawFogColumn_8 16 ..
       // from fogsheet
-      fog_col_length = (textures[texnum]->texture_model == TM_masked)? 2: textures[texnum]->height;
+      fog_col_length = (texren->texture_model == TM_picture)? textures[texnum]->height : 2;
       fog_index = fog_tic % fog_col_length;  // pixel selection
       fog_init = 1;
       dr_alpha = fweff[ffloor->fw_effect].fsh_alpha; // dr_alpha 0..255
@@ -1398,7 +1506,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     // [WDJ] multi-patch transparent texture restored
     if( texren->cache == NULL )
     {
-        R_GenerateTexture( texren );	// first time
+        R_GenerateTexture( texren, TM_masked );	// first time
     }
 
     colfunc_2s = colfunc_2s_masked_table[ texren->texture_model ];
@@ -1450,7 +1558,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
           dc_iscale = 0xffffffffu / (unsigned)dm_yscale;
             
           // draw the texture
-          col_data = R_GetColumn(texren, maskedtexturecol[dc_x]);
+          col_data = R_GetPatchColumn(texren, maskedtexturecol[dc_x]);
 
           // Top level colormap, or fixedcolormap.
           dc_colormap = dc_lightlist[0].rcolormap;
@@ -1588,7 +1696,7 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
         dc_iscale = 0xffffffffu / (unsigned)dm_yscale;
             
         // draw the texture
-        col_data = R_GetColumn(texren, maskedtexturecol[dc_x]);
+        col_data = R_GetPatchColumn(texren, maskedtexturecol[dc_x]);
         colfunc_2s( col_data );
 
         dm_yscale += rw_scalestep;
@@ -1651,7 +1759,7 @@ void R_RenderFog( ffloor_t* fff, sector_t * intosec, lightlev_t foglight,
         // Only where there is a middle texture (in place of it).
         colfunc = fogcolfunc; // R_DrawFogColumn_8 16 ..
           // need dc_source, dc_colormap, dc_yh, dc_yl, dc_x
-        fog_col_length = (textures[texnum]->texture_model == TM_masked)? 2: textures[texnum]->height;
+        fog_col_length = (texren->texture_model == TM_picture)? textures[texnum]->height : 2;
         // add in player movement to fog
         int playermov = (viewmobj->x + viewmobj->y + (viewmobj->angle>>6)) >> (FRACBITS+6);
         fog_index = (fog_tic + playermov) % fog_col_length;  // pixel selection
@@ -1669,7 +1777,7 @@ void R_RenderFog( ffloor_t* fff, sector_t * intosec, lightlev_t foglight,
     //  dm_top_patch, dm_bottom_patch, dm_windowtop, dm_windowbottom
     if( texren->cache == NULL )
     {
-        R_GenerateTexture( texren );	// first time
+        R_GenerateTexture( texren, TM_masked );	// first time
     }
 
     colfunc_2s = colfunc_2s_masked_table[ texren->texture_model ];
@@ -1753,7 +1861,7 @@ void R_RenderFog( ffloor_t* fff, sector_t * intosec, lightlev_t foglight,
 
             dc_iscale = 0xffffffffu / (unsigned)dm_yscale;
             // draw texture, as clipped
-            col_data = R_GetColumn(texren, 0);
+            col_data = R_GetPatchColumn(texren, 0);
             colfunc_2s( col_data );
         }
         dm_yscale += rw_scalestep;
@@ -2037,39 +2145,22 @@ void R_RenderSegLoop (void)
             dc_yl = yl;
             dc_yh = yh;
 #ifdef RANGECHECK
-    // Temporary check code.
-    // Due to better clipping, this extra clip should no longer be needed.
-    if( dc_yl < 0 )
-    {
-        printf( "RenderSeg mid dc_yl  %i < 0\n", dc_yl );
-        dc_yl = 0;
-    }
-    if ( dc_yh >= rdraw_viewheight )
-    {
-        printf( "RenderSeg mid dc_yh  %i > rdraw_viewheight\n", dc_yh );
-        dc_yh = rdraw_viewheight - 1;
-    }
+            rangecheck_id = 1;  // mid
 #endif
-#ifdef CLIP2_LIMIT
-            //[WDJ] phobiata.wad has many views that need clipping
-            if ( dc_yl < 0 )   dc_yl = 0;
-            if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
+#ifndef TEXTURE_LOCK
+            rw_texture_num = midtexture;  // to restore texture cache
 #endif
 
             dc_texturemid = rw_midtexturemid;
-            // Does not know if TM_picture or TM_patch	     
-            dc_source = R_GetPixelColumn(mid_texren, texturecolumn);
-
             dc_texheight = textureheight[midtexture] >> FRACBITS;
             //profile stuff ---------------------------------------------------------
 #ifdef TIMING
             ProfZeroTimer();
 #endif
-#ifdef HORIZONTALDRAW
-            hcolfunc ();
-#else
-            colfunc ();
-#endif
+
+            // Does not know if TM_picture or TM_patch	     
+            R_Draw_WallColumn(mid_texren, texturecolumn);
+
 #ifdef TIMING
             RDMSR(0x10,&mycount);
             mytotal += mycount;      //64bit add
@@ -2099,42 +2190,23 @@ void R_RenderSegLoop (void)
                 
                 if (mid >= yl)
                 {
-                  if( yl < rdraw_viewheight && mid >= 0 ) // not disabled
-                  {
-                    dc_yl = yl;
-                    dc_yh = mid;
+                    if( yl < rdraw_viewheight && mid >= 0 ) // not disabled
+                    {
+                        dc_yl = yl;
+                        dc_yh = mid;
 
 #ifdef RANGECHECK
-    // Temporary check code.
-    // Due to better clipping, this extra clip should no longer be needed.
-    if( dc_yl < 0 )
-    {
-        printf( "RenderSeg top dc_yl  %i < 0\n", dc_yl );
-        dc_yl = 0;
-    }
-    if ( dc_yh >= rdraw_viewheight )
-    {
-        printf( "RenderSeg top dc_yh  %i > rdraw_viewheight\n", dc_yh );
-        dc_yh = rdraw_viewheight - 1;
-    }
+                        rangecheck_id = 0; // top
 #endif
-#ifdef CLIP2_LIMIT
-                    //[WDJ] phobiata.wad has many views that need clipping
-                    if ( dc_yl < 0 )   dc_yl = 0;
-                    if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
+#ifndef TEXTURE_LOCK
+                        rw_texture_num = toptexture;  // to restore texture cache
 #endif
 
-                    dc_texturemid = rw_toptexturemid;
-                    // Does not know if TM_picture or TM_patch	     
-                    dc_source = R_GetPixelColumn(top_texren, texturecolumn);
-
-                    dc_texheight = textureheight[toptexture] >> FRACBITS;
-#ifdef HORIZONTALDRAW
-                    hcolfunc ();
-#else
-                    colfunc ();
-#endif
-                  } // if mid >= 0
+                        dc_texturemid = rw_toptexturemid;
+                        dc_texheight = textureheight[toptexture] >> FRACBITS;
+                        // Does not know if TM_picture or TM_patch	     
+                        R_Draw_WallColumn(top_texren, texturecolumn);
+                    } // if mid >= 0
                     ceilingclip[rw_x] = mid + 1;  // next drawable row
                 }
                 else
@@ -2164,41 +2236,24 @@ void R_RenderSegLoop (void)
 
                 if (mid <= yh)
                 {
-                  if( mid < rdraw_viewheight && yh >= 0 ) // not disabled
-                  {
-                    dc_yl = mid;
-                    dc_yh = yh;
+                    if( mid < rdraw_viewheight && yh >= 0 ) // not disabled
+                    {
+                        dc_yl = mid;
+                        dc_yh = yh;
+
 #ifdef RANGECHECK
-    // Temporary check code.
-    // Due to better clipping, this extra clip should no longer be needed.
-    if( dc_yl < 0 )
-    {
-        printf( "RenderSeg bottom dc_yl  %i < 0\n", dc_yl );
-        dc_yl = 0;
-    }
-    if ( dc_yh >= rdraw_viewheight )
-    {
-        printf( "RenderSeg bottom dc_yh  %i > rdraw_viewheight\n", dc_yh );
-        dc_yh = rdraw_viewheight - 1;
-    }
+                        rangecheck_id = 0; // top
 #endif
-#ifdef CLIP2_LIMIT
-                    //[WDJ] phobiata.wad has many views that need clipping
-                    if ( dc_yl < 0 )   dc_yl = 0;
-                    if ( dc_yh >= rdraw_viewheight )   dc_yh = rdraw_viewheight - 1;
+#ifndef TEXTURE_LOCK
+                        rw_texture_num = bottomtexture;  // to restore texture cache
 #endif
+		       
+                        dc_texturemid = rw_bottomtexturemid;
+                        dc_texheight = textureheight[bottomtexture] >> FRACBITS;
 
-                    dc_texturemid = rw_bottomtexturemid;
-                    // Does not know if TM_picture or TM_patch	     
-                    dc_source = R_GetPixelColumn(bottom_texren, texturecolumn);
-
-                    dc_texheight = textureheight[bottomtexture] >> FRACBITS;
-#ifdef HORIZONTALDRAW
-                    hcolfunc ();
-#else
-                    colfunc ();
-#endif
-                  } // if mid >= 0
+                        // Does not know if TM_picture or TM_patch	     
+                        R_Draw_WallColumn(bottom_texren, texturecolumn);
+                    } // if mid >= 0
                     floorclip[rw_x] = mid - 1;  // next drawable row
                 }
                 else
@@ -2408,7 +2463,8 @@ void R_StoreWallRange( int   start, int   stop)
         // Single sided: assumes that there MUST be a midtexture on this side.
         // midtexture, 0=no-texture, otherwise valid
         midtexture = texturetranslation[sidedef->midtexture];
-        mid_texren = & texture_render[midtexture];
+        mid_texren = R_WallTexture_setup( midtexture );
+       
         // a single sided line is terminal, so it must mark ends
         markfloor = markceiling = true;
         
@@ -2579,7 +2635,7 @@ void R_StoreWallRange( int   start, int   stop)
         {
             // top texture, 0=no-texture, otherwise valid
             toptexture = texturetranslation[sidedef->toptexture];
-            top_texren = & texture_render[toptexture];
+            top_texren = R_WallTexture_setup( toptexture );
 
             if (linedef->flags & ML_DONTPEGTOP)
             {
@@ -2602,7 +2658,7 @@ void R_StoreWallRange( int   start, int   stop)
         {
             // bottom texture, 0=no-texture, otherwise valid
             bottomtexture = texturetranslation[sidedef->bottomtexture];
-            bottom_texren = & texture_render[bottomtexture];
+            bottom_texren = R_WallTexture_setup( bottomtexture );
             
             if (linedef->flags & ML_DONTPEGBOTTOM )
             {

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1546 2020-09-02 13:24:02Z wesleyjohnson $
+// $Id: r_things.c 1547 2020-09-02 13:27:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1128,12 +1128,11 @@ void R_DrawMaskedColumn ( byte * column_data )
         top_post_sc = dm_top_patch + (dm_yscale * cur_topdelta);
 #else
         // Normal patch
-        top_post_sc = dm_top_patch + dm_yscale*column->topdelta;
+        top_post_sc = dm_top_patch + (dm_yscale * column->topdelta);
 #endif
 
-        bottom_post_sc = (dm_bottom_patch == FIXED_MAX) ?
-            top_post_sc + dm_yscale*column->length
-            : dm_bottom_patch + dm_yscale*column->length;
+        bottom_post_sc = (dm_yscale * column->length)
+	    + ((dm_bottom_patch == FIXED_MAX) ? top_post_sc : dm_bottom_patch );
 
         // fixed_t to int screen coord.
         dc_yl = (top_post_sc+FRACUNIT-1)>>FRACBITS;

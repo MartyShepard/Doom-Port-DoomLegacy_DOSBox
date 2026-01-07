@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 1473 2019-10-05 10:19:20Z wesleyjohnson $
+// $Id: r_data.h 1547 2020-09-02 13:27:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -121,10 +121,21 @@ typedef enum {
    TM_combine_patch,  // transparent combined multi-patch texture  (has draw)
    TM_multi_patch, // original multi-patch texture
    TM_masked,   // detect masked flag (hint)
+   TM_picture_column,  // force column with no posts (hint)
    TM_invalid	// disabled for some internal reason
 } texture_model_e;
 
-// A texture_t describes a rectangular texture, which is composed of
+typedef enum {
+   TD_hole = 0x01, // holes in patch
+   TD_post = 0x02, // posts
+   TD_solid_column = 0x08,  // one post of texture height
+   TD_masked = 0x10,  // used as masked
+   TD_message = 0x80
+} texture_detect_e;
+
+  
+
+// texture_t describes a rectangular texture, which is composed of
 // one or more graphic patches in texpatch_t structures.
 // Used internally only.
 typedef struct
@@ -133,7 +144,7 @@ typedef struct
     char        name[8];
     uint16_t    width;
     uint16_t    height;
-    texture_model_e  texture_model;	// [WDJ] drawing and storage models
+    byte        detect;  // texture detects
 
     // All the patches[patchcount]
     //  are drawn back to front into the cached texture.
@@ -153,7 +164,6 @@ typedef struct
 extern int             numtextures;
 extern texture_t**     textures;
 
-#define PIXEL_DATA_OFFSET
 // [WDJ] To reduce the repeated indexing using texture id num, better locality of reference in cache.
 // To allow creating a texture that was not loaded from textures[].
 // Holds all the software render information.
@@ -162,15 +172,26 @@ typedef struct
     byte     * cache;   // graphics data generated full-size texture (maybe TM_patch, or TM_picture)
     uint32_t * columnofs;  // column offset lookup table for this texture
     uint16_t   width_tile_mask;  // mask that tiles the texture
+#ifdef DEBUG_WINDOWED   
+    texture_model_e  texture_model;	// drawing and storage models
+#else
     byte       texture_model;	// drawing and storage models
-#ifdef PIXEL_DATA_OFFSET
+#endif
+    byte       detect;  // texture_detect_e flags
     byte       pixel_data_offset;  // to add to columnofs[]
+#ifdef RENDER_TEXTURE_EXTRA_FULL
+    byte       extra_index;  // additional texture_render for same texture
 #endif
 } texture_render_t;
 
+// Array [ num_textures ]
 extern texture_render_t * texture_render;
 
+texture_render_t *  R_Get_extra_texren( int texture_num, texture_render_t * base_texren, byte model );
+
+
 // textureheight is not used in the same locality as the other texture arrays.
+// Array [ num_textures ]
 extern fixed_t*        textureheight;      // needed for texture pegging
 // [WDJ] Future consideration, as a render struct field.
 //    fixed_t    heightz;  // world coord. height, for texture pegging
@@ -197,10 +218,9 @@ void  R_Set_Texture_Patch( int texnum, patch_t * patch );
 #endif
 
 // Generate a texture from texture desc. and patches.
-byte* R_GenerateTexture ( texture_render_t *  texren );
+byte* R_GenerateTexture ( texture_render_t *  texren, byte texture_req );
+byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture_req );
 
-// Retrieve column data for span blitting.
-byte* R_GetColumn ( texture_render_t * texren, int colnum );
 
 byte* R_GetFlat (int  flatnum);
 
