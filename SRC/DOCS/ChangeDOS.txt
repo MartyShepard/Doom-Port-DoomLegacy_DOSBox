@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01556 ]: w109_018 freedoom wad name
 [01555 ]: w109_017 (removed) highcolormaps
 [01554 ]: w109_016 sky height
 [01553 ]: w109_015 savebuffer
