@@ -29,11 +29,8 @@
 // ==========================================================================
 
 // r_data.c
-  // include: color8.to32, hicolormaps
+  // include: color8.to32
 
-#ifdef HIGHCOLORMAPS
-  // [WDJ] 2012-2-10 HIGHCOLORMAPS are not working, not setup.
-#endif
 
 // 24bpp composite (ENABLE_DRAW24) is 8:8:8
 // color_8.to32 color is aligned with pix24 for speed
@@ -79,11 +76,7 @@ void R_DrawColumn_24 (void)
         {
             // Re-map color indices from wall texture column
             //  using a lighting/special effects LUT.
-#ifdef HIGHCOLORMAPS
-            c32.ui32 = hicolormaps[ dc_source[(frac>>FRACBITS)] ];
-#else
             c32.ui32 = color8.to32[ dc_colormap[ dc_source[(frac>>FRACBITS)] ] ];
-#endif
             *(pixel24_t*)dest = c32.pix24;
             dest += vid.ybytes;
             frac += fracstep;
@@ -98,11 +91,7 @@ void R_DrawColumn_24 (void)
         {
             // Re-map color indices from wall texture column
             //  using a lighting/special effects LUT.
-#ifdef HIGHCOLORMAPS
-            c32.ui32 = hicolormaps[ dc_source)[(frac>>FRACBITS)&heightmask] ];
-#else
             c32.ui32 = color8.to32[ dc_colormap[ dc_source[(frac>>FRACBITS)&heightmask] ] ];
-#endif
             *(pixel24_t*)dest = c32.pix24;
             dest += vid.ybytes;
             frac += fracstep;
@@ -142,11 +131,7 @@ void R_DrawSkyColumn_24 (void)
 
     do
     {
-#ifdef HIGHCOLORMAPS
-        c32.ui32 = hicolormaps[ dc_source[(frac>>FRACBITS)&255] ];
-#else
         c32.ui32 = color8.to32[ dc_colormap[ dc_source[(frac>>FRACBITS)&255] ] ];
-#endif
         *(pixel24_t*)dest = c32.pix24;
         dest += vid.ybytes;
         frac += fracstep;
@@ -476,12 +461,8 @@ void R_DrawTranslucentColumn_24 (void)
             unsigned int alpha_r = 255 - alpha_d;
             do
             {
-#ifdef HIGHCOLORMAPS
-                c32.ui32 = hicolormaps[ dc_source[frac>>FRACBITS] ];
-#else
                 c32.ui32 = color8.to32[dc_colormap[dc_source[frac>>FRACBITS]]];
 //               c32.ui32 = color8.to32[dc_source[frac>>FRACBITS]];
-#endif
                 // alpha translucent
                 register pixel24_t * p24 = (pixel24_t*)dest;
                 p24->b = (((unsigned int)p24->b * alpha_r) + (c32.pix24.b * alpha_d)) >> 8;
@@ -498,12 +479,8 @@ void R_DrawTranslucentColumn_24 (void)
         do
         {
             // 25/75 translucent
-#ifdef HIGHCOLORMAPS
-            c32.ui32 = hicolormaps[ dc_source[frac>>FRACBITS] ];
-#else
             c32.ui32 = color8.to32[dc_colormap[dc_source[frac>>FRACBITS]]];
 //	    c32.ui32 = color8.to32[dc_source[frac>>FRACBITS]];
-#endif
             register uint16_t dc0, dc1, dc2; // for overlapped execution
             register pixel24_t * p24 = (pixel24_t*)dest;
             dc0 = p24->b;
@@ -522,12 +499,8 @@ void R_DrawTranslucentColumn_24 (void)
         do
         {
             // 15/85 translucent
-#ifdef HIGHCOLORMAPS
-            c32.ui32 = hicolormaps[ dc_source[frac>>FRACBITS] ];
-#else
             c32.ui32 = color8.to32[dc_colormap[dc_source[frac>>FRACBITS]]];
 //	    c32.ui32 = color8.to32[dc_source[frac>>FRACBITS]];
-#endif
             register uint16_t dc0, dc1, dc2; // for overlapped execution
             register pixel24_t * p24 = (pixel24_t*)dest;
             dc0 = p24->b;
@@ -547,12 +520,8 @@ void R_DrawTranslucentColumn_24 (void)
         do
         {
             // 50/50 translucent
-#ifdef HIGHCOLORMAPS
-            c32.ui32 = hicolormaps[ dc_source[frac>>FRACBITS] ];
-#else
             c32.ui32 = color8.to32[dc_colormap[dc_source[frac>>FRACBITS]]];
 //	    c32.ui32 = color8.to32[dc_source[frac>>FRACBITS]];
-#endif
             register uint16_t dc0, dc1, dc2; // for overlapped execution
             register pixel24_t * p24 = (pixel24_t*)dest;
             dc0 = p24->b;
@@ -579,12 +548,8 @@ void R_DrawTranslucentColumn_24 (void)
 //	    sb = dc_translucentmap[ (sb << 8) + 110 ]; // grays 80..111;
             sb = dc_translucentmap[ (sb << 8) ]; // black
 #endif
-#ifdef HIGHCOLORMAPS
-            c32.ui32 = hicolormaps[ sb  ];
-#else
             c32.ui32 = color8.to32[dc_colormap[ sb ]];
 //	    c32.ui32 = color8.to32[ sb ];
-#endif
 #if TFIRE_OPTION==1
             // dark background is enhanced before avg, to give light add effect
             register pixelunion32_t sh32;
@@ -625,12 +590,8 @@ void R_DrawTranslucentColumn_24 (void)
         {
             // 50/50 translucent with modifications
             register int sb = dc_source[frac>>FRACBITS];
-#ifdef HIGHCOLORMAPS
-            c32.ui32 = hicolormaps[ sb  ];
-#else
             c32.ui32 = color8.to32[dc_colormap[ sb ]];
 //	    c32.ui32 = color8.to32[ sb ];
-#endif
 #if FX1_OPTION==1
             // check translucent map for opaque, sprite vrs white bkg
             register byte twht = dc_translucentmap[ (sb << 8) + 4 ];
@@ -668,11 +629,7 @@ void R_DrawTranslucentColumn_24 (void)
         do
         {
             // 75/25 translucent
-#ifdef HIGHCOLORMAPS
-            c32.ui32 = hicolormaps[ dc_source[frac>>FRACBITS] ];
-#else
             c32.ui32 = color8.to32[dc_colormap[dc_source[frac>>FRACBITS]]];
-#endif
             register uint16_t dc0, dc1, dc2; // for overlapped execution
             register pixel24_t * p24 = (pixel24_t*)dest;
             dc0 = c32.pix24.b;
@@ -742,11 +699,7 @@ void R_DrawTranslatedColumn_24 (void)
     // Here we do an additional skin re-mapping.
     do
     {
-#ifdef HIGHCOLORMAPS
-        c32.ui32 = hicolormaps[ dc_skintran[ dc_source[frac>>FRACBITS]]] ];
-#else
         c32.ui32 = color8.to32[ dc_colormap[ dc_skintran[ dc_source[frac>>FRACBITS]]] ];
-#endif
         *(pixel24_t*)dest = c32.pix24;  // opaque
         dest += vid.ybytes;
         frac += fracstep;
@@ -793,13 +746,9 @@ void R_DrawSpan_24 (void)
         // Current texture index in u,v.
         xfrac &= flat_imask;
         register int spot = ((yfrac >> flatfracbits) & flat_ymask) | (xfrac >> 16);
-#ifdef HICOLORMAPS
         // Lookup pixel from flat texture tile,
         //  re-index using light/colormap.
-        c32.ui32 = hicolormaps[ ds_source[spot] ];
-#else
         c32.ui32 = color8.to32[ ds_colormap[ds_source[spot]] ];
-#endif
         *(p24++) = c32.pix24;  // opaque
         // Next step in u,v.
         xfrac += ds_xstep;
@@ -843,13 +792,9 @@ void R_DrawTranslucentSpan_24(void)
         // Lookup pixel from flat texture tile,
         xfrac &= flat_imask;
         register int spot = ((yfrac >> flatfracbits) & flat_ymask) | (xfrac >> FRACBITS);
-#ifdef HICOLORMAPS
         // Lookup pixel from flat texture tile,
         //  re-index using light/colormap.
-        c32.ui32 = hicolormaps[ ((uint16_t *)ds_source)[spot]>>1 ];
-#else
         c32.ui32 = color8.to32[ ds_colormap[ds_source[spot]] ];
-#endif
         // alpha translucent
         p24->b = (((unsigned int)p24->b * alpha_r) + (c32.pix24.b * alpha_d)) >> 8;
         p24->g = (((unsigned int)p24->g * alpha_r) + (c32.pix24.g * alpha_d)) >> 8;

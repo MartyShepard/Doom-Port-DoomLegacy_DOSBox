@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw16.c 1440 2019-05-19 02:31:03Z wesleyjohnson $
+// $Id: r_draw16.c 1555 2020-11-17 23:31:19Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -39,11 +39,8 @@
 // ==========================================================================
 
 // r_data.c
-  // include: color8.to16, hicolormaps
+  // include: color8.to16
 
-#ifdef HIGHCOLORMAPS
-  // [WDJ] 2012-2-10 HIGHCOLORMAPS are not working, not setup.
-#endif
 
 //hicolor composite (ENABLE_DRAW15 is 5:5:5), (ENABLE_DRAW16 is 5:6:5)
 // [WDJ] (c>>1 & mask_01111) or ((c & mask_11110)>>1) both
@@ -89,11 +86,7 @@ void R_DrawColumn_16 (void)
     {
         // Re-map color indices from wall texture column
         //  using a lighting/special effects LUT.
-#ifdef HIGHCOLORMAPS
-        *(uint16_t*)dest = hicolormaps[ ((uint16_t*)dc_source)[(frac>>FRACBITS)&127]>>1 ];
-#else
         *(uint16_t*)dest = color8.to16[ dc_colormap[ dc_source[(frac>>FRACBITS)&127] ] ];
-#endif
         dest += vid.ybytes;
         frac += fracstep;
     } while (--count);
@@ -130,13 +123,7 @@ void R_DrawSkyColumn_16 (void)
 
     do
     {
-        // DUMMY, just to see it's active
-//        *dest = (15<<10);
-#ifdef HIGHCOLORMAPS
-        hicolormaps[ ((uint16_t *)dc_source)[(frac>>FRACBITS)&255]>>1 ];
-#else
         *(uint16_t*)dest = color8.to16[ dc_colormap[dc_source[(frac >> FRACBITS) & 255]] ];
-#endif
         dest += vid.ybytes;
         frac += fracstep;
     } while (--count);
@@ -547,12 +534,8 @@ void R_DrawTranslucentColumn_16 (void)
         {
             // 50/50 translucent with modifications
             register int sb = dc_source[frac>>FRACBITS];
-#ifdef HIGHCOLORMAPS
-            register uin16_t nc = hicolormaps[ sb  ];
-#else
             register uint16_t nc = color8.to16[dc_colormap[sb]];
 //	    register uint16_t nc = color8.to16[sb];
-#endif
 #if FX1_OPTION==1
             // check translucent map for opaque, sprite vrs white bkg
             register byte twht = dc_translucentmap[ (sb << 8) + 4 ];
@@ -744,13 +727,8 @@ void R_DrawTranslatedColumn_16 (void)
     // Here we do an additional index re-mapping.
     do
     {
-#ifdef HIGHCOLORMAPS
-        *dest = hicolormaps[ ((uint16_t*)dc_skintran[ dc_source[frac>>FRACBITS]]] ];
-#else
         *(uint16_t*)dest = color8.to16[ dc_colormap[ dc_skintran[ dc_source[frac>>FRACBITS]]] ];
-#endif
         dest += vid.ybytes;
-
         frac += fracstep;
     } while (count--);
 }
@@ -796,13 +774,9 @@ void R_DrawSpan_16 (void)
         // Current texture index in u,v.
         xfrac &= flat_imask;
         register int spot = ((yfrac>>flatfracbits)&flat_ymask) + (xfrac>>FRACBITS);
-#ifdef HICOLORMAPS
         // Lookup pixel from flat texture tile,
         //  re-index using light/colormap.
-        *(uint16_t*)dest = hicolormaps[ ((uint16_t *)ds_source)[spot]>>1 ];
-#else
         *(uint16_t*)dest = color8.to16[ ds_colormap[ds_source[spot]] ];
-#endif
         dest += 2;
         // Next step in u,v.
         xfrac += ds_xstep;
@@ -846,16 +820,9 @@ void R_DrawTranslucentSpan_16(void)
     {
         // Current texture index in u,v.
         // Lookup pixel from flat texture tile,
-#ifdef HICOLORMAPS
-        register int spot = ((yfrac>>flatfracbits) & flat_ymask) + ((xfrac>>FRACBITS) & flat_xmask);
-
         // Lookup pixel from flat texture tile,
         //  re-index using light/colormap.
-        register uint16_t nc = hicolormaps[ ((uint16_t *)ds_source)[spot]>>1 ];
-
-#else
         register uint16_t nc = color8.to16[ ds_colormap[ds_source[((yfrac >> flatfracbits) & flat_ymask) | (xfrac >> FRACBITS)]] ];
-#endif
         // alpha translucent
         register uint32_t dc0 = *(uint16_t*)dest & mask_rb;  // for overlapped execution
         register uint32_t dc1 = *(uint16_t*)dest & mask_g;

@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01555 ]: w109_017 (removed) highcolormaps
 [01554 ]: w109_016 sky height
 [01553 ]: w109_015 savebuffer
 [01552 ]: README.rst updated.
