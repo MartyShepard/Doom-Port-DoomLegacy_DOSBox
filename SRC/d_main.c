@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1556 2020-11-17 23:32:54Z wesleyjohnson $
+// $Id: d_main.c 1557 2020-11-17 23:34:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1556"
+#define SVN_REV "1557"
 #endif
 
 
@@ -2287,7 +2287,7 @@ void D_DoomMain()
 
 #if defined( __DJGPP__ )
     if (M_CheckParm("-listwads") || M_CheckParm("-lw")) ListSupportetWads_Command();
-    if (M_CheckParm("-cfeatures") || M_CheckParm("-cf")) Commandline_GetCompileFeatures();
+    if (M_CheckParm("-enginefeatures"))  Commandline_GetCompileFeatures();
 #endif       
     GenPrintf( EMSG_info|EMSG_all, "%s\n", legacytitle);
 
@@ -3658,7 +3658,7 @@ static void Help( void )
        (
 #if defined (__DJGPP__)			 
         "-v   -v2        Verbose (activte Log \"LEGACY.LOG\")\n"
-        "-cfeatures/-cf  Show Compiled Features\n"
+        "-enginefeatures Show Compiled Features that support this version\n"
 #else
         "-v   -v2        Verbose\n"
 #endif			
@@ -3842,7 +3842,8 @@ void Commandline_GetBitModi(void)
 void Commandline_GetCompileFeatures(void)
 {
 
-        printf("Support Compiled Features\n");
+  printf("%s\n", legacytitle);
+  printf("Support Compiled Features\n");
 
 #ifdef LAUNCHER
         printf("ENGINE: [X] Built-in Launcher\n");
@@ -4136,6 +4137,12 @@ void Commandline_GetCompileFeatures(void)
 #endif
 
 // Debug Features
+#ifdef DEBUG
+        printf("DEBUG : [X] Debug Modus\n");
+#else
+        printf("DEBUG : [ ] Debug Modus\n");
+#endif
+
 #ifdef DEBUG_MESSAGES_ON
         printf("DEBUG : [X] Debug Messages Default On\n");
 #else
@@ -4160,12 +4167,20 @@ void Commandline_GetCompileFeatures(void)
         printf("DEBUG : [ ] RangeCheck\n");
 #endif
 
+#ifdef RANGECHECK_DRAW_LIMITS
+        printf("DEBUG : [X] Rangecheck Draw Limits\n");
+#else
+        printf("DEBUG : [ ] Rangecheck Draw Limits\n");
+#endif
+
+
 #ifdef PARANOIA
         printf("DEBUG : [X] Paranoia Mode\n");
 #else
         printf("DEBUG : [ ] Paranoia Mode\n");
 #endif
 
+    printf("if the list too long. add '>Features.txt' to the exe as output\n");
     exit(0); 
 }
 #endif

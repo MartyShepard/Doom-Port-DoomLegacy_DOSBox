@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_draw8.c 1554 2020-11-17 23:29:23Z wesleyjohnson $
+// $Id: r_draw8.c 1557 2020-11-17 23:34:31Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 // Portions Copyright (C) 2000-2016 by DooM Legacy Team.
@@ -110,7 +110,7 @@ void R_DrawColumn_8(void)
     if (count <= 0)
         return;  // Zero length, column does not exceed a pixel.
 
-#ifdef RANGECHECK
+#ifdef RANGECHECK_DRAW_LIMITS
     // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
     if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight)
     {
@@ -215,7 +215,7 @@ void R_DrawSkyColumn_8(void)
     // while(count--)
 #endif
 
-#ifdef RANGECHECK
+#ifdef RANGECHECK_DRAW_LIMITS
     // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
     if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight)
     {
@@ -325,7 +325,7 @@ void R_DrawFuzzColumn_8(void)
         return;  // Zero length, column does not exceed a pixel.
     // while(count--)
 
-#ifdef RANGECHECK
+#ifdef RANGECHECK_DRAW_LIMITS
     // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
     if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight)
     {
@@ -387,10 +387,10 @@ void R_DrawShadeColumn_8(void)
     if (count < 0)
         return;
 
-#ifdef RANGECHECK
+#ifdef RANGECHECK_DRAW_LIMITS
     if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight)
     {
-        I_SoftError("R_DrawColumn: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
+        I_SoftError("R_DrawShadeColumn: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
         return;
     }
 #endif
@@ -442,10 +442,10 @@ void R_DrawAlphaColumn_8(void)
     if (count < 0)
         return;
 
-#ifdef RANGECHECK
+#ifdef RANGECHECK_DRAW_LIMITS
     if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight)
     {
-        I_SoftError("R_DrawColumn: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
+        I_SoftError("R_DrawAlphaColumn: %i to %i at %i\n", dc_yl, dc_yh, dc_x);
         return;
     }
 #endif
@@ -642,7 +642,7 @@ void R_DrawTranslucentColumn_8(void)
         return;  // Zero length, column does not exceed a pixel.
 #endif
 
-#ifdef RANGECHECK
+#ifdef RANGECHECK_DRAW_LIMITS
     // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
     if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight)
     {
@@ -895,7 +895,7 @@ void R_DrawTranslatedColumn_8(void)
     if (count < 0)
         return;
 
-#ifdef RANGECHECK
+#ifdef RANGECHECK_DRAW_LIMITS
     // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
     if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight)
     {
@@ -946,7 +946,7 @@ void R_DrawSpan_8(void)
     register byte *dest;
     register int count;
 
-#ifdef RANGECHECK
+#ifdef RANGECHECK_DRAW_LIMITS
     if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= rdraw_viewwidth || (unsigned) ds_y > rdraw_viewheight)
     {
         I_SoftError("R_DrawSpan: %i to %i at %i\n", ds_x1, ds_x2, ds_y);
@@ -986,13 +986,12 @@ void R_DrawTranslucentSpan_8(void)
     byte *dest;
     int count;
 
-#ifdef RANGECHECK
+#ifdef RANGECHECK_DRAW_LIMITS
     if (ds_x2 < ds_x1 || ds_x1 < 0 || ds_x2 >= rdraw_viewwidth || (unsigned) ds_y > rdraw_viewheight)
     {
-        I_SoftError("R_DrawSpan: %i to %i at %i\n", ds_x1, ds_x2, ds_y);
+        I_SoftError("R_DrawTranslucentSpan: %i to %i at %i\n", ds_x1, ds_x2, ds_y);
         return;
     }
-//              dscount++;
 #endif
 
     xfrac = ds_xfrac & flat_imask;
@@ -1261,7 +1260,7 @@ static byte  fogcolor_c;
     if (count < 0)
         return;
 
-#ifdef RANGECHECK
+#ifdef RANGECHECK_DRAW_LIMITS
     // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
     if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight)
     {
@@ -1341,7 +1340,7 @@ void R_DrawColumnShadowed_8(void)
     if (count < 0)
         return;
 
-#ifdef RANGECHECK
+#ifdef RANGECHECK_DRAW_LIMITS
     // [WDJ] Draw window is actually rdraw_viewwidth and rdraw_viewheight
     if ((unsigned) dc_x >= rdraw_viewwidth || dc_yl < 0 || dc_yh >= rdraw_viewheight)
     {

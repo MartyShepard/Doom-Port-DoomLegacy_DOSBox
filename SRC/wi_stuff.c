@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: wi_stuff.c 1543 2020-08-22 02:36:35Z wesleyjohnson $
+// $Id: wi_stuff.c 1557 2020-11-17 23:34:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2280,7 +2280,7 @@ static void WI_Init_Variables( wb_start_t * wb_start)
 
     wbs = wb_start;
 
-#ifdef RANGECHECKING
+#ifdef RANGECHECK
     if (gamemode != doom2_commercial)
     {
       if ( gamemode == ultdoom_retail )

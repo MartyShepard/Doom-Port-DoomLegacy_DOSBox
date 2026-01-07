@@ -31,15 +31,30 @@
 // =========================================================================
 // Compile settings, configuration, tuning, and options
 
+#ifdef DEBUG
+// Uncheck this to compile debugging code
+//#define RANGECHECK
+#define RANGECHECK_DRAW_LIMITS
+// Do some extra tests, that never happens but maybe.
+//#define PARANOIA
+// write message in log.txt (win32 and Linux only for the moment)
+#define LOGMESSAGES
+// Default to show debug messages.
+#define DEBUG_MESSAGES_ON
+#else
+// Normal compile
 // Uncheck this to compile debugging code
 //#define RANGECHECK
 // Do some extra tests, that never happens but maybe.
 //#define PARANOIA
 // write message in log.txt (win32 and Linux only for the moment)
-#define LOGMESSAGES
-#define LOGLINELEN  80
+//#define LOGMESSAGES
 // Default to show debug messages.
 //#define DEBUG_MESSAGES_ON
+#endif
+
+#define LOGLINELEN  80
+
 
 // [WDJ] Machine speed limitations.
 // Leave undefined for netplay, or make sure all machines have same setting.

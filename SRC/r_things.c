@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1547 2020-09-02 13:27:13Z wesleyjohnson $
+// $Id: r_things.c 1557 2020-11-17 23:34:31Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1157,7 +1157,7 @@ void R_DrawMaskedColumn ( byte * column_data )
         if (dc_yl <= dc_yh && dc_yl < rdraw_viewheight && dc_yh > 0)  // [WDJ] exclude status bar
         {
 
-#ifdef RANGECHECK
+#ifdef RANGECHECK_DRAW_LIMITS
     // Temporary check code.
     // Due to better clipping, this extra clip should no longer be needed.
     if( dc_yl < 0 )
@@ -1171,6 +1171,7 @@ void R_DrawMaskedColumn ( byte * column_data )
         dc_yh = rdraw_viewheight - 1;
     }
 #endif
+
 #ifdef CLIP2_LIMIT
             //[WDJ] phobiata.wad has many views that need clipping
             if ( dc_yl < 0 )   dc_yl = 0;
