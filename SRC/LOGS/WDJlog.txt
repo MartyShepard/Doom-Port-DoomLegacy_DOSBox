@@ -8279,8 +8279,6 @@ patchfile = w109_014_ver1486
 Update to 1.48.6.
 Update docs and make_options.
 
-==== commit
-
 *** w109_savebuffer
 patchfile = w109_015_savebuffer
 - commit revision 1553
@@ -8355,3 +8353,23 @@ For now, these flats are created as solid textures.  Any pattern
 looks like a wall.
 
 Added a vanilla sky draw mode.
+
+=== commit
+
+*** w109_gentexture
+patchfile = w109_021_gentexture
+- commit revision 1559
+Make R_GenerateTexture a bit more robust.
+Moved common patch tests earlier and shared them for all options.
+Moved some common cleanup later and shared it.
+
+*** w109_skypict2
+patchfile = w109_022_skypict2
+- commit revision 1560
+Texture does not always have correct settings.
+Set the sky height in texture when 200 or 240 size, so
+that it creates the correct size TM_picture.
+Previous code got away with this due to a special test in
+R_GenerateTexture, that only worked for single patch textures
+that are generating a TM_patch.
+

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1558 2020-11-17 23:36:10Z wesleyjohnson $
+// $Id: r_data.c 1559 2020-11-25 12:34:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -954,7 +954,6 @@ typedef struct {
 //  texture_req : requirement,  TM_none, TM_masked, TM_picture, or TM_picture_column
 byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture_req )
 {
-    byte*               texgen;  // generated texture (return)
     texture_t*          texture; // texture info from wad
     texpatch_t*         texpatch;  // patch info to make texture
     patch_t*            realpatch; // patch lump
@@ -978,6 +977,7 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
     byte  detect_post = 0;  // detect patch post incomptible with single column
     byte  detect_hole = 0;
     byte  detect = (texren->detect & TD_masked);
+    byte  make_picture = 0;
 #ifdef DEEPSEA_TALL_PATCH
     int seg_topdelta;  // current seg_topdelta
 #endif
@@ -994,8 +994,12 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
     // There may be more than one needed, and upon reload the last
     // generated model will appear to be a texture requirement.
     detect |= texture->detect;  // texture hints from texture load
+
     if( texture_req == TM_none )
         texture_req = texren->texture_model;  // previous generate
+
+    if( texture_req == TM_picture )
+        make_picture = 1;
 
     if( texren->cache )
         Z_Free( texren->cache );
@@ -1014,28 +1018,46 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
     // single-patch textures can have holes and may be used on
     // 2sided lines so they need to be kept in 'packed' format
     patchcount = texture->patchcount;
-    if(texture_req == TM_picture )  goto multipatch_combine;
-   
-    if(patchcount==1)
+
+    if( patchcount >= MAXPATCHNUM )
     {
-        // Texture patch format:
-        //   patch header (8 bytes), ignored
-        //   array[ texture_width ] of column offset
-        //   concatenated column posts, of variable length, terminate 0xFF
-        //        ( post header (topdelta,length), pixel data )
+       I_SoftError("R_GenerateTexture: Patch count %i exceeds %i, ignoring rest\n",
+                   patchcount, MAXPATCHNUM);
+       patchcount = MAXPATCHNUM - 1;
+    }
 
-        // Single patch texture, simplify
-        texpatch = texture->patches;
-        patchsize = W_LumpLength( texpatch->lumpnum );
-       
-        // [WDJ] Protect every alloc using PU_CACHE from all Z_Malloc that
-        // follow it, as that can deallocate the PU_CACHE unexpectedly.
+    // [WDJ] Protect every alloc using PU_CACHE from all Z_Malloc that
+    // follow it, as that can deallocate the PU_CACHE unexpectedly.
+   
+    // Texture patch format:
+    //   patch header (8 bytes), ignored
+    //   array[ texture_width ] of column offset
+    //   concatenated column posts, of variable length, terminate 0xFF
+    //        ( post header (topdelta,length), pixel data )
 
-        // [WDJ] Only need patch lump for the following memcpy.
-        // [WDJ] Must use common patch read to preserve endian consistency.
-        // otherwise it will be in cache without endian changes.
+    // First examination of the source patches
+    compostsize = 0;
+    texpatch = texture->patches;
+    for (p=0; p<patchcount; p++, texpatch++)
+    {
+        compat_t * cp = &compat[p];
+        cp->postptr = NULL;	// disable until reach starting column
+        cp->nxt_y = INT_MAX;	// disable
+
+        // Track patch memory usage to detect reused columns.
+        cp->usedpatchdata = 0;
+        cp->originx = texpatch->originx;
+        cp->originy = texpatch->originy;
+
         // To avoid hardware render cache.
-        realpatch = W_CachePatchNum_Endian(texpatch->lumpnum, PU_IN_USE);  // texture lump temp
+        realpatch = W_CachePatchNum_Endian(texpatch->lumpnum, PU_IN_USE);  // patch temp
+        // Preliminary characteristics of the patch.
+        cp->patch = realpatch;
+        cp->width = realpatch->width;
+        int patch_colofs_size = realpatch->width * sizeof( uint32_t );  // width * 4
+        // Need patchsize to detect invalid patches.
+        patchsize = W_LumpLength(texpatch->lumpnum);
+        cp->patchsize = patchsize;
 
         // [WDJ] Detect PNG patches.
         if(    ((byte*)realpatch)[0]==137
@@ -1048,9 +1070,9 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
             // which require the patch run full height (no transparent).
 #if 1
             // Enable when want to know which textures are triggering this.
-            GenPrintf(EMSG_info,"R_GenerateTexture: Texture %8s has PNG patch, using dummy texture.\n", texture->name );
+            GenPrintf(EMSG_info,"R_GenerateTexture: Texture %8s has PNG patch.\n", texture->name );
 #endif
-            goto make_dummy_texture;
+            goto disable_patch;
         }
 
         // [WDJ] W_CachePatchNum should only get lumps from PATCH section,
@@ -1058,17 +1080,16 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
         // Here are some validity checks, to ensure we are working with a patch.
         // colormap size = 0x2200 to 0x2248
         {
-            int patch_colofs_size = realpatch->width * sizeof( uint32_t );  // width * 4
             uint32_t* pat_colofs = (uint32_t*)&(realpatch->columnofs); // to match size in wad
             if( patch_colofs_size + 8 > patchsize )  // column list exceeds patch size
-                goto make_dummy_texture;
+                goto disable_patch;
 
             // Look at patch columns
             for( i=0; i< realpatch->width; i++ )
             {
                 uint32_t cofs = pat_colofs[i];  // column offset
                 if( cofs > patchsize )
-                    goto make_dummy_texture;  // invalid column offset
+                    goto disable_patch;  // invalid column offset
 
                 post_t * ppp = (post_t*)( (byte*)realpatch + cofs );
                 if( ppp->topdelta || (ppp->length != realpatch->height) )
@@ -1097,15 +1118,47 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
             }
         }
 
-        if( texture_req == TM_picture_column )
-        {
-            if( detect_hole )
-                goto multipatch_combine;
-            if( detect_post )
-                goto multipatch_combine;
-        }
+        // Add posts, without columnofs table and 8 byte patch header.
+        compostsize += patchsize - patch_colofs_size - 8;
+        continue;
+
+    disable_patch:
+        cp->originx = 7999;  // to disable this patch
+        cp->patchsize = 0;
+        cp->width = 0;
+        continue;
+    }
+
+    // [WDJ] When rejected PNG patches and bad patches.
+    if( compostsize == 0 )  // no valid patches found
+    { 
+#if 1
+        // Enable when want to know which textures are triggering this.
+        GenPrintf(EMSG_info,"R_GenerateTexture: Texture %8s has no valid patches, using dummy texture.\n", texture->name );
+#endif
+        goto make_dummy_texture;
+    }
+
+    if( make_picture )
+        goto multipatch_combine;
+
+    if( patchcount > 1 )
+        goto multipatch_combine;
+
+    if( texture_req == TM_picture_column )
+    {
+        if( detect_hole )
+            goto multipatch_combine;
+        if( detect_post )
+            goto multipatch_combine;
+    }
+
+    if( patchcount==1 )
+    {
+        // Single patch texture, simplify
 
         // [WDJ] Detect shifted origin, cannot use the simple copy.
+        texpatch = texture->patches;
         if( texpatch->originx != 0 || texpatch->originy != 0 )
         {
             // [WDJ] Cannot copy patch to texture.
@@ -1114,6 +1167,10 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
 //	    debug_Printf("GenerateTexture %s: offset forced multipatch\n", texture->name );
             goto multipatch_combine;
         }
+
+        // [WDJ] Only need patch lump for the following memcpy.
+        realpatch = compat[0].patch;
+        patchsize = compat[0].patchsize;
 
         // [WDJ] Detect mismatch of patch width, too large.
         if( realpatch->width > texture->width )
@@ -1196,17 +1253,19 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
         }
 
   single_patch_finish:
-        Z_ChangeTag (realpatch, PU_CACHE);  // safe
+        // Textures do not use the realpatch offsets, which may be garbage.
+        txcpatch = (patch_t*)txcblock;
+        txcpatch->leftoffset = 0;
+        txcpatch->topoffset = 0;
 
-        // Interface for texture picture format
-        // use the single patch's, single column lookup
+        // Interface for texture draw.
+        // Use the single patch, single column lookup.
         colofs = (uint32_t*)&(((patch_t*)txcblock)->columnofs);
         // colofs from patch are relative to start of table
         texren->columnofs = colofs;
         texren->pixel_data_offset = 3;  // skip over post header and pad byte
         texren->texture_model = TM_patch;
         //debug_Printf ("R_GenTex SINGLE %.8s size: %d\n",texture->name,patchsize);
-        texgen = txcblock;
         detect |= detect_hole | detect_post;
         goto done;
        
@@ -1238,46 +1297,14 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
             colofs = (uint32_t*)&(txcpatch->columnofs);  // has patch header
             for(i=0 ; i< texture->width ; i++ )
                  colofs[i] = head_size;
-            goto single_patch_finish;
         }
+        goto single_patch_finish;
     }
     // End of Single-patch texture
 
  multipatch_combine:
- // TGC_combine_patch vrs TGC_picture: Multiple patch textures.
-    if( patchcount >= MAXPATCHNUM ) {
-       I_SoftError("R_GenerateTexture: Combine patch count %i exceeds %i, ignoring rest\n",
-                   patchcount, MAXPATCHNUM);
-       patchcount = MAXPATCHNUM - 1;
-    }
-   
-    // First examination of the source patches
-    texpatch = texture->patches;
-    compostsize = 0;
-    for (p=0; p<patchcount; p++, texpatch++)
-    {
-        compat_t * cp = &compat[p];
-        cp->postptr = NULL;	// disable until reach starting column
-        cp->nxt_y = INT_MAX;	// disable
-
-        // Track patch memory usage to detect reused columns.
-        cp->usedpatchdata = 0;
-
-        cp->originx = texpatch->originx;
-        cp->originy = texpatch->originy;
-        // To avoid hardware render cache.
-        realpatch = W_CachePatchNum_Endian(texpatch->lumpnum, PU_IN_USE);  // patch temp
-        cp->patch = realpatch;
-        cp->width = realpatch->width;
-        int patch_colofs_size = realpatch->width * sizeof( uint32_t );  // width * 4
-        // add posts, without columnofs table and 8 byte patch header
-        // Need patchsize to detect invalid patches.
-        patchsize = W_LumpLength(texpatch->lumpnum);
-        cp->patchsize = patchsize;
-        compostsize += patchsize - patch_colofs_size - 8;
-    }
-
-    // Decide TGC_ format
+    // TM_combine_patch or TM_picture: Multiple patch textures.
+    // Decide TM_ format
     // Combined patches + table + header
     compostsize += colofs_size + 8;	// combined patch size
     txcblocksize = colofs_size + (texture->width * texture->height); // picture format size
@@ -1303,7 +1330,7 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
         goto picture_format;
   
  combine_format:
-    // TGC_combine_patch: Combine multiple patches into one patch.
+    // TM_combine_patch: Combine multiple patches into one patch.
 
     // Size the new texture.  It may be too big, but must not be too small.
     // Will usually fit into compostsize because it does so as separate patches.
@@ -1316,13 +1343,6 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
     // and they expand in the texture when they combine with other patches.
 
     // [WDJ] Generate_Texture will now realloc a texture when estimate was too small.
-#if 0
-    // Old code for texture size.
-    // Combined patches + table + header + 2 byte per empty column
-    txcblocksize = compostsize + (2 * texture->width);
-     // this stops failure in caesar.wad
-     // No longer needed with expanding texture size
-#endif
     // Combined patches + table + header + 1 byte per empty column
     txcblocksize = compostsize + texture->width;
 
@@ -1693,22 +1713,17 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
                      texture->name, txcblocksize, destpixels - txcblock );
     }
 
-    // unlock all the patches, no longer needed, but may be in another texture
-    for (p=0; p<patchcount; p++)
-    {
-        Z_ChangeTag (compat[p].patch, PU_CACHE);
-    }
-    // Interface for texture picture format
-    // texture data is after the offset table, no patch header
-    texgen = txcblock;  // ptr to whole patch
+    // Interface for texture draw.
+    // Texture data is after the offset table, no patch header.
     texren->columnofs = colofs;
     texren->pixel_data_offset = 3;  // skip over post header and pad byte
     texren->texture_model = TM_combine_patch;  // transparent combined
+
     detect |= detect_hole | detect_post;
 #if 0
     // Enable to print memory usage
     I_SoftError("R_GenerateTexture: %8s allocated %i, used %i bytes\n",
-            texture->name, txcblocksize, destpixels - texgen );
+            texture->name, txcblocksize, destpixels - txcblock );
 #endif
     goto done;
    
@@ -1765,7 +1780,12 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
         // To avoid hardware render cache.
         realpatch = W_CachePatchNum_Endian(texpatch->lumpnum, PU_CACHE);  // patch temp
         x1 = texpatch->originx;
+        if( x1 > texture->width )
+	    continue;  // ignore PNG and other bad patches
+
         x2 = x1 + realpatch->width;
+        if( x2 < 0 )
+	    continue;  // ignore PNG and other bad patches
 
         if (x2 > texture->width)
             x2 = texture->width;
@@ -1782,11 +1802,9 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
                                  texture->height);	// limit
         }
     }
-    // Interface for texture picture format
-    // texture data is after the offset table, no patch header
-//    texgen = txcblock + colofs_size;  // ptr to first column
-    texgen = txcblock;  // must return the ptr that is put into texture cache
-   
+
+    // Interface for texture draw.
+    // Texture data is after the offset table, no patch header.
     texren->columnofs = colofs;
     texren->pixel_data_offset = 0;
     texren->texture_model = TM_picture;  // non-transparent picture format
@@ -1796,12 +1814,18 @@ done:
         detect |= TD_solid_column;  // can be drawn by wall column draw
     texren->detect = detect;
 
+    // unlock all the patches, no longer needed, but may be in another texture
+    for( p=0; p<patchcount; p++ )
+    {
+        Z_ChangeTag (compat[p].patch, PU_CACHE);
+    }
+   
     // Now that the texture has been built in column cache,
     //  texture cache is purgable from zone memory.
     Z_ChangeTag (txcblock, PU_PRIV_CACHE);  // priority because of expense
     texturememory += txcblocksize;  // global
 
-    return texgen;
+    return txcblock;
 }
 
 
