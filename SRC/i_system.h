@@ -163,10 +163,15 @@ void I_UngrabMouse(void);
 
 // Shutdown joystick and other interfaces, before I_ShutdownGraphics.
 void I_Shutdown_IO(void);
-#if defined( __DJGPP__ )
-// Called by DoomMain.
-//void I_InitJoystick (void);
-extern byte sound_started;
-byte* I_AllocLow (int length);
-#endif
+
+	#if defined( __DJGPP__ )
+	// Called by DoomMain.
+	//void I_InitJoystick (void);
+	extern byte sound_started;
+	byte* I_AllocLow (int length);
+		#ifdef LOGMESSAGES
+			void shutdown_logmessage( const char * who, const char * msg );
+		#endif
+	#endif
+
 #endif

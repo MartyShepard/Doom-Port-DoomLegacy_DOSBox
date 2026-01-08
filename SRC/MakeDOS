@@ -343,7 +343,8 @@ ifdef DJGPPDOS_NATIVE
 	OPTS+=-DENABLE_DRAW24
 	OPTS+=-DENABLE_DRAW32
 	
-	LIBS+=-lsocket
+	LIBS+=-lsocke
+	LIBS+=-llz
 	
 	SFLAGS=
   CFLAGS=-g
@@ -477,6 +478,7 @@ OBJS :=  $(OBJS) \
 		$(O)/r_segs.o	 \
 		$(O)/r_sky.o	 \
 		$(O)/r_things.o  \
+		$(O)/w_zip.o	 \
 		$(O)/w_wad.o	 \
 		$(O)/wi_stuff.o  \
 		$(O)/v_video.o	 \
@@ -963,6 +965,10 @@ $(O)/r_things.o: r_things.c doomdef.h doomtype.h  m_swap.h \
 $(O)/w_wad.o: w_wad.c doomdef.h doomtype.h  m_swap.h w_wad.h \
  z_zone.h i_video.h d_netfil.h md5.h
 	redir -o /_GCC/w_wad.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
+
+$(O)/w_zip.o: w_zip.c doomdef.h doomtype.h  m_swap.h w_wad.h \
+ z_zone.h i_video.h d_netfil.h md5.h
+	redir -o /_GCC/w_zip.LOG -eo $(CC) $(CFLAGS) $(LDFLAGS) -c $< -o $@
 
 $(O)/wi_stuff.o: wi_stuff.c doomdef.h doomtype.h  m_swap.h \
  wi_stuff.h d_player.h d_items.h p_pspr.h m_fixed.h tables.h info.h \

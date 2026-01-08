@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1561 2020-11-29 11:50:21Z wesleyjohnson $
+// $Id: d_main.c 1562 2020-11-29 11:51:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1561"
+#define SVN_REV "1562"
 #endif
 
 
@@ -1630,13 +1630,18 @@ byte  Check_lumps( const char * wadname, const char * lumpnames[], int count )
             goto read_err;
 #endif
 
-#ifdef DEBUG       
-        int cmp = strncasecmp( lumpx.name, lumpname, 8 );
+#ifdef DETECT_TITLES
         if( strncasecmp( lumpx.name, "TITLE", 5 ) == 0 )
-         printf( "%8s %c %8s \n", lumpx.name,
-                 ( (cmp<0)?'<': (cmp>0)? '>' :'='),
-                  lumpname);
-#endif       
+        {
+            printf( "Lump=%8s : ", lumpx.name );
+            for( lc=0; lc<count; lc++ )
+            {
+               int cmp = strncasecmp( lumpx.name, lumpname[lc], 8 );
+               printf( "  %c %8s", ( (cmp<0)?'<': (cmp>0)? '>' :'='), lumpname);
+            }
+            printf( "\n" );
+        }
+#endif
         for( lc=0; lc<count; lc++ )
         {
             if( strncasecmp( lumpx.name, lumpnames[lc], 8 ) == 0 )
@@ -3580,10 +3585,7 @@ void D_Quit_Save ( quit_severity_e severity )
             printf("\r");
             I_Show_EndText( endtext );
         }
-    }
-#if defined (__DJGPP__) && defined LOGMESSAGES
-    if (logstream) fclose(logstream);
-#endif		
+    }	
 }
 
 // I_Quit exits with (exit 0).

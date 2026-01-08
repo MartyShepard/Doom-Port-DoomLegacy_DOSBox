@@ -40,7 +40,8 @@
 #ifdef LOGMESSAGES
 #include <stdio.h>
 #include <string.h>
-FILE *logstream = NULL;
+  FILE *logstream = NULL;
+  #define  LOGFILENAME   "LEGACY.LOG"
 #endif
 
 int main ( int argc, char** argv )
@@ -53,7 +54,7 @@ int main ( int argc, char** argv )
 		for (i = 1; i < myargc; i++)
 		{
       if ((strcmp(argv[i], "-v") == 0) || (strcmp(argv[i], "-v2") == 0))    
-			   logstream = fopen("LEGACY.LOG", "wb");
+			   logstream = fopen(LOGFILENAME, "wb");
     } 
     #endif
 		

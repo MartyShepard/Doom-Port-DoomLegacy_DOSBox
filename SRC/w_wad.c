@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: w_wad.c 1544 2020-08-22 02:40:35Z wesleyjohnson $
+// $Id: w_wad.c 1562 2020-11-29 11:51:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -496,7 +496,8 @@ int W_Load_WadFile ( const char * filename )
     //  generate md5sum
     // 
     {
-#ifdef DEBUG_MESSAGES_ON
+//#define DEBUG_MD5_TIME
+#ifdef DEBUG_MD5_TIME
         // [WDJ] Do not know why timing the md5 calc was important, ever.
         int t;
         if( devparm >= 3 )
@@ -518,7 +519,7 @@ int W_Load_WadFile ( const char * filename )
             fclose(fhandle);
         }
 
-#ifdef DEBUG_MESSAGES_ON
+#ifdef DEBUG_MD5_TIME
         if( devparm >= 3 )
         {
             GenPrintf(EMSG_dev, "Load_WadFile %s: md5 calc took %f second\n",
@@ -530,7 +531,9 @@ int W_Load_WadFile ( const char * filename )
 #ifdef ZIPWAD
     wadfile->classify = fc;
     wadfile->lumpcache = NULL;
+#ifdef HWRENDER  
     wadfile->hwrcache = NULL;
+#endif
     // Immediately after the archive wadfile_t are the wadfile_t for files within the archive.
     wadfile->archive_num_wadfile = 0;  // number of wadfile in this archive
     wadfile->archive_parent = 0xFF;  // contained in archive wadfile index,  0xFF= normal file

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: st_lib.c 1382 2018-03-04 06:48:19Z wesleyjohnson $
+// $Id: st_lib.c 1562 2020-11-29 11:51:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -50,7 +50,7 @@
 #include "i_video.h"
   // rendermode
 
-//#define DEBUG
+//#define DEBUG_COPYRECT
 
 // [WDJ] all STlib, number, etc. patches are already endian fixed
 
@@ -108,7 +108,7 @@ void STlib_updateNum ( st_number_t*  ni )
     // clear the area
     x = ni->x - numdigits*w;
 
-#ifdef DEBUG
+#ifdef DEBUG_COPYRECT
        CONS_Printf("V_CopyRect1: %d %d %d %d %d %d %d %d val: %d\n",
               x, ni->y, BG, w*numdigits, h, x, ni->y, stbar_fg, num);
 #endif
@@ -224,7 +224,7 @@ void STlib_updateMultIcon ( st_multicon_t*  mi )
                 int y = mi->y - pp->topoffset;
                 int w = pp->width;
                 int h = pp->height;
-#ifdef DEBUG
+#ifdef DEBUG_COPYRECT
        CONS_Printf("V_CopyRect2: %d %d %d %d %d %d %d %d\n",
                             x, y, BG, w, h, x, y, stbar_fg);
 #endif
@@ -280,7 +280,7 @@ void STlib_updateBinIcon ( st_binicon_t*   bi )
             int w = pf->width;
             int h = pf->height;
 
-#ifdef DEBUG
+#ifdef DEBUG_COPYRECT
        CONS_Printf("V_CopyRect3: %d %d %d %d %d %d %d %d\n",
                             x, y, BG, w, h, x, y, stbar_fg);
 #endif

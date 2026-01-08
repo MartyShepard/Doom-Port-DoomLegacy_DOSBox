@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01562 ]: w109_024 DEBUG and logmessages
+          DOS: Compile fix. And then, a newly inserted function
+          is misspelled a few lines later... that's really strange.
+
 [01561 ]: w109_023 overlapped string copy
 [01560 ]: w109_022 sky texture generate height
 [01559 ]: w109_021 generate texture robust

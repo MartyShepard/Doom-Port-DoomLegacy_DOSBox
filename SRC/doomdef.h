@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1546 2020-09-02 13:24:02Z wesleyjohnson $
+// $Id: doomdef.h 1562 2020-11-29 11:51:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -31,15 +31,15 @@
 // =========================================================================
 // Compile settings, configuration, tuning, and options
 
-#ifdef DEBUG
+#ifdef DEBUG_WINDOWED
 // Uncheck this to compile debugging code
-//#define RANGECHECK
+#define RANGECHECK
 #define RANGECHECK_DRAW_LIMITS
 // Do some extra tests, that never happens but maybe.
 //#define PARANOIA
-// write message in log.txt (win32 and Linux only for the moment)
+// Write message in log.txt (win32 and Linux only for the moment)
 #define LOGMESSAGES
-// Default to show debug messages.
+// Show debug messages.
 #define DEBUG_MESSAGES_ON
 #else
 // Normal compile
@@ -48,7 +48,7 @@
 // Do some extra tests, that never happens but maybe.
 //#define PARANOIA
 // write message in log.txt (win32 and Linux only for the moment)
-//#define LOGMESSAGES
+#define LOGMESSAGES
 // Default to show debug messages.
 //#define DEBUG_MESSAGES_ON
 #endif

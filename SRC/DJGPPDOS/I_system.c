@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: I_system.c 1542 2020-08-22 02:35:24Z wesleyjohnson $
+// $Id: I_system.c 1562 2020-11-29 11:51:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -124,6 +124,22 @@ static void I_WaitJoyButton_Ex(void);
 static void I_InitJoystick_Ex(void);
 static byte I_GetKey_F(byte *key);
 static void M_InitJoystick (int jvalue);
+
+
+#ifdef LOGMESSAGES
+//#define  LOGFILENAME   "LEGACY.LOG"
+//FILE *logstream = NULL;
+
+void  shutdown_logmessage( const char * who, const char * msg )
+{
+    if( logstream )
+    {
+        fprintf( logstream, "%s: %s\n", who, msg );
+        fclose( logstream );
+        logstream = NULL;
+    }
+}
+#endif
 
 
 
@@ -284,30 +300,11 @@ void I_OutputMsg (char *error, ...)
     // dont flush the message!
 }
 
-#if 0
-int errorcount=0; // control recursive errors
-int shutdowning=false;
-#endif
 
 //added 31-12-97 : display error messy after shutdowngfx/ Marty: Type Fixed
 void I_Error (const char *error, ...)
 {
     va_list     argptr;
-    // added 11-2-98 recursive error detecting
-
-#if 0
-    if(shutdowning)
-    {
-        errorcount++;
-        if(errorcount==5)
-           I_ShutdownGraphics();
-        if(errorcount==6)
-           I_ShutdownSystem();
-        if(errorcount>7)
-          exit(-1);       // recursive errors detected
-    }
-    shutdowning=true;
-#endif
 
     // put message to stderr
     va_start (argptr,error);
@@ -323,25 +320,11 @@ void I_Error (const char *error, ...)
 
     va_end (argptr);
 
-#if 1
+
     D_Quit_Save( QUIT_panic );  // No save, safe shutdown
-#else
-    //added:18-02-98: save one time is enough!
-    if (!errorcount)
-    {
-        M_SaveConfig (NULL);   //save game config, cvars..
-    }
 
-    //added:16-02-98: save demo, could be useful for debug
-    //                NOTE: demos are normally not saved here.
-    if (demorecording)
-        G_CheckDemoStatus();
-
-    D_Quit_NetGame ();
-
-    I_Sleep( 3000 );  // to see some messages
-    /* shutdown everything that was started ! */
-    I_ShutdownSystem();
+#ifdef LOGMESSAGES
+    shutdown_logmessage( "I_Error()", "shutdown" );
 #endif
 
     fprintf (stderr, "\nPress ENTER");
@@ -355,49 +338,12 @@ void I_Error (const char *error, ...)
 // The system dependent part of I_Quit.
 void I_Quit_System (void)
 {
-    exit(0);
-}
-
-
-#if 0
-// Replaced by D_Quit_Save, I_Quit_System
-//
-// I_Quit : shutdown everything cleanly, in reverse order of Startup.
-//
-void I_Quit (void)
-{
-    byte* endoom;
-
-    //added:16-02-98: when recording a demo, should exit using 'q' key,
-    //        but sometimes we forget and use 'F10'.. so save here too.
-    if (demorecording)
-        G_CheckDemoStatus();
-
-    M_SaveConfig (NULL);   //save game config, cvars..
-
-
-    endoom = W_CacheLumpName("ENDOOM",PU_CACHE);
-
-
-    //added:03-01-98: maybe it needs that the ticcount continues,
-    // or something else that will be finished by ShutdownSystem()
-    // so I do it before.
-    D_Quit_NetGame ();
-
-    /* shutdown everything that was started ! */
-    I_ShutdownSystem();
-
-    puttext(1,1,80,25,endoom);
-    gotoxy(1,24);
-
-    if(shutdowning || errorcount)
-        I_Error("Errors detected (count=%d)", errorcount);
-
-    fflush(stderr);
-
-    exit(0);
-}
+#ifdef LOGMESSAGES
+    shutdown_logmessage( "I_Quit()", "end of logstream" );// Marty: Die neu eingefügte funktion heißt doch shutdown_logmessage nicht shutdown_logstream. Alter... was geht?
 #endif
+    exit(0);
+}
+
 
 // Show the EndText, after the graphics are shutdown.
 void I_Show_EndText( uint16_t * text )
@@ -415,11 +361,6 @@ void I_Show_EndText( uint16_t * text )
     puttext(1,1,80,25,endoom);
 #endif
     gotoxy(1,24);
-
-#if 0   
-    if(shutdowning || errorcount)
-        I_Error("Errors detected (count=%d)", errorcount);
-#endif
 
     fflush(stderr);
 }
@@ -1220,6 +1161,12 @@ void  I_StartupSystem(void)
    signal(SIGKILL, break_handler);
    signal(SIGQUIT, break_handler);
 
+/*
+Liegt im I_Main
+#ifdef LOGMESSAGES
+    logstream = fopen( LOGFILENAME, "w");
+#endif
+*/
 }
 
 // Init system called by d_main ( Marty: Wird später ausgebessert.)

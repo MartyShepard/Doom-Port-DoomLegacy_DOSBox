@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: z_zone.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
+// $Id: z_zone.c 1562 2020-11-29 11:51:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2010 by DooM Legacy Team.
@@ -444,7 +444,7 @@ void Z_Init (void)
 //
 // Z_Free
 //
-#ifdef ZDEBUG
+#ifdef DEBUG_ZONE
 void Z_Free2(void* ptr, char *file, int line)
 #else
 void Z_Free (void* ptr)
@@ -452,7 +452,7 @@ void Z_Free (void* ptr)
 {
     memblock_t*  block = (memblock_t *) ( (byte *)ptr - sizeof(memblock_t));
 
-#ifdef ZDEBUG
+#ifdef DEBUG_ZONE
 #ifndef PLAIN_MALLOC
    memblock_t*         other;
    // SoM: HARDERCORE debuging
@@ -518,7 +518,7 @@ void Z_Purge( memblock_t* block )
 // Z_Malloc
 // You can pass a NULL user if the tag is < PU_PURGELEVEL.
 //
-#ifdef ZDEBUG
+#ifdef DEBUG_ZONE
 void*   Z_Malloc2 (int reqsize, memtag_e tag, void **user, int alignbits,
 		   char *file, int line)
 #else
@@ -539,7 +539,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
     reqsize = (reqsize + 3) & ~3;	// alloc rounded up to next 4 byte alignment
     // account for size of block header
     memalloc_size = reqsize + sizeof(memblock_t);
-#if defined( ZDEBUG ) && defined( PADMEM )
+#if defined( DEBUG_ZONE ) && defined( PADMEM )
     memalloc_size += PADMEM;
 #endif
 
@@ -560,7 +560,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
     newblock->size = memalloc_size;
     void* basedata = (byte*)newblock + sizeof(memblock_t);
     if (user) *user = basedata;
-#if defined( ZDEBUG ) && defined( PADMEM )
+#if defined( DEBUG_ZONE ) && defined( PADMEM )
     memset( &((byte*)basedata)[reqsize], 0, PADMEM );
 #endif
     return basedata;
@@ -589,7 +589,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
 // [WDJ] 1/22/2009  MODIFIED ZONE_ZALLOC
 // This also has experimental code blocks, which are currently disabled.
 
-#ifdef ZDEBUG
+#ifdef DEBUG_ZONE
 void*   Z_Malloc2 (int reqsize, memtag_e tag, void **user, int alignbits,
 		   char *file, int line)
 #else
@@ -626,7 +626,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
     reqsize = (reqsize + 3) & ~3;	// alloc rounded up to next 4 byte alignment
     // account for size of block header
     memalloc_size = reqsize + sizeof(memblock_t);
-#if defined( ZDEBUG ) && defined( PADMEM )
+#if defined( DEBUG_ZONE ) && defined( PADMEM )
     memalloc_size += PADMEM;
 #endif
 
@@ -845,7 +845,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
     base->memtag = tag;	// must be done before Z_CombineFreeBlock
     base->id = ZONEID;
     base->user = user;	// valid or NULL
-#ifdef ZDEBUG
+#ifdef DEBUG_ZONE
     base->ownerfile = file;
     base->ownerline = line;
 #endif
@@ -882,7 +882,7 @@ void* Z_MallocAlign (int reqsize, memtag_e tag, void **user, int alignbits )
 
     // next allocation will start looking here
     mainzone->rover = base->next;
-#if defined( ZDEBUG ) && defined( PADMEM )
+#if defined( DEBUG_ZONE ) && defined( PADMEM )
     memset( &((byte*)blockdata)[reqsize], 0, PADMEM );
 #endif
 

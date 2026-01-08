@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1546 2020-09-02 13:24:02Z wesleyjohnson $
+// $Id: v_video.c 1562 2020-11-29 11:51:00Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1188,7 +1188,7 @@ void V_CopyRect(int srcx, int srcy, int srcscrn, int width, int height, int dest
     V_MarkRect(destx, desty, width, height);
 #endif
 
-#ifdef DEBUG
+#ifdef DEBUG_COPYRECT
     CONS_Printf("V_CopyRect: vidwidth %d screen[%d]=%x to screen[%d]=%x\n", vid.width, srcscrn, screens[srcscrn], destscrn, screens[destscrn]);
     CONS_Printf("..........: srcx %d srcy %d width %d height %d destx %d desty %d\n", srcx, srcy, width, height, destx, desty);
 #endif
