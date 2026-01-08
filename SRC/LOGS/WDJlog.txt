@@ -7197,7 +7197,7 @@ patchfile = w108_34_netbsd.patch,
 - commit revision 1448
 NETBSD port fixes to the Makefile and network code.
 Optioned as NETBSD.
-Feature Request 0090: based on code submitted by Michael Bäuere.
+Feature Request 0090: based on code submitted by Michael Bäuerle.
 
 *** w108_textureformat
 patchfile = w108_35_textureformat.patch
@@ -8354,8 +8354,6 @@ looks like a wall.
 
 Added a vanilla sky draw mode.
 
-=== commit
-
 *** w109_gentexture
 patchfile = w109_021_gentexture
 - commit revision 1559
@@ -8372,4 +8370,43 @@ that it creates the correct size TM_picture.
 Previous code got away with this due to a special test in
 R_GenerateTexture, that only worked for single patch textures
 that are generating a TM_patch.
+Fixes bug 0668.
+
+=== commit
+
+*** w109_overlap
+patchfile = w109_023_overlap
+- commit revision 1561
+Fix the overlapped string copies detected by GCC 10.
+Fixes bug 0671, Michael Bauerle.
+
+*** w109_debug
+patchfile = w109_024_debug
+- commit revision 1562
+Straighten out some of the DEBUG compile tests.
+Regularize some of the DEBUG tests.
+Make LOGMESSAGES work again.
+
+*** w109_oppdir
+patchfile = w109_024_oppdir
+- commit revision 156
+This fixes bug 0670, Monsters mysteriously disappearing, moving large distances into the void space.
+
+This was caused by a broken calculation to determine the opposite direction.
+This bug was introduced in the moonwalk patch (svn 1540) when I copied
+the opposite calculation code from PrBoom, in an effort to reduce
+differences that might lead to bugs, replacing a table lookup
+implementation.  However, the PrBoom calculation must be guarded against
+DI_NODIR, which the table implementation could handle inherently.
+Without that protection, an olddir of DI_NODIR introduced a direction
+of 12 into the logic, which can only handle directions of 0..7, with
+NODIR=8.  Several times a game that 12 value would survive long enough
+to get used, which would be expressed as a wild walk movement.
+Both options were fixed, with the fixed calculation barely winning a speed comparison
+over the table lookup, and having a slightly smaller cache impact.
+
+Having monsters escape the play area adversly affects all games played with 1.48.6,
+so another release will be scheduled soon.
+
+
 

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 1474 2019-10-15 12:34:14Z wesleyjohnson $
+// $Id: p_info.c 1561 2020-11-29 11:50:21Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -355,7 +355,10 @@ void P_ParseScriptLine(char *line)
 
   // [WDJ] account for \n and 0 term
   if( (lslen+slen+2) > maxscriptsize)
-    I_Error("Script is larger than script lump.\n");
+  {
+    I_SoftError("Script is larger than levelscript buffer,  %i char line rejected.\n", slen);
+    return;
+  }
 
   // add the new line to the current data
   // (ugh) sprintf(fs_levelscript.data, "%s%s\n", fs_levelscript.data, line);
@@ -376,23 +379,34 @@ void P_ParseInterText(char *line)
   while(*line==' ') line++;
   if(!*line) return;
 
+  // [WDJ] Add safety term, use safe copy.
   if(info_intertext)
   {
     int textlen = strlen(info_intertext);
+    int avail = maxscriptsize - textlen;
+    if( avail > 2 )
+    {
+      // newline
+      info_intertext[textlen] = '\n';
+      textlen ++;
+      avail --;
 
-    if(textlen + 1 > maxscriptsize)
-      I_Error("Intermission text bigger than LUMP?\n");
-
-    // newline
-    info_intertext[textlen] = '\n';
-
-    // add line to end
-    sprintf(info_intertext, "%s\n%s", info_intertext, line);
+      // add line to end
+      strncpy(&info_intertext[textlen], line, avail);
+    }
   }
   else
   {
-    info_intertext = Z_Malloc(maxscriptsize, PU_STATIC, 0);
-    strcpy(info_intertext, line);
+    // allocate 1 extra for safety term
+    info_intertext = Z_Malloc(maxscriptsize+1, PU_STATIC, 0);
+    info_intertext[maxscriptsize-1] = 0;  // overrun detector
+    strncpy(info_intertext, line, maxscriptsize);
+  }
+  info_intertext[maxscriptsize] = 0;  // safety term
+   
+  if( info_intertext[maxscriptsize-1] != 0 )  // overrun detected
+  {
+    I_SoftError("Intermission text overruns buffer, truncated.\n");
   }
 }
 

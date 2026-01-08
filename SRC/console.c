@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: console.c 1543 2020-08-22 02:36:35Z wesleyjohnson $
+// $Id: console.c 1561 2020-11-29 11:50:21Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -923,7 +923,9 @@ static int     comskips,varskips;
         }
         else
         {
-            strcpy (inputlines[inputline],inputlines[inputhist]);
+            // [WDJ] GCC 10 complains that strings may overlap so cannot use strcpy.
+            // But overlap case handled above.
+            memmove( inputlines[inputline], inputlines[inputhist], CON_MAX_LINELEN );
             input_cx = strlen(inputlines[inputline]);
         }
         return true;
