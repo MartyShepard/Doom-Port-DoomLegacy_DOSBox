@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 1557 2020-11-17 23:34:31Z wesleyjohnson $
+// $Id: r_plane.c 1558 2020-11-17 23:36:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -689,7 +689,6 @@ byte* R_GetFlat (int  flatnum);
 void R_Draw_Planes (void)
 {
     visplane_t*         pl;
-    int                 x;
     int                 angle;
     int                 i; //SoM: 3/23/2000
 
@@ -703,6 +702,11 @@ void R_Draw_Planes (void)
         if (pl->picnum == sky_flatnum)
         {
 //            texture_render_t * sky_texren = & texture_render[ skytexture ];
+            int yl_min = sky_yl_min_oc + centery;
+            int yh_max = sky_yh_max_oc + centery;
+            // combine tests
+            if ( yl_min < 0 )   yl_min = 0;
+            if ( yh_max >= rdraw_viewheight )   yh_max = rdraw_viewheight - 1;
 
             //added:12-02-98: use correct aspect ratio scale
             dc_iscale = sky_scale;
@@ -721,7 +725,52 @@ void R_Draw_Planes (void)
 
 	    // Sky has dedicated texture.
             dc_texturemid = sky_texturemid;
-            dc_texheight = sky_height;
+            dc_texheight = sky_height;  // passed to R_DrawColumn when 128 high sky
+#if 1
+            // Draw sky and sky flats in loop
+            for (dc_x=pl->minx ; dc_x <= pl->maxx ; dc_x++)
+            {
+                dc_yl = pl->top[dc_x];
+                dc_yh = pl->bottom[dc_x];
+
+                if (dc_yl <= dc_yh && dc_yh >= 0 && dc_yl < rdraw_viewheight )
+                {
+                    angle = (viewangle + x_to_viewangle[dc_x])>>ANGLETOSKYSHIFT;
+                    angle &= sky_widthmask;
+
+                    //[WDJ] phobiata.wad has many views that need clipping
+                    if( dc_yl < yl_min )
+                    {
+                        // Above sky
+                        // This part of sky should be drawn as a flat.
+                        // Any pattern tiled looks to be vertical.
+		        if( dc_yl < 0 )  dc_yl = 0;
+                        dc_source = & skytop_flat[ (angle & (SKY_FLAT_WIDTH-1)) ][0];
+                        dc_texheight = SKY_FLAT_HEIGHT;
+                        skydrawerfunc[0] ();  // tiled
+                        dc_texheight = sky_height;  // restore for sky_pict
+                        dc_yl = yl_min;
+                    }
+                    if( dc_yh > yh_max )
+                    {
+                        // Below sky
+                        // This part of sky should be ground drawn as a flat.
+                        // Any pattern tiled looks to be vertical.
+                        if( dc_yh > rdraw_viewheight-1 )  dc_yh = rdraw_viewheight-1;		       
+                        dc_source = & ground_flat[ (angle & (SKY_FLAT_WIDTH-1)) ][0];
+                        dc_texheight = SKY_FLAT_HEIGHT;
+                        skydrawerfunc[0] ();  // tiled
+                        dc_texheight = sky_height;  // restore for sky_pict
+                        dc_yh = yh_max;
+                    }
+                    // sky_pict has colofs array
+                    dc_source = & sky_pict[ ((uint32_t*)sky_pict)[ angle ] ];
+                    skycolfunc ();
+                }
+            }
+#else
+          // old sky draw, for reference
+            int x;
             for (x=pl->minx ; x <= pl->maxx ; x++)
             {
                 dc_yl = pl->top[x];
@@ -739,6 +788,7 @@ void R_Draw_Planes (void)
                     skycolfunc ();
                 }
             }
+#endif
 // centery = cy;
             continue;
         }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_sky.c 1554 2020-11-17 23:29:23Z wesleyjohnson $
+// $Id: r_sky.c 1558 2020-11-17 23:36:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -67,7 +67,9 @@
 
 void sky_gen_OnChange( void );
 
-CV_PossibleValue_t skygen_cons_t[] = { {0, "auto"}, {1,"subst"}, {10, "bg_stars" }, {11,"extend_stars"}, {12,"extend_bg"}, {13,"extend_fill"}, {250,"stretch"}, {0,NULL} };
+CV_PossibleValue_t skygen_cons_t[] = {
+    {0, "auto"}, {1,"subst"}, {10, "bg_stars" }, {11,"extend_stars"}, {12,"extend_bg"}, {13,"extend_fill"},
+    {248,"vanilla"}, {250,"stretch"}, {0,NULL} };
 consvar_t cv_sky_gen = {"skygen", "auto", CV_SAVE|CV_CALL, skygen_cons_t, sky_gen_OnChange };
 
 void sky_gen_OnChange( void )
@@ -82,15 +84,76 @@ void sky_gen_OnChange( void )
 //
 // sky mapping
 //
-int     sky_flatnum;
 int     sky_texture = 0;
-int     sky_texturemid;
-uint32_t sky_widthmask = 0;
-patch_t * sky_patch = NULL;  // ZMalloc, PU_STATIC
 
-int     sky_height;
+// sky drawing
+int     sky_flatnum;   // to detect sectors with sky
+byte *  sky_pict = NULL; // ZMalloc, PU_STATIC
+  // TM_picture format, columofs, column image
+int     sky_texturemid;
 fixed_t sky_scale;
+uint32_t sky_widthmask = 0;
+int     sky_height=128;
+int     sky_yh_max_oc, sky_yl_min_oc;  // sky limits
 byte    sky_240=0;  // 0=std 128 sky, 1=240 high sky
+
+byte    skytop_flat[SKY_FLAT_WIDTH][SKY_FLAT_HEIGHT];  // above sky
+byte    ground_flat[SKY_FLAT_WIDTH][SKY_FLAT_HEIGHT];  // below sky
+
+
+// Sample the sky, setup the skytop_flat or ground_flat.
+void  set_sky_flat( byte * sflat, byte * srcp, byte sample_y, int sample_width, int sample_height )
+{
+#if 0
+    // A pattern just looks like vertical wall.
+    int i;
+    for( i=0; i<(SKY_FLAT_WIDTH*SKY_FLAT_HEIGHT); i++ )
+    {
+        int rx = E_Random() % sample_width;
+        int ry = sample_y + (E_Random() % sample_height );
+	sflat[i] = srcp[ (rx * sky_height) + ry ];
+    }
+#endif
+#if 1
+    // Make a solid average color.
+    int r = 0, g = 0, b = 0;
+    int i;
+    for( i=0; i<32; i++ )
+    {
+        int rx = E_Random() % sample_width;
+        int ry = sample_y + (E_Random() % sample_height );
+	byte c1 = srcp[ (rx * sky_height) + ry ];
+        RGBA_t p = pLocalPalette[c1];
+        r += p.s.red;
+        g += p.s.green;
+        b += p.s.blue;
+    }
+    byte solid_color = NearestColor( r/32, g/32, b/32 );
+    memset( sflat, solid_color, (SKY_FLAT_WIDTH*SKY_FLAT_HEIGHT) );
+#endif
+#if 0
+    // Pick the most used color.
+    int hist[256];
+    int max_hist = 0;
+    int i;
+    byte solid_color;
+    memset( hist, 0, 256 );
+    for( i=0; i<256; i++ )
+    {
+        int rx = E_Random() % sample_width;
+        int ry = sample_y + (E_Random() % sample_height );
+	byte c1 = srcp[ (rx * sky_height) + ry ];
+        hist[c1]++;
+        if( hist[c1] > max_hist )
+        {
+	    max_hist = hist[c1];
+	    solid_color = c1;
+	}
+    }
+    memset( sflat, solid_color, (SKY_FLAT_WIDTH*SKY_FLAT_HEIGHT) );
+#endif
+}
+
 
 #define  SKY_WIDTH   1024
 #define  SKY_HEIGHT   240
@@ -311,7 +374,7 @@ void init_sky_blob( sky_blob_t * sbp )
 
 // Generate large sky.
 // [WDJ] Must do this into a temp texture, or else it recursively modifies the sky with each level.
-patch_t * R_Generate_Sky( int texnum )
+byte * R_Generate_Sky( int texnum )
 {
     texture_t * texture = textures[texnum]; // texture info from wad
     byte buf[SKY_WIDTH][SKY_HEIGHT];  // buf of composite sky, column oriented
@@ -768,10 +831,12 @@ generate_backgrounds:
    
 make_patch:
   {
-    // Create a patch from the buf, column oriented, pixel data, no offset, no blank pixel, no trim.
-    patch_t * skypatch = R_Create_Patch( tw, SKY_HEIGHT, 1, &buf[0][0], 1, 0, 299, 0 );
-       
-    return skypatch;
+    // Source is  column oriented, pixels are a byte no offset, no blank pixel.
+    // Create a TM_picture, with colofs array, no blank trim.
+    byte * sky_pict1 = R_Create_Patch( tw, SKY_HEIGHT,
+                /*SRC*/    TM_column_image, &buf[0][0], 1, 0, 299,
+                /*DEST*/   TM_picture, 0, NULL );
+    return sky_pict1;
   }
 }
 
@@ -822,17 +887,21 @@ void R_Setup_SkyDraw (void)
         texpatch++;
     }
    
-    if( sky_patch )
+    if( sky_pict )
     {
-        Z_Free( sky_patch );
-        sky_patch = NULL;
+        Z_Free( sky_pict );
+        sky_pict = NULL;
     }
 
-    // DIRTY : should set the routine depending on colormode in screen.c
-    texture_render[sky_texture].texture_model = TM_none;  // let R_GenerateTexture be automatic
+    texture_render[sky_texture].texture_model = TM_none;  // to not affect R_GenerateTexture
+
+    // the horizon line in a 256x128 sky texture
+    sky_texturemid = 100<<FRACBITS;   // Boom
+    sky_height = 128;  // vanilla, Boom, default
+
     if(max_height > 128)
     {
-        sky_patch = (patch_t*) R_GenerateTexture2( sky_texture, & texture_render[sky_texture], TM_none );
+        sky_pict = R_GenerateTexture2( sky_texture, & texture_render[sky_texture], TM_picture );
         sky_240 = 1;
         sky_height = SKY_HEIGHT;
         // horizon line on 256x240 freelook textures of Legacy or heretic
@@ -840,7 +909,7 @@ void R_Setup_SkyDraw (void)
     }
     else
     {
-        if( cv_sky_gen.value == 0 )
+        if( cv_sky_gen.value == 0 )  // Auto
         {
             // If have subst sky, then use that
             // otherwise extend the sky.
@@ -850,22 +919,21 @@ void R_Setup_SkyDraw (void)
         if( cv_sky_gen.EV >= 10 && cv_sky_gen.EV < 99 )
         {
             // Extend sky
-            sky_patch = R_Generate_Sky( sky_texture );
+            sky_pict = R_Generate_Sky( sky_texture );
             sky_240 = 1;
             sky_height = SKY_HEIGHT;
             sky_texturemid = 200<<FRACBITS;
         }
         else
         {
-            // Stretch sky
-            sky_patch = (patch_t*) R_GenerateTexture2( sky_texture, & texture_render[sky_texture], TM_none );
+            // Vanilla or Stretch sky
+            sky_pict = R_GenerateTexture2( sky_texture, & texture_render[sky_texture], TM_picture );
             sky_240 = 0;
-            sky_height = max_height;
-            // the horizon line in a 256x128 sky texture
-            sky_texturemid = 100<<FRACBITS;
+            if( max_height > 128 )
+                sky_height = max_height;
         }
     }
-    Z_ChangeTag( sky_patch, PU_STATIC );
+    Z_ChangeTag( sky_pict, PU_STATIC );
 
     // Sky has dedicated texture.
 
@@ -880,8 +948,23 @@ void R_Setup_SkyDraw (void)
         while( (i<<1) < tw )  i = i<<1;
         sky_widthmask = i - 1;
     }
-   
-    // get the right drawer, it was set by screen.c, depending on the
+
+#if 0   
+    if( cv_sky_gen.EV == 248 )  // vanilla
+    {
+        // Vanilla always has solid flats.	   
+        memset( skytop_flat, *(sky_pict + ((uint32_t*)sky_pict)[0]), SKY_FLAT_WIDTH*SKY_FLAT_HEIGHT );
+        memset( ground_flat, *(sky_pict + ((uint32_t*)sky_pict)[0] + sky_height-1), SKY_FLAT_WIDTH*SKY_FLAT_HEIGHT );
+    }
+    else
+#endif
+    {
+        byte * sip = sky_pict + (((uint32_t*) sky_pict)[0]);  // sky image
+        set_sky_flat( &skytop_flat[0][0], sip, 0, tw, 8 );  // sample upper sky
+        set_sky_flat( &ground_flat[0][0], sip, sky_height-8, tw, 8 );  // sample lower sky, for ground
+    }
+
+    // Get the right drawer.  It was set by screen.c, depending on the
     // current video mode bytes per pixel (quick fix)
     skycolfunc = skydrawerfunc[sky_240];
 
@@ -892,17 +975,38 @@ void R_Setup_SkyDraw (void)
 // set the correct scale for the sky at setviewsize
 void R_Set_Sky_Scale (void)
 {
-    //fix this quick mess
-    if( sky_texturemid > (100<<FRACBITS))
-    {
-        // normal aspect ratio corrected scale
-        sky_scale = FixedDiv (FRACUNIT, pspriteyscale);
-    }
-    else
+    // Altered by screensize, splitscreen
+    //  rdraw_viewheight, centery
+// Boom
+//   SCREENHEIGHT=200, SCREENWIDTH=320
+//   centery = viewheight/2;
+//   pspriteyscale = (((SCREENHEIGHT*viewwidth)/SCREENWIDTH)<<FRACBITS)/200;
+//   projectiony = (((SCREENHEIGHT*centerx*320)/200)/SCREENWIDTH)*FRACUNIT;
+//   sky  iscale = FRACUNIT*200/viewheight;
+// Legacy
+//   BASEVIDHEIGHT=200, BASEVIDWIDTH=320
+//   centery = rdraw_viewheight/2;
+//   pspriteyscale = (((vid.height*rdraw_viewwidth)/vid.width)<<FRACBITS)/BASEVIDHEIGHT;
+//   projectiony = (((vid.height*centerx*BASEVIDWIDTH)/BASEVIDHEIGHT)/vid.width)<<FRACBITS;
+//   sky  dc_iscale = FixedDiv (FRACUNIT, pspriteyscale);
+ 
+    // normal aspect ratio corrected scale
+    // sky_scale = (FRACUNIT*200)/rdraw_viewheight;  // Boom
+    sky_scale = FixedDiv (FRACUNIT, pspriteyscale);  // Legacy
+
+    if( cv_sky_gen.EV == 250 )  // Stretch
     {
         // double the texture vertically, bleeergh!!
-        sky_scale = FixedDiv (FRACUNIT, pspriteyscale)>>1;
+        sky_scale >>= 1;
     }
+
+    // Sky draw limits
+    // fixed_t  frac = dc_texturemid + (dc_yl - centery) * fracstep;
+    // limit frac to (0..sky_height-1) << 16
+    // centery varies according to view    
+    // (dc_yl - centery) = ((frac - dc_texturemid) / fracstep);
+    sky_yl_min_oc = ( 0 - sky_texturemid ) / sky_scale;  // frac = 0
+    sky_yh_max_oc = ( ((sky_height-1)<<16) - sky_texturemid ) / sky_scale;  // frac = sky_height-1
 }
 
 

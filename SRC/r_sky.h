@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_sky.h 1554 2020-11-17 23:29:23Z wesleyjohnson $
+// $Id: r_sky.h 1558 2020-11-17 23:36:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -50,10 +50,17 @@
 // The sky map is 256*128*4 maps.
 #define ANGLETOSKYSHIFT         22
 
-extern patch_t * sky_patch;
+#define SKY_FLAT_HEIGHT  16
+#define SKY_FLAT_WIDTH   64
+
+extern byte skytop_flat[SKY_FLAT_WIDTH][SKY_FLAT_HEIGHT];  // above sky
+extern byte ground_flat[SKY_FLAT_WIDTH][SKY_FLAT_HEIGHT];  // below sky
+
+extern byte *  sky_pict;
 extern int     sky_texture;
 extern int     sky_texturemid;
 extern int     sky_height;
+extern int     sky_yl_min_oc, sky_yh_max_oc;
 extern fixed_t sky_scale;
 extern uint32_t sky_widthmask;
 extern byte    sky_240;  // 0=std 128 sky, 1=240 high sky

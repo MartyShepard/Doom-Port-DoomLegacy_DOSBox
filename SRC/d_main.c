@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1557 2020-11-17 23:34:31Z wesleyjohnson $
+// $Id: d_main.c 1558 2020-11-17 23:36:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1557"
+#define SVN_REV "1558"
 #endif
 
 
@@ -3843,7 +3843,7 @@ void Commandline_GetCompileFeatures(void)
 {
 
   printf("%s\n", legacytitle);
-  printf("Support Compiled Features\n");
+  printf("Support Compiled Features and Hardcoded #Defines\n");
 
 #ifdef LAUNCHER
         printf("ENGINE: [X] Built-in Launcher\n");
@@ -4122,6 +4122,22 @@ void Commandline_GetCompileFeatures(void)
         printf("ENGINE: [X] Dosnet Support\n");
 #else
         printf("ENGINE: [ ] Dosnet Support\n");
+#endif
+
+#ifdef NUM_RGBA_LEVELS
+        printf("INFO  : [X] Num RGBA Levels %d\n",NUM_RGBA_LEVELS);
+#endif
+
+#ifdef LIGHT_TO_RGBA_SHIFT
+        printf("INFO  : [X] Light to RGBA Shift %d\n",LIGHT_TO_RGBA_SHIFT);
+#endif
+
+#ifdef SKY_FLAT_HEIGHT
+        printf("INFO  : [X] Sky Flat Height %d\n",SKY_FLAT_HEIGHT);
+#endif
+
+#ifdef SKY_FLAT_WIDTH
+        printf("INFO  : [X] Sky Flat Width %d\n",SKY_FLAT_WIDTH);
 #endif
 
 // User Info

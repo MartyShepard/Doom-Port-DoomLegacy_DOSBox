@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: r_segs.c 1557 2020-11-17 23:34:31Z wesleyjohnson $
+// $Id: r_segs.c 1558 2020-11-17 23:36:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -851,9 +851,9 @@ void  expand_openings( size_t  need )
 // ==========================================================================
 
 // If we have a multi-patch texture on a 2sided wall (rare) then we draw
-//  it using R_DrawColumn, else we draw it using R_DrawMaskedColumn, this
-//  way we don't have to store extra post_t info with each column for
-//  multi-patch textures. They are not normally needed as multi-patch
+//  it using R_DrawColumn, else we draw it using R_DrawMaskedColumn.
+//  This way we don't have to store or process extra post_t info with each column
+//  for multi-patch textures. They are not normally needed as multi-patch
 //  textures don't have holes in it. At least not for now.
 static int  column2s_length;     // column->length : for multi-patch on 2sided wall = texture->height
 
@@ -903,7 +903,6 @@ void R_Render_PictureColumn ( byte * column_data )
         dc_yh = rdraw_viewheight - 1;
     }
 #endif
-
 #ifdef CLIP2_LIMIT
     //[WDJ] phobiata.wad has many views that need clipping
     if ( dc_yl < 0 )   dc_yl = 0;
@@ -1169,7 +1168,6 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
         return;
     }
 #endif
-
     if( x1 < 0 )  x1 = 0;
     if( x2 >= rdraw_viewwidth )  x2 = rdraw_viewwidth-1;
     for (dc_x = x1 ; dc_x <= x2 ; dc_x++)

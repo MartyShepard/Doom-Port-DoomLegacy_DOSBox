@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.h 1555 2020-11-17 23:31:19Z wesleyjohnson $
+// $Id: r_data.h 1558 2020-11-17 23:36:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -120,6 +120,8 @@ typedef enum {
    TM_picture,	// drawn into picture buffer  (has draw)
    TM_combine_patch,  // transparent combined multi-patch texture  (has draw)
    TM_multi_patch, // original multi-patch texture
+   TM_column_image,    // raw image, (column x row)
+   TM_row_image,   // raw image, (row x column)
    TM_masked,   // detect masked flag (hint)
    TM_picture_column,  // force column with no posts (hint)
    TM_invalid	// disabled for some internal reason
@@ -205,15 +207,23 @@ extern CV_PossibleValue_t Color_cons_t[];
 void  R_Load_Textures (void);
 void  R_Flush_Texture_Cache (void);
 
-#ifdef ENABLE_DRAW_ALPHA
-//  column_oriented : source data orientation, 0 = row x column (image), 1 = column x row (pic_t)
-//  data : source data of width x height (in rows)
+// R_Create_Patch flags
+enum {
+  CPO_blank_trim = 0x20, // trim blank columns
+};
+
+//  src_type : TM_row_image (pic_t), TM_column_image (patch, picture)
+//  src_data : source data
 //  bytepp : source pixel size in bytes
 //  sel_offset  : offset into pixel, 0..3
 //  blank_value : pixel value that is blank space, >255 = no blank pixel value
-//  enable_blank_trim : trim blank columns
-patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte column_oriented, byte * data, byte bytepp, byte sel_offset, uint16_t blank_value, byte enable_blank_trim );
-#endif
+//  out_type :  TM_patch, TM_picture, TM_column_image
+//  out_flags : in created patch
+//    CPO_blank_trim : trim blank columns
+//  out_header : temp patch header for width and offset
+byte * R_Create_Patch( unsigned int width, unsigned int height,
+             /*SRC*/   byte src_type, byte * src_data, byte bytepp, byte sel_offset, uint16_t blank_value,
+             /*DEST*/  byte out_type, byte out_flags, patch_t * out_header );
 
 #if 0
 void  R_Set_Texture_Patch( int texnum, patch_t * patch );

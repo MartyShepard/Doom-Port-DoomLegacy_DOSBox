@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: r_defs.h 1471 2019-10-04 08:59:55Z wesleyjohnson $
+// $Id: r_defs.h 1558 2020-11-17 23:36:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -802,23 +802,6 @@ typedef struct
 } node_t;
 
 
-// Example of column data:
-//  post_t, bytes[length], post_t, bytes[length], 0xFF
-
-// posts are runs of non masked source pixels
-// Post format: post_t header, bytes[length] pixels
-typedef struct
-{
-    byte                topdelta; 	// y offset within patch of this post
-        // reads (0xFF) at column termination (not a valid post_t)
-        // BP: humf, -1 with byte ! (unsigned char) test WARNING
-    byte                length;         // length data bytes follows
-} post_t;
-
-// column_t is a list of 0 or more post_t, (0xFF) terminated
-typedef post_t  column_t;
-
-
 
 //=========
 // OTHER TYPES
@@ -866,7 +849,8 @@ typedef struct drawseg_s
 
 
 //=========
-// Patch and Picture formats
+// Patch formats
+// TM_patch
 
 // Patches.
 // A patch holds one or more columns.
@@ -882,17 +866,59 @@ typedef struct
     // pat_hdr_t
     uint16_t            width;          // bounding box size
     uint16_t            height;
-    int16_t             leftoffset;     // pixels to the left of origin
-    int16_t             topoffset;      // pixels below the origin
+    int16_t             leftoffset;     // draw image at pixels to the left of origin
+    int16_t             topoffset;      // draw image at pixels above the origin
     // patch fields
     uint32_t            columnofs[8];   // actually [width]
        // offset of each column from start of patch header
-       // the [0] is &columnofs[width]
     // This is used as the head of a patch, and columnofs[8] provides
     // access to an array that is usually [64], [128], or [256].
     // This would not work if the [8] was actually enforced.
 } patch_t;
 
+// The column data starts at offset read from columnofs[col].
+// Patch column is series of posts, terminated by 0xFF.
+// The posts are drawn, the space between posts is transparent.
+
+// Posts are runs of non-masked source pixels, drawn at the topdelta.
+// Post format: (header post_t), 0, (pixels bytes[length]), 0
+typedef struct
+{
+    // unsigned test reads (topdelta = 0xFF) at column termination (which is not valid post_t)
+    byte                topdelta; 	// y offset within patch of this post
+    byte                length;         // length data bytes follows
+} post_t;
+
+// Doom posts have a 0 pad before and after the post data.
+// Example of Doom column data:
+//  (header post_t), 0, (pixels bytes[length]), 0,
+//  (header post_t), 0, (pixels bytes[length]), 0,
+//  (header post_t), 0, (pixels bytes[length]), 0,
+//  0xFF
+
+// column_t is a list of 0 or more post_t, (0xFF) terminated
+typedef post_t  column_t;
+
+//=========
+// Picture format
+// TM_picture
+// Has columnofs table, no column posts, columns are solid.
+// Used to draw walls and sky, solid (no transparency).
+// Draws can be tiled.
+
+// header
+typedef struct
+{
+    uint32_t            columnofs[8];   // actually [width]
+       // offset of each column from start of picture header
+} picture_t;
+// followed by TM_column_image
+
+// Example of Doom TM_picture column data:
+//  (pixels bytes[length])
+
+
+//=========
 // This is the Doom PIC format (not the Pictor PIC format).
 typedef enum {
     PALETTE         = 0,  // 1 byte is the index in the doom palette (as usual)
@@ -901,6 +927,7 @@ typedef enum {
     RGB24           = 3,  // 24 bit rgb
     RGBA32          = 4,  // 32 bit rgba
 } pic_mode_t;
+
 // a pic is an unmasked block of pixels, stored in horizontal way
 //
 typedef struct
@@ -911,7 +938,7 @@ typedef struct
     byte      mode;   // see pic_mode_t above
     uint16_t  height;
     uint16_t  reserved1;  // set to 0
-    byte      data[0];
+    byte      data[0];  // pixels  (rows x columns), TM_row_image
 } pic_t;
 
 //=========

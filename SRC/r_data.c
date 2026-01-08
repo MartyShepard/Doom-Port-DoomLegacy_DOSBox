@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1555 2020-11-17 23:31:19Z wesleyjohnson $
+// $Id: r_data.c 1558 2020-11-17 23:36:10Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -186,67 +186,123 @@ union color8_u   color8;  // remap color index to rgb value
 byte  color12_to_8[ 0x1000 ];
 #endif
 
-#ifdef ENABLE_DRAW_ALPHA
-//  column_oriented : source data orientation, 0 = row x column (image), 1 = column x row (pic_t)
-//  data : source data of width x height (in rows)
+
+//  src_type : TM_row_image (pic_t), TM_column_image (patch, picture)
+//  src_data : source data
 //  bytepp : source pixel size in bytes
 //  sel_offset  : offset into pixel, 0..3
 //  blank_value : pixel value that is blank space, >255 = no blank pixel value
-//  enable_blank_trim : trim blank columns
-patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte column_oriented, byte * data, byte bytepp, byte sel_offset, uint16_t blank_value, byte enable_blank_trim )
+//  out_type :  TM_patch, TM_picture, TM_column_image
+//  out_flags : in created patch
+//    CPO_blank_trim : trim blank columns
+//  out_header : temp patch header for width and offset
+byte * R_Create_Patch( unsigned int width, unsigned int height,
+             /*SRC*/   byte src_type, byte * src_data, byte bytepp, byte sel_offset, uint16_t blank_value,
+             /*DEST*/  byte out_type, byte out_flags, patch_t * out_header )
 {
-    byte  postbuf[ 256 ];
+    byte  postbuf[ 1024 ];
     unsigned int  head_empty_columns = 0;  // left
     unsigned int  tail_empty_columns = 0;  // right
     unsigned int  mid_empty_columns = 0;
     unsigned int  count_good_columns = 0;
     unsigned int  colofs_size, head_size, wb_blocksize;
-    unsigned int  col, length, topdelta, dest_used;
+    signed int    leftoffset = 0;
+    unsigned int  col, length, dest_used, max_length;
     unsigned int  row_inc, col_inc;
-    uint32_t   *  colofs;
-    post_t     *  destpost;
+    byte          empty_column = 0;
+    byte          out_patch_header, out_columnofs, out_post;
+    byte       *  wb_dest;  // output, ZMalloc
+    uint32_t   *  colofs0 = NULL;
+    post_t     *  destpost = NULL;
     byte       *  dest_term = NULL;
-    byte       *  pb;
+    byte       *  destp;
+    byte       *  pb;  // in postbuf
     byte       *  src0, * src_end, * src ;
 
-    colofs_size = width * sizeof( uint32_t );  // width * 4
-    head_size = colofs_size + 8;
-    wb_blocksize = head_size + 4 + (width * height);  // guess   
-    patch_t * wb_patch = (patch_t*) Z_Malloc( wb_blocksize, PU_IN_USE, NULL );
-   
-    wb_patch->width = width;
-    wb_patch->height = height;
-    wb_patch->leftoffset = 0;
-    wb_patch->topoffset = 0;
-    dest_used = 0;
-
-    if( column_oriented )
+    // Source
+    if( src_type == TM_column_image )
     {
         row_inc = bytepp;  // row to row, along col
         col_inc = bytepp * height;  // col to col
     }
-    else
+    else  // TM_row_image
     {
         col_inc = bytepp;  // col to col, along row
         row_inc = bytepp * width;  // row to row
     }
    
-    destpost = (post_t*) ((byte*)wb_patch + head_size);  // posting area
+    out_patch_header = out_columnofs = out_post = 0;
+    switch( out_type )
+    {
+     case TM_patch:
+        out_patch_header = out_columnofs = out_post = 1;
+        break;
+     case TM_picture:
+        out_columnofs = 1;
+        break;
+     case TM_column_image:
+     default:
+	break;
+    }
+   
+    // Dest   
+    head_size = 0;
+    colofs_size = 0;
+    dest_used = 0;
+    if( out_patch_header )
+    {
+        head_size += 8;
+    }
+    if( out_columnofs )
+    {
+        colofs_size = width * sizeof( uint32_t );  // width * 4
+        head_size += colofs_size;
+    }
+    wb_blocksize = head_size + (width * height);  // guess
+    max_length = 1024;  // buffer length
+    if( out_post )
+    {
+        wb_blocksize += 4;
+        max_length = 255;
+    }
+
+    wb_dest = (byte*) Z_Malloc( wb_blocksize, PU_IN_USE, NULL );
+
+    if( out_patch_header )
+    {
+        patch_t * wb_patch = (patch_t*) wb_dest;
+	wb_patch->width = width;
+        wb_patch->height = height;
+        wb_patch->leftoffset = 0;
+        wb_patch->topoffset = 0;
+        colofs0 = & wb_patch->columnofs[0];
+    }
+    else if( out_columnofs )
+    {
+        colofs0 = (uint32_t*) wb_dest;  // no header
+    }
+   
+    destp = wb_dest + head_size;  // posting area
     for( col=0; col<width; col++ )
     {
-        colofs = & wb_patch->columnofs[ col ];  // header entry for this column
-        *colofs = 0;  // flag column with no-posts value
-        src = src0 = & data[ col * col_inc ];
+        destpost = NULL;
+        empty_column = 1;  // flag column with no-posts value
+        if( colofs0 )
+        {
+            colofs0[col] = 0;  // header entry for this column
+        }
+        src = src0 = & src_data[ col * col_inc ];
         src_end = src0 + (row_inc * (height-1)) + 1;  // past last byte of column
         while( src < src_end )
         {
             // traverse column
             for( ; src < src_end ; src += row_inc )
             {
-                if( src[sel_offset] != blank_value )  goto start_post; // find first non blank pixel
+                if( src[sel_offset] != blank_value )
+                    goto start_post; // find first non blank pixel
             }
             // only blanks found
-            if( *colofs == 0 )  // if no posts, then will need to fix later
+            if( empty_column )  // if no posts, then will need to fix later
             {
                 if( count_good_columns )
                     tail_empty_columns++;
@@ -256,109 +312,153 @@ patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte column_o
             break;
 
         start_post:
-            topdelta = (src - src0) / row_inc;
-            if( topdelta > 254 )  // topdelta would be too large
-                break;  // skip rest of height
-
-            // traverse column
-            pb = postbuf;  // put into postbuf
-            for( ; src < src_end ; src += row_inc )
-            {
-                if(src[sel_offset] == blank_value)  break;  // find first blank pixel
-                if( pb >= & postbuf[254] )  break;  // max post length
-                *(pb++) = src[sel_offset];
-            }
-            // src must point to next, not included in this post
-            length = pb - postbuf;  // must be at least 1
-
-            dest_used = ((byte*)destpost) + length + 4 + 1 - (byte*)wb_patch;
-            if( dest_used + 8 > wb_blocksize )
-            {
-                // will not fit in the allocation
-                // Copy to new allocation.
-                unsigned int  wb2_len = dest_used + 1024;  // allocation increment
-                patch_t * wb2 = (patch_t*) Z_Malloc( wb2_len, PU_IN_USE, NULL );
-                memcpy( wb2, wb_patch, wb_blocksize );
-                // Move ptrs to new allocation
-                intptr_t  adjustdiff = (void*) wb2 - (void*) wb_patch;  // byte difference in locations
-                // Must adjust as byte ptr.
-                destpost = (post_t*) (((byte*)destpost) + adjustdiff);
-                colofs = (uint32_t*) (((byte*)colofs) + adjustdiff);
-                // Release old allocation
-                Z_Free( wb_patch );
-                wb_patch = wb2;
-                wb_blocksize = wb2_len;
-            }
-
-            // Form postpuf into a column post.
             // Must be at least one pixel, because blank span found a non-blank.
-            destpost->topdelta = topdelta;
-            destpost->length = length;
-            byte * destpixels = (byte*)destpost + 3;  // post pixel data
-            destpixels[-1] = 0;	// pad 0
-            memcpy( destpixels, postbuf, length );
-            destpixels[length] = 0; // pad 0
-            // Keep ptr to term, for empty columns.
-            dest_term = & destpixels[length+1];
-            *dest_term = 0xFF; // term, may get overwritten by next post
             // Enter into header
-            if( *colofs == 0 )
+            if( empty_column )
             {
-                *colofs = (byte*)destpost - (byte*)wb_patch; // offset within patch
+	        if( colofs0 )
+                {
+                    colofs0[col] = destp - wb_dest; // offset within patch
+                }
                 // maintain empty column count
                 count_good_columns ++;
                 mid_empty_columns += tail_empty_columns;
                 tail_empty_columns = 0;
+	        empty_column = 0;
             }
-            // next source colpost, adv by (length + 2 byte header + 2 extra bytes)
-            destpost = (column_t *)dest_term;  // next post overwrites previous term
+
+            dest_used = destp - wb_dest;
+            if( out_post )
+            {
+                unsigned int topdelta = (src - src0) / row_inc;
+                if( topdelta > 254 )  // topdelta would be too large
+                    break;  // skip rest of height
+
+                destpost = (post_t*) destp;  // posting area
+                destpost->topdelta = topdelta;
+                dest_used += 5;  // post + 2 pad + term
+            }
+
+            // traverse source column
+            length = 0;	    
+	    pb = postbuf;  // must use a buffer to convert row indexing to column indexing
+            for( ; src < src_end ; src += row_inc )
+            {
+                if(src[sel_offset] == blank_value)  break;  // find first blank pixel
+                if( length >= max_length )  break;  // max post length
+                length++;
+	        *(pb++) = src[sel_offset];  // into buffer
+            }
+            // src must point to next, not included in this post
+
+            dest_used += length;
+            if( dest_used + 8 > wb_blocksize )
+            {
+                // Will not fit in the allocation
+                // Copy to new allocation.
+                unsigned int  wb2_len = dest_used + 1024;  // allocation increment
+                byte * wb2 = (byte*) Z_Malloc( wb2_len, PU_IN_USE, NULL );
+                intptr_t  adjustdiff = (void*) wb2 - (void*) wb_dest;  // byte difference in locations
+
+                // Move data to wb2
+                memcpy( wb2, wb_dest, wb_blocksize );
+
+                // Release old allocation
+                Z_Free( wb_dest );
+                wb_dest = wb2;
+                wb_blocksize = wb2_len;
+
+                // Move ptrs to wb2
+                destp += adjustdiff;
+	        if( colofs0 )  colofs0 += adjustdiff;
+	        if( destpost )  destpost += adjustdiff;
+            }
+
+            // Form postbuf into a column post.
+            if( destpost )
+            {
+                destpost->length = length;
+                destp[2] = 0;	// pad 0
+                destp += 3;  // post pixel data
+            }
+
+	    // Copy must be after allocation size check.
+            memcpy( destp, postbuf, length );
+            destp += length;
+
+            if( destpost )
+            {
+                *(destp++) = 0; // pad 0
+                // Keep ptr to term, for empty columns.
+		dest_term = destp;
+                *dest_term = 0xFF; // term, may get overwritten by next post
+                // next source colpost, adv by (length + 2 byte header + 2 extra bytes)
+                // next post overwrites previous term
+            }
         }
         // start new column
-        destpost = (column_t*) ((byte*)destpost + 1);  // skip 0xFF column termination
-        dest_used++;
+        if( destpost )
+        {
+            destp ++;  // skip 0xFF column termination
+            dest_used++;
+        }
     }
 
-    if( mid_empty_columns )
+    if( colofs0 && dest_term && mid_empty_columns )
     {
         // Must fix colofs that are still 0.
         // Point column at last 0xFF written.
-        unsigned int term_offset = dest_term - (byte*)wb_patch;  // offset of last 0xFF
-        colofs = & wb_patch->columnofs[0];  // columnofs array
+        unsigned int term_offset = dest_term - wb_dest;  // offset of last 0xFF
         for( col=0; col<width; col++ )
         {
-            if( colofs[col] == 0 )
-                colofs[col] = term_offset;
+            if( colofs0[col] == 0 )
+                colofs0[col] = term_offset;
         }
     }
 
-    if( enable_blank_trim && ((head_empty_columns + tail_empty_columns) > 0) )
+    if( (out_flags & CPO_blank_trim) && ((head_empty_columns + tail_empty_columns) > 0) )
     {
+        unsigned int  new_head_size = 0;
         // trim off the empty columns
-        unsigned int  trim_width = head_empty_columns + tail_empty_columns;;
+        unsigned int  trim_width = head_empty_columns + tail_empty_columns;
         width = width - trim_width;
 
-        unsigned int  new_colofs_size = width * sizeof( uint32_t );  // width * 4
-        if( head_empty_columns )
+        if( out_patch_header )
+            new_head_size += 8;
+
+        if( colofs0 )  // out_patch_header or out_columnofs
         {
-            // move colofs table
-            memmove( & wb_patch->columnofs[0], & wb_patch->columnofs[head_empty_columns], new_colofs_size );
+            unsigned int  new_colofs_size = width * sizeof(uint32_t);  // width * 4
+            unsigned int  adjustcol = colofs_size - new_colofs_size;  // byte difference in colorofs locations
+            new_head_size += new_colofs_size;
+
+            if( head_empty_columns )
+            {
+                // remove head_empty_columns of colofs table
+                memmove( colofs0, & colofs0[head_empty_columns], new_colofs_size );
+            }
+
+            // Move ptrs to new positions
+            for( col=0; col<width; col++ )  // new width
+            {
+                colofs0[col] -= adjustcol;
+            }
+
+            // move data due to smaller columnofs
+            memmove( wb_dest + new_head_size, wb_dest + head_size, dest_used - head_size );
+            // colofs_size = new_colofs_size;  // unnecessary
         }
 
-        // Move ptrs to new allocation
-        unsigned int  adjustcol = colofs_size - new_colofs_size;  // byte difference in locations
-        colofs = & wb_patch->columnofs[0];  // columnofs array
-        for( col=0; col<width; col++ )  // new width
-        {
-            colofs[col] -= adjustcol;
-        }
-
-        // move column data
-        unsigned int  new_head_size = new_colofs_size + 8;
-        memmove( wb_patch + new_head_size, wb_patch + head_size, dest_used - head_size );
-        // update
-        wb_patch->leftoffset = - head_empty_columns;
-        wb_patch->width = width;
         dest_used = dest_used - head_size + new_head_size;
+
+        leftoffset -= head_empty_columns;
+        if( out_patch_header )
+	{
+            // update
+            patch_t * wb_patch = (patch_t*)  wb_dest;
+            wb_patch->leftoffset = leftoffset;
+            wb_patch->width = width;
+        }
     }
 
     // Resize if necessary
@@ -366,15 +466,23 @@ patch_t * R_Create_Patch( unsigned int width, unsigned int height, byte column_o
     {
         // excessive allocation
         // Copy to new allocation.
-        patch_t * wb2 = (patch_t*) Z_Malloc( dest_used, PU_IN_USE, NULL );
-        memcpy( wb2, wb_patch, dest_used );
+        byte * wb2 = (byte*) Z_Malloc( dest_used, PU_IN_USE, NULL );
+        memcpy( wb2, wb_dest, dest_used );
         // Release old allocation
-        Z_Free( wb_patch );
-        wb_patch = wb2;
+        Z_Free( wb_dest );
+        wb_dest = wb2;
     }
-    return wb_patch;
+
+    if( out_header )
+    {
+        out_header->height = height;
+        out_header->width = width;
+        out_header->leftoffset = leftoffset;
+        out_header->topoffset = 0;
+    }
+    return wb_dest;
 }
-#endif
+
 
 //  Fixed, solid, image.
 //  column_oriented : source data orientation, 0 = row x column (image), 1 = column x row (pic_t)
