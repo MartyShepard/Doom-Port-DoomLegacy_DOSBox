@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: p_setup.c 1544 2020-08-22 02:40:35Z wesleyjohnson $
+// $Id: p_setup.c 1560 2020-11-25 12:34:46Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -166,7 +166,6 @@
   // I_PlayCD()..
 #include "i_system.h"
   // I_Sleep
-#include "r_sky.h"
 
 #include "r_data.h"
 #include "r_things.h"
