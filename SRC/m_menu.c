@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: m_menu.c 1543 2020-08-22 02:36:35Z wesleyjohnson $
+// $Id: m_menu.c 1566 2020-12-19 06:22:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1506,15 +1506,22 @@ void M_TwoPlayerMenu(int choice)
 
 menuitem_t  SecondMouseCfgMenu[] =
 {
-    {IT_STRING | IT_CVAR,0,"Second Mouse Serial Port", &cv_mouse2port,0},
-    {IT_STRING | IT_CVAR,0,"Use Mouse2",        &cv_usemouse[1]      ,0},
-    {IT_STRING | IT_CVAR,0,"Always Mouse2Look", &cv_alwaysfreelook[1],0},
-    {IT_STRING | IT_CVAR,0,"Mouse2 Move",       &cv_mouse_move[1]    ,0},
-    {IT_STRING | IT_CVAR,0,"Invert Mouse2",     &cv_mouse2_invert     ,0},
+    {IT_STRING | IT_CVAR,0,"P2 Use Mouse2",     &cv_usemouse[1]      ,0},
+    {IT_STRING | IT_CVAR,0,"P2 Always MouseLook", &cv_alwaysfreelook[1],0},
+    {IT_STRING | IT_CVAR,0,"P2 Mouse Move",     &cv_mouse_move[1]    ,0},
+#ifdef MOUSE2
+    {IT_STRING | IT_CVAR,0,"Mouse2 Serial Port", &cv_mouse2port      ,0},
+#if defined( SMIF_SDL ) || defined( SMIF_WIN32 )
+    {IT_STRING | IT_CVAR,0,"Mouse2 type",       &cv_mouse2type       ,0},
+#endif
+    {IT_STRING | IT_CVAR,0,"Mouse2 Invert",     &cv_mouse2_invert    ,0},
     {IT_STRING | IT_CVAR
      | IT_CV_SLIDER     ,0,"Mouse2 x Speed",    &cv_mouse2_sens_x    ,0},
     {IT_STRING | IT_CVAR
      | IT_CV_SLIDER     ,0,"Mouse2 y Speed",    &cv_mouse2_sens_y    ,0},
+#else
+    {IT_STRING|IT_WHITESTRING|IT_NOTHING, 0, "NO MOUSE2",   0, 0},
+#endif
 };
 
 menu_t  SecondMouseCfgdef =
@@ -6641,9 +6648,12 @@ void M_Register_Menu_Controls( void )
 
     //g_input.c
     CV_RegisterVar(&cv_grabinput);
+    // WARNING : the order is important when init mouse
+    // Call of mouse1 init occurs with Register cv_usemouse[1].
 #ifdef SMIF_SDL
     CV_RegisterVar(&cv_mouse_motion);
 #endif
+    // Call of mouse1 init occurs here.
     CV_RegisterVar(&cv_usemouse[0]);
     CV_RegisterVar(&cv_alwaysfreelook[0]);
     CV_RegisterVar(&cv_mouse_move[0]);
@@ -6651,18 +6661,26 @@ void M_Register_Menu_Controls( void )
     CV_RegisterVar(&cv_mouse_sens_x);
     CV_RegisterVar(&cv_mouse_sens_y);
 
+    // WARNING : the order is important when init mouse2 
+#ifdef MOUSE2
+#if defined( MOUSE2_NIX ) || defined( MOUSE2_WIN )
+    // Call of mouse2 init occurs with Register cv_usemouse[1].
+#if defined( SMIF_SDL ) || defined( SMIF_WIN32 )
+    CV_RegisterVar(&cv_mouse2type);
+#endif
+    CV_RegisterVar(&cv_mouse2port);
+    CV_RegisterVar(&cv_mouse2opt);
+#endif
+#endif
+
+    // Call of mouse2 init occurs here.
     CV_RegisterVar(&cv_usemouse[1]);
     CV_RegisterVar(&cv_alwaysfreelook[1]);
     CV_RegisterVar(&cv_mouse_move[1]);
+#ifdef MOUSE2
     CV_RegisterVar(&cv_mouse2_invert);
     CV_RegisterVar(&cv_mouse2_sens_x);
     CV_RegisterVar(&cv_mouse2_sens_y);
-
-    // WARNING : the order is important when inititing mouse2 
-    //           we need the mouse2port
-    CV_RegisterVar(&cv_mouse2port);
-#ifdef LMOUSE2
-    CV_RegisterVar(&cv_mouse2opt);
 #endif
 
     CV_RegisterVar(&cv_mouse_double);

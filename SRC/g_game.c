@@ -513,7 +513,9 @@ consvar_t cv_mouse_move[2] = {
 };
 
 consvar_t cv_mouse_invert     = {"invertmouse" ,"0",CV_SAVE,CV_OnOff};
+#ifdef MOUSE2
 consvar_t cv_mouse2_invert    = {"invertmouse2","0",CV_SAVE,CV_OnOff};
+#endif
 
 CV_PossibleValue_t joy_deadzone_cons_t[]={{0,"MIN"},{20,"INC"},{2000,"MAX"},{0,NULL}};
 consvar_t cv_joy_deadzone     = {"joydeadzone" ,"800",CV_SAVE,joy_deadzone_cons_t};
@@ -1207,9 +1209,11 @@ void G_BuildTiccmd(ticcmd_t* cmd, int realtics, byte pind)
         keyboard_look[pind] = false;
 
         // looking up/down
+#ifdef MOUSE2
         if (cv_mouse2_invert.EV)
           pitch -= mouse2y<<19;
         else
+#endif	   
           pitch += mouse2y<<19;
       }
       else if (cv_mouse_move[1].EV)

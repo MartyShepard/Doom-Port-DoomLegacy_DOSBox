@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: g_input.c 1471 2019-10-04 08:59:55Z wesleyjohnson $
+// $Id: g_input.c 1566 2020-12-19 06:22:58Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -73,14 +73,48 @@ CV_PossibleValue_t onecontrolperkey_cons_t[]={{1,"One"},{2,"Several"},{0,NULL}};
 // mouse values are used once
 consvar_t  cv_mouse_sens_x    = {"mousesensx","10",CV_SAVE,mousesens_cons_t};
 consvar_t  cv_mouse_sens_y    = {"mousesensy","10",CV_SAVE,mousesens_cons_t};
+consvar_t  cv_controlperkey   = {"controlperkey","1",CV_SAVE,onecontrolperkey_cons_t};
+
+CV_PossibleValue_t usemouse_cons_t[] = { {0, "Off"}, {1, "On"}, {2, "Force"}, {0, NULL} };
+consvar_t cv_usemouse[2] = {
+  { "use_mouse", "1", CV_SAVE | CV_CALL, usemouse_cons_t, CV_mouse_OnChange },
+  { "use_mouse2", "0", CV_SAVE | CV_CALL, usemouse_cons_t, I_StartupMouse2 }
+};
+
+#ifdef MOUSE2
+#ifdef MOUSE2_NIX
+CV_PossibleValue_t mouse2port_cons_t[] = {
+  {0, "gpmdata"},
+  {1, "mouse2"},  // indirection
+  {2, "ttyS0"}, {3, "ttyS1"}, {4, "ttyS2"}, {5, "ttyS3"}, {6, "ttyS4"}, {7, "ttyS5"}, {8, "ttyS6"},
+  {0, NULL} };
+#define CV_DEFAULT_PORT  "gpmdata"
+#endif
+
+#ifdef MOUSE2_WIN
+CV_PossibleValue_t mouse2port_cons_t[] = {
+  {1, "COM1"}, {2, "COM2"}, {3, "COM3"}, {4, "COM4"},
+  {5, "COM5"}, {6, "COM6"}, {7, "COM7"}, {8, "COM8"},  // Some Windows are reported to connect USB or other devices to COM ports
+  {0, NULL} };
+#define CV_DEFAULT_PORT  "COM2"
+consvar_t cv_mouse2port = { "mouse2port", CV_DEFAULT_PORT , CV_SAVE|CV_STRING|CV_CALL|CV_NOINIT, mouse2port_cons_t, I_StartupMouse2 };
+#endif
+
+consvar_t cv_mouse2opt = { "mouse2opt", "0", CV_SAVE|CV_STRING|CV_CALL|CV_NOINIT, NULL, I_StartupMouse2 };
+#if defined( SMIF_SDL ) || defined( SMIF_WIN32 )
+// Only in SDL, WIN32 for now.
+CV_PossibleValue_t mouse2type_cons_t[] = { {0, "PC"}, {1, "MS"}, {2, "PS2"}, {0, NULL} };
+consvar_t cv_mouse2type = { "mouse2type", "0" , CV_SAVE|CV_STRING|CV_CALL|CV_NOINIT, mouse2type_cons_t, I_StartupMouse2 };
+#endif
 consvar_t  cv_mouse2_sens_x   = {"mouse2sensx","10",CV_SAVE,mousesens_cons_t};
 consvar_t  cv_mouse2_sens_y   = {"mouse2sensy","10",CV_SAVE,mousesens_cons_t};
-consvar_t  cv_controlperkey   = {"controlperkey","1",CV_SAVE,onecontrolperkey_cons_t};
+#endif
 
 #ifdef SMIF_SDL
 CV_PossibleValue_t mouse_motion_cons_t[]={{0,"Absolute"},{1,"Relative"},{0,NULL}};
-consvar_t  cv_mouse_motion = {"mousemotion","0", CV_SAVE|CV_CALL, mouse_motion_cons_t, CV_mouse_OnChange };
+consvar_t  cv_mouse_motion = {"mousemotion","0", CV_SAVE|CV_CALL|CV_NOINIT, mouse_motion_cons_t, CV_mouse_OnChange };
 #endif
+
 consvar_t  cv_grabinput = {"grabinput","1", CV_SAVE|CV_CALL, CV_OnOff, CV_mouse_OnChange };
 
 // A normal double click is approx. 6 tics from previous click.
@@ -228,12 +262,13 @@ void  G_MapEventsToControls (event_t *ev)
         mousey += ev->data3*((cv_mouse_sens_y.value*cv_mouse_sens_y.value)/110.0f + 0.1);
         break;
 
+#ifdef MOUSE2
       case ev_mouse2:           // buttons are virtual keys
         // add multiple mouse motions
         mouse2x += ev->data2*((cv_mouse2_sens_x.value*cv_mouse2_sens_x.value)/110.0f + 0.1);
         mouse2y += ev->data3*((cv_mouse2_sens_y.value*cv_mouse2_sens_y.value)/110.0f + 0.1);
         break;
-
+#endif
       #if defined( __DJGPP__ )
       case ev_joystick:        // buttons are virtual keys
         joyxmove = ev->data2;
@@ -352,8 +387,8 @@ static keyname_t keynames[] =
   {KEY_MOUSE1+5,"mouse 6"},
   {KEY_MOUSE1+6,"mouse 7"},
   {KEY_MOUSE1+7,"mouse 8"},
-  {KEY_MOUSE2,  "mouse2 2"},    //BP: sorry my mouse handler swap button 1 and 2
-  {KEY_MOUSE2+1,"mouse2 1"},
+  {KEY_MOUSE2,  "mouse2 1"},
+  {KEY_MOUSE2+1,"mouse2 2"},
   {KEY_MOUSE2+2,"mouse2 3"},
   {KEY_MOUSE2WHEELUP,"m2 mwheel up"},
   {KEY_MOUSE2WHEELDOWN,"m2 mwheel down"},

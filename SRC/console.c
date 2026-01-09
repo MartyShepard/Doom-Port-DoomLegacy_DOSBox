@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: console.c 1561 2020-11-29 11:50:21Z wesleyjohnson $
+// $Id: console.c 1566 2020-12-19 06:22:58Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -736,6 +736,10 @@ static int     comskips,varskips;
         return false;
     }
 
+    if( key >= KEY_NUMKB )
+        return false;  // mouse, joystick button
+
+   
     // Console prompt active
     // [WDJ] Trying to use a switch stmt, increases the size for unknown
     // reasons related to optimization.  It uses extra tests to gain speed.

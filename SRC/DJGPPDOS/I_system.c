@@ -82,6 +82,7 @@
 #include "i_joy.h"
 #include "dstrings.h"
 #include "d_event.h"
+#include "g_input.h"
 extern int eventtail;
 extern uint64_t *freespace;
 

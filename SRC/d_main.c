@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1565 2020-12-19 06:21:39Z wesleyjohnson $
+// $Id: d_main.c 1566 2020-12-19 06:22:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1565"
+#define SVN_REV "1566"
 #endif
 
 
@@ -3845,408 +3845,455 @@ void Commandline_GetCompileFeatures(void)
 {
 
   printf("%s\n", legacytitle);
-  printf("Support Compiled Features and Hardcoded #Defines\n");
+  printf("Support Compiled Features and Hardy Hardcoded #Defines\n");
+
+#ifdef DOOMLEGACY_COMPONENT_VERSION
+        printf("Doomlegacy Component Version %d\n",DOOMLEGACY_COMPONENT_VERSION);
+        printf("\n");
+#endif
 
 #ifdef LAUNCHER
-        printf("ENGINE: [X] Built-in Launcher\n");
+        printf("ENGINE [X] Built-in Launcher\n");
 #else
-        printf("ENGINE: [ ] Built-in Launcher\n");
+        printf("ENGINE [ ] Built-in Launcher\n");
 #endif
 
-#ifdef SPLITSCREEN
-        printf("ENGINE: [X] Splitscreen\n");
+#ifdef SMIF_PC_DOS
+        printf("ENGINE [X] Personal Computer DOS\n");
 #else
-        printf("ENGINE: [ ] Splitscreen\n");
+        printf("ENGINE [ ] Personal Computer DOS\n");
 #endif
 
-#ifdef CLIENTPREDICTION2
-        printf("ENGINE: [X] Client Prediction 2\n");
+#ifdef SMIF_WIN32
+        printf("ENGINE [X] M$ Windows (32Bit)\n");
 #else
-        printf("ENGINE: [ ] Client Prediction 2\n");
+        printf("ENGINE [ ] M$ Windows (32Bit)\n");
 #endif
 
-#ifdef NEWLIGHT
-        printf("ENGINE: [X] Newlight, Compute Lighting with BSP\n");
+#ifdef SMIF_LINUX
+        printf("ENGINE [X] Linux\n");
 #else
-        printf("ENGINE: [ ] Newlight, Compute Lighting with BSP\n");
+        printf("ENGINE [ ] No Linux ...good\n");
 #endif
 
-#ifdef FRAGGLESCRIPT
-        printf("ENGINE: [X] Fragglescript\n");
+#ifdef SMIF_MAC
+        printf("ENGINE [X] Macintosh\n");
 #else
-        printf("ENGINE: [ ] Fragglescript\n");
+        printf("ENGINE [ ] No Mac   ...very good \n");
 #endif
 
-#ifdef FRICTIONTHINKER
-        printf("ENGINE: [X] Boom Demo Compatibility Friction Thinkers\n");
+#ifdef SMIF_SDL
+        printf("ENGINE [X] Using SDL1 Backend\n");
 #else
-        printf("ENGINE: [ ] Boom Demo Compatibility Friction Thinkers\n");
-#endif
-
-#ifdef DOORDELAY_CONTROL
-       printf("ENGINE: [X] Doordelay Control\n");
-#else
-       printf("ENGINE: [ ] Doordelay Control\n");
-#endif
-
-#ifdef SAVEGAMEDIR
-       printf("ENGINE: [X] Savegame Directory Support\n");
-#else
-       printf("ENGINE: [ ] Savegame Directory Support\n");
-#endif
-
-#ifdef FRENCH_INLINE
-       printf("ENGINE: [X] French language controls\n");
-#else
-       printf("ENGINE: [ ] French language controls\n");
-#endif
-
-#ifdef BEX_LANGUAGE
-       printf("ENGINE: [X] BEX language Support\n");
-#else
-       printf("ENGINE: [ ] BEX language Support\n");
-#endif
-
-#ifdef BEX_LANG_AUTO_LOAD
-       printf("ENGINE: [X] Automatic loading of lang.bex file\n");
-#else
-       printf("ENGINE: [ ] Automatic loading of lang.bex file\n");
-#endif
-
-#ifdef BEX_SAVEGAMENAME
-       printf("ENGINE: [X] Allow BEX to change Savegamename\n");
-#else
-       printf("ENGINE: [ ] Allow BEX to change Savegamename\n");
-#endif
-
-#ifdef SAVEGAME99
-       printf("ENGINE: [X] Savegame Slot Support 0 to 99\n");
-#else
-       printf("ENGINE: [ ] Savegame Slot Support\n");
-#endif
-
-#ifdef SAVE_VERSION_144
-       printf("ENGINE: [X] Save Version 1.44\n");
-#else
-       printf("ENGINE: [ ] Save Version 1.44\n");
-#endif
-
-#ifdef ENABLE_DRAW15
-       printf("ENGINE: [X] 15Bit Rendermode\n");
-#else
-       printf("ENGINE: [ ] 15Bit Rendermode\n");
-#endif
-
-#ifdef ENABLE_DRAW16
-       printf("ENGINE: [X] 16Bit Rendermode\n");
-#else
-       printf("ENGINE: [ ] 16Bit Rendermode\n");
-#endif
-
-#ifdef ENABLE_DRAW24
-       printf("ENGINE: [X] 24Bit Rendermode\n");
-#else
-       printf("ENGINE: [ ] 24Bit Rendermode\n");
-#endif
-
-#ifdef ENABLE_DRAW32
-       printf("ENGINE: [X] 32Bit Rendermode\n");
-#else
-       printf("ENGINE: [ ] 32Bit Rendermode\n");
-#endif
-
-#ifdef HWRENDER
-       printf("ENGINE: [X] Hardware Rendermode\n");
-#else
-       printf("ENGINE: [ ] Hardware Rendermode\n");
-#endif
-
-#ifdef USE_IPX
-       printf("ENGINE: [X] IPX Support\n");
-#else
-       printf("ENGINE: [ ] IPX Support\n");
-#endif
-
-#ifdef DOGS
-       printf("ENGINE: [X] Marine's Best Friend DOGS\n");
-#else
-       printf("ENGINE: [ ] Marine's Best Friend DOGS\n");
-#endif
-
-#ifdef ROT16
-       printf("ENGINE: [X] 16 Rotation Sprites\n");
-#else
-       printf("ENGINE: [ ] 16 Rotation Sprites\n");
-#endif
-
-#ifdef DYLT_CORONAS
-       printf("ENGINE: [X] Coronas in DynamicLights\n");
-#else
-       printf("ENGINE: [ ] Coronas in DynamicLights\n");
-#endif
-
-#ifdef SPDR_CORONAS
-       printf("ENGINE: [X] Coronas drawn with Sprite draw\n");
-#else
-       printf("ENGINE: [ ] Coronas drawn with Sprite draw\n");
-#endif
-
-#ifdef SPDR_CORONAS
-       printf("ENGINE: [X] Coronas drawn with Sprite draw\n");
-#else
-       printf("ENGINE: [ ] Coronas drawn with Sprite draw\n");
-#endif
-
-#ifdef XBOX_CONTROLLER
-       printf("ENGINE: [X] XBOX controller Support\n");
-#else
-       printf("ENGINE: [ ] XBOX controller Support\n");
-#endif
-
-#ifdef ZIPWAD
-       printf("ENGINE: [X] Zip Support\n");
-#else
-       printf("ENGINE: [ ] Zip Support\n");
-#endif
-
-#ifdef ZIPWAD_OPTIONAL
-       printf("ENGINE: [X] Zip Support (Optional)\n");
-#else
-       printf("ENGINE: [ ] Zip Support (Optional)\n");
-#endif
-
-#ifdef DEEPSEA_TALL_PATCH
-       printf("ENGINE: [X] DeePsea tall Patch Support\n");
-#else
-       printf("ENGINE: [ ] DeePsea tall Patch\n");
-#endif
-
-#ifdef DEVPARM_LOADING
-       printf("ENGINE: [X] Special handling for devparm\n");
-#else
-       printf("ENGINE: [ ] Special handling for devparm\n");
-#endif
-
-#ifdef WADFILE_RELOAD
-       printf("ENGINE: [X] Reload at level start when filename starts with '~'\n");
-#else
-       printf("ENGINE: [ ] Reload at level start when filename starts with '~'\n");
-#endif
-
-#ifdef LOADING_DISK_ICON
-       printf("ENGINE: [X] Loading disk icon\n");
-#else
-       printf("ENGINE: [ ] Loading disk icon\n");
-#endif
-
-
-#ifdef MACHINE_MHZ
-        printf("ENGINE: [X] Machine speed limitations = %d\n",MACHINE_MHZ);
-#else
-        printf("ENGINE: [ ] Machine speed limitations\n");
-#endif
-
-#ifdef GAME_SEARCH_DEPTH
-        printf("ENGINE: [X] Game Subdirectories Deeps = %d\n",GAME_SEARCH_DEPTH);
-#else
-        printf("ENGINE: [ ] Game Subdirectories Deeps\n");
-#endif
-
-#ifdef IWAD_SEARCH_DEPTH
-        printf("ENGINE: [X] IWad Subdirectories Deeps = %d\n",IWAD_SEARCH_DEPTH);
-#else
-        printf("ENGINE: [ ] IWad Subdirectories Deeps\n");
-#endif
-
-#ifdef MAX_WADPATH
-        printf("ENGINE: [X] Max File Path Lenght = %d\n",MAX_WADPATH);
-#endif
-
-#ifdef OLDTICRATE
-        printf("ENGINE: [X] Old Timer Rate (OLDTICRATE)= %d\n",OLDTICRATE);
-#endif
-
-#ifdef NEWTICRATERATIO
-        printf("ENGINE: [X] New Timer Ratio (TICRATIO) = %d\n",NEWTICRATERATIO);
-#endif
-
-#ifdef TICRATE
-        printf("ENGINE: [X] New Timer Rate (TICRATE)   = %d\n",TICRATE);
-#endif
-
-#ifdef CDMUS
-        printf("ENGINE: [X] Support CD-ROM Music\n");
-#else
-        printf("ENGINE: [ ] Support CD-ROM Music\n");
-#endif
-
-#ifdef CLIP2_LIMIT
-        printf("ENGINE: [X] Clip2 Limit\n");
-#else
-        printf("ENGINE: [ ] Clip2 Limit\n");
-#endif
-
-#ifdef MAXVISSPRITES
-        printf("ENGINE: [X] Max Sprites = %d\n",MAXVISSPRITES);
+        printf("ENGINE [ ] Using SDL1 Backend\n");
 #endif
 
 #ifdef __GNUG__
-        printf("ENGINE: [X] Compile: GNUG\n");
+        printf("ENGINE [X] Compile: GNUG\n");
 #else
-        printf("ENGINE: [ ] Compile: GNUG\n");
+        printf("ENGINE [ ] Compile: GNUG\n");
 #endif
 
 #ifdef HAVE_LIMITS_H
-        printf("ENGINE: [X] Compile: Have_Limits_H\n");
+        printf("ENGINE [X] Compile: Have_Limits_H\n");
 #else
-        printf("ENGINE: [ ] Compile: Have_Limits_H\n");
+        printf("ENGINE [ ] Compile: Have_Limits_H\n");
 #endif
 
 #ifdef __STDC__
-        printf("ENGINE: [X] Compile: STDC\n");
+        printf("ENGINE [X] Compile: STDC\n");
 #else
-        printf("ENGINE: [ ] Compile: STDC\n");
+        printf("ENGINE [ ] Compile: STDC\n");
 #endif
 
 #ifdef __BIG_ENDIAN__
-        printf("ENGINE: [X] Compile: Big Endian\n");
+        printf("ENGINE [X] Compile: Big Endian\n");
 #else
-        printf("ENGINE: [ ] Compile: Big Endian\n");
+        printf("ENGINE [ ] Compile: Big Endian\n");
 #endif
 
 #ifdef USEASM
-        printf("ENGINE: [X] Compile: Use Assembler\n");
+        printf("ENGINE [X] Compile: Use Assembler\n");
 #else
-        printf("ENGINE: [ ] Compile: Use Assembler\n");
+        printf("ENGINE [ ] Compile: Use Assembler\n");
+#endif
+
+#ifdef ENABLE_DRAW15
+        printf("ENGINE [X] Video  : 15Bit Rendermode\n");
+#else
+        printf("ENGINE [ ] Video  : 15Bit Rendermode\n");
+#endif
+
+#ifdef ENABLE_DRAW16
+        printf("ENGINE [X] Video  : 16Bit Rendermode\n");
+#else
+        printf("ENGINE [ ] Video  : 16Bit Rendermode\n");
+#endif
+
+#ifdef ENABLE_DRAW24
+        printf("ENGINE [X] Video  : 24Bit Rendermode\n");
+#else
+        printf("ENGINE [ ] Video  : 24Bit Rendermode\n");
+#endif
+
+#ifdef ENABLE_DRAW32
+        printf("ENGINE [X] Video  : 32Bit Rendermode\n");
+#else
+        printf("ENGINE [ ] Video  : 32Bit Rendermode\n");
+#endif
+
+#ifdef HWRENDER
+        printf("ENGINE [X] Video  : Hardware Rendermode\n");
+#else
+        printf("ENGINE [ ] Video  : Hardware Rendermode\n");
+#endif
+
+#ifdef CDMUS
+        printf("ENGINE [X] Music  : Support CD-ROM Music\n");
+#else
+        printf("ENGINE [ ] Music  : Support CD-ROM Music\n");
+#endif
+
+#ifdef XBOX_CONTROLLER
+        printf("ENGINE [X] Input  : XBOX controller Support\n");
+#else
+        printf("ENGINE [ ] Input  : XBOX controller Support\n");
+#endif
+
+#ifdef MOUSE2
+        printf("ENGINE [X] Input  : Second Mouse Support\n");
+#else
+        printf("ENGINE [ ] Input  : Second Mouse Support\n");
+#endif
+
+#ifdef MOUSE2_NIX
+        printf("ENGINE [X] Input  : Second Mouse Support (Linux)\n");
+#else
+        printf("ENGINE [ ] Input  : Second Mouse Support (Linux)\n");
+#endif
+
+#ifdef MOUSE2_WIN
+        printf("ENGINE [X] Input  : Second Mouse Support (Windows)\n");
+#else
+        printf("ENGINE [ ] Input  : Second Mouse Support (Windows)\n");
+#endif
+
+#ifdef CV_DEFAULT_PORT
+        printf("ENGINE [X] Input  : Second Mouse Default Port '%s'\n",CV_DEFAULT_PORT);
+#else
+        printf("ENGINE [ ] Input  : Second Mouse Default Port\n");
 #endif
 
 #ifdef DOSNET_SUPPORT
-        printf("ENGINE: [X] Dosnet Support\n");
+        printf("ENGINE [X] Network: Dosnet Support\n");
 #else
-        printf("ENGINE: [ ] Dosnet Support\n");
+        printf("ENGINE [ ] Network: Dosnet Support\n");
+#endif
+
+#ifdef USE_IPX
+        printf("ENGINE [X] Network: IPX Support\n");
+#else
+        printf("ENGINE [ ] Network: IPX Support\n");
+#endif
+
+#ifdef SAVEGAMEDIR
+        printf("ENGINE [X] Savegame: Directory Support\n");
+#else
+        printf("ENGINE [ ] Savegame: Directory Support\n");
+#endif
+
+#ifdef SAVE_VERSION_144
+        printf("ENGINE [X] Savegame: Version 1.44\n");
+#else
+        printf("ENGINE [ ] Savegame: Version 1.44\n");
+#endif
+
+#ifdef SAVEGAME99
+        printf("ENGINE [X] Savegame: Slot Support 0 to 99\n");
+#else
+        printf("ENGINE [ ] Savegame: Slot Support\n");
+#endif
+
+#ifdef DOGS
+        printf("ENGINE [X] Marine's Best Friend DOGS\n");
+#else
+        printf("ENGINE [ ] Marine's Best Friend DOGS\n");
+#endif
+
+#ifdef BEX_LANGUAGE
+        printf("ENGINE [X] BEX: language Support\n");
+#else
+        printf("ENGINE [ ] BEX: language Support\n");
+#endif
+
+#ifdef BEX_LANG_AUTO_LOAD
+        printf("ENGINE [X] BEX: Automatic loading of lang.bex file\n");
+#else
+        printf("ENGINE [ ] BEX: Automatic loading of lang.bex file\n");
+#endif
+
+#ifdef BEX_SAVEGAMENAME
+        printf("ENGINE [X] BEX: Allow to change Savegamename\n");
+#else
+        printf("ENGINE [ ] BEX: Allow to change Savegamename\n");
+#endif
+
+#ifdef FRICTIONTHINKER
+        printf("ENGINE [X] Boom: Demo Compatibility Friction Thinkers\n");
+#else
+        printf("ENGINE [ ] Boom: Demo Compatibility Friction Thinkers\n");
+#endif
+
+#ifdef CLIENTPREDICTION2
+        printf("ENGINE [X] Client Prediction 2\n");
+#else
+        printf("ENGINE [ ] Client Prediction 2\n");
+#endif
+
+#ifdef CLIP2_LIMIT
+        printf("ENGINE [X] Clip2 Limit\n");
+#else
+        printf("ENGINE [ ] Clip2 Limit\n");
+#endif
+
+#ifdef DYLT_CORONAS
+        printf("ENGINE [X] Coronas in DynamicLights\n");
+#else
+        printf("ENGINE [ ] Coronas in DynamicLights\n");
+#endif
+
+#ifdef SPDR_CORONAS
+        printf("ENGINE [X] Coronas drawn with Sprite draw\n");
+#else
+        printf("ENGINE [ ] Coronas drawn with Sprite draw\n");
+#endif
+
+#ifdef DEVPARM_LOADING
+       printf("ENGINE [X] DevParm: Special handling for devparm\n");
+#else
+       printf("ENGINE [ ] DevParm: Special handling for devparm\n");
+#endif
+
+#ifdef DEEPSEA_TALL_PATCH
+        printf("ENGINE [X] DeePsea tall Patch Support\n");
+#else
+        printf("ENGINE [ ] DeePsea tall Patch\n");
+#endif
+
+#ifdef DOORDELAY_CONTROL
+        printf("ENGINE [X] Doordelay Control\n");
+#else
+        printf("ENGINE [ ] Doordelay Control\n");
+#endif
+
+#ifdef FRENCH_INLINE
+        printf("ENGINE [X] French language controls\n");
+#else
+        printf("ENGINE [ ] French language controls\n");
+#endif
+
+#ifdef FRAGGLESCRIPT
+        printf("ENGINE [X] Fragglescript\n");
+#else
+        printf("ENGINE [ ] Fragglescript\n");
+#endif
+
+#ifdef GAME_SEARCH_DEPTH
+        printf("ENGINE [X] Game Subdirectories Deeps = %d\n",GAME_SEARCH_DEPTH);
+#else
+        printf("ENGINE [ ] Game Subdirectories Deeps\n");
+#endif
+
+#ifdef IWAD_SEARCH_DEPTH
+        printf("ENGINE [X] Game IWad Subdirectories Deeps = %d\n",IWAD_SEARCH_DEPTH);
+#else
+        printf("ENGINE [ ] Game IWad Subdirectories Deeps\n");
+#endif
+
+#ifdef LOADING_DISK_ICON
+        printf("ENGINE [X] Loading disk icon\n");
+#else
+        printf("ENGINE [ ] Loading disk icon\n");
+#endif
+
+#ifdef MACHINE_MHZ
+        printf("ENGINE [X] Machine speed limitations = %d\n",MACHINE_MHZ);
+#else
+        printf("ENGINE [ ] Machine speed limitations\n");
+#endif
+
+#ifdef MAXVISSPRITES
+        printf("ENGINE [X] Max Sprites = %d\n",MAXVISSPRITES);
+#endif
+
+#ifdef MAX_WADPATH
+        printf("ENGINE [X] Max File Path Lenght = %d\n",MAX_WADPATH);
+#endif
+
+#ifdef NEWLIGHT
+        printf("ENGINE [X] Newlight, Compute Lighting with BSP\n");
+#else
+        printf("ENGINE [ ] Newlight, Compute Lighting with BSP\n");
 #endif
 
 #ifdef NUM_RGBA_LEVELS
-        printf("INFO  : [X] Num RGBA Levels %d\n",NUM_RGBA_LEVELS);
+        printf("ENGINE [X] RGBA - Num Levels %d\n",NUM_RGBA_LEVELS);
 #endif
 
 #ifdef LIGHT_TO_RGBA_SHIFT
-        printf("INFO  : [X] Light to RGBA Shift %d\n",LIGHT_TO_RGBA_SHIFT);
+        printf("ENGINE [X] RGBA - Light to RGBA Shift %d\n",LIGHT_TO_RGBA_SHIFT);
+#endif
+
+#ifdef ROT16
+        printf("ENGINE [X] 16 Rotation Sprites\n");
+#else
+        printf("ENGINE [ ] 16 Rotation Sprites\n");
 #endif
 
 #ifdef SKY_FLAT_HEIGHT
-        printf("INFO  : [X] Sky Flat Height %d\n",SKY_FLAT_HEIGHT);
+        printf("ENGINE [X] Sky Flat Height %d\n",SKY_FLAT_HEIGHT);
 #endif
 
 #ifdef SKY_FLAT_WIDTH
-        printf("INFO  : [X] Sky Flat Width %d\n",SKY_FLAT_WIDTH);
+        printf("ENGINE [X] Sky Flat Width %d\n",SKY_FLAT_WIDTH);
+#endif
+
+#ifdef SPLITSCREEN
+        printf("ENGINE [X] Splitscreen\n");
+#else
+        printf("ENGINE [ ] Splitscreen\n");
+#endif
+
+#ifdef OLDTICRATE
+        printf("ENGINE [X] TIC: Old Timer Rate (OLDTICRATE)= %d\n",OLDTICRATE);
+#endif
+
+#ifdef NEWTICRATERATIO
+        printf("ENGINE [X] TIC: New Timer Ratio (TICRATIO) = %d\n",NEWTICRATERATIO);
+#endif
+
+#ifdef TICRATE
+        printf("ENGINE [X] TIC: New Timer Rate (TICRATE)   = %d\n",TICRATE);
+#endif
+
+#ifdef WADFILE_RELOAD
+        printf("ENGINE [X] Wadfile Reload at level start when filename starts with '~'\n");
+#else
+        printf("ENGINE [ ] Wadfile Reload at level start when filename starts with '~'\n");
+#endif
+
+#ifdef ZIPWAD
+        printf("ENGINE [X] Zip Support\n");
+#else
+        printf("ENGINE [ ] Zip Support\n");
+#endif
+
+#ifdef ZIPWAD_OPTIONAL
+        printf("ENGINE [X] Zip Support (Optional)\n");
+#else
+        printf("ENGINE [ ] Zip Support (Optional)\n");
 #endif
 
 // User Info
 #ifdef LOGMESSAGES
-        printf("INFO  : [X] Log Messages\n");
-        printf("INFO  : [X] Log Line Length %d\n",LOGLINELEN);
+        printf("INFO : [X] Log Messages with Log Line Length %d\n",LOGLINELEN);
 #else
-        printf("INFO  : [ ] Log Messages\n");
+        printf("INFO : [ ] Log Messages\n");
 #endif
 
 #ifdef TURBO_MSG_LEN
-        printf("INFO  : [X] Turbo MSG LEN %d\n",TURBO_MSG_LEN);
-#endif
-
-#ifdef DOOMLEGACY_COMPONENT_VERSION
-        printf("INFO  : [X] Doomlegacy Component Version %d\n",DOOMLEGACY_COMPONENT_VERSION);
+        printf("INFO : [X] Turbo MSG LEN %d\n",TURBO_MSG_LEN);
 #endif
 
 // Debug Features
 #ifdef DEBUG
-        printf("DEBUG : [X] Debug Modus\n");
+        printf("DEBUG  [X] Debug Modus\n");
 #else
-        printf("DEBUG : [ ] Debug Modus\n");
+        printf("DEBUG  [ ] Debug Modus\n");
 #endif
 
 #ifdef DEBUG_WINDOWED
-        printf("DEBUG : [X] Debug Windowed\n");
+        printf("DEBUG  [X] Debug Windowed\n");
 #else
-        printf("DEBUG : [ ] Debug Windowed\n");
+        printf("DEBUG  [ ] Debug Windowed\n");
 #endif
 
 #ifdef DEBUG_MESSAGES_ON
-        printf("DEBUG : [X] Debug Messages Default On\n");
+        printf("DEBUG  [X] Debug Messages Default On\n");
 #else
-        printf("DEBUG : [ ] Debug Messages Default\n");
+        printf("DEBUG  [ ] Debug Messages Default\n");
 #endif
 
 #ifdef DEBUG_LOG
-        printf("DEBUG : [X] Debug Log\n");
+        printf("DEBUG  [X] Debug Log\n");
 #else
-        printf("DEBUG : [ ] Debug Log\n");
+        printf("DEBUG  [ ] Debug Log\n");
 #endif
 
 #ifdef DEBUGFILE
-        printf("DEBUG : [X] Debug File\n");
+        printf("DEBUG  [X] Debug File\n");
 #else
-        printf("DEBUG : [ ] Debug File\n");
+        printf("DEBUG  [ ] Debug File\n");
 #endif
 
 #ifdef DEBUG_COPYRECT
-        printf("DEBUG : [X] Debug CopyRect\n");
+        printf("DEBUG  [X] Debug CopyRect\n");
 #else
-        printf("DEBUG : [ ] Debug CopyRect\n");
+        printf("DEBUG  [ ] Debug CopyRect\n");
 #endif
 
 #ifdef DEBUG_MD5_TIME
-        printf("DEBUG : [X] Debug MD5 Time\n");
+        printf("DEBUG  [X] Debug MD5 Time\n");
 #else
-        printf("DEBUG : [ ] Debug MD5 Time\n");
+        printf("DEBUG  [ ] Debug MD5 Time\n");
 #endif
 
 #ifdef DEBUG_MD5_TIME
-        printf("DEBUG : [X] Debug MD5 Time\n");
+        printf("DEBUG  [X] Debug MD5 Time\n");
 #else
-        printf("DEBUG : [ ] Debug MD5 Time\n");
+        printf("DEBUG  [ ] Debug MD5 Time\n");
 #endif
 
 #ifdef DEBUG_ZONE
-        printf("DEBUG : [X] Debug Zone\n");
+        printf("DEBUG  [X] Debug Zone\n");
 #else
-        printf("DEBUG : [ ] Debug Zone\n");
+        printf("DEBUG  [ ] Debug Zone\n");
 #endif
 
 #ifdef DEBUG_ZONE
-        printf("DEBUG : [X] Detect Tiles\n");
+        printf("DEBUG  [X] Detect Tiles\n");
 #else
-        printf("DEBUG : [ ] Detect Tiles\n");
+        printf("DEBUG  [ ] Detect Tiles\n");
 #endif
 
 #ifdef RANGECHECK
-        printf("DEBUG : [X] RangeCheck\n");
+        printf("DEBUG  [X] RangeCheck\n");
 #else
-        printf("DEBUG : [ ] RangeCheck\n");
+        printf("DEBUG  [ ] RangeCheck\n");
 #endif
 
 #ifdef RANGECHECK_DRAW_LIMITS
-        printf("DEBUG : [X] Rangecheck Draw Limits\n");
+        printf("DEBUG  [X] Rangecheck Draw Limits\n");
 #else
-        printf("DEBUG : [ ] Rangecheck Draw Limits\n");
+        printf("DEBUG  [ ] Rangecheck Draw Limits\n");
 #endif
 
 #ifdef PARANOIA
-        printf("DEBUG : [X] Paranoia Mode\n");
+        printf("DEBUG  [X] Paranoia Mode\n");
 #else
-        printf("DEBUG : [ ] Paranoia Mode\n");
+        printf("DEBUG  [ ] Paranoia Mode\n");
 #endif
 
 #ifdef TRACE_BLOCKMAPHEAD
-        printf("DEBUG : [X] Trace Blockmaphead\n");
+        printf("DEBUG  [X] Trace Blockmaphead\n");
 #else
-        printf("DEBUG : [ ] Trace Blockmaphead\n");
+        printf("DEBUG  [ ] Trace Blockmaphead\n");
 #endif
 
 #ifdef DUMP_BLOCKMAP
-        printf("DEBUG : [X] Dump Blockmap\n");
+        printf("DEBUG  [X] Dump Blockmap\n");
 #else
-        printf("DEBUG : [ ] Dump Blockmap\n");
+        printf("DEBUG  [ ] Dump Blockmap\n");
 #endif
 
     printf("if the list too long. add '>Features.txt' to the exe as output\n");

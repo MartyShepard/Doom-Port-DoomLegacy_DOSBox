@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: g_input.h 1481 2019-12-13 05:16:17Z wesleyjohnson $
+// $Id: g_input.h 1566 2020-12-19 06:22:58Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -123,20 +123,39 @@ extern consvar_t   cv_mouse_sens_y;
 #ifdef SMIF_SDL
 extern consvar_t   cv_mouse_motion;
 #endif
+
 #if defined( __DJGPP__ )
-extern int             joyxmove;
-extern int             joyymove;
-extern consvar_t   cv_usejoystick;
-extern consvar_t   cv_joystickfreelook;
+	extern int             joyxmove;
+	extern int             joyymove;
+	extern consvar_t   cv_usejoystick;
+	extern consvar_t   cv_joystickfreelook;
+
+	#ifndef MOUSE2
+		#define MOUSE2
+	#endif
+
+	#ifndef MOUSE2_WIN
+		#define MOUSE2_WIN
+	#endif
+
 #endif
 // mouse2
-extern consvar_t   cv_mouse2port;
-#ifdef LMOUSE2
-extern consvar_t   cv_mouse2opt;
-#endif
 extern consvar_t   cv_mouse2_invert;
 extern consvar_t   cv_mouse2_sens_x;
 extern consvar_t   cv_mouse2_sens_y;
+#ifdef MOUSE2
+extern consvar_t   cv_mouse2port;
+extern consvar_t   cv_mouse2opt;
+#ifdef SMIF_SDL
+extern consvar_t   cv_mouse2type;
+#endif
+# ifdef LINUX
+#  define MOUSE2_NIX
+# endif
+# ifdef WIN32
+#  define MOUSE2_WIN
+# endif
+#endif
 
 extern consvar_t   cv_mouse_double;
 

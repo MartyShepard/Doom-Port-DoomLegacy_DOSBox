@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01566 ]: w109_27 mouse2
+          DOS Compile Fix: unknown cv_mouse2port
+          (wieder variablen verschieberei und haufenweise #defines)
+
 [01565 ]: w109_27 large blockmap
 [01564 ]: w109_26 GCC10
 [01563 ]: w109_025 opposite dir bug

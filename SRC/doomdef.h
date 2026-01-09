@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1562 2020-11-29 11:51:00Z wesleyjohnson $
+// $Id: doomdef.h 1566 2020-12-19 06:22:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -188,6 +188,9 @@
 
 // XBOX controller
 #define XBOX_CONTROLLER
+
+// Second mouse
+#define MOUSE2
 
 // Allow players to wait for game start.
 #define WAIT_GAME_START_INTERMISSION

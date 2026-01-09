@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_netcmd.c 1514 2020-04-18 10:49:41Z wesleyjohnson $
+// $Id: d_netcmd.c 1566 2020-12-19 06:22:58Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -250,26 +250,6 @@ consvar_t cv_originalweaponswitch[2] = {
   { "originalweaponswitch2", "0", CV_SAVE | CV_CALL | CV_NOINIT | CV_CFG1, CV_OnOff, Send_WeaponPref2 }
 };
    
-
-
-CV_PossibleValue_t usemouse_cons_t[] = { {0, "Off"}, {1, "On"}, {2, "Force"}, {0, NULL} };
-consvar_t cv_usemouse[2] = {
-  { "use_mouse", "1", CV_SAVE | CV_CALL, usemouse_cons_t, CV_mouse_OnChange },
-  { "use_mouse2", "0", CV_SAVE | CV_CALL, usemouse_cons_t, I_StartupMouse2 }
-};
-
-#ifdef LMOUSE2
-CV_PossibleValue_t mouse2port_cons_t[] = { {0, "/dev/gpmdata"}, {1, "/dev/ttyS0"}, {2, "/dev/ttyS1"}, {3, "/dev/ttyS2"}, {4, "/dev/ttyS3"}, {0, NULL} };
-#else
-CV_PossibleValue_t mouse2port_cons_t[] = { {1, "COM1"}, {2, "COM2"}, {3, "COM3"}, {4, "COM4"}, {0, NULL} };
-#endif
-
-#ifdef LMOUSE2
-consvar_t cv_mouse2port = { "mouse2port", "/dev/gpmdata", CV_SAVE|CV_STRING, mouse2port_cons_t };
-consvar_t cv_mouse2opt = { "mouse2opt", "0", CV_SAVE|CV_STRING, NULL };
-#else
-consvar_t cv_mouse2port = { "mouse2port", "COM2", CV_SAVE|CV_STRING, mouse2port_cons_t };
-#endif
 
 consvar_t cv_netstat = { "netstat", "0", 0, CV_OnOff };
 
