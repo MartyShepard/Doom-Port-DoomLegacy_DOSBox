@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hsight.c 1228 2016-05-24 17:02:51Z wesleyjohnson $
+// $Id: p_hsight.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -185,17 +185,21 @@ static boolean P_SightTraverseIntercepts ( void )
     
     while (count--)
     {
+        // Find closest
         dist = FIXED_MAX;
         for (scan = intercepts ; scan<intercept_p ; scan++)
+        {
             if (scan->frac < dist)
             {
                 dist = scan->frac;
                 in = scan;
             }
-            
-            if ( !PTR_SightTraverse (in) )
-                return false;                   // don't bother going farther
-            in->frac = FIXED_MAX;
+	}
+
+        if ( !PTR_SightTraverse (in) )
+            return false;                   // don't bother going farther
+
+        in->frac = FIXED_MAX;  // remove from find-closest
     }
     
     return true;            // everything was traversed

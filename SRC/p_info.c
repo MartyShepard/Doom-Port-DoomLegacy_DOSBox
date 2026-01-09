@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 1561 2020-11-29 11:50:21Z wesleyjohnson $
+// $Id: p_info.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -89,7 +89,7 @@ void P_LowerCase(char *line)
   char *temp;
 
   for(temp=line; *temp; temp++)
-    *temp = tolower(*temp);
+    *temp = tolower((unsigned char)*temp);
 }
 
 void P_StripSpaces(char *line)
@@ -99,10 +99,10 @@ void P_StripSpaces(char *line)
   temp = line+strlen(line)-1;
 
   while(*temp == ' ')
-    {
+  {
       *temp = '\0';
       temp--;
-    }
+  }
 }
 
 #if 0
@@ -112,13 +112,13 @@ static void P_RemoveComments(char *line)
   char *temp = line;
 
   while(*temp)
-    {
+  {
       if(*temp=='/' && *(temp+1)=='/')
-        {
+      {
           *temp = '\0'; return;
-        }
+      }
       temp++;
-    }
+  }
 }
 #endif
 
@@ -130,13 +130,13 @@ static void P_RemoveEqualses(char *line)
   temp = line;
 
   while(*temp)
-    {
+  {
       if(*temp == '=')
-        {
+      {
           *temp = ' ';
-        }
+      }
       temp++;
-    }
+  }
 }
 #endif
 
@@ -261,24 +261,36 @@ void P_ParseLevelVar(char *cmd)
 // clear all the level variables so that none are left over from a
 // previous level
 
-int isExMy(char *name)
+int isExMy(char * name)
 {
-  if(strlen(name) != 4)
-    return 0;
+//  if(strlen(name) != 4)  goto not_ExMy;  // redundant
+  if( name[4] != '\0' )  // this also confirms strlen
+    goto not_ExMy;     
+  if( (name[0] != 'E' && name[0] != 'e') || (name[2] != 'M' && name[2] != 'm') )
+    goto not_ExMy;
+  if( !isnumchar(name[1]) || !isnumchar(name[3]) )
+    goto not_ExMy;
 
-  if(toupper(name[0]) != 'E' || toupper(name[2]) != 'M' || !isnumchar(name[1]) || !isnumchar(name[3]) || name[4] != '\0')
-    return 0;
   return 1;
+
+not_ExMy:
+  return 0;
 }
 
-int isMAPxy(char *name)
+int isMAPxy(char * name)
 {
-  if(strlen(name) != 5)
-    return 0;
+//  if(strlen(name) != 5)  goto not_map;  // redundant
+  if( name[5] != '\0' )  // this also confirms strlen
+    goto not_map;
+  if( (name[0] != 'M' && name[0] != 'm') || (name[1] != 'A' && name[1] != 'a') || (name[2] != 'P' && name[2] != 'p') )
+    goto not_map;
+  if( !isnumchar(name[3]) || !isnumchar(name[4]) )
+    goto not_map;
 
-  if(toupper(name[0]) != 'M' || toupper(name[1]) != 'A' || toupper(name[2]) != 'P' || !isnumchar(name[3]) || !isnumchar(name[4]) || name[5] != '\0')
-    return 0;
   return 1;
+
+not_map:
+  return 0;
 }
 
 void P_Clear_LevelVars(void)

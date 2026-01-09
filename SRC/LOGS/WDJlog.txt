@@ -8372,8 +8372,6 @@ R_GenerateTexture, that only worked for single patch textures
 that are generating a TM_patch.
 Fixes bug 0668.
 
-=== commit
-
 *** w109_overlap
 patchfile = w109_023_overlap
 - commit revision 1561
@@ -8388,8 +8386,8 @@ Regularize some of the DEBUG tests.
 Make LOGMESSAGES work again.
 
 *** w109_oppdir
-patchfile = w109_024_oppdir
-- commit revision 156
+patchfile = w109_025_oppdir
+- commit revision 1563
 This fixes bug 0670, Monsters mysteriously disappearing, moving large distances into the void space.
 
 This was caused by a broken calculation to determine the opposite direction.
@@ -8405,8 +8403,47 @@ to get used, which would be expressed as a wild walk movement.
 Both options were fixed, with the fixed calculation barely winning a speed comparison
 over the table lookup, and having a slightly smaller cache impact.
 
-Having monsters escape the play area adversly affects all games played with 1.48.6,
+Having monsters escape the play area adversely affects all games played with 1.48.6,
 so another release will be scheduled soon.
 
+=== commit
+
+*** w109_gcc10
+patchfile = w109_026_gcc10
+- commit revision 1564
+Fix compile warnings from GCC10.
+Most of these were about using a char as an array index,
+because a char could be signed char.
+
+*** w109_blockmap
+patchfile = w109_027_blockmap
+- commit revision 1565
+Fix the blockmap for Lost Civilization wad.
+This includes an index referencing a previous linedef list,
+which is blockmap compression used by zennode.
+
+*** w109_mouse2
+patchfile = w109_028_mouse2
+- commit revision 1566
+Bug 0669, mouse2 not working.
+Found that in sdl for mouse2, code for Linux was commented out,
+and code for Windows was missing entirely.
+Copied Windows mouse2 code from Win32, and activated the Linux code.
+The Windows code was for a PS mouse, and the Linux code was for MS
+mouse format.
+Rewrote the mouse2 code entirely.
+Added support for PS/2 mouse.
+It allows the selection of mouse type (PS, MS, PS/2).
+Fixed the port selection to have 8bit serial data for MS and PS/2 mice.
+
+Discovered several bugs:
+BUG1: Console was receiving event posts from the mouse, and was trying
+to interpret the button presses as keypresses.
+The event has a key code as data1, and an ASCII code as data2.
+The console would enter data2 into the console buffer.
+BUG2: Mouse1 code was clearing data2 to 0.  Mouse2 was leaving data
+as garbage, which the console was trying to interpret.
+BUG3: The joystick code was also leaving data2 as garbage.
+These were all fixed, thus keeping mouse keypresses off the console.
 
 

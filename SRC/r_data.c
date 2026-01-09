@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1559 2020-11-25 12:34:07Z wesleyjohnson $
+// $Id: r_data.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -3679,7 +3679,8 @@ int R_TextureNumForName (const char* name)
     if(i==-1)
     {
         // Exclude # parameters from "not found" message.
-        if( isalpha(name[0]) )
+        // Prevent warning due to using signed char as index
+        if( isalpha((unsigned char) name[0]) )
             I_SoftError("R_TextureNumForName: %.8s not found\n", name);
 
         i=1;	// default to texture[1]

@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: w_wad.c 1562 2020-11-29 11:51:00Z wesleyjohnson $
+// $Id: w_wad.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -270,14 +270,14 @@ int W_Load_WadFile ( const char * filename )
     // findfile requires a buffer of (at least) MAX_WADPATH
     char             filenamebuf[MAX_WADPATH];
     char *           msg;
-    lumpinfo_t *     lumpinfo;
+    lumpinfo_t *     lumpinfo = NULL;
     lumpcache_t *    lumpcache;
     wadfile_t *      wadfile;
 #ifdef HWRENDER    
     MipPatch_t *     grPatch;
 #endif
     int              filenum;  // return value
-    int              numlumps;
+    int              numlumps = 0;
     int              handle = -1;
     filestatus_e     fs;
     int              i, m;
@@ -385,7 +385,7 @@ int W_Load_WadFile ( const char * filename )
         lumpinfo->position = 0;
         lumpinfo->size = file_size;
         lumpinfo->lump_namespace = LNS_dehacked;
-        strncpy(lumpinfo->name, "DEHACKED", 8);
+        memcpy(lumpinfo->name, "DEHACKED", 8);  // name array, no term
     }
     else if( fc == FC_wad )
     {

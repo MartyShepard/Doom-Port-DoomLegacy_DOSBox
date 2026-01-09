@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: g_game.c 1541 2020-07-06 20:50:52Z wesleyjohnson $
+// $Id: g_game.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1680,8 +1680,10 @@ void G_Ticker (void)
             if (cmd->forwardmove > TURBOTHRESHOLD
                 && !(gametic % (32*NEWTICRATERATIO)) && ((gametic / (32*NEWTICRATERATIO))&3) == i )
             {
-                static char turbomessage[80];
-                sprintf (turbomessage, "%s is turbo!",player_names[i]);
+#define TURBO_MSG_LEN  80	       
+                static char turbomessage[TURBO_MSG_LEN];
+                snprintf (turbomessage, TURBO_MSG_LEN-1, "%s is turbo!", player_names[i]);
+                turbomessage[TURBO_MSG_LEN-1] = 0;
                 consoleplayer_ptr->message = turbomessage;
             }
         }
@@ -2914,7 +2916,8 @@ void G_InitNew (skill_e skill, const char* mapname, boolean resetplayer)
     if (FIL_CheckExtension(mapname))
     {
         // external map file
-        strncpy (game_map_filename, mapname, MAX_WADPATH);
+        strncpy (game_map_filename, mapname, MAX_WADPATH-1);
+        game_map_filename[MAX_WADPATH-1] = 0;
         // dummy values, to be set by P_SetupLevel.
         gameepisode = 1;
         gamemap = 1;

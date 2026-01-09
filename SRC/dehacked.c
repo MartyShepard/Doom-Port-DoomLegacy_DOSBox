@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1542 2020-08-22 02:35:24Z wesleyjohnson $
+// $Id: dehacked.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -771,7 +771,8 @@ static void readthing(myfile_t *f, int deh_thing_id )
               if( word[0] == '\n' )   goto set_flags;
               // detect bits by integer value
               // MBF DRCRYPT.WAD sets color and MF_FRIEND using Bits, with neg value.
-              if( isdigit( word[0] ) || word[0] == '-' )
+              // Prevent using signed char as index.
+              if( isdigit( (unsigned char)word[0] ) || word[0] == '-' )
               {
                   // old style integer value, flags only (not flags2)
                   flags1 = atoi(word);  // numeric entry
@@ -1276,7 +1277,8 @@ static void readtext(myfile_t* f, int len1, int len2 )
                if( hash&0x80000000 )
                   hash ++;
                hash <<= 1;
-               hash += toupper( s[i] ) - '0';
+               // Prevent using signed char as index.	       
+               hash += toupper( (unsigned char)s[i] ) - '0';
            }
        }
        for(i=0;;i++)

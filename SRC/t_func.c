@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1542 2020-08-22 02:35:24Z wesleyjohnson $
+// $Id: t_func.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -240,7 +240,7 @@ void  missing_arg_str( const char * funcname, const char * argstr )
 }
 
 static
-void  player_not_in_game( const char * funcname, int playernum )
+void  player_not_in_game( const char * funcname, byte playernum )
 {
     // [WDJ] No reason for script to fail because a player is not in game
 #if 0
@@ -249,9 +249,9 @@ void  player_not_in_game( const char * funcname, int playernum )
 }
 
 static
-int  arg_playernum( fs_value_t * arg, const char * funcname )
+byte  arg_playernum( fs_value_t * arg, const char * funcname )
 {
-    int playernum;
+    unsigned int playernum;
     if ( arg->type == FSVT_mobj)
     {
         if (! arg->value.mobj->player)  goto mobj_err;
@@ -273,7 +273,7 @@ player_err:
     goto errexit;
 
 errexit:
-    return  INT_MAX;  //  > MAXPLAYERS, indicates error
+    return  255;  //  > MAXPLAYERS, indicates error
 }
 
 
@@ -558,7 +558,7 @@ err_numarg:
 // No restriction on playernum, contrary to docs.
 void SF_PlayerTip(void)
 {
-    int plnum;
+    unsigned int plnum;
 
     if (t_argc < 2)  goto err_numarg;  // [WDJ] requires 2 args
 
@@ -622,7 +622,7 @@ void SF_GameMode(void)
 // No restriction on playernum, contrary to docs.
 void SF_PlayerMsg(void)
 {
-    int plnum;
+    unsigned int plnum;
 
     if (t_argc < 2)  goto err_numarg;
 
@@ -645,7 +645,7 @@ err_numarg:
 // PlayerInGame( playernum )
 void SF_PlayerInGame(void)
 {
-    int plnum;
+    unsigned int plnum;
 
     if (t_argc != 1)  goto err_numarg;
 
@@ -666,7 +666,7 @@ err_numarg:
 // PlayerName( {playernum} )
 void SF_PlayerName(void)
 {
-    int plnum;
+    unsigned int plnum;
 
     t_return.type = FSVT_string;
     t_return.value.s = "";
@@ -696,7 +696,7 @@ err_notplayer:
 // PlayerAddFrag( playernum1, {playernum2} )
 void SF_PlayerAddFrag(void)
 {
-    int playernum1;
+    unsigned int playernum1;
 
     if (t_argc < 1)  goto err_numarg;
 
@@ -738,7 +738,7 @@ err_numarg:
 // PlayerObj( {playernum} )
 void SF_PlayerObj(void)
 {
-    int plnum;
+    unsigned int plnum;
 
     t_return.type = FSVT_mobj;
     t_return.value.mobj = NULL;  // default
@@ -788,7 +788,7 @@ void SF_MobjIsPlayer(void)
 // SkinColor( player, {colornum} )
 void SF_SkinColor(void)
 {
-    int playernum;
+    byte playernum;
 
     if (t_argc < 1)  goto err_numarg;
 
@@ -849,7 +849,7 @@ err_numarg:
 // value: 0,1
 void SF_PlayerKeys(void)
 {
-    int playernum;
+    byte playernum;
     int keynum;
     byte keymask;
 
@@ -903,7 +903,7 @@ bad_keyvalue:
 // PlayerKeysByte(player, {newbyte})
 void SF_PlayerKeysByte(void)
 {
-    int playernum = 0;
+    byte playernum = 0;
 
     if (t_argc < 1)  goto err_numarg;
 
@@ -939,7 +939,7 @@ err_numarg:
 void SF_PlayerArmor(void)
 {
     int armor;
-    int playernum;
+    byte playernum;
     player_t * player;
 
     if (t_argc < 1)  goto err_numarg;
@@ -974,7 +974,7 @@ err_numarg:
 void SF_PlayerAmmo(void)
 {
     int ammonum;
-    int playernum;
+    byte playernum;
     player_t * player;
 
     if (t_argc < 2)  goto err_numarg;
@@ -1014,7 +1014,7 @@ bad_ammo:
 // MaxPlayerAmmo( player, ammonum, {ammo_value} )
 void SF_MaxPlayerAmmo(void)
 {
-    int playernum;
+    byte playernum;
     int ammonum;
     player_t * player;
 
@@ -1054,7 +1054,7 @@ bad_ammo:
 void SF_PlayerWeapon(void)
 {
     int weaponnum;
-    int playernum;
+    byte playernum;
     player_t * player;
 
     if (t_argc < 2)  goto err_numarg;
@@ -1097,7 +1097,7 @@ bad_weapon:
 void SF_PlayerSelectedWeapon(void)
 {
     int weaponnum;
-    int playernum;
+    byte playernum;
     player_t * player;
 
     if (!t_argc)  goto err_numarg;
@@ -1136,7 +1136,7 @@ bad_weapon:
 // PlayerPitch( player, {pitch} )
 void SF_PlayerPitch(void)
 {
-    int playernum;
+    byte playernum;
 
     if (!t_argc)  goto err_numarg;
 
@@ -1227,11 +1227,11 @@ void SF_Player(void)
 
     if (mo && mo->player)  // [WDJ] check player
     {
-        t_return.value.i = (int) (mo->player - players);
+        t_return.value.i = (unsigned int) (mo->player - players);
     }
     else
     {
-        t_return.value.i = -1;
+        t_return.value.i = -1;  // programs may depende on it being negative
     }
 }
 

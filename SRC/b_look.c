@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: b_look.c 1458 2019-09-11 12:27:47Z wesleyjohnson $
+// $Id: b_look.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
 //
 // Copyright (C) 2002-2016 by DooM Legacy Team.
 //
@@ -224,7 +224,8 @@ ret_edge_center:
 byte regulate( mobj_t * mo, int id, int on_time, int period_time )
 {
     // Periodic, individualized for each id and mo.
-    int pr = (gametic + id + (int)mo) % period_time;  // periodic ramp
+    int mobjid = (intptr_t) mo;
+    int pr = (gametic + id + (mobjid>>1)) % period_time;  // periodic ramp
     
     if( mo->health < 5 ) // more desperate
     {
@@ -327,7 +328,7 @@ void B_LookForThings (player_t* p)
                 // lessen bot fixation with shooting barrels
                 if((thingDistance > (80*FRACUNIT)) && !out_of_ammo)
                 {
-                    if( regulate(p->mo, MT_BARREL, 4*TICRATE, 15*TICRATE ) );  // 0..255
+                    if( regulate(p->mo, MT_BARREL, 4*TICRATE, 15*TICRATE ) )  // 0..255
                         enemy_weight = 64;  // fire 1/4 of time
                 }
             }

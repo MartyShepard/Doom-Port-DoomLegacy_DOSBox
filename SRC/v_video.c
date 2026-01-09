@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1562 2020-11-29 11:51:00Z wesleyjohnson $
+// $Id: v_video.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -3205,7 +3205,6 @@ int V_StringWidth( const char *string)
 {
     int i;
     int sw = 0;
-    int c;
     int ln = strlen(string);
 
     if(use_font1)
@@ -3217,7 +3216,9 @@ int V_StringWidth( const char *string)
     for (i = 0; i < ln; i++)
     {
         // hufont only has uppercase
-        c = toupper(string[i]) - HU_FONTSTART;
+        // Prevent using signed char as index.
+        unsigned char uc = string[i];
+        int c = toupper(uc) - HU_FONTSTART;
         if (c < 0 || c >= HU_FONTSIZE)
             sw += 4;
         else
@@ -3422,7 +3423,7 @@ void V_Setup_VideoDraw(void)
 #endif
 
     // Software draw only.
-    byte EN_HWR_flashpalette = 0;  // software and default (Marty: Add Missing type for varible)
+    byte EN_HWR_flashpalette = 0;  // software and default (Marty: Add Missing type for variable)
 
     if( vid.display == NULL )
     {
