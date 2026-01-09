@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1540 2020-07-06 20:50:17Z wesleyjohnson $
+// $Id: p_enemy.c 1563 2020-11-29 11:52:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -183,8 +183,19 @@ typedef enum
 // P_NewChaseDir related LUT.
 //
 
+// [WDJ] Speed comparison of Opposite.
+//  Table: 35 sec,  Calculated: 33 sec.
+#if 0
+static dirtype_t opposite[] =
+{
+  DI_WEST, DI_SOUTHWEST, DI_SOUTH, DI_SOUTHEAST,
+  DI_EAST, DI_NORTHEAST, DI_NORTH, DI_NORTHWEST, DI_NODIR
+};
+#define  DI_OPPOSITE( di )     (opposite[di])
+#else
 // Add 180 degrees, same as  (di+4) & 0x0F
-#define  DI_OPPOSITE( di )   ((di) ^ 4)
+#define  DI_OPPOSITE( di )     ((di < DI_NODIR)? ((di) ^ 4) : DI_NODIR)
+#endif
 
 static dirtype_t diags[] =
 {

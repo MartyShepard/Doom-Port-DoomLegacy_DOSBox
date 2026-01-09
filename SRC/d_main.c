@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1562 2020-11-29 11:51:00Z wesleyjohnson $
+// $Id: d_main.c 1563 2020-11-29 11:52:09Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1562"
+#define SVN_REV "1563"
 #endif
 
 
@@ -4161,6 +4161,12 @@ void Commandline_GetCompileFeatures(void)
         printf("DEBUG : [ ] Debug Modus\n");
 #endif
 
+#ifdef DEBUG_WINDOWED
+        printf("DEBUG : [X] Debug Windowed\n");
+#else
+        printf("DEBUG : [ ] Debug Windowed\n");
+#endif
+
 #ifdef DEBUG_MESSAGES_ON
         printf("DEBUG : [X] Debug Messages Default On\n");
 #else
@@ -4179,6 +4185,36 @@ void Commandline_GetCompileFeatures(void)
         printf("DEBUG : [ ] Debug File\n");
 #endif
 
+#ifdef DEBUG_COPYRECT
+        printf("DEBUG : [X] Debug CopyRect\n");
+#else
+        printf("DEBUG : [ ] Debug CopyRect\n");
+#endif
+
+#ifdef DEBUG_MD5_TIME
+        printf("DEBUG : [X] Debug MD5 Time\n");
+#else
+        printf("DEBUG : [ ] Debug MD5 Time\n");
+#endif
+
+#ifdef DEBUG_MD5_TIME
+        printf("DEBUG : [X] Debug MD5 Time\n");
+#else
+        printf("DEBUG : [ ] Debug MD5 Time\n");
+#endif
+
+#ifdef DEBUG_ZONE
+        printf("DEBUG : [X] Debug Zone\n");
+#else
+        printf("DEBUG : [ ] Debug Zone\n");
+#endif
+
+#ifdef DEBUG_ZONE
+        printf("DEBUG : [X] Detect Tiles\n");
+#else
+        printf("DEBUG : [ ] Detect Tiles\n");
+#endif
+
 #ifdef RANGECHECK
         printf("DEBUG : [X] RangeCheck\n");
 #else
@@ -4190,7 +4226,6 @@ void Commandline_GetCompileFeatures(void)
 #else
         printf("DEBUG : [ ] Rangecheck Draw Limits\n");
 #endif
-
 
 #ifdef PARANOIA
         printf("DEBUG : [X] Paranoia Mode\n");

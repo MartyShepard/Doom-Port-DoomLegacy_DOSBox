@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01563 ]: w109_025 opposite dir bug
 [01562 ]: w109_024 DEBUG and logmessages
           DOS: Compile fix. And then, a newly inserted function
           is misspelled a few lines later... that's really strange.
