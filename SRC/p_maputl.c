@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_maputl.c 1398 2018-07-02 03:40:30Z wesleyjohnson $
+// $Id: p_maputl.c 1565 2020-12-19 06:21:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -525,8 +525,8 @@ void P_UnsetThingPosition (mobj_t* thing)
             blockx = (thing->x - bmaporgx)>>MAPBLOCKSHIFT;
             blocky = (thing->y - bmaporgy)>>MAPBLOCKSHIFT;
 
-            if (blockx>=0 && blockx < bmapwidth
-                && blocky>=0 && blocky <bmapheight)
+            if (blockx>=0 && blockx < (int)bmapwidth
+                && blocky>=0 && blocky < (int)bmapheight)
             {
                 blocklinks[blocky*bmapwidth+blockx] = thing->bnext;
             }
@@ -598,9 +598,9 @@ void P_SetThingPosition (mobj_t* thing)
         blocky = (thing->y - bmaporgy)>>MAPBLOCKSHIFT;
 
         if (blockx>=0
-            && blockx < bmapwidth
+            && blockx < (int)bmapwidth
             && blocky>=0
-            && blocky < bmapheight)
+            && blocky < (int)bmapheight)
         {
             link = &blocklinks[blocky*bmapwidth+blockx];
             thing->bprev = NULL;
@@ -642,7 +642,7 @@ boolean P_BlockLinesIterator(int x, int y,
                              boolean (*func)(line_t*))
 {
     if (x<0 || y<0 ||
-        x >= bmapwidth || y >= bmapheight)
+        x >= (int)bmapwidth || y >= (int)bmapheight)
     {
         return true;
     }
@@ -677,8 +677,8 @@ boolean P_BlockThingsIterator ( int x, int y,
 
     if ( x<0
          || y<0
-         || x>=bmapwidth
-         || y>=bmapheight)
+         || x>= (int)bmapwidth
+         || y>= (int)bmapheight)
     {
         return true;
     }

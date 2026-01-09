@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1541 2020-07-06 20:50:52Z wesleyjohnson $
+// $Id: p_local.h 1565 2020-12-19 06:21:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -381,8 +381,8 @@ extern byte*            rejectmatrix;   // for fast sight rejection
 // Expand from 16bit wad to internal 32bit blockmap.
 extern uint32_t*        blockmaphead;   // offsets in blockmap are from here
 extern uint32_t*        blockmapindex;  // Big blockmap, SSNTails
-extern int              bmapwidth;
-extern int              bmapheight;     // in mapblocks
+extern unsigned int     bmapwidth;
+extern unsigned int     bmapheight;     // in mapblocks
 extern fixed_t          bmaporgx;
 extern fixed_t          bmaporgy;       // origin of block map
 extern mobj_t**         blocklinks;     // for thing chains

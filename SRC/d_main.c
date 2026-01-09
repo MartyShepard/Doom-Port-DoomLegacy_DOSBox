@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
+// $Id: d_main.c 1565 2020-12-19 06:21:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1564"
+#define SVN_REV "1565"
 #endif
 
 
@@ -4150,6 +4150,10 @@ void Commandline_GetCompileFeatures(void)
         printf("INFO  : [ ] Log Messages\n");
 #endif
 
+#ifdef TURBO_MSG_LEN
+        printf("INFO  : [X] Turbo MSG LEN %d\n",TURBO_MSG_LEN);
+#endif
+
 #ifdef DOOMLEGACY_COMPONENT_VERSION
         printf("INFO  : [X] Doomlegacy Component Version %d\n",DOOMLEGACY_COMPONENT_VERSION);
 #endif
@@ -4231,6 +4235,18 @@ void Commandline_GetCompileFeatures(void)
         printf("DEBUG : [X] Paranoia Mode\n");
 #else
         printf("DEBUG : [ ] Paranoia Mode\n");
+#endif
+
+#ifdef TRACE_BLOCKMAPHEAD
+        printf("DEBUG : [X] Trace Blockmaphead\n");
+#else
+        printf("DEBUG : [ ] Trace Blockmaphead\n");
+#endif
+
+#ifdef DUMP_BLOCKMAP
+        printf("DEBUG : [X] Dump Blockmap\n");
+#else
+        printf("DEBUG : [ ] Dump Blockmap\n");
 #endif
 
     printf("if the list too long. add '>Features.txt' to the exe as output\n");

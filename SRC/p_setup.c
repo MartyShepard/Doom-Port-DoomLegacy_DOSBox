@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: p_setup.c 1560 2020-11-25 12:34:46Z wesleyjohnson $
+// $Id: p_setup.c 1565 2020-12-19 06:21:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -195,6 +195,9 @@
   // added by AC for acbot
 
 
+//#define TRACE_BLOCKMAPHEAD
+//#define DUMP_BLOCKMAP   "dmdump"
+
 
 //
 // MAP related Lookup tables.
@@ -253,14 +256,15 @@ typedef struct mapdata_s {
 // Used to speed up collision detection by spatial subdivision in 2D.
 //
 // Blockmap size.
-int             bmapwidth;
-int             bmapheight;     // size in mapblocks
+unsigned int    bmapwidth;
+unsigned int    bmapheight;     // size in mapblocks
 
 uint32_t *      blockmapindex;       // for large maps, wad is 16bit
 // offsets in blockmap are from here
 uint32_t *      blockmaphead; // Big blockmap, SSNTails
 
 // origin of block map
+// The bottom left corner of the most SW block.
 fixed_t         bmaporgx;
 fixed_t         bmaporgy;
 // for thing chains
@@ -269,7 +273,7 @@ mobj_t   **     blocklinks;
 
 // REJECT
 // For fast sight rejection.
-// Speeds up enemy AI by skipping detailed LineOf Sight calculation.
+// Speeds up enemy AI by skipping detailed line-of-sight calculation.
 // Without special effect, this could be used as a PVS lookup as well.
 byte     *      rejectmatrix;
 
@@ -1316,12 +1320,20 @@ void P_LoadBlockMap (int lump)
   uint16_t * wadblockmaplump = W_CacheLumpNum (lump, PU_LEVEL); // blockmap lump temp
   uint32_t firstlist, lastlist;  // blockmap block list bounds
   uint32_t overflow_corr = 0;
-  uint32_t prev_bme = 0;  // for detecting overflow wrap
+  uint32_t bme;
+  uint32_t max_bme = 0;  // for detecting overflow wrap
 #ifdef TRACE_BLOCKMAPHEAD
   uint32_t head_bmi = 0;
 #endif
+  int blockmap_errors = 0;
   int i;
    
+#ifdef DUMP_BLOCKMAP
+  char dbmfn[MAX_WADPATH];  // DUMP_BLOCKMAP file name
+  snprintf( dbmfn, MAX_WADPATH-1, "%s_M%i", DUMP_BLOCKMAP, gamemap );
+  FILE * dbmfp = fopen( dbmfn, "w" );
+#endif
+
   // [WDJ] when zennode has not been run, this code will corrupt Zone memory.
   // It assumes a minimum size blockmap.
   if( count < 5 )
@@ -1349,7 +1361,19 @@ void P_LoadBlockMap (int lump)
   firstlist = 4 + (bmapwidth*bmapheight);
   lastlist = count - 1;
 
-  if( firstlist >= lastlist || bmapwidth < 1 || bmapheight < 1 )
+#ifdef TRACE_BLOCKMAPHEAD
+  GenPrintf(EMSG_warn,"Blockmap: width=%i, height=%i, org=(%4X.%4X,%4X.%4X), firstlist=%i, count=%i\n",
+            bmapwidth, bmapheight, (bmaporgx>>16), (bmaporgx&0xFFFF), (bmaporgy>>16), (bmaporgy&0xFFFF), firstlist, count );
+#endif
+#ifdef DUMP_BLOCKMAP
+  fprintf( dbmfp, "Map: %i\n", gamemap );
+  fprintf( dbmfp, "Blockmap: width=%i, height=%i, org=(%4X.%4X,%4X.%4X), firstlist=%X (%i), lastlist=%X\n",
+            bmapwidth, bmapheight, (bmaporgx>>16), (bmaporgx&0xFFFF), (bmaporgy>>16), (bmaporgy&0xFFFF), firstlist, firstlist, lastlist );
+  if( lastlist > 0xFFFF )
+      fprintf( dbmfp, "Large Blockmap: overflow +%i\n", lastlist >> 16 );
+#endif
+
+  if( firstlist >= lastlist || bmapwidth < 1 || bmapwidth > 0xFFF0 || bmapheight < 1 || bmapheight > 0xFFF0 )
       I_Error( "Blockmap corrupt, must run node builder on wad.\n" );
 
   // read blockmap index array
@@ -1358,70 +1382,118 @@ void P_LoadBlockMap (int lump)
       // [WDJ] LE_SWAP16 returns a 16 bit signed value on a big-endian machine,
       // so must make it unsigned, otherwise it can get sign extended.
       // Found by Michael Bauerle.
-      uint32_t  bme = (uint16_t)( LE_SWAP16(wadblockmaplump[i]) );  // offset
-      // upon overflow, the bme will wrap to low values
-      if ( (bme < firstlist)  // too small to be valid
-           && (bme < 0x2000) && (prev_bme > 0xE000))  // wrapped
-      {
-          // first or repeated overflow
-          overflow_corr += 0x00010000;
-          GenPrintf(EMSG_warn,"Correct blockmap offset[%i...] overflow by adding 0x%X\n",
-                   i, overflow_corr );
-      }
+      bme = (uint16_t)( LE_SWAP16(wadblockmaplump[i]) );  // offset
+#ifdef DUMP_BLOCKMAP
+      fprintf( dbmfp,"#%6X  %6X\n", i, bme );
+#endif
 
       if( bme == firstlist )
       {
           // Use the first list. Zennode compress will put a common empty list as first list.
+          goto save_blockmap;
       }
-      else if( overflow_corr )
+
+      // upon overflow, the bme will wrap to low values
+      if ( (bme < firstlist)  // too small to be valid
+           && (bme < 0x2000) && ((max_bme & 0xFFFF) > 0xE000))   // wrapped
+      {
+          // first or repeated overflow
+          uint32_t overflow_corr_n = overflow_corr + 0x00010000;
+          if( overflow_corr_n >= lastlist )
+          {
+              GenPrintf(EMSG_warn,"Blockmap offset[%i]: Overflow 0x%X,  exceeds lastlist=0x%X\n", i, overflow_corr_n, lastlist );
+#ifdef DUMP_BLOCKMAP
+              fprintf( dbmfp,"Blockmap offset[%i]: Overflow 0x%X,  exceeds lastlist=0x%X\n", i, overflow_corr_n, lastlist );
+#endif
+          }
+          else
+          {
+              // within lump bounds
+              overflow_corr = overflow_corr_n;	      
+              GenPrintf(EMSG_warn,"Blockmap offset[%i...]: Overflow correct 0x%X\n", i, overflow_corr );
+#ifdef DUMP_BLOCKMAP
+              fprintf( dbmfp,"Blockmap offset[%X...]: Overflow correct 0x%X\n", i, overflow_corr );
+#endif
+          }
+      }
+
+      if( overflow_corr == 0 )  // normal blockmap entry
+      {
+          goto save_blockmap;
+      }
+
+      // Blockmap is loaded before linedefs, so cannot verify blockmap by checking linedefs.
+//      if( overflow_corr )
       {
           // correct for overflow
-          byte  have_corrected = 0;
           uint32_t bmec = bme + overflow_corr;
           uint32_t bmi = blockmaphead[i-1];
+          byte  have_corrected = 0;
 
-          prev_bme = bme;  // uncorrected
+#ifdef DUMP_BLOCKMAP
+          fprintf( dbmfp, "  Overflow: prev blockmaphead[%X]=%X, max_bme=%X, corrected bmec=%X\n", i-1, bmi, max_bme, bmec );
+#endif
 
           if( bmec <= lastlist )
           {
               uint32_t wbmec = (uint16_t)( LE_SWAP16(wadblockmaplump[bmec]) );
               uint32_t wbm3 = (bmec > 0)? (uint16_t)( LE_SWAP16(wadblockmaplump[bmec-1]) ) : 0xFFFF;
+#ifdef DUMP_BLOCKMAP
+              fprintf( dbmfp, "  Check list head: wadblockmap[bmec-1]=%X  wadblockmap[bmec]=%X\n", wbm3, wbmec );
+#endif
               if( (wbm3 == 0xFFFF) && (wbmec == 0) ) // valid start list
               {
-#ifdef TRACE_BLOCKMAPHEAD
-                  if((bmec - bmi) > 0x1000)  // indexes are reasonably close sequentially
-                  {
-                      // Except that zennode will compress, scattering the entries.
-                      GenPrintf( EMSG_warn, " Blockmap difference from previous head:  prev_blockmaphead=%X, bme_diff=%X, bmec_diff=%X\n", bmi, (bmi-bme), (bmec-bmi) );
-                  }
-#endif		 
-
+                  // Valid blockmap list.
+                  // Note: zennode will compress, scattering the entries.
+#ifdef DUMP_BLOCKMAP
+                  fprintf( dbmfp, " Valid List: %X\n", bmec );
+#endif
                   bme = bmec;  // accept corrected blockmap list head
-                  have_corrected = 1;
+                  goto save_blockmap;
               }
-              else
-              {
-                  uint32_t wbm4 = (uint16_t)( LE_SWAP16(wadblockmaplump[bmec-1]) );
-                  GenPrintf( EMSG_warn, " Corrected blockmap offset does not point to list: prev=%X wadblockmaplump[%X]=%X next=%X\n", wbm3, bmec-1, wbmec, wbm4 );
-              }
-          }
-          else
-          {
-              GenPrintf( EMSG_warn, "  Corrected blockmap offset=%X, exceeds blockmap bounds %X.\n", bmec, lastlist);
           }
 
-          if( ! have_corrected )  // not accepted above
+          // not accepted above
           {
+              // Test index in previous overflow_corr groups.
+              // This happens when zennode compresses the blockmap by reusing exisiting linedef lists.
+              // Assert: overflow_corr < lastlist
+              uint32_t bmec2;
+              for( bmec2 = bme; bmec2 < overflow_corr; bmec2 += 0x10000 )  // all previous overflow_corr
+              {
+                  uint32_t wbmec = (uint16_t)( LE_SWAP16(wadblockmaplump[bmec2]) );
+                  uint32_t wbm3 = (bmec2 > 0)? (uint16_t)( LE_SWAP16(wadblockmaplump[bmec2-1]) ) : 0xFFFF;
+                  if( (wbm3 == 0xFFFF) && (wbmec == 0) ) // valid start list
+                  {
+                      // Because node builder did not make a new entry, it must be this existing entry.
+#ifdef DUMP_BLOCKMAP
+                      fprintf( dbmfp, "  Found list entry at: bmec=%X\n", bmec2 );
+#endif
+                      bme = bmec2;
+                      goto save_blockmap;
+                  }
+              }
+          }
+
+          // not accepted above
+          GenPrintf( EMSG_warn, "Blockmap offset not a list head: bme=%X bmec=%X\n", bme, bmec );
+          GenPrintf( EMSG_warn, "   prev blockmaphead[%i]=%X\n", i-1, blockmaphead[i-1] );
+#ifdef DUMP_BLOCKMAP
+          fprintf( dbmfp, "Blockmap offset not a list head: bme=%X bmec=%X\n", bme, bmec );
+          fprintf( dbmfp, "   prev blockmaphead[%i]=%X\n", i-1, blockmaphead[i-1] );
+#endif
+
+          // FIXME: Replace this with something that is more likely to find a usable blockmap list.
+          // Meantime, this dumps some of the blockmap list, for diagnosis.	  
+          {
+              // Search for next blockmap list head, desperate last fix.
+              // This assumes there is something wrong with our blockmap list decoding.	      
               uint32_t wbm1 = (uint16_t)( LE_SWAP16(wadblockmaplump[bmi]) );  // prev
-              uint32_t max_list_diff = 1000;
               uint32_t list_head = 0;
 #ifdef TRACE_BLOCKMAPHEAD
               uint32_t headcnt = 0;
 #endif
               byte  fatal_error_bme = 0;
-
-              GenPrintf( EMSG_warn, "Corrected blockmap offset is suspicious: bme=%X bmec=%X\n", bme, bmec );
-              GenPrintf( EMSG_warn, "   prev blockmaphead[%i]=%X   prev_head_diff=%X\n", i-1, blockmaphead[i-1], (bmec - blockmaphead[i-1]) );
 
               list_head = blockmaphead[i-1];
               for( bmi = blockmaphead[i-1]+1; bmi <= lastlist; bmi++ )
@@ -1431,6 +1503,9 @@ void P_LoadBlockMap (int lump)
                   {
                       // Blockmap list entry suspicious large
                       GenPrintf( EMSG_warn, "Blockmap list entry suspicious large: %X\n", wbm2 );
+#ifdef DUMP_BLOCKMAP
+                      fprintf( dbmfp, "Blockmap list entry suspicious large: %X\n", wbm2 );
+#endif
                   }
 
                   if(wbm1 == 0xFFFF)  // prev was end-of-list
@@ -1439,20 +1514,26 @@ void P_LoadBlockMap (int lump)
                       {
                           // Head of list
                           list_head = bmi;
+
 #ifdef TRACE_BLOCKMAPHEAD
                           if( (headcnt < 1) || ((headcnt < 8) && (bmi > head_bmi)) || (((bmi - bme)&0xFF) == 0) )
                           {
                               GenPrintf( EMSG_warn, "Found blockmaphead: wadblockmaplump[%X]   bme_diff=%X\n", bmi, (bmi - bme));
+#ifdef DUMP_BLOCKMAP
+                              fprintf( dbmfp, "Found blockmaphead: wadblockmaplump[%X]   bme_diff=%X\n", bmi, (bmi - bme));
+#endif
                               if( bmi > head_bmi )  head_bmi = bmi;
                           }
-#endif
 
-#ifdef TRACE_BLOCKMAPHEAD
                           headcnt++;
 #endif
+
                           if( ! have_corrected )
                           {
                               GenPrintf( EMSG_warn, "Using next blockmaphead: wadblockmaplump[%X]   bme_diff=%X\n", bmi, (bmi - bme));
+#ifdef DUMP_BLOCKMAP
+                              fprintf( dbmfp, "Using next blockmaphead: wadblockmaplump[%X]   bme_diff=%X\n", bmi, (bmi - bme));
+#endif
                               have_corrected = 1;
                               bmec = bmi;
                               break;
@@ -1462,6 +1543,10 @@ void P_LoadBlockMap (int lump)
                       {
                           // After 0xFFFF must be 0.
                           GenPrintf( EMSG_warn, "Corrupt blockmaphead: wadblockmaplump[%X] = %X\n", bmi, wbm2 );
+#ifdef DUMP_BLOCKMAP
+                          fprintf( dbmfp, "Corrupt blockmaphead: wadblockmaplump[%X] = %X\n", bmi, wbm2 );
+#endif
+                          blockmap_errors++;
                           fatal_error_bme = 1;
                       }
                   }
@@ -1469,70 +1554,100 @@ void P_LoadBlockMap (int lump)
                   {
                       // End of blockmap list
                       GenPrintf( EMSG_warn, " list_length=%X\n", (bmi - list_head));
+#ifdef DUMP_BLOCKMAP
+                      fprintf( dbmfp, " list_length=%X\n", (bmi - list_head));
+#endif
                   }
                   else if( wbm1 == 0 )
                   {
                       // first entry of list
-                  }
-                  else if((wbm2 - wbm1) > max_list_diff )
-                  {
-                      // Blockmap list entry large diff
-                      max_list_diff = wbm2 - wbm1;
-                      GenPrintf( EMSG_warn, "Blockmap list large diff: %X   wadblockmaplump[%X] = %X  %X\n",  wbm2 - wbm1, bmi-1, wbm1, wbm2 );
-                      if((wbm2 - wbm1) > (0xFFFF/2) )
-                          fatal_error_bme = 1;
                   }
 
                   wbm1 = wbm2;
               }
 
 #ifdef TRACE_BLOCKMAPHEAD
-              if( headcnt > 4 )
+              if( headcnt > 1 )
               {
                   GenPrintf( EMSG_debug, "Found %i possible blockmaphead.\n", headcnt );
+#ifdef DUMP_BLOCKMAP
+                  fprintf( dbmfp, "Found %i possible blockmaphead.\n", headcnt );
+#endif
               }
 #endif
 
-              if( have_corrected )
-                  bme = bmec;
-
               if( fatal_error_bme || ( ! have_corrected ))
               {
-//	          I_Error("Blockmap corrupted.\n");
-                  break;
+                  goto fake_it;
               }
+
+              bme = bmec;
           }
       }
-      else
-      {
-          prev_bme = bme;  // uncorrected
-      }
-      
+
+
+ save_blockmap:
       if ( bme > lastlist )
-          I_Error("Blockmap offset[%i]= %X, exceeds bounds.\n", i, bme);
+      {
+#ifdef DUMP_BLOCKMAP
+          fprintf( dbmfp, "Blockmap offset[%i]= %X, exceeds bounds.\n", i, bme);
+#endif
+          I_SoftError("Blockmap offset[%i]= %X, exceeds bounds.\n", i, bme);
+          goto fake_it;
+      }
       if ( bme < firstlist
            || ((uint16_t)(LE_SWAP16(wadblockmaplump[bme]))) != 0 )  // not start list
-          I_Error("Bad blockmap offset[%i]= %X.\n", i, bme);
+      {
+#ifdef DUMP_BLOCKMAP
+          fprintf( dbmfp, "Bad blockmap offset[%i]= %X.\n", i, bme);
+#endif
+          I_SoftError("Bad blockmap offset[%i]= %X.\n", i, bme);
+          goto fake_it;
+      }
+
+  store_it:
       blockmaphead[i] = bme;
+      if( bme > max_bme )   max_bme = bme;   // detecting wrap
+      continue;
+
+  fake_it:
+      // put something reasonable, so rest of map can be played.
+      // This does not work if i=0, but in that case there is no blockmap at all,
+      // and it will error out anyway.
+      bme = blockmaphead[i-1];
+      goto store_it;
+  }
+   
+  if( blockmap_errors > 32 )
+  {
+      I_Error("Too many blockmap errors.\n");
   }
 
-  // read blockmap lists
-  for (i=firstlist ; i<count ; i++)  // for all list entries in wad blockmap
+
+#ifdef DUMP_BLOCKMAP
+  fprintf( dbmfp, "Linedef lists:\n" );
+#endif
+   
+  // read blockmap linedef lists
+  for (i=firstlist ; i<count ; i++)  // for all lists in lump
   {
       // killough 3/1/98
       // Unsigned except for -1, which will be read as 0xFFFF.
       // [WDJ] LE_SWAP16 is signed on big-endian machines, so convert to prevent errors.
       uint16_t  bme = (uint16_t)( LE_SWAP16(wadblockmaplump[i]) );
       blockmaphead[i] = (bme == 0xffff)? ((uint32_t) -1) : ((uint32_t) bme);
+#ifdef DUMP_BLOCKMAP
+      fprintf( dbmfp, "#%6X    %6X\n", i, bme );
+#endif
   }
 
   Z_Free(wadblockmaplump);
 
 
   // clear out mobj chains
-  count = sizeof(*blocklinks)* bmapwidth*bmapheight;
-  blocklinks = Z_Malloc (count, PU_LEVEL, NULL);
-  memset (blocklinks, 0, count);
+  unsigned int bm_size = sizeof(*blocklinks) * bmapwidth * bmapheight;
+  blocklinks = Z_Malloc (bm_size, PU_LEVEL, NULL);
+  memset (blocklinks, 0, bm_size);
 /* Original
                 blockmaplump = W_CacheLumpNum (lump,PU_LEVEL);
                 blockmap = blockmaplump+4;
@@ -1552,6 +1667,9 @@ void P_LoadBlockMap (int lump)
         blocklinks = Z_Malloc (count, PU_LEVEL, NULL);
         memset (blocklinks, 0, count);
  */
+#ifdef DUMP_BLOCKMAP
+  fclose(dbmfp);
+#endif
 }
 
 

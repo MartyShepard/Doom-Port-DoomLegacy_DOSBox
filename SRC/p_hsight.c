@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hsight.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
+// $Id: p_hsight.c 1565 2020-12-19 06:21:39Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -250,8 +250,8 @@ boolean P_SightPathTraverse (fixed_t x1, fixed_t y1, fixed_t x2, fixed_t y2)
     
     // points should never be out of bounds, but check once instead of
     // each block
-    if (xt1<0 || yt1<0 || xt1>=bmapwidth || yt1>=bmapheight
-        ||  xt2<0 || yt2<0 || xt2>=bmapwidth || yt2>=bmapheight)
+    if (xt1<0 || yt1<0 || xt1>=(fixed_t)bmapwidth || yt1>=(fixed_t)bmapheight
+        ||  xt2<0 || yt2<0 || xt2>=(fixed_t)bmapwidth || yt2>=(fixed_t)bmapheight)
         return false;
     
     if (xt2 > xt1)
