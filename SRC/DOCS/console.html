@@ -11,7 +11,7 @@
 
 <body>
 <h1>Doom Legacy 1.48 Console Reference</h1>
-<h1 class="tagline">Last updated 2020-08-25</h1>
+<h1 class="tagline">Last updated 2020-12-19</h1>
 
 <div class="floatbox">
 <h2>Contents</h2>
@@ -35,6 +35,7 @@
 <li><a href="#player_controls">Player controls</a></li>
 <li><a href="#game_options">Game options</a></li>
 <li><a href="#bot_options">Bot options</a></li>
+<li><a href="#effect_options">Effect options</a></li>
 <li><a href="#lighting_options">Lighting options</a></li>
 <li><a href="#net_options">Net options</a></li>
 <li><a href="#server_options">Server options</a></li>
@@ -1075,8 +1076,11 @@ The type of aiming point (crosshair) that appears on the screen for Player 2.
 
 <p>These variables control the way the game handles the players' input.
 The splitscreenplayer has similar variables, but with the
-number 2 appended to the variable name.
+number 2 appended to the variable name.  The second mouse used by
+player 2 has variables that start with "mouse2".
 </p>
+
+<p>Player 1 controls.</p>
 
 <table class="def">
 <tr><th>variable</th><th>type</th><th>definition</th></tr>
@@ -1084,33 +1088,8 @@ number 2 appended to the variable name.
 <tr><td>autorun</td><td>bool</td>
 <td>
 The autorun setting for Player 1.<br/>
-Player 0 will always be running, EXCEPT when pushing the <b>run</b> key.
+With this set, Player 0 will always be running, EXCEPT when pushing the <b>run</b> key.
 </td></tr>
-
-<tr><td>autorun2</td><td>bool</td>
-<td>
-The autorun setting for Player 2 (splitplayer).<br/>
-Player 1 will always be running, EXCEPT when pushing the <b>run</b> key.
-</td></tr>
-
-<tr><td>alwaysmlook</td><td>bool</td>
-<td>
-<p>Setting alwaysmlook to 1 will enable freelook for Player 1.
-</p>
-
-<p>When alwaysmlook is 0, you will need to hold the freelook
-key down while moving the mouse up and down. When releasing the key,
-the view will always re-center. This is useful if you keep
-firing rockets at your feet.
-</p>
-</td></tr>
-
-<tr><td>alwaysmlook2</td><td>bool</td>
-<td>
-<p>Setting alwaysmlook2 to 1 will enable freelook for Player 2.
-</p>
-</td></tr>
-
 
 <tr><td>use_mouse</td><td>bool</td>
 <td>
@@ -1120,6 +1099,51 @@ you start the game, the mouse won't be detected.
 
 Set use_mouse to 1 to search for a mouse, and activate it.
 There is also a control for this in the Mouse menu.
+</td></tr>
+
+<tr><td>alwaysmlook</td><td>bool</td>
+<td>
+Setting alwaysmlook to 1 will enable freelook for Player 1.
+
+<p>When alwaysmlook is 0, you will need to hold the freelook
+key down while moving the mouse up and down. When releasing the key,
+the view will always re-center. This is useful if you keep
+firing rockets at your feet.
+</p>
+</td></tr>
+
+<tr><td>invertmouse</td><td>bool</td>
+<td>
+Set invertmouse to 1 to invert the mouse y (up and down) axis for Player 1.
+This is for freelook only, you will look up, when moving the mouse
+down (backward), and look down when moving mouse forward.
+There is also a control for this in the Mouse menu.
+</td></tr>
+
+<tr><td>mousemove</td><td>bool</td>
+<td>
+Enable/disable mouse y-axis for forward/backward movement of Player 1.
+There is also a control for this in the Mouse menu.
+</td></tr>
+
+<tr><td>mousesensx<br/>
+mousesensy</td><td>int</td>
+<td>
+Sets the mouse sensitivity in the x and y directions for Player 1.
+There is also a control for this in the Mouse menu.
+</td></tr>
+</table>
+
+
+<p>Player 2 controls.</p>
+
+<table class="def">
+<tr><th>variable</th><th>type</th><th>definition</th></tr>
+
+<tr><td>autorun2</td><td>bool</td>
+<td>
+The autorun setting for Player 2 (splitplayer).<br/>
+With this set, Player 1 will always be running, EXCEPT when pushing the <b>run</b> key.
 </td></tr>
 
 <tr><td>use_mouse2</td><td>bool</td>
@@ -1132,12 +1156,15 @@ Set use_mouse2 to 1 to search for a second mouse, and activate it.
 There is also a control for this in the Mouse menu.
 </td></tr>
 
-<tr><td>invertmouse</td><td>bool</td>
+<tr><td>mousemove2</td><td>bool</td>
 <td>
-Set invertmouse to 1 to invert the mouse y (up and down) axis for Player 1.
-This is for freelook only, you will look up, when moving the mouse
-down (backward), and look down when moving mouse forward.
+Enable/disable mouse y-axis for forward/backward movement of Player 2.
 There is also a control for this in the Mouse menu.
+</td></tr>
+
+<tr><td>alwaysmlook2</td><td>bool</td>
+<td>
+Will enable freelook for Player 2.
 </td></tr>
 
 <tr><td>invertmouse2</td><td>bool</td>
@@ -1147,24 +1174,42 @@ This is for freelook only, you will look up, when moving the mouse
 down (backward), and look down when moving mouse forward.
 There is also a control for this in the Mouse menu.
 </td></tr>
+</table>
 
-<tr><td>mousemove</td><td>bool</td>
+<p>Mouse 2 controls.  These setup the mouse2 serial port.
+See serial mouse documentation for your operating system, and the FAQ.
+</p>
+
+<table class="def">
+<tr><th>variable</th><th>type</th><th>definition</th></tr>
+
+<tr><td>mouse2port</td><td>enum</td>
 <td>
-Enable/disable mouse y-axis for forward/backward movement of Player 1.
-There is also a control for this in the Mouse menu.
+Select the mouse serial port for mouse2.  This varies by operating
+system. See serial mouse documentation for your operating system, and
+the FAQ.
+<br>Linux: gpmdata, mouse2, ttyS0, ttyS1, .. ttyS6.
+<br>These are all "/dev" devices.
+<br>If a "/dev/mouse2" indirection to the actual device has been created,
+then select mouse2 to use it.
+<br>Windows: COM1, COM2, .. COM8.
+<br>Some Windows can have USB devices connect to COM ports, such as COM7.
 </td></tr>
 
-<tr><td>mousemove2</td><td>bool</td>
+<tr><td>mouse2type</td><td>enum</td>
 <td>
-Enable/disable mouse y-axis for forward/backward movement of Player 2.
-There is also a control for this in the Mouse menu.
+Select the type of serial mouse for mouse2.
+<br>PC: PC mouse, Microsoft protocol, 7-bit.
+<br>MS: MouseSystems mouse, 8-bit.
+<br>PS/2: PS/2 basic mouse.
 </td></tr>
 
-<tr><td>mousesensx<br/>
-mousesensy</td><td>int</td>
+<tr><td>mouse2opt</td><td>string</td>
 <td>
-Sets the mouse sensitivity in the x and y directions for Player 1.
-There is also a control for this in the Mouse menu.
+Change the CTS and RTS settings on the mouse serial port.
+Some mice are enabled, or change modes, by sensing these lines.
+<br>CTS on is "C1", off is "C-".
+<br>RTS on is "R1", off is "R-".
 </td></tr>
 
 <tr><td>mouse2sensx<br/>
@@ -1187,12 +1232,6 @@ There is also a control for this in the Mouse menu.
 When set to 2 (several) you can bind more than one control to a key.
 Otherwise binding a control to a key will remove the key's other
 assignations.
-</td></tr>
-
-<tr><td>mouse2port &lt;1|2|3|4&gt;</td><td>int</td>
-<td>
-Choose the port number of the secondary mouse for the
-splitscreenplayer between COM1 to COM4.
 </td></tr>
 
 <tr><td>mousemotion</td><td>enum</td>
@@ -1227,7 +1266,9 @@ There is also a control for this in the Mouse menu.
 </table>
 
 <p>
-The game controls can be defined using the setcontrol command.
+Keyboard, mouse button, and joystick button inputs can be defined as
+game controls using the following commands.  There also is a menu system
+for setting these controls.
 </p>
 
 <table class="def">
@@ -2125,47 +2166,10 @@ Sets the speed of the chasecam.
 </td></tr>
 
 
-
-<tr><td id="bloodtime">bloodtime</td><td>int</td>
-<td>
-Choose how many seconds blood will stay on the floor.
-In the original Doom the blood stayed no more than 1 second.
-This can be fun for deathmatches, setting 'bloodtime' to '60',
-for example, will make the blood drops stay 1 minute on the
-floor before disappearing. Useful for tracking down your prey :)
-</td></tr>
-
-<tr><td>translucency</td><td>bool</td>
-<td>
-Enables translucent sprites.
-</td></tr>
-
-<tr><td>fuzzymode</td><td>bool</td>
-<td>
-Enables the Vanilla Doom fuzzy draw for cloaked monsters instead of
-the newer translucent draw.
-</td></tr>
-
-<tr><td>pickupflash</td><td>enum</td>
-<td>How to notify the user when an item is picked up.
-<table class="def">
-<tr><td>Off</td><td>0</td><td>No pickup flash.</tr></td>
-<tr><td>Status</td><td>1</td><td>Flash the status bar in the area where the item is displayed.  If the player picks up ammo, the ammo display will flash.</tr></td>
-<tr><td>Half</td><td>2</td><td>Half intensity palette flash.  Slightly less confusing than the full intensity palette flash.</tr></td>
-<tr><td>Vanilla</td><td>3</td><td>The Vanilla Doom palette flash.  It is similar enough to the palette flash of being hit to be confusing.</tr></td>
-</table>
-This is the Pickup Flash control in the Effects menu.
-</td></tr>
-
 <tr><td>playersprites</td><td>bool</td>
 <td>
 Choose whether to draw the player weapon sprites.
 Don't laugh! Sometimes I like to play with playersprites off.
-</td></tr>
-
-<tr><td>splats</td><td>bool</td>
-<td>
-Enables bloodsplats and bullet holes on walls.
 </td></tr>
 
 <tr><td>scalestatusbar</td><td>bool</td>
@@ -2397,6 +2401,189 @@ Default is enabled.
 </table>
 
 
+<h3 id="effect_options">Effects options</h3>
+
+<p>These variables control effects that do not directly affect game play.
+They are safe to change for your preference.
+</p>
+
+<table class="def">
+<tr><th>variable</th><th>type</th><th>definition</th></tr>
+
+<tr><td>translucency</td><td>bool</td>
+<td>
+Enables translucent sprites.
+</td></tr>
+
+<tr><td>fuzzymode</td><td>bool</td>
+<td>
+Enables the Vanilla Doom fuzzy draw for cloaked monsters instead of
+the newer translucent draw.
+This is the Fuzzy Shadow control in the Effects menu.
+</td></tr>
+
+<tr><td>pickupflash</td><td>enum</td>
+<td>How to notify the user when an item is picked up.
+<table class="def">
+<tr><td>Off</td><td>0</td><td>No pickup flash.</tr></td>
+<tr><td>Status</td><td>1</td><td>Flash the status bar in the area where the item is displayed.  If the player picks up ammo, the ammo display will flash.</tr></td>
+<tr><td>Half</td><td>2</td><td>Half intensity palette flash.  Slightly less confusing than the full intensity palette flash.</tr></td>
+<tr><td>Vanilla</td><td>3</td><td>The Vanilla Doom palette flash.  It is similar enough to the palette flash of being hit to be confusing.</tr></td>
+</table>
+This is the Pickup Flash control in the Effects menu.
+</td></tr>
+
+<tr><td>splats</td><td>bool</td>
+<td>
+Enables bloodsplats and bullet holes on walls.
+</td></tr>
+
+<tr><td>maxsplats</td><td>int</td>
+<td>
+Limits the number of splats.
+Default is 512, maximum is 1024.
+</td></tr>
+
+<tr><td id="bloodtime">bloodtime</td><td>int</td>
+<td>
+Choose how many seconds blood will stay on the floor.
+In the original Doom the blood stayed no more than 1 second.
+This can be fun for deathmatches, setting 'bloodtime' to '60',
+for example, will make the blood drops stay 1 minute on the
+floor before disappearing. Useful for tracking down your prey :)
+</td></tr>
+
+<tr><td>spritelim</td><td>enum</td>
+<td>
+Limit the number of sprites drawn each frame, in order to speed up rendering.
+Close monsters and missiles are given the highest preference, while dead monsters
+have the lowest preference.
+When there are too many sprites, the distant sprites are drawn less
+often so they blink.
+The limits vary from 128 upto 16384, in steps.
+Default is 512 drawn sprites.
+<br>
+Few level maps have more than 30 monsters in a room, but there are
+some unusual maps with hundreds of monsters in view.
+On a level map with a huge number of monsters, find a value where your graphics bog down, and then reduce it until play is tolerable.
+</td></tr>
+
+<tr><td>skygen</td><td>enum</td>
+<td>
+The vanilla sky is only 128 high and using freelook it is easy to look
+higher and lower than the sky coverage.  Heretic skies are 200 high.
+Legacy supports skies that are 240 high.
+<br>
+This currently only affects software draw, as hardware draw (OpenGL) uses a separate behavior for skies.
+
+<table class="def">
+<tr><td>auto</td><td>Automatic, best available.</td></tr>
+<tr><td>subst</td><td>Select a substitute sky when possible.
+This currently does not do much as sky substitutions from wads are automatic.</td></tr>
+<tr><td>bg_stars</td><td>Generate an extended sky with stars replacing the background color everywhere.</td></tr>
+<tr><td>extend_stars</td><td>Extend the sky. Use background stars.</td></tr>
+<tr><td>extend_bg</td><td>Extend the sky.
+A star background is auto-detected.</td></tr>
+<tr><td>extend_fill</td><td>Generate a sky, extending with random colors
+selected from the sky texture.
+</td></tr>
+<tr><td>vanilla</td><td>Draw the vanilla sky.  This does not block the
+substitution of skies by loaded wads.</td></tr>
+<tr><td>stretch</td><td>Stretch the vanilla sky to fit 240 high.
+This is old DoomLegacy behavior, so old wads or old players may prefer it.
+Usually looks awful.</td></tr>
+</table>
+<br>Default is Auto.
+</td></tr>
+
+<tr><td>watereffect</td><td>enum</td>
+<td>
+The water effect to draw for water that does not have explicit
+watereffect, such as water in older wads and generic wads.
+<table class="def">
+<tr><td>colormap</td><td>0</td><td>Uses only the colormap fog, which colors all sectors.
+Appropriate where the swimmable effect is used to simulate low gravity, and only the colormap fog is wanted.
+</td></tr>
+<tr><td>clear</td><td>1</td><td>The old water default.
+Appropriate where the swimmable effect is used to simulate low gravity, and no fog is wanted.</td></tr>
+<tr><td>cast</td><td>2</td><td>Paint all surfaces with textures.  Not implemented yet.</td></tr>
+<tr><td>fogfluid</td><td>3</td><td>A fog optimized for use within fluids.
+Does not have distance effects.</td></tr>
+<tr><td>inside</td><td>4</td><td>The old fog effect using color tints.
+The fog effect is not present within the water, it is only seen when inside
+looking through side and plane views.
+</td></tr>
+<tr><td>foglite</td><td>5</td><td>A light fog effect, without distance effects.
+Renders with outside side and plane views, with low alpha.
+</td></tr>
+<tr><td>fogdust</td><td>6</td><td>The normal fog effect, with normal alpha, without distance
+effects.
+</td></tr>
+<tr><td>fogsheet</td><td>7</td><td>A fog with distance effects.  The current implementation
+uses fog sheets that are automatically added where fog sectors are joined.</td></tr>
+</table>
+Default for water is clear.
+</td></tr>
+
+<tr><td>fogeffect</td><td>enum</td>
+<td>
+The fog effect to draw for legacy fog that does not have explicit fogeffect.
+<table class="def">
+<tr><td>colormap</td><td>0</td><td>Uses only the colormap fog, which colors all sectors.
+</td></tr>
+<tr><td>clear</td><td>1</td><td>The old water default.
+<tr><td>cast</td><td>2</td><td>Paint all surfaces with textures.  Not implemented yet.</td></tr>
+<tr><td>fogfluid</td><td>3</td><td>A fog optimized for use within fluids.
+Does not have distance effects.</td></tr>
+<tr><td>inside</td><td>4</td><td>The old fog effect using color tints.
+The fog effect is not present within the water, it is only seen when inside
+looking through side and plane views.
+</td></tr>
+<tr><td>foglite</td><td>5</td><td>A light fog effect, without distance effects.
+Renders with outside side and plane views, with low alpha.
+</td></tr>
+<tr><td>fogdust</td><td>6</td><td>The normal fog effect, with normal alpha, without distance
+effects.
+</td></tr>
+<tr><td>fogsheet</td><td>7</td><td>A fog with distance effects.  The current implementation
+uses fog sheets that are automatically added where fog sectors are joined.</td></tr>
+</table>
+Default for fog is fogdust.
+</td></tr>
+
+<tr><td id="invul_skymap">invul_skymap</td><td>enum</td>
+<td>
+Doom had a bug, where invulnerability would colormap everything, except the sky.
+<table class="def">
+<tr><td>Vanilla</td><td>0</td><td>Vanilla effect, sky is not colormapped.
+<tr><td>Boom</td><td>1</td><td>Boom effect, sky is colormapped.
+</table>
+Default is Boom.
+</td></tr>
+
+<tr><td>boomcolormap</td><td>enum</td>
+<td>
+The colormap effect for Boom colormap sectors.
+<table class="def">
+<tr><td>Sector visible</td><td>0</td><td>Legacy sector colormap.  The colormap is always visible.
+<tr><td>Boom visible</td><td>1</td><td>Boom colormap, but visible when outside sector.
+<tr><td>Boom normal</td><td>2</td><td>Boom compatibility. Boom colormap is not visible until walk into sector.
+<tr><td>Boom detect</td><td>3</td><td>Detect if Legacy, Boom, or generic wad.
+</table>
+Default is Sector visible.
+</td></tr>
+
+<tr><td>oof_2s</td><td>bool</td>
+<td>
+Doom generates an oof sound if the player runs into a wall, unless it is a 2-sided wall.
+This enables the oof sound for 2-sided walls too, as in Boom.
+Default is Off.
+</td></tr>
+
+</table>
+
+
+
 <h3 id="lighting_options">Lighting options</h3>
 
 <p>
@@ -2498,7 +2685,7 @@ Disk drive activity to load sounds during play can be annoying.
 <tr><td>musserv_opt</td><td>enum</td>
 <td>
 This is only present in the Linux X port with the separate musserver.
-<br>Sound Device Preeference select for playing Midi music.  It determines the order
+<br>Sound Device Preference select for playing Midi music.  It determines the order
 that sound ports are tried.
 If the preferred port is not found, some other port will be used.
 <table class="def">

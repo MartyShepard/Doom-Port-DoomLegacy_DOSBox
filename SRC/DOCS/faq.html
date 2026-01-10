@@ -11,7 +11,7 @@
 <body>
 <div class="column">
 <h1>DoomLegacy 1.48 FAQ</h1>
-<h1 class="tagline">Last updated 2020-05-14</h1>
+<h1 class="tagline">Last updated 2020-12-19</h1>
 
 <p>
 If you have any trouble with DoomLegacy, you might find a solution here.
@@ -476,8 +476,7 @@ the Doom switches that are not in the Heretic wad.
 The monsters walk weird, walk backwards, and moon-walk.
   </dt>
   <dd>
-This started when MBF compatibility was added.  I have not been able
-to eliminate it, yet.
+This started with 1.47.2, and was fixed with 1.48.8.
 <br>Turn OFF the MBF monster avoid hazard option.  That will stop it.
   </dd>
 </dl>
@@ -574,23 +573,112 @@ but DoomLegacy will still accept switches lump entries with episode = 4 for Here
 <h2><a name="input">Mouse/Joystick/Keyboard</a></h2>
 
 <dl>
+  <dt>Mouse2 is grabbed by the system.</dt>
+  <dd>
+<p>This happens for both Linux and Windows.  The system uses both mice
+for moving the same screen pointer.</p>
+<p>Windows: Go to the Devices control, find the mouse devices,
+and DISABLE the "Serial Mouse" driver.  The serial mouse port itself will
+remain available through the COM devices.
+</p>
+<p>Linux: Trying to get the X11 windowing system to not attach a
+serial mouse, is a work in progress.  Let us know if you achieve a
+workable solution, that does not actually require mangling the X11 system.
+</p>
+  </dd>
+</dl>
+
+<dl>
+  <dt>Using the Linux "/dev/mouse2" port selection.</dt>
+  <dd>
+This follows the Linux practice of putting indirection in "/dev/"
+for common devices.
+<pre>
+<br>A mouse port that is showing up as "/dev/input/gpm2data"
+(a completely fictious example).
+<br>As root user:
+> ln -s /dev/input/gpm2data   /dev/mouse2
+</pre>
+Then in DoomLegacy you can use the "mouse2" setting of mouse2port.
+  </dd>
+</dl>
+
+<dl>
+  <dt>The "mouse2" options do not appear.</dt>
+  <dd>
+MOUSE2 can be enabled/disabled as a compile option.
+When DoomLegacy is compiled without MOUSE2, the mouse2 options
+will not appear in the mouse menus.
+<br>The "Use_Mouse2" option will remain, as it disables keybord
+movement control.  Joystick and other input devices may require that.
+</dd>
+</dl>
+
+<dl>
+  <dt>Connecting a serial mouse as MOUSE2 in Windows.</dt>
+  <dd>
+<p>If the serial mouse is connected when Windows is started, then
+Windows will install a "Serial Mouse" driver.  This will send serial
+mouse input to control the system pointer.
+Both mice will move the same screen pointer.</p>
+<p>If the serial mouse is plugged in after the computer is started,
+then there is a risk of damaging the serial port.  However, this is
+often done anyway (do at your own risk). Try to minimize static
+differences by touching the shells first.
+In this case, Windows does not install the "Serial Mouse" driver.
+</p>
+<p>
+Go to the "Devices control" screen, find the serial devices.
+Find the "Serial Mouse" driver and disable it.
+This will prevent it from connecting in the future.
+</p>
+</dd>
+</dl>
+
+<dl>
+  <dt>Connecting a serial mouse as MOUSE2 in Linux.</dt>
+  <dd>
+We don't know yet.  Be the first to discover this amazing secret, and
+tell us so we can put that information here.
+The main problem seems to get X11 to not attach to the mouse.
+  </dd>
+</dt>
+
+<dl>
+  <dt>Connecting a USB mouse as MOUSE2 in Windows.</dt>
+  <dd>
+Some Windows can connect a USB device to a COM port, like COM7.
+Don't know for older Windows, nor which Windows versions.
+  </dd>
+</dl>
+
+<dl>
+  <dt>Connecting a USB mouse as MOUSE2 in Linux.</dt>
+  <dd>
+This is really desireable, but needs someone to figure it out.
+The main problem seems to get X11 to not attach to the mouse.
+  </dd>
+</dl>
+
+
+<dl>
   <dt>My mouse/joystick does not work.</dt>
   <dd>
-    <p>
+<p>
 First, check that the mouse/joystick is activated : go at the
 console and type either 'use_mouse' (or use the respective
 menuitem) or 'use_joystick'.
 If it is '0' or off then that mouse/joystick is disabled.
 Set the variable to 1. eg: 'use_mouse 1'.
-    </p>
-    <p>
+</p>
+<p>
 Once the mouse or joystick is activated, you have to
 bind the buttons to controls in the <b>setup controls menu</b>.
-    </p>
+</p>
  </dd>
   <dt>My mouse/joystick settings don't work anymore.</dt>
   <dd>
-  DoomLegacy 1.48 changed some of the KEY names, and the config file key names.
+DoomLegacy 1.48 changed some of the KEY names, and the config file key names.
   <ul>
   <li>The KEY_2MOUSExx are now KEY_MOUSE2xx.</li>
   <li>The KEY_DBLMOUSExx are now KEY_MOUSExxDBL.</li>
@@ -600,18 +688,18 @@ bind the buttons to controls in the <b>setup controls menu</b>.
   </dd>
   <dt>How do I use an XBOX controller.</dt>
   <dd>
-    <p>Support for XBOX controller is in DoomLegacy 1.48, but only
+<p>Support for XBOX controller is in DoomLegacy 1.48, but only
 for the SDL port.  It is a compile option, so if you have a custom compilation, check that
 XBOX_CONTROLLER is defined.
-    <p>If you are using the XBOX controller, without a keyboard, then
+<p>If you are using the XBOX controller, without a keyboard, then
 several button controls need to be defined to access the menus and
 start the game.  There are default assignments for these in the
 config, using buttons 0 through 8 of the first joystick/controller.
 Plug in a keyboard to do the setup, if you can.
 If you have 6 or more buttons, you should be able to play simple Doom
 and Heretic wads without a keyboard.
-    <p>There is support for 4 joysticks, with each having 16 buttons, 2 triggers, and 2 hats.
-    </p>
+<p>There is support for 4 joysticks, with each having 16 buttons, 2 triggers, and 2 hats.
+</p>
   </dd>
 </dl>
 

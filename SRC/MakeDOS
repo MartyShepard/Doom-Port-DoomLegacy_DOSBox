@@ -345,6 +345,13 @@ ifdef DJGPPDOS_NATIVE
 	
 	LIBS+=-lsocke
 	LIBS+=-llz
+#  LIBS+=-lzip
+#  LIBS+=-lbz2
+#  LIBS+=-llzma
+#  LIBS+=-lzstd
+#  LIBS+=-lbcryp
+#  LIBS+=-lz
+#  LIBS+=-lssp
 	
 	SFLAGS=
   CFLAGS=-g

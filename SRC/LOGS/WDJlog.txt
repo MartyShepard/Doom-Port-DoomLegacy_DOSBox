@@ -8406,8 +8406,6 @@ over the table lookup, and having a slightly smaller cache impact.
 Having monsters escape the play area adversely affects all games played with 1.48.6,
 so another release will be scheduled soon.
 
-=== commit
-
 *** w109_gcc10
 patchfile = w109_026_gcc10
 - commit revision 1564
@@ -8446,4 +8444,11 @@ as garbage, which the console was trying to interpret.
 BUG3: The joystick code was also leaving data2 as garbage.
 These were all fixed, thus keeping mouse keypresses off the console.
 
+*** w109_ver1488
+patchfile = w109_029_ver1488
+- commit revision 1567
+Update to 1.48.8.
+Update docs.
+
+=== commit
 

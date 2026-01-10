@@ -9,20 +9,23 @@
 username=""                                 # sourceforge.net username of the person doing the upload
 srcdir="/home/doomlegacy/legacy_one/trunk"  # Doom Legacy source tree location
 workdir="."                                 # working directory, where all the packages are built
-readmefile="README.rst"                     # name of the README file to be included in every binary release package
-legacywadfile="$srcdir/bin/legacy.wad"      # prebuilt legacy.wad location. TODO: build using wadtool
 
+readmefile="README.rst"                     # name of the README file to be included in every binary release package
+legacywadfile="$srcdir/bin/legacy.wad"      # prebuilt legacy.wad location.
+wadtool="$srcdir/bin/wadtool"               # prebuilt wadtool executable, for updating legacy.wad
 exefile="$srcdir/bin/doomlegacy"            # prebuilt Doom Legacy executable to package
 binary_spec="linux2.6_64_sdl"               # binary architecture and platform
 #binary_spec="windows_32_sdl"
 
 
 
-# read the version number from the source code
+# read the Doom Legacy version number from the source code
 ver=$(sed -n -e "s/^const int  VERSION  = \([0-9]\)\([0-9]*\).*$/\1.\2/p" $srcdir/src/d_main.c)
 rev=$(sed -n -e "s/^const int  REVISION = \([0-9]*\).*$/\1/p" $srcdir/src/d_main.c)
 version=$ver.$rev
-wadversion="1.45"
+
+# read legacy.wad version from the VERSION lump
+wadversion=$(sed -n -e "s/^Doom Legacy WAD V\([0-9].[0-9]*\).*$/\1/p" $srcdir/resources/VERSION.txt)
 
 # SVN revision
 svnrev=$(svn info $srcdir | sed -n -e "s/^Revision: \([0-9]*\)/\1/p")
@@ -36,7 +39,7 @@ prefix="doomlegacy_"$version
 # temporary packaging directory
 tempdir=$prefix
 
-# where all the packages are collected for upload
+# directory where all the packages are collected for upload
 releasedir=$version
 
 
@@ -67,8 +70,19 @@ case "$1" in
     common)
 	echo "Building the common package, legacy.wad at "$legacywadfile
 
+	# Break legacy.wad into lumps, update the lumps, then rebuild the WAD
+	echo "Building updated legacy.wad, version "$wadversion
+	waddir=$tempdir"_wad"
+	mkdir -p $waddir
+	cp -a  $legacywadfile $waddir
+	cd $waddir
+	$wadtool -x legacy.wad
+	cp -a $srcdir/resources/* .
+	$wadtool -c ../$tempdir/legacy.wad legacy.wad.inventory
+	cd ..
+
+	# add the documentation
 	cp -ar $srcdir/docs $tempdir
-	cp -a  $legacywadfile $tempdir
 	# into a zip package
 	zip -r $releasedir/$prefix"_common.zip" $tempdir
         ;;
@@ -101,6 +115,7 @@ case "$1" in
 	# Clean up (delete) the auxiliary directories.
 	rm -r $tempdir
 	rm -r $tempdir"_source"
+	rm -r $tempdir"_wad"
         ;;
 
     *)

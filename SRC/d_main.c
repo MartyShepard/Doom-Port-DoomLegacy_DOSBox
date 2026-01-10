@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1566 2020-12-19 06:22:58Z wesleyjohnson $
+// $Id: d_main.c 1567 2020-12-21 02:43:17Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,13 +316,13 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1566"
+#define SVN_REV "1568"
 #endif
 
 
 // Version number: major.minor.revision
 const int  VERSION  = 148; // major*100 + minor
-const int  REVISION = 7;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
+const int  REVISION = 8;   // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
 static const char VERSIONSTRING[] = "(Rev " SVN_REV ")";
 //static const char VERSIONSTRING[] = "Beta (Rev " SVN_REV ")";
 char VERSION_BANNER[80];

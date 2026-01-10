@@ -209,6 +209,21 @@
 #endif
 #endif
 
+#if defined( __DJGPP__ )
+// For now Linux only because it requires libzip.
+//#define HAVE_LIBZIP 1
+#ifdef HAVE_LIBZIP
+// Read zip wads.
+// This requires  HAVE_LIBZIP  be set in make_options to get linking.
+#define ZIPWAD
+#ifdef HAVE_DLOPEN
+// Test for optional ziplib.  Requires lib dlopen.
+// This requires  HAVE_DLOPEN  be set in make_options to get linking.
+#define ZIPWAD_OPTIONAL
+#endif
+#endif
+#endif
+
 // DeePsea tall patches.
 // Allows patches that exceed 254 height.
 // Not used by many wads, but not much extra code either.  Relatively safe.

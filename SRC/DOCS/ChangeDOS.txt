@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01568 ]: Update docs. Release script can now update legacy.wad.
+[01567 ]: w109_029 Version 1.48.8
 [01566 ]: w109_27 mouse2
           DOS Compile Fix: unknown cv_mouse2port
           (wieder variablen verschieberei und haufenweise #defines)

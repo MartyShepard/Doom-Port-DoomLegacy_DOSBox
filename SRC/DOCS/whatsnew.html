@@ -13,6 +13,105 @@
 
 <div class="column">
 
+<h2>1.48.8 SVN1568 (2020-12-19)</h2>
+
+<h3>FEATURES 1.48.8</h3>
+
+<ul>
+<li>
+Sky generation has gotten a Vanilla setting.
+Sky drawing (software draw) now puts a solid texture above and below
+the sky, and no longer tiles the sky.
+The OpenGL sky draw has separate sky draw behavior.
+</li>
+<li>
+The mouse2 serial support has been expanded to handle
+PC mice, MouseSystems mice, and PS/2 mice,
+for SDL and Win32 ports.
+The PC and MS mice have been tested.
+If anyone has found a way to route a PS/2 mouse, possibly on USB,
+to a serial port input, please let us know.
+</li>
+</ul>
+
+<h3>BUG FIXES 1.48.8</h3>
+<ul>
+<li>
+A savegame buffer overflow was fixed.
+An overflow prevention test had been misplaced.
+such that it could be avoided in some conditions.
+Fixes BUG 0667.
+</li>
+<li>
+Cleaned out some of the accumulated cruft in sky drawing.
+Fixed sky tiling, and then made changes to prevent sky tiling.
+</li>
+<li>
+Changed the software mode sky drawing to TM_picture format.
+This eliminates the line artifacts that were drawn above and below the
+sky, and restores the vertical alignment.
+</li>
+<li>
+Limited the software sky drawing to the texture, so to not tile the sky draw.
+Created a skytop_flat for above the sky, and a ground_flat for below the
+sky.  These are drawn when the viewed sky exceeds the bounds of the
+sky texture.
+For now, these flats are created as solid textures.
+Hardware draw has a separate sky draw behavior.
+</li>
+<li>
+In the case of 200 or 240 sized sky textures (Heretic and Legacy substitutes),
+fixed the texture sky height so that the correct size TM_picture is created.
+Fixes BUG 0668.
+</li>
+<li>
+Changed the freedoom wad names, avoiding doom wad names as that was conflicting with doom2 gamemode.
+Freedoom: "freedoom2.wad", "freedoom.wad", and "fdoom2.wad".
+Ultimate freedoom: "freedoom1.wad", "freedu.wad", "fdoomu.wad".
+</li>
+<li>
+Fixed BUG 0670, Monsters mysteriously disappearing, moving large distances into the void space.
+<br>
+This bug was introduced in the moonwalk patch (SVN 1540) by copying
+the opposite direction calculation code from PrBoom.
+This was done in an effort to reduce differences that might lead to bugs.
+It replaced a table lookup implementation.
+However, the PrBoom calculation must be guarded against the value DI_NODIR,
+which the table implementation could handle inherently.
+Without that protection, an olddir of DI_NODIR introduced a direction
+of 12 into the logic, which can only handle directions of 0..7, with NODIR=8.
+Several times a game that 12 value would survive long enough to get used,
+which would be expressed as a wild walk movement.
+</li>
+<li>
+Improved the large blockmap handling to deal with more issues of
+blockmap overflow in the presence of zennode blockmap compression.
+It can now handle more maps of the Lost Civilization wad, although some other issues are still present.
+</li>
+<li>
+The mouse2 support was found to be disabled and missing for the SDL port.
+It has been fixed, and expanded to handle PC mice, MouseSystems mice, and PS/2 mice,
+for SDL Linux, SDL Windows, and Win32 ports.
+Fixes BUG 0669.
+</li>
+<li>
+Made LOGMESSAGES work again, which writes debugging logs.
+Release binaries do not have this code.
+If DoomLegacy is compiled with LOGMESSAGES enabled (doomdef.h file), a log.txt file will be produced.
+This is currently enabled when compiled with DEBUG.
+</li>
+<li>
+Fixed the overlapped string copies detected by GCC 10.
+Fixes BUG 0671, Michael Bäuerle.
+</li>
+<li>
+Reduced warnings when compiling with GCC 10.
+This was mostly due to signed char being used as an index,
+which may cause problems on some platforms.
+Fixes BUG 0671.
+</li>
+</ul>
+
 
 <h2>1.48.6 SVN1550 (2020-09-09)</h2>
 
@@ -44,7 +143,7 @@ is revision specific.  Older demo formats are still playable.
 <li>
 Recognize and handle DeePsea Tall patches.
 Enabled with compile option DEEPSEA_TALL_PATCH.
-Michael Bauerle submitted the orignial patch, derived from crispy doom.
+Michael Bäuerle submitted the orignial patch, derived from crispy doom.
 </li>
 </ul>
 
@@ -148,7 +247,7 @@ This fixes the large tree in "Lost civilization".
 <li>
 Fixed some old code to use POSIX fcntl, which allows it
 to compile on SunOS.
-Patches submitted by Michael Bauerle.
+Patches submitted by Michael Bäuerle.
 Fixes Bug 0666,
 </li>
 </ul>
@@ -207,7 +306,7 @@ Fixed the menu instructions for drawmode and video mode, as they
 were giving false information.
 </li>
 <li>
-Implemented fixes proposed by Michael Bäuer for endtext.
+Implemented fixes proposed by Michael Bäuerle for endtext.
 Fixed endtext for big-endian (SDL port).
 Added UTF8 output for endtest.
 <br>Added textout to select between vanilla output and UTF8 output,
@@ -227,7 +326,7 @@ Fixes bug 0661, based on code by Adam Stylinski.
 </li>
 <li>
 Fixed type conversion after LE_SWAP, which looked suspicious.
-Fixes bug 0662, aided by Adam Stylinski, Michael Bäuer.
+Fixes bug 0662, aided by Adam Stylinski, Michael Bäuerle.
 </li>
 <li>
 Fixed linux_x11 compilation issues.
@@ -359,7 +458,7 @@ Corona type field (0xF0):
 <li>
 Support for NETBSD: port fixes to the Makefile and network code.
 Optioned as NETBSD.
-<br>Feature Request 0090: based on code submitted by Michael Bäuere.
+<br>Feature Request 0090: based on code submitted by Michael Bäuerle.
 </li>
 <li>
 <p>Improved deathmatch and coop menu selections.</p>
