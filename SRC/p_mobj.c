@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
+// $Id: p_mobj.c 1581 2021-08-10 20:40:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -150,6 +150,8 @@
 #include "b_game.h"     //added by AC for acbot
 
 
+void DemoAdapt_p_mobj( void );
+
 byte  EN_catch_respawn_0;  // enable catch Nightmare respawn at (0,0)
   // ! comp[comp_respawn]
 
@@ -238,6 +240,7 @@ void P_SpawnVoodoo( int playernum, mapthing_t * mthing )
     }
 }
 
+
 // protos.
 CV_PossibleValue_t viewheight_cons_t[] = { {16, "MIN"}, {56, "MAX"}, {0, NULL} };
 consvar_t cv_viewheight = { "viewheight", VIEWHEIGHTS, CV_VALUE, viewheight_cons_t, NULL };
@@ -249,7 +252,7 @@ consvar_t cv_viewheight = { "viewheight", VIEWHEIGHTS, CV_VALUE, viewheight_cons
 consvar_t cv_gravity = { "gravity", "1", CV_NETVAR | CV_FLOAT | CV_SHOWMODIF };
 
 // Local options
-consvar_t cv_splats = { "splats", "1", CV_SAVE, CV_OnOff };
+consvar_t cv_splats = { "splats", "1", CV_SAVE | CV_CALL, CV_OnOff, DemoAdapt_p_mobj };
 CV_PossibleValue_t maxsplats_cons_t[] = { {1, "MIN"}, {MAXLEVELSPLATS, "MAX"}, {0, NULL} };
 consvar_t cv_maxsplats = { "maxsplats", "512", CV_SAVE, maxsplats_cons_t, NULL };
 
@@ -1662,7 +1665,7 @@ void P_MobjCheckWater(mobj_t * mobj)
 
 #if 0
     // [WDJ] From EternityEngine, missile splash.
-    if( (mobj->flags & (MF_MISSILE | MF_BOUNCES) )
+    if( mobj->flags & (MF_MISSILE | MF_BOUNCES) )
     {
         // Any time a missile or bouncer crosses, splash.
         if( oldeflags != mobj->eflags )
@@ -1670,12 +1673,12 @@ void P_MobjCheckWater(mobj_t * mobj)
     }
 #endif
 
-/*
+#ifdef DEBUG_WATER_SOUND
     if( (mobj->eflags ^ oldeflags) & MF_TOUCHWATER)
         CONS_Printf("touchwater %d\n",mobj->eflags & MF_TOUCHWATER ? 1 : 0);
     if( (mobj->eflags ^ oldeflags) & MF_UNDERWATER)
         CONS_Printf("underwater %d\n",mobj->eflags & MF_UNDERWATER ? 1 : 0);
-*/
+#endif
     // blood doesnt make noise when it falls in water
     if( !(oldeflags & (MF_TOUCHWATER | MF_UNDERWATER))
         && ((mobj->eflags & (MF_TOUCHWATER | MF_UNDERWATER)) )
@@ -1781,7 +1784,8 @@ void P_MobjThinker(mobj_t * mobj)
             // if didnt check things Z while XYMovement, do the necessary now
             if( !checkedpos && (EV_legacy >= 112) )
             {
-                // FIXME : should check only with things, not lines
+                // Demo compatibility code Legacy 112..130
+                // Note: should check only with things, not lines
                 P_CheckPosition(mobj, mobj->x, mobj->y);
 
                 // tmr_floorz, tmr_ceilingz, tmr_floorthing returned by P_CheckPosition
@@ -3055,6 +3059,7 @@ void P_SpawnPuff(fixed_t x, fixed_t y, fixed_t z)
 
 static mobj_t *bloodthing;
 static fixed_t bloodspawnpointx, bloodspawnpointy;
+static byte  EV_bloodsplat_con;  // blood splat P_Random consistency
 
 
 #ifdef WALLSPLATS
@@ -3120,6 +3125,9 @@ boolean PTR_BloodTraverse(intercept_t * in)
 }
 #endif
 
+
+static void  P_dummy_SpawnBlood( void );
+
 // P_SpawnBloodSplats
 // the new SpawnBlood : this one first calls P_SpawnBlood for the usual blood sprites
 // then spawns blood splats around on walls
@@ -3136,8 +3144,18 @@ void P_SpawnBloodSplats(fixed_t x, fixed_t y, fixed_t z, int damage, fixed_t mom
     int i;
 #endif
 
-    if ( ! cv_splats.EV )  // obey splats option
-        return; 
+    // P_Random hazard: cv_splats is not set by demo, and is not netvar.
+    if( EV_bloodsplat_con < 128 )
+    {
+        // Bloodsplats off.
+        if( EV_bloodsplat_con == 0 )
+            return;
+
+        // Imitate use of random numbers
+        P_dummy_SpawnBlood();
+
+        return; // obey splats option
+    }
 
     // spawn the usual falling blood sprites at location
     // Creates bloodthing passed to PTR_BloodTraverse
@@ -3203,6 +3221,7 @@ void P_SpawnBloodSplats(fixed_t x, fixed_t y, fixed_t z, int damage, fixed_t mom
 #endif
 }
 
+
 // P_SpawnBlood
 // spawn a blood sprite with falling z movement, at location
 // the duration and first sprite frame depends on the damage level
@@ -3240,6 +3259,21 @@ void P_SpawnBlood(fixed_t x, fixed_t y, fixed_t z, int damage)
 
     bloodthing = th;
 }
+
+// Maintain netgame consistency.
+static
+void  P_dummy_SpawnBlood( void )
+{
+    PP_SignedRandom(pr_spawnblood);
+    if( EV_legacy >= 128 )
+    {
+        PP_SignedRandom(pL_spawnbloodxy);
+        PP_SignedRandom(pL_spawnbloodxy);
+    }
+    PP_Random(pr_spawnblood);
+}
+
+   
 
 //---------------------------------------------------------------------------
 //
@@ -3695,4 +3729,11 @@ void DemoAdapt_p_mobj( void )
     // This is tolerable as long as cannot interact with them.
     EN_bloodsplat_prandom = EV_legacy && (EV_legacy < 148) && ! netgame;
 #endif
+
+    // P_Random hazard: cv_splats is not set by demo, and is not netvar.
+    EV_bloodsplat_con = (cv_splats.EV)?  255  // on
+     : (EV_legacy<144)?  8  // demo consistency
+     : (netgame && (EV_legacy>=148))? 4  // netgame P_Random consistency
+     : 0;  // off
+
 }

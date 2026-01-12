@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01581 ]: w109_042 splat netgame bug
 [01580 ]: w109_041 wait99
 [01579 ]: w109 040 x11sound3
 [01578 ]: w109 039 sound3

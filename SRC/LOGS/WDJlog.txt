@@ -8556,8 +8556,6 @@ This allows compiling a distribution that has support for the sound
 devices, but does not require the library to be present.
 A device that is not optional, must have the device libraries present.
 
-=== commit
-
 *** w109_x11sound
 patchfile = w109_039_sound3
 - commit revision 1578
@@ -8574,6 +8572,67 @@ The ALSA sound device driver is included.
 A working ALSA music player.
 Not quite done debugging yet.
 Other devices, like FluidSynth have no code yet.
+
+=== commit
+
+*** w109_wait99
+patchfile = w109_041_wait99
+- commit revision 1580
+When starting a netgame as server, after having tried to connect as client,
+the program is stuck in client mode.
+Starting the server from the menu, does not set server mode.
+This results in the player wait count being initialized to 99.
+Fixed to set server mode.
+Fixes bug 0677.
+
+When starting a splitscreen game, player2 was not getting their
+skin and color set.  A test that prevents sending skin and color updates
+more than once per tick, also blocks sending any skin and color
+updates for all players after the first.
+Fixed by sending the skin and color updates for just our player,
+whenever the general update is blocked.
+
+*** w109_splat
+patchfile = w109_042_splat
+- commit revision 1581
+Players are kicked during netgame when their blood splat setting
+is different than the server.  The control variable is not NETVAR,
+and it uses P_Random.
+
+It was desireable to allow players to turn off blood splats
+independently of the server setting.
+This was fixed by creating a dummy splat function, that uses
+the correct number of P_Random to keep random number sync.
+A DemoAdapt var was created to control calling this splat function.
+Fixes bug 0678.
+This also fixes a demo consistency error.
+
+*** w109_numplayer
+patchfile = w109_043_numplayer
+- commit revision 1582
+There are several places where MAXPLAYERS is used, such as modulo
+calculations.  Demos may expect a different value for MAXPLAYERS.
+This is already determined in the demo read function.
+Export this value as max_number_players, and use it in place
+of MAXPLAYERS where appropriate.
+
+Changed the netgame repair random_state_checkset function to correctly
+report differences in random number settings for the server.
+The message syntax was only appropriate for the client,
+as it reversed the server/client values in the server.
+
+Adjusted some of the uses of P_Random to more closely follow
+PrBoom, with comments to that effect.  Commented where there
+was a usage of P_Random that was controlled by something optional.
+
+Adjusted the xdir/ydir logic that calls TryWalk to more closely
+follow PrBoom, even though it looks like it should not matter.
+The resultant code should also be very slightly faster.
+
+Caught some typos in optional code.
+
+
+=== commit
 
 
 
