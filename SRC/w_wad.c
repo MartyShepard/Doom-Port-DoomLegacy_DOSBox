@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: w_wad.c 1571 2021-01-28 09:24:43Z wesleyjohnson $
+// $Id: w_wad.c 1576 2021-02-04 11:30:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -303,7 +303,7 @@ int W_Load_WadFile ( const char * filename )
     dl_strncpy(filenamebuf, filename, MAX_WADPATH);
 
 #ifdef ZIPWAD
-    // When not ziplib_present, then cannot have archive_open.
+    // When not libzip_present, then cannot have archive_open.
     if( archive_open )
     {
         handle = WZ_open_file_z( filename );
@@ -354,7 +354,7 @@ int W_Load_WadFile ( const char * filename )
     if( fc == FC_zip )
     {
 #ifdef ZIPWAD
-        if( ! ziplib_present )
+        if( ! libzip_present )
         {
             msg = "Cannot read zip file, ziplib not present.";
                 goto read_failure;

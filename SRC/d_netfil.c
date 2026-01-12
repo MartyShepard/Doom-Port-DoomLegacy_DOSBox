@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1571 2021-01-28 09:24:43Z wesleyjohnson $
+// $Id: d_netfil.c 1576 2021-02-04 11:30:13Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1121,7 +1121,7 @@ filestatus_e  checkfile_md5( const char * filename, const byte * wantedmd5sum)
     filestatus_e return_val = FS_NOTFOUND;
 
 #ifdef ZIPWAD
-    // if ! ziplib_present, then cannot have archive_open
+    // if ! libzip_present, then cannot have archive_open
     if( archive_open )
     {
         if( wantedmd5sum )
@@ -1216,8 +1216,8 @@ filestatus_e  Search_doomwaddir( const char * filename, int search_depth,
     // Not found.
 
 #ifdef ZIPWAD
-#ifdef ZIPWAD_OPTIONAL   
-    if( ! ziplib_present )
+#ifdef OPT_LIBZIP
+    if( ! libzip_present )
         return FS_NOTFOUND;
 #endif
    

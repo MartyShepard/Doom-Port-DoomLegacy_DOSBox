@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 1544 2020-08-22 02:40:35Z wesleyjohnson $
+// $Id: w_wad.h 1576 2021-02-04 11:30:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -324,7 +324,7 @@ typedef enum {
     FH_mask = 0xF0,
 } file_handle_e;
 
-extern byte  ziplib_present;
+extern byte  libzip_present;
 extern byte  archive_open;
 extern byte  archive_filenum;
 

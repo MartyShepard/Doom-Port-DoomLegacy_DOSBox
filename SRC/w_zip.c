@@ -40,25 +40,62 @@
 
 // Check for libzip >= 1.2 which has zip_fseek.
 // A loaded libzip may not have zip_fseek.
-#if (HAVE_LIBZIP < 12) || defined(ZIPWAD_OPTIONAL)
+#if (HAVE_LIBZIP < 12) || defined(OPT_LIBZIP)
 // Generate WZ_zip_fseek.
 # define GEN_ZIP_SEEK
 #endif
 
-#if (HAVE_LIBZIP >= 12) && defined(ZIPWAD_OPTIONAL)
+#if (HAVE_LIBZIP >= 12) && defined(OPT_LIBZIP)
 // Test loaded libzip for zip_fseek_present
 # define TEST_ZIP_SEEK
 #endif
 
-
-#ifdef ZIPWAD_OPTIONAL
+#ifdef OPT_LIBZIP
 #include <dlfcn.h>
   // dlopen
 
-byte  ziplib_present = 0;
-#ifdef TEST_ZIP_SEEK
-byte  zip_seek_present = 0;
-#endif
+// Indirections to libzip functions.
+static void (*DL_zip_stat_init)(zip_stat_t *);
+#define zip_stat_init  (*DL_zip_stat_init)
+
+static int (*DL_zip_stat_index)(zip_t *, zip_uint64_t, zip_flags_t, zip_stat_t *);
+#define zip_stat_index  (*DL_zip_stat_index)
+
+static int (*DL_zip_stat)(zip_t *, const char *, zip_flags_t, zip_stat_t *);
+#define zip_stat  (*DL_zip_stat)
+
+static zip_int64_t (*DL_zip_name_locate)(zip_t *, const char *, zip_flags_t);
+#define zip_name_locate  (*DL_zip_name_locate)
+
+static zip_t * (*DL_zip_open)(const char *, int, int *);
+#define zip_open  (*DL_zip_open)
+
+static int (*DL_zip_fclose)(zip_file_t *);
+#define zip_fclose  (*DL_zip_fclose)
+
+static zip_int64_t (*DL_zip_fread)(zip_file_t *, void *, zip_uint64_t);
+#define zip_fread  (*DL_zip_fread)
+
+static void (*DL_zip_discard)(zip_t *);
+#define zip_discard  (*DL_zip_discard)
+
+static zip_error_t * (*DL_zip_file_get_error)(zip_file_t *);
+#define zip_file_get_error  (*DL_zip_file_get_error)
+
+static void (*DL_zip_error_init_with_code)(zip_error_t *, int);
+#define zip_error_init_with_code  (*DL_zip_error_init_with_code)
+
+static zip_error_t *  (*DL_zip_get_error)( zip_t * );
+#define zip_get_error  (*DL_zip_get_error)  
+
+static const char * (*DL_zip_error_strerror)(zip_error_t *);
+#define zip_error_strerror  (*DL_zip_error_strerror)
+
+static int (*DL_zip_fseek)( zip_file_t *, zip_int64_t, int/*SEEK_SET*/ );
+#define zip_fseek  (*DL_zip_fseek)
+
+
+byte  libzip_present = 0;
 
 #ifdef LINUX
 # define LIBZIP_NAME   "libzip.so"
@@ -70,18 +107,39 @@ byte  zip_seek_present = 0;
 void WZ_available( void )
 {
     // Test for libzip being loaded.
-    void * lzp = dlopen( LIBZIP_NAME, RTLD_LAZY | RTLD_NOLOAD );
+    void * lzp = dlopen( LIBZIP_NAME, RTLD_LAZY );
     // No reason to close it as it would dec the reference count.
     
-    ziplib_present = ( lzp != NULL );
+    libzip_present = ( lzp != NULL );
 
-#ifdef TEST_ZIP_SEEK
-    if( ziplib_present )
+    if( ! libzip_present )  return;
+   
+    // Get ptrs for libzip functions.
+    DL_zip_stat_init = dlsym( lzp, "zip_stat_init" );
+    DL_zip_stat_index = dlsym( lzp, "zip_stat_index" );
+    DL_zip_stat = dlsym( lzp, "zip_stat" );
+    DL_zip_name_locate = dlsym( lzp, "zip_name_locate" );
+    DL_zip_open = dlsym( lzp, "zip_open" );
+    DL_zip_fclose = dlsym( lzp, "zip_fclose" );
+    DL_zip_fread = dlsym( lzp, "zip_fread" );
+    DL_zip_discard = dlsym( lzp, "zip_discard" );
+
+    if( (DL_zip_stat_init == NULL) || (DL_zip_stat_index == NULL)
+	|| (DL_zip_stat == NULL) || (DL_zip_name_locate == NULL)
+	|| (DL_zip_open == NULL) || (DL_zip_fclose == NULL)
+	|| (DL_zip_fread == NULL) || (DL_zip_discard == NULL) )
     {
-        void * sp = dlsym( lzp, "zip_fseek" );
-        zip_seek_present = ( sp != NULL );
+        libzip_present = 0;
+        return;
     }
-#endif
+   
+    DL_zip_file_get_error = dlsym( lzp, "zip_file_get_error" );
+    DL_zip_error_init_with_code = dlsym( lzp, "zip_error_init_with_code" );
+    DL_zip_get_error = dlsym( lzp, "zip_get_error" );
+    DL_zip_error_strerror = dlsym( lzp, "zip_error_strerror" );
+
+    // [WDJ] zip_fseek requires ziplib >= 1.2.0.
+    DL_zip_fseek = dlsym( lzp, "zip_fseek" );  // might not be present
 }
 #undef ZIPLIB_NAME
 #endif
@@ -188,11 +246,11 @@ int  WZ_zip_fseek( uint32_t offset )
 {
     byte bb[1024];
 
-#ifdef TEST_ZIP_SEEK
-    if( zip_seek_present )
+#ifdef OPT_LIBZIP
+    if( DL_zip_fseek )
     {
         // [WDJ] zip_fseek requires ziplib >= 1.2.0
-        return zip_fseek( file_z, offset, SEEK_SET );
+        return (*DL_zip_fseek)( file_z, offset, SEEK_SET );
     }
 #endif
    
@@ -224,8 +282,8 @@ void  WZ_open_archive( const char * archive_name )
 {
     int zip_err_code;
     
-#ifdef ZIPWAD_OPTIONAL
-    if( ! ziplib_present )
+#ifdef OPT_LIBZIP
+    if( ! libzip_present )
         return;
 #endif
 
@@ -439,8 +497,8 @@ unsigned int  WZ_filesize( const char * filename )
     zip_stat_t  zipstat;
     unsigned int filesize = 0;
 
-#ifdef ZIPWAD_OPTIONAL
-    if( ! ziplib_present )
+#ifdef OPT_LIBZIP
+    if( ! libzip_present )
         return 0;
 #endif
     // Get info about file in archive.
@@ -476,8 +534,8 @@ int WZ_read_archive_file( uint32_t offset, uint32_t read_size, /*OUT*/ byte * de
     const char * msg;
     int num_read = -1;
    
-#ifdef ZIPWAD_OPTIONAL
-    if( ! ziplib_present )
+#ifdef OPT_LIBZIP
+    if( ! libzip_present )
         return -1;
 #endif
 
@@ -540,8 +598,8 @@ int WZ_read_wadfile_from_archive_file_offset( byte fn, wadfile_t * wf, uint32_t 
 {
     wadfile_t * archive_wf = wadfiles[ wf->archive_parent ];
    
-#ifdef ZIPWAD_OPTIONAL
-    if( ! ziplib_present )
+#ifdef OPT_LIBZIP
+    if( ! libzip_present )
         return 0;
 #endif
 
@@ -586,8 +644,8 @@ filestatus_e  WZ_md5_stream( const char * filename, byte * digest_block )
     size_t readcnt;
     zip_int64_t  n;
 
-#ifdef ZIPWAD_OPTIONAL
-    if( ! ziplib_present )
+#ifdef OPT_LIBZIP
+    if( ! libzip_present )
         return FS_INVALID;
 #endif
     if( archive_z == NULL )
@@ -658,8 +716,8 @@ int  WZ_Load_zip_archive( const char * filename, int as_archive_filenum )
     int file_count = 0;  // nothing loaded
     int i;
 
-#ifdef ZIPWAD_OPTIONAL
-    if( ! ziplib_present )
+#ifdef OPT_LIBZIP
+    if( ! libzip_present )
         return -1;
 #endif
    
