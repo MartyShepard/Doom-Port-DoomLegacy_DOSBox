@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: i_sound.h 1577 2021-02-25 03:45:20Z wesleyjohnson $
+// $Id: i_sound.h 1578 2021-05-19 03:41:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -106,7 +106,8 @@ void I_UpdateSoundParams ( int handle, int vol, int sep, int pitch );
 //
 //  MUSIC I/O
 //
-void I_SetMusicOption(void);
+// mus_opt : mus_dev_e, port_dependent
+void I_SetMusicOption( byte mus_opt );
 #if defined( __DJGPP__ )	
 void I_InitMusic(void);
 void I_ShutdownMusic(void);

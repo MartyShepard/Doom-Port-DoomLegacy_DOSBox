@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: s_sound.c 1577 2021-02-25 03:45:20Z wesleyjohnson $
+// $Id: s_sound.c 1578 2021-05-19 03:41:06Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -123,33 +123,25 @@
 
 #include "m_random.h"
 
+// 3D Sound Interface
+#include "hardware/hw3sound.h"
+
 #ifdef SMIF_X11
 #include "linux_x/lx_ctrl.h"
   // SOUND_DEVICE_OPTION
 #endif
 
-// 3D Sound Interface
-#include "hardware/hw3sound.h"
-
-
-// Print out the sfx headers.
-// #define DEBUG_SFX_HEADER
-
-
 #ifdef SOUND_DEVICE_OPTION
 // SMIF_X11 only.
-static byte snd_change_delay = 0;
 
 static void CV_snd_opt_OnChange( void )
 {
-    // To allow skipping over other selections, before connecting.
-    snd_change_delay = 64;
-    I_SetSoundOption( 99 );  // off
+    I_SetSoundOption( cv_snd_opt.EV );
 }
 
 // The values of snd_opt are defined in linux_x/i_sound.c
 // to ensure that menu values and implementation always match.
-consvar_t cv_snd_opt = { "snd_opt", "1", CV_SAVE | CV_CALL, snd_opt_cons_t, CV_snd_opt_OnChange };
+consvar_t cv_snd_opt = { "snd_opt", "1", CV_SAVE | CV_CALL | CV_NOINIT, snd_opt_cons_t, CV_snd_opt_OnChange };
 #endif
 
 #ifdef MUSSERV
@@ -157,15 +149,17 @@ consvar_t cv_snd_opt = { "snd_opt", "1", CV_SAVE | CV_CALL, snd_opt_cons_t, CV_s
 consvar_t cv_musserver_cmd = { "musserver_cmd", "musserver", CV_SAVE };
 consvar_t cv_musserver_arg = { "musserver_arg", "-t 20", CV_SAVE };
 
+#ifdef MUS_DEVICE_OPTION
 static void CV_musserv_opt_OnChange( void )
 {
-    I_SetMusicOption();
+    I_SetMusicOption( cv_musserver_opt.EV );
 }
 
 // The values of musserv_opt are defined in linux_x/i_sound.c
 // to ensure that menu values and implementation always match.
-consvar_t cv_musserver_opt = { "musserver_opt", "1", CV_SAVE | CV_CALL,
+consvar_t cv_musserver_opt = { "musserver_opt", "1", CV_SAVE | CV_CALL | CV_NOINIT,
              musserv_opt_cons_t, CV_musserv_opt_OnChange };
+#endif
 #endif
 
 #ifdef MACOS_DI
@@ -420,13 +414,6 @@ void S_GetSfxLump( sfxinfo_t * sfx )
     memcpy( sfx->data, sfx_lump_data, sfx->length );
     Z_ChangeTag( sfx_lump_data, PU_CACHE );
 
-#ifdef DEBUG_SFX_HEADER   
-    // DEBUG
-    byte * h = (byte*) sfx->data;
-    printf( "sound header  %0i %0i  %0i %0i  %0i %0i  %0i %0i\n",
-	h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7] );
-#endif
-   
     // sound data header format
     // 0,1: 03
     // 2,3: sample rate (11,2B)=11025, (56,22)=22050
@@ -1150,15 +1137,6 @@ void S_UpdateSounds(void)
     channel_t *c;
 
     mobj_t *listener = displayplayer_ptr->mo;
-
-#ifdef SOUND_DEVICE_OPTION
-    // To allow skipping over other selections, before connecting.
-    if( snd_change_delay )
-    {
-        if( --snd_change_delay == 0 )
-            I_SetSoundOption( cv_snd_opt.EV );  // connect
-    }
-#endif
 
     // Update sound/music volumes, if changed manually at console
     if (mix_sfxvolume != cv_soundvolume.value)

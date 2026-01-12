@@ -629,79 +629,116 @@ SND_LIBS:=
 SND_LDFLAGS:=
 
 # Sound Devices support, mostly for Linux X11.
-# If a sound device is HAVE_xx, its library must be present.
-# If a sound device is OPTIONAL_xx, its library will be detected and loaded dynamically.
+# If HAVE_xx=3, the sound device library will be detected and loaded dynamically.
+# If HAVE_xx=1, the sound device library must be present.
 # Use export to pass sound devices to the sound server Makefile.
 ifdef HAVE_OSS
-  SND_DEVS+=-DDEV_OSS
-  export HAVE_OSS
-else
-  ifdef OPTIONAL_OSS
-    SND_DEVS+=-DDEV_OPT_OSS
-    export OPTIONAL_OSS
+  ifeq ($(HAVE_OSS), 3)
+    SND_DEVS+=-DDEV_OSS=3
+  else
+    SND_DEVS+=-DDEV_OSS
   endif
+  export HAVE_OSS
 endif
 
 ifdef HAVE_ALSA
-  SND_DEVS+=-DDEV_ALSA
-  SND_LIBS+=-lasound -lm -ldl -lpthread -lrt
-  export HAVE_ALSA
-else
-  ifdef OPTIONAL_ALSA
-    SND_DEVS+=-DDEV_OPT_ALSA
-    export OPTIONAL_ALSA
+  ifeq ($(HAVE_ALSA), 3)
+    SND_DEVS+=-DDEV_ALSA=3
+  else
+    SND_DEVS+=-DDEV_ALSA
+    SND_LIBS+=-lasound
   endif
+  SND_LIBS+=-lm -ldl -lpthread -lrt
+  export HAVE_ALSA
 endif
 
 ifdef HAVE_ESD
-  SND_DEVS+=-DDEV_ESD
-  SND_LIBS+=-lesd
-  export HAVE_ESD
-else
-  ifdef OPTIONAL_ESD
-    SND_DEVS+=-DDEV_OPT_ESD
-    export OPTIONAL_ESD
+  ifeq ($(HAVE_ESD), 3)
+    SND_DEVS+=-DDEV_ESD=3
+  else
+    SND_DEVS+=-DDEV_ESD
+    SND_LIBS+=-lesd
   endif
+  export HAVE_ESD
 endif
 
 ifdef HAVE_JACK
-  SND_DEVS+=-DDEV_JACK
-  SND_LIBS+=-ljack -lpthread
-  export HAVE_JACK
-else
-  ifdef OPTIONAL_JACK
-    SND_DEVS+=-DDEV_OPT_JACK
-    export OPTIONAL_JACK
+  ifeq ($(HAVE_JACK), 3)
+    SND_DEVS+=-DDEV_JACK=3
+  else
+    SND_DEVS+=-DDEV_JACK
+    SND_LIBS+=-ljack
   endif
+  SND_LIBS+=-lpthread
+  export HAVE_JACK
 endif
 
 ifdef HAVE_PULSE
-  SND_DEVS+=-DDEV_PULSE
-  SND_CFLAGS+=-D_REENTRANT
-  SND_LIBS+=-L/usr/lib/pulseaudio -lpulse
+  ifeq ($(HAVE_ALSA), 3)
+    SND_DEVS+=-DDEV_PULSE=3
+  else
+    SND_DEVS+=-DDEV_PULSE
+    SND_LIBS+=-L/usr/lib/pulseaudio -lpulse
   # do not seem to need pulsecommon
-#  SND_LIBS+=-L/usr/lib/pulseaudio -lpulse -lpulsecommon-$(HAVE_PULSE)
+#  SND_LIBS+=-L/usr/lib/pulseaudio -lpulse -lpulsecommon-$(HAVE_PULSE_COMMON_VERSION)
 #  SND_LIBS+=-lpulse
-  SND_LDFLAGS+=-L/usr/lib/pulseaudio
-#  SND_LDFLAGS+=-L/usr/lib/pulseaudio -lpulsecommon-$(HAVE_PULSE)
+   SND_LDFLAGS+=-L/usr/lib/pulseaudio
+#  SND_LDFLAGS+=-L/usr/lib/pulseaudio -lpulsecommon-$(HAVE_PULSE_COMMON_VERSION)
 #  SND_LDFLAGS+=-L/usr/lib/pulseaudio -lpulsecommon
   # modlibexecdir=/usr/lib/pulse-9.0/modules
-  export HAVE_PULSE
-else
-  ifdef OPTIONAL_PULSE
-    SND_DEVS+=-DDEV_OPT_PULSE
-    export OPTIONAL_PULSE
   endif
+  SND_CFLAGS+=-D_REENTRANT
+  export HAVE_PULSE
 endif
+
+# Music Devices support, mostly for Linux X11.
+# MIDI devices do not seem to need libraries.
+# Use export to pass devices to the music server Makefile.
+
+ifdef HAVE_TIMIDITY
+  ifeq ($(HAVE_TIMIDITY), 3)
+    SND_DEVS+=-DDEV_TIMIDITY=3
+  else
+    SND_DEVS+=-DDEV_TIMIDITY
+  endif
+  export HAVE_TIMIDITY
+endif
+
+ifdef HAVE_FLUIDSYNTH
+  ifeq ($(HAVE_FLUIDSYNTH), 3)
+    SND_DEVS+=-DDEV_FLUIDSYNTH=3
+  else
+    SND_DEVS+=-DDEV_FLUIDSYNTH
+  endif
+  export HAVE_FLUIDSYNTH
+endif
+
+ifdef HAVE_FM_SYNTH
+  ifeq ($(HAVE_FM_SYNTH), 3)
+    SND_DEVS+=-DDEV_FM_SYNTH=3
+  else
+    SND_DEVS+=-DDEV_FM_SYNTH
+  endif
+  export HAVE_FM_SYNTH
+endif
+
+ifdef HAVE_AWE32_SYNTH
+  ifeq ($(HAVE_AWE32_SYNTH), 3)
+    SND_DEVS+=-DDEV_AWE32_SYNTH=3
+  else
+    SND_DEVS+=-DDEV_AWE32_SYNTH
+  endif
+  export HAVE_AWE32_SYNTH
+endif
+
 
 
 #=================================
 ifeq ($(SMIF), SDL)
 # SDL is the default system media interface. This is what all modern systems should use.
 # Requires SDL libs, and optionally SDL_mixer libs.
-# This uses files in sdl directory, and not those linux_x nor macos directories.
 
-# interface directory (where you put all i_*.c)
+# The system and SDL interface files are in sdl directory (all i_*.c).
   INTERFACE=sdl
 
   MAINOBJ:=i_main.o
@@ -808,8 +845,7 @@ ifeq ($(SMIF), LINUX_X11)
   # Requires X11/Xlib, and xshm or ggi libs
   INTERFACE=linux_x
 
-  MUSSERV:=linux_x/musserv
-  SUPPORT_EXE:=dll musserv
+  SUPPORT_EXE:=dll
   
   DEP_HARD:=1
   DEP_X11:=1
@@ -846,8 +882,11 @@ ifeq ($(SMIF), LINUX_X11)
     SMIFOBJS+=snd_driver.o
   endif
 
-  ifdef CDMUS
+  ifdef MUSIC_SERVER
     OPTS+=-DMUSSERV
+    MUSSERV:=linux_x/musserv
+    SUPPORT_EXE+=musserv
+  else
   endif
 
   ifdef X11_GGI

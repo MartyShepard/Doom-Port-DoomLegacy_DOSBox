@@ -8539,10 +8539,8 @@ I don't know why it worked during the test, it should not have.
 Also made changes in some names, to meet uniformity goals,
 such as enable OPT_LIBZIP.
 
-=== commit
-
 *** w109_x11sound
-patchfile = w109_039_x11sound
+patchfile = w109_038_x11sound
 - commit revision 1577
 Total rewrite of sfx sound for X11 port.
 X11 sound only supported OSS sound, and ESD sound.
@@ -8557,6 +8555,27 @@ and dynamically loaded.
 This allows compiling a distribution that has support for the sound
 devices, but does not require the library to be present.
 A device that is not optional, must have the device libraries present.
+
+=== commit
+
+*** w109_x11sound
+patchfile = w109_039_sound3
+- commit revision 1578
+Total rewrite of sfx sound for X11 port continued.
+Changes to how OPTIONAL devices are indicated.
+Changes to make_options.
+Changes to menu support for multiple sound devices.
+
+*** w109_x11sound
+patchfile = w109_040_x11sound3
+- commit revision 1579
+Total rewrite of sfx sound for X11 port continued.
+The ALSA sound device driver is included.
+A working ALSA music player.
+Not quite done debugging yet.
+Other devices, like FluidSynth have no code yet.
+
+
 
 
 

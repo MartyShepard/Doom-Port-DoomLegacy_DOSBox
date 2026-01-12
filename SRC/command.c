@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: command.c 1529 2020-05-14 09:44:10Z wesleyjohnson $
+// $Id: command.c 1578 2021-05-19 03:41:06Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1213,7 +1213,6 @@ update:
 
 
 // Do the CV_CALL, with validity tests, and enforcing user_enable rules.
-static
 void  CV_cvar_call( consvar_t *cvar, byte user_enable )
 {
     // Call the CV_CALL func to restore state dependent upon this setting.

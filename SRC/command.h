@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.h 1529 2020-05-14 09:44:10Z wesleyjohnson $
+// $Id: command.h 1578 2021-05-19 03:41:06Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -241,7 +241,10 @@ void  CV_Free_cvar_string( consvar_t * cvar );
 void CV_Set_by_OnChange (consvar_t *cvar, int value);
 
 // it a setvalue but with a modulo at the maximum
-void  CV_ValueIncDec (consvar_t *var, int increment);
+void  CV_ValueIncDec (consvar_t *cvar, int increment);
+
+// Do the CV_CALL, with validity tests, and enforcing user_enable rules.
+void  CV_cvar_call( consvar_t *cvar, byte user_enable );
 
 // Called after demo to restore the user settings.
 void  CV_Restore_User_Settings( void );
