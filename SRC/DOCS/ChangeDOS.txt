@@ -1,5 +1,10 @@
 * Not need to Compile.
 
+[01586 ]: w109_047 deh cmp
+          DOS: No zip. support. ZDoom extended nodes based
+          on woof 1.2.0, does'nt supporting uncompressing.
+          Eviternity will be crash Map15/ Map32
+
 [01585 ]: w109_046 bsp
 [01584 ]: w109_045 zlib support
 [01583 ]: w109_044 extnodes

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
+// $Id: dehacked.c 1586 2021-09-29 02:49:02Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -108,8 +108,9 @@ static char       *deh_musicname[NUMMUSIC];
 static char       *deh_text[NUMTEXT];
 
 
-
-#define MAXLINELEN  200
+// Avactor.wad has long lines.
+// PrBoom is using buffer of 1024.
+#define MAXLINELEN  1024
 
 // The code was first written for a file
 // and converted to use memory with these functions.
@@ -1672,9 +1673,10 @@ static void bex_strings( myfile_t* f, byte bex_permission )
   for(;;) {
     if( ! myfgets_nocom(sb, sizeof(sb), f) )  // get line, skipping comments
        break; // no more lines
-    if( sb[0] == '\n' ) continue;  // blank line
     if( sb[0] == 0 ) break;
-    cp = strchr(sb,'=');  // find after =
+    if( sb[0] == '\n' ) break;  // blank line  (PrBoom, Eternity)
+    if( sb[0] == '#' ) continue;  // comment
+    cp = strchr(sb,'=');  // find =
     word=strtok(sb," ");
     if( ! word ) break;
     strncpy( keyw, word, BEX_KEYW_LEN-1 );  // because continuation lines use sb
@@ -1719,7 +1721,7 @@ static void bex_strings( myfile_t* f, byte bex_permission )
     for(i=0;  ;i++)
     {
         if( bex_string_table[i].kstr == NULL )  goto no_text_change;
-        if(!strcmp(bex_string_table[i].kstr, keyw))  // BEX keyword search
+        if(!strcasecmp(bex_string_table[i].kstr, keyw))  // BEX keyword search
         {
             int text_index = bex_string_table[i].text_num;
 #ifdef BEX_SAVEGAMENAME
@@ -1764,8 +1766,9 @@ static void bex_pars( myfile_t* f )
   for(;;) {
     if( ! myfgets_nocom(s, sizeof(s), f) )
        break; // no more lines
-    if( s[0] == '\n' ) continue;  // blank line
     if( s[0] == 0 ) break;
+    if( s[0] == '\n' ) break;  // blank line  (PrBoom, Eternity)
+    if( s[0] == '#' ) continue;  // comment
     if( strncasecmp( s, "par", 3 ) != 0 )  break;  // not a par line
     nn = sscanf( &s[3], " %i %i %i", &episode, &level, &partime );
     if( nn == 3 )
@@ -2109,8 +2112,9 @@ static void bex_codeptr( myfile_t* f )
   for(;;) {
     if( ! myfgets_nocom(s, sizeof(s), f) )
        break; // no more lines
-    if( s[0] == '\n' ) continue;  // blank line
     if( s[0] == 0 ) break;
+    if( s[0] == '\n' ) break;  // blank line  (PrBoom, Eternity)
+    if( s[0] == '#' ) continue;  // comment
     if( strncasecmp( s, "FRAME", 5 ) != 0 )  break;  // not a FRAME line
     nn = sscanf( &s[5], "%d = %s", &framenum, funcname );
     if( nn != 2 )
@@ -2167,8 +2171,9 @@ static void bex_helper( myfile_t* f )
     if( ! myfgets_nocom(s, sizeof(s), f) )
        break; // no more lines
 
-    if( s[0] == '\n' ) continue;  // blank line
     if( s[0] == 0 ) break;
+    if( s[0] == '\n' ) break;  // blank line  (PrBoom, Eternity)
+    if( s[0] == '#' ) continue;  // comment
     if( strncasecmp( s, "TYPE", 4 ) != 0 )  break;  // not a TYPE line
     nn = sscanf( &s[4], " = %d", &tn );
 
@@ -2495,7 +2500,6 @@ static void readcheat(myfile_t *f)
 // permission: 0=game, 1=adv, 2=language
 void DEH_LoadDehackedFile(myfile_t* f, byte bex_permission)
 {
-  
   char       s[1000];
   char       *word,*word2;
   int        i;
@@ -2655,6 +2659,10 @@ void DEH_LoadDehackedFile(myfile_t* f, byte bex_permission)
                      deh_error("Warning : Patch format not supported");
                }
              }
+        else if( ! strncmp( word, "//", 2 ))
+        {
+            // Some people are using "//" as comment, see Avactor.wad
+        }
         else deh_error("Unknown word : %s\n",word);
       }
       else

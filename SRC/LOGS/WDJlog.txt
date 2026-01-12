@@ -8630,9 +8630,6 @@ The resultant code should also be very slightly faster.
 
 Caught some typos in optional code.
 
-
-=== commit
-
 *** w109_extnode
 patchfile = w109_044_extnode
 - commit revision 1583
@@ -8675,3 +8672,14 @@ This case has been moved to be handled outside the search loop.
 
 === commit
 
+*** w109_dehcmp
+patchfile = w109_047_dehcmp
+- commit revision 1586
+Fix deh to read Avactor.wad dehacked.
+Read buffer length at 200 was too short, made it 1028 like PrBoom.
+Made the keyword lookup use strcasecmp.
+Made a blank line in a section, exit the section,
+as in PrBoom and Eternity.
+Detect comments that start with "//", as Avactor has some, even
+though I have not seen documentation that says they are valid.
+Dehacked itself is not really documented.  It is "do what the other ports did".
