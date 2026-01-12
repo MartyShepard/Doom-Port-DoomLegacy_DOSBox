@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: i_sound.h 1574 2021-01-28 09:32:04Z wesleyjohnson $
+// $Id: i_sound.h 1577 2021-02-25 03:45:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -67,24 +67,8 @@ extern int mix_musicvolume;
 //  SFX I/O
 //
 
-// Sound Device
-typedef enum {
-   SD_NULL = 0,
-   SD_S1 = 1,
-   SD_S2 = 2,
-   SD_S3 = 3,
-   SD_OSS,
-   SD_ESD,
-   SD_ALSA,
-   SD_PULSE,
-   SD_JACK,
-   SD_DEV6,
-   SD_DEV7,
-   SD_DEV8,
-   SD_DEV9,
-} sound_dev_e;
-
-// snd_opt : sound_dev_e
+// SoundOption only implemented in X11
+// snd_opt : sound_dev_e, port_dependent
 void  I_SetSoundOption( byte snd_opt );  // select output device
 
 // Init at program start...
@@ -122,6 +106,7 @@ void I_UpdateSoundParams ( int handle, int vol, int sep, int pitch );
 //
 //  MUSIC I/O
 //
+void I_SetMusicOption(void);
 #if defined( __DJGPP__ )	
 void I_InitMusic(void);
 void I_ShutdownMusic(void);

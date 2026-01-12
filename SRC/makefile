@@ -393,6 +393,7 @@ ifdef SMIF
 else
   SMIF:=SDL
 endif
+export SMIF
 
 # Default OS for some SMIF
 ifeq ($(SMIF), SDL)
@@ -626,54 +627,54 @@ SND_DEVS:=
 SND_CFLAGS:=
 SND_LIBS:=
 SND_LDFLAGS:=
-SNDSERV_EXTRAFLAGS:=
-ifdef HAVE_ESD
-  SND_DEVS+=-DDEV_ESD
-  SND_LIBS+=-lesd
-  SNDSERV_EXTRAFLAGS+=HAVE_ESD=1
-  export HAVE_ESD
-else
-  ifdef OPTIONAL_ESD
-    SND_DEVS+=-DDEV_OPT_ESD
-    SNDSERV_EXTRAFLAGS+=OPTIONAL_ESD=1
-    export OPTIONAL_ESD
-  endif
-endif
+
+# Sound Devices support, mostly for Linux X11.
+# If a sound device is HAVE_xx, its library must be present.
+# If a sound device is OPTIONAL_xx, its library will be detected and loaded dynamically.
+# Use export to pass sound devices to the sound server Makefile.
 ifdef HAVE_OSS
   SND_DEVS+=-DDEV_OSS
-  SNDSERV_EXTRAFLAGS+=HAVE_OSS=1
   export HAVE_OSS
 else
   ifdef OPTIONAL_OSS
     SND_DEVS+=-DDEV_OPT_OSS
-    SNDSERV_EXTRAFLAGS+=OPTIONAL_OSS=1
     export OPTIONAL_OSS
   endif
 endif
+
 ifdef HAVE_ALSA
   SND_DEVS+=-DDEV_ALSA
   SND_LIBS+=-lasound -lm -ldl -lpthread -lrt
-  SNDSERV_EXTRAFLAGS+=HAVE_ALSA=1
   export HAVE_ALSA
 else
   ifdef OPTIONAL_ALSA
     SND_DEVS+=-DDEV_OPT_ALSA
-    SNDSERV_EXTRAFLAGS+=OPTIONAL_ALSA=1
     export OPTIONAL_ALSA
   endif
 endif
+
+ifdef HAVE_ESD
+  SND_DEVS+=-DDEV_ESD
+  SND_LIBS+=-lesd
+  export HAVE_ESD
+else
+  ifdef OPTIONAL_ESD
+    SND_DEVS+=-DDEV_OPT_ESD
+    export OPTIONAL_ESD
+  endif
+endif
+
 ifdef HAVE_JACK
   SND_DEVS+=-DDEV_JACK
   SND_LIBS+=-ljack -lpthread
-  SNDSERV_EXTRAFLAGS+=HAVE_JACK=1
   export HAVE_JACK
 else
   ifdef OPTIONAL_JACK
     SND_DEVS+=-DDEV_OPT_JACK
-    SNDSERV_EXTRAFLAGS+=OPTIONAL_JACK=1
     export OPTIONAL_JACK
   endif
 endif
+
 ifdef HAVE_PULSE
   SND_DEVS+=-DDEV_PULSE
   SND_CFLAGS+=-D_REENTRANT
@@ -685,12 +686,10 @@ ifdef HAVE_PULSE
 #  SND_LDFLAGS+=-L/usr/lib/pulseaudio -lpulsecommon-$(HAVE_PULSE)
 #  SND_LDFLAGS+=-L/usr/lib/pulseaudio -lpulsecommon
   # modlibexecdir=/usr/lib/pulse-9.0/modules
-  SNDSERV_EXTRAFLAGS+=HAVE_PULSE=1
   export HAVE_PULSE
 else
   ifdef OPTIONAL_PULSE
     SND_DEVS+=-DDEV_OPT_PULSE
-    SNDSERV_EXTRAFLAGS+=OPTIONAL_PULSE=1
     export OPTIONAL_PULSE
   endif
 endif
@@ -825,19 +824,7 @@ ifeq ($(SMIF), LINUX_X11)
   #OPTS+=-DSOUND_RESET
 
   OPTS+=-DSMIF_X11 -DHWRENDER $(SND_DEVS)
-  ifdef SOUND_SERVER
-    OPTS+=-DSNDSERV
-    SNDSERV:=linux_x/sndserv
-    SUPPORT_EXE+=sndserv
-  else
-    OPTS+=$(SND_CFLAGS)
-    OPTLIB+=$(SND_LIBS)
-    OPTLD+=$(SND_LDFLAGS)
-  endif
-  ifdef CDMUS
-    OPTS+=-DMUSSERV
-  endif
-  
+
   # objs common to xshm and ggi, video is added later
   MAINOBJ:=i_main.o
   CDMUSOBJ:=i_cdmus.o
@@ -847,6 +834,21 @@ ifeq ($(SMIF), LINUX_X11)
     searchp.o filesrch.o dosstr.o endtxt.o
 
   INSTALL_SUPPL:=r_opengl.so
+
+  ifdef SOUND_SERVER
+    OPTS+=-DSNDSERV
+    SNDSERV:=linux_x/sndserv
+    SUPPORT_EXE+=sndserv
+  else
+    OPTS+=$(SND_CFLAGS)
+    OPTLIB+=$(SND_LIBS)
+    OPTLD+=$(SND_LDFLAGS)
+    SMIFOBJS+=snd_driver.o
+  endif
+
+  ifdef CDMUS
+    OPTS+=-DMUSSERV
+  endif
 
   ifdef X11_GGI
     # GGI
@@ -903,15 +905,7 @@ ifeq ($(SMIF), FREEBSD_X11)
   #OPTS+=-DSOUND_RESET
 
   OPTS+=-DSMIF_X11 -DHWRENDER
-  ifdef SOUND_SERVER
-    OPTS+=-DSNDSERV
-    SNDSERV=linux_x/sndserv
-    SUPPORT_EXE+=sndserv
-  else
-    OPTS+=$(SND_CFLAGS)
-    OPTLIB+=$(SND_LIBS)
-    OPTLD+=$(SND_LDFLAGS)
-  endif
+
   # objs common to xshm and ggi, video is added later
   # Note: free-bsd version of cdmus
   MAINOBJ:=i_main.o
@@ -921,7 +915,18 @@ ifeq ($(SMIF), FREEBSD_X11)
     searchp.o filesrch.o dosstr.o endtxt.o
 
   INSTALL_SUPPL:=r_opengl.so
- 
+
+  ifdef SOUND_SERVER
+    OPTS+=-DSNDSERV
+    SNDSERV=linux_x/sndserv
+    SUPPORT_EXE+=sndserv
+  else
+    OPTS+=$(SND_CFLAGS)
+    OPTLIB+=$(SND_LIBS)
+    OPTLD+=$(SND_LDFLAGS)
+    SMIFOBJS+=snd_driver.o
+  endif
+
   ifdef X11_GGI
     # GGI
     OPTS+=-DSMIF_X11_GGI
@@ -1316,7 +1321,7 @@ endif
 
 sndserv:
 ifdef SNDSERV
-	cd $(SD)$(SNDSERV) && $(MAKE) $(SNDSERV_EXTRAFLAGS)
+	cd $(SD)$(SNDSERV) && $(MAKE)
 endif
 
 
@@ -1542,7 +1547,7 @@ else
 
 %.dep :
 	@echo "Making dependencies $(@F)"
-	$(CC) $(CFLAGS) -MM $^ > $(DD)/$(@F)
+	$(CC) $(CFLAGS) $(SND_DEVS) -MM $^ > $(DD)/$(@F)
 	sed -e "s!^[a-zA-Z0-9_]*\.o:!\$$\(O)/&!" $(DD)/$(@F) > $(DD)/sed.dep
 	mv $(DD)/sed.dep $(DD)/$(@F)
 

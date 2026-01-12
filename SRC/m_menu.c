@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: m_menu.c 1572 2021-01-28 09:25:24Z wesleyjohnson $
+// $Id: m_menu.c 1577 2021-02-25 03:45:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -182,6 +182,11 @@
 
 #include "m_argv.h"
 
+#ifdef SMIF_X11
+#include "linux_x/lx_ctrl.h"
+  // SOUND_DEVICE_OPTION
+#endif
+
 // Data.
 #include "sounds.h"
 #include "s_sound.h"
@@ -213,6 +218,7 @@
 #include "p_inter.h"
 #include "m_misc.h"
   // config
+
 
 
 boolean                 menuactive;
@@ -2820,13 +2826,16 @@ menuitem_t SoundMenu[]=
     {IT_BIGSLIDER | IT_SPACE ,NULL      ,NULL          ,&cd_volume           },
 #endif
 #endif
-#ifdef MUSSERV
 #if !defined(CDMUS) || !defined(SMIF_SDL)
     {IT_SPACE, NULL, NULL, NULL },
 #endif
-    {IT_STRING | IT_CVAR | IT_YOFFSET, 0, "Music Pref",  &cv_musserver_opt },
+#ifdef SOUND_DEVICE_OPTION
+    {IT_STRING | IT_CVAR,  0, "Sound Pref",   &cv_snd_opt, 0},
 #endif
-    {IT_STRING | IT_CVAR,0, "Random sound pitch",   &cv_rndsoundpitch , 0},
+#ifdef MUSSERV
+    {IT_STRING | IT_CVAR,  0, "Music Pref",  &cv_musserver_opt, 0},
+#endif
+    {IT_STRING | IT_CVAR,  0, "Random sound pitch",   &cv_rndsoundpitch, 0},
 };
 
 menu_t  SoundDef =
@@ -2837,7 +2846,11 @@ menu_t  SoundDef =
     M_DrawGenericMenu,
     NULL,
     sizeof(SoundMenu)/sizeof(menuitem_t),
+#if defined(SOUND_DEVICE_OPTION) || defined(MUSSERV)
+    64,32,
+#else
     80,50,
+#endif
     0
 };
 

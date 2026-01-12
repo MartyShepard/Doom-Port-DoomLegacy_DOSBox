@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: s_sound.c 1574 2021-01-28 09:32:04Z wesleyjohnson $
+// $Id: s_sound.c 1577 2021-02-25 03:45:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -123,48 +123,50 @@
 
 #include "m_random.h"
 
+#ifdef SMIF_X11
+#include "linux_x/lx_ctrl.h"
+  // SOUND_DEVICE_OPTION
+#endif
+
 // 3D Sound Interface
 #include "hardware/hw3sound.h"
 
 
-// commands for music and sound servers
+// Print out the sfx headers.
+// #define DEBUG_SFX_HEADER
+
+
+#ifdef SOUND_DEVICE_OPTION
+// SMIF_X11 only.
+static byte snd_change_delay = 0;
+
+static void CV_snd_opt_OnChange( void )
+{
+    // To allow skipping over other selections, before connecting.
+    snd_change_delay = 64;
+    I_SetSoundOption( 99 );  // off
+}
+
+// The values of snd_opt are defined in linux_x/i_sound.c
+// to ensure that menu values and implementation always match.
+consvar_t cv_snd_opt = { "snd_opt", "1", CV_SAVE | CV_CALL, snd_opt_cons_t, CV_snd_opt_OnChange };
+#endif
+
 #ifdef MUSSERV
+// SMIF_X11 only.
 consvar_t cv_musserver_cmd = { "musserver_cmd", "musserver", CV_SAVE };
 consvar_t cv_musserver_arg = { "musserver_arg", "-t 20", CV_SAVE };
 
-void CV_musserv_opt_OnChange( void )
+static void CV_musserv_opt_OnChange( void )
 {
     I_SetMusicOption();
 }
 
-CV_PossibleValue_t musserv_opt_cons_t[] = {
-   {0, "Default dev"},
-   {1, "Search 1"},
-   {2, "Search 2"},
-   {3, "Search 3"},
-   {4, "Midi"},
-   {5, "TiMidity"},
-   {6, "FluidSynth"},
-   {7, "Ext Midi"},
-   {8, "Synth"},
-   {9, "FM Synth"},
-   {10, "Awe32 Synth"},
-   {11, "Dev6"},
-   {12, "Dev7"},
-   {13, "Dev8"},
-   {14, "Dev9"},
-   {0, NULL}
-};
-
-consvar_t cv_musserver_opt = { "musserver_opt", "Search 1", CV_SAVE | CV_CALL,
+// The values of musserv_opt are defined in linux_x/i_sound.c
+// to ensure that menu values and implementation always match.
+consvar_t cv_musserver_opt = { "musserver_opt", "1", CV_SAVE | CV_CALL,
              musserv_opt_cons_t, CV_musserv_opt_OnChange };
 #endif
-
-#ifdef SNDSERV
-consvar_t cv_sndserver_cmd = { "sndserver_cmd", "llsndserv", CV_SAVE };
-consvar_t cv_sndserver_arg = { "sndserver_arg", "-quiet", CV_SAVE };
-#endif
-
 
 #ifdef MACOS_DI
 // specific to macos directory
@@ -191,8 +193,8 @@ consvar_t cv_musicvolume = { "musicvolume", "15", CV_SAVE, soundvolume_cons_t };
 consvar_t cv_rndsoundpitch = { "rndsoundpitch", "Off", CV_SAVE, CV_OnOff };
 
 // number of channels available
-static void NumChannels_OnChange(void);
-consvar_t cv_numChannels = { "snd_channels", "16", CV_SAVE | CV_CALL, CV_byte, NumChannels_OnChange };
+static void SetChannelsNum(void);
+consvar_t cv_numChannels = { "snd_channels", "16", CV_SAVE | CV_CALL, CV_byte, SetChannelsNum };
 
 #ifdef SURROUND_SOUND
 consvar_t cv_surround = { "surround", "0", CV_SAVE, CV_OnOff };
@@ -282,6 +284,10 @@ void S_Register_SoundStuff(void)
     if (dedicated)
         return;
 
+    // Port specific Controls
+#ifdef SOUND_DEVICE_OPTION
+    CV_RegisterVar(&cv_snd_opt);
+#endif
 #ifdef SNDSERV
     CV_RegisterVar(&cv_sndserver_cmd);
     CV_RegisterVar(&cv_sndserver_arg);
@@ -315,20 +321,15 @@ void S_Register_SoundStuff(void)
 #endif
 }
 
-static void NumChannels_OnChange(void)
+static void SetChannelsNum(void)
 {
-    byte i;
+    int i;
 
     // Allocating the internal channels for mixing
     // (the maximum number of sounds rendered
     // simultaneously) within zone memory.
     if (channels)
         Z_Free(channels);
-
-    // Port drivers may use this to reconfigure.
-    // Most port drivers will ignore this.
-    // The number of sfx maintained at one time.
-    I_SetSfxChannels( cv_numChannels.EV );
 
 #ifdef HW3SOUND
     if (hws_mode != HWS_DEFAULT_MODE)
@@ -337,10 +338,10 @@ static void NumChannels_OnChange(void)
         return;
     }
 #endif
-    channels = (channel_t *) Z_Malloc(cv_numChannels.EV * sizeof(channel_t), PU_STATIC, 0);
+    channels = (channel_t *) Z_Malloc(cv_numChannels.value * sizeof(channel_t), PU_STATIC, 0);
 
     // Free all channels for use
-    for (i = 0; i < cv_numChannels.EV; i++)
+    for (i = 0; i < cv_numChannels.value; i++)
     {
         channels[i].sfxinfo = NULL;
         channels[i].origin = NULL;
@@ -418,6 +419,13 @@ void S_GetSfxLump( sfxinfo_t * sfx )
     sfx->data = Z_Malloc( sfx->length, PU_SOUND, 0 );
     memcpy( sfx->data, sfx_lump_data, sfx->length );
     Z_ChangeTag( sfx_lump_data, PU_CACHE );
+
+#ifdef DEBUG_SFX_HEADER   
+    // DEBUG
+    byte * h = (byte*) sfx->data;
+    printf( "sound header  %0i %0i  %0i %0i  %0i %0i  %0i %0i\n",
+	h[0], h[1], h[2], h[3], h[4], h[5], h[6], h[7] );
+#endif
    
     // sound data header format
     // 0,1: 03
@@ -490,7 +498,7 @@ void S_Init(int sfxVolume, int musicVolume)
     S_SetSfxVolume(sfxVolume);
     S_SetMusicVolume(musicVolume);
 
-    NumChannels_OnChange();
+    SetChannelsNum();
 
     // no sounds are playing, and they are not mus_paused
     mus_paused = false;
@@ -528,6 +536,27 @@ void S_Init(int sfxVolume, int musicVolume)
             if (S_sfx[i].name && !S_sfx[i].link)
                 S_GetSfx( & S_sfx[i] );
         }
+
+#if 0
+// [WDJ] From linux_x i_sound.
+// This should not be done in sound driver.
+// If this is to be done anywhere, it should be here.
+// Do not know of any need to do this, but keep it until figure out its history.
+        // Do we have a sound lump for the chaingun?
+        if (W_CheckNumForName("dschgun") == -1)
+        {
+            // No, so link it to the pistol sound
+            S_sfx[sfx_chgun].link = &S_sfx[sfx_pistol];
+            S_sfx[sfx_chgun].pitch = 150;
+            S_sfx[sfx_chgun].volume = 0;
+            S_sfx[sfx_chgun].data = 0;
+            GenPrintf(EMSG_info, "linking chaingun sound to pistol sound,");
+        }
+        else
+        {
+            GenPrintf(EMSG_info, "found chaingun sound,");
+        }
+#endif
 
         GenPrintf(EMSG_info, " pre-cached all sound data\n");
     }
@@ -1112,6 +1141,7 @@ int mix_sfxvolume = 0;
 int mix_musicvolume = 0;
 
 // Called by D_DoomLoop upon tics.
+// Not called when dedicated.
 void S_UpdateSounds(void)
 {
     sound_param_t sp1;
@@ -1121,8 +1151,14 @@ void S_UpdateSounds(void)
 
     mobj_t *listener = displayplayer_ptr->mo;
 
-    if (dedicated)
-        return;
+#ifdef SOUND_DEVICE_OPTION
+    // To allow skipping over other selections, before connecting.
+    if( snd_change_delay )
+    {
+        if( --snd_change_delay == 0 )
+            I_SetSoundOption( cv_snd_opt.EV );  // connect
+    }
+#endif
 
     // Update sound/music volumes, if changed manually at console
     if (mix_sfxvolume != cv_soundvolume.value)

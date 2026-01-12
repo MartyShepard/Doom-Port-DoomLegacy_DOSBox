@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: s_sound.h 1403 2018-07-06 09:49:21Z wesleyjohnson $
+// $Id: s_sound.h 1577 2021-02-25 03:45:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -83,16 +83,6 @@ extern consvar_t cv_soundvolume;
 extern consvar_t cv_musicvolume;
 extern consvar_t cv_numChannels;
 extern consvar_t cv_rndsoundpitch;
-
-#ifdef SNDSERV
-extern consvar_t cv_sndserver_cmd;
-extern consvar_t cv_sndserver_arg;
-#endif
-#ifdef MUSSERV
-extern consvar_t cv_musserver_cmd;
-extern consvar_t cv_musserver_arg;
-extern consvar_t cv_musserver_opt;
-#endif
 
 extern CV_PossibleValue_t soundvolume_cons_t[];
 #ifdef CDMUS
