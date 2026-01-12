@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: i_sound.h 1417 2019-01-29 08:00:14Z wesleyjohnson $
+// $Id: i_sound.h 1574 2021-01-28 09:32:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -19,6 +19,8 @@
 //
 //
 // $Log: i_sound.h,v $
+// Revision 1.9  2003/07/13 13:16:15  hurdler
+//
 // Revision 1.8  2002/12/13 22:34:27  ssntails
 // MP3/OGG support!
 //
@@ -57,34 +59,52 @@
 #include "command.h"
   // consvar_t
 
-
-void  I_GetSfx (sfxinfo_t*  sfx);  // read lump to sfx data, length
-void  I_FreeSfx (sfxinfo_t* sfx);
-
 // The volumes for the hardware and software mixers.
 extern int mix_sfxvolume;
 extern int mix_musicvolume;
-
-
-// Init at program start...
-void I_StartupSound();
-
-// ... update sound buffer and audio device at runtime...
-void I_UpdateSound(void);
-void I_SubmitSound(void);
-
-// ... shut down and relase at program termination.
-void I_ShutdownSound(void);
-
 
 //
 //  SFX I/O
 //
 
+// Sound Device
+typedef enum {
+   SD_NULL = 0,
+   SD_S1 = 1,
+   SD_S2 = 2,
+   SD_S3 = 3,
+   SD_OSS,
+   SD_ESD,
+   SD_ALSA,
+   SD_PULSE,
+   SD_JACK,
+   SD_DEV6,
+   SD_DEV7,
+   SD_DEV8,
+   SD_DEV9,
+} sound_dev_e;
+
+// snd_opt : sound_dev_e
+void  I_SetSoundOption( byte snd_opt );  // select output device
+
+// Init at program start...
+void I_StartupSound();
+// ... shut down and relase at program termination.
+void I_ShutdownSound(void);
+
+// ... update sound buffer and audio device at runtime...
+void I_UpdateSound(void);
+
+void  I_SetSfxVolume(int volume);
+// The number of sfx mixed at one time.
+void  I_SetSfxChannels( byte num_sfx_channels );
+
+void  I_GetSfx (sfxinfo_t*  sfx);  // read lump to sfx data, length
+void  I_FreeSfx (sfxinfo_t* sfx);
+
 // Starts a sound in a particular sound channel.
 //  vol : 0..255
 int I_StartSound ( sfxid_t sfxid, int vol, int sep, int pitch, int priority );
-
 
 // Stops a sound channel.
 void I_StopSound(int handle);
@@ -108,8 +128,7 @@ void I_ShutdownMusic(void);
 #endif
 // Volume.
 void I_SetMusicVolume(int volume);
-void I_SetMusicOption(void);
-void I_SetSfxVolume(int volume);
+
 // PAUSE game handling.
 void I_PauseSong(int handle);
 void I_ResumeSong(int handle);

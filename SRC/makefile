@@ -182,6 +182,19 @@ MUS_OS_LIST= SCOOS5 SCOUW2 SCOUW7
 #   MUS_OS=SCOUW7
 # ESD demon for X11 (esound), not needed for SDL.
 #   HAVE_ESD=1
+#   OPTIONAL_ESD
+# OSS sound for X11
+#   HAVE_OSS
+#   OPTIONAL_OSS
+# ALSA sound for X11
+#   HAVE_ALSA
+#   OPTIONAL_ALSA
+# Jack sound for X11
+#   HAVE_JACK
+#   OPTIONAL_JACK
+# PulseAudio sound for X11
+#   HAVE_PULSE
+#   OPTIONAL_PULSE
 
 # GGI option on X11
 #   X11_GGI=1
@@ -452,6 +465,10 @@ endif
 OS_LIST:=LINUX FREEBSD NETBSD WIN32 WIN7 WIN98 OS2 DOS MAC
 
 OPTS:=
+OPTLIB:=
+OPTLD:=
+OPTCFLAG:=
+SUPPORT_EXE:=
 
 ifeq ($(OS), LINUX)
   LINUX=1
@@ -605,6 +622,79 @@ ifdef ENV_CFLAGS
   CFLAGS+=$(ENV_CFLAGS)
 endif
 
+SND_DEVS:=
+SND_CFLAGS:=
+SND_LIBS:=
+SND_LDFLAGS:=
+SNDSERV_EXTRAFLAGS:=
+ifdef HAVE_ESD
+  SND_DEVS+=-DDEV_ESD
+  SND_LIBS+=-lesd
+  SNDSERV_EXTRAFLAGS+=HAVE_ESD=1
+  export HAVE_ESD
+else
+  ifdef OPTIONAL_ESD
+    SND_DEVS+=-DDEV_OPT_ESD
+    SNDSERV_EXTRAFLAGS+=OPTIONAL_ESD=1
+    export OPTIONAL_ESD
+  endif
+endif
+ifdef HAVE_OSS
+  SND_DEVS+=-DDEV_OSS
+  SNDSERV_EXTRAFLAGS+=HAVE_OSS=1
+  export HAVE_OSS
+else
+  ifdef OPTIONAL_OSS
+    SND_DEVS+=-DDEV_OPT_OSS
+    SNDSERV_EXTRAFLAGS+=OPTIONAL_OSS=1
+    export OPTIONAL_OSS
+  endif
+endif
+ifdef HAVE_ALSA
+  SND_DEVS+=-DDEV_ALSA
+  SND_LIBS+=-lasound -lm -ldl -lpthread -lrt
+  SNDSERV_EXTRAFLAGS+=HAVE_ALSA=1
+  export HAVE_ALSA
+else
+  ifdef OPTIONAL_ALSA
+    SND_DEVS+=-DDEV_OPT_ALSA
+    SNDSERV_EXTRAFLAGS+=OPTIONAL_ALSA=1
+    export OPTIONAL_ALSA
+  endif
+endif
+ifdef HAVE_JACK
+  SND_DEVS+=-DDEV_JACK
+  SND_LIBS+=-ljack -lpthread
+  SNDSERV_EXTRAFLAGS+=HAVE_JACK=1
+  export HAVE_JACK
+else
+  ifdef OPTIONAL_JACK
+    SND_DEVS+=-DDEV_OPT_JACK
+    SNDSERV_EXTRAFLAGS+=OPTIONAL_JACK=1
+    export OPTIONAL_JACK
+  endif
+endif
+ifdef HAVE_PULSE
+  SND_DEVS+=-DDEV_PULSE
+  SND_CFLAGS+=-D_REENTRANT
+  SND_LIBS+=-L/usr/lib/pulseaudio -lpulse
+  # do not seem to need pulsecommon
+#  SND_LIBS+=-L/usr/lib/pulseaudio -lpulse -lpulsecommon-$(HAVE_PULSE)
+#  SND_LIBS+=-lpulse
+  SND_LDFLAGS+=-L/usr/lib/pulseaudio
+#  SND_LDFLAGS+=-L/usr/lib/pulseaudio -lpulsecommon-$(HAVE_PULSE)
+#  SND_LDFLAGS+=-L/usr/lib/pulseaudio -lpulsecommon
+  # modlibexecdir=/usr/lib/pulse-9.0/modules
+  SNDSERV_EXTRAFLAGS+=HAVE_PULSE=1
+  export HAVE_PULSE
+else
+  ifdef OPTIONAL_PULSE
+    SND_DEVS+=-DDEV_OPT_PULSE
+    SNDSERV_EXTRAFLAGS+=OPTIONAL_PULSE=1
+    export OPTIONAL_PULSE
+  endif
+endif
+
 
 #=================================
 ifeq ($(SMIF), SDL)
@@ -720,7 +810,7 @@ ifeq ($(SMIF), LINUX_X11)
   INTERFACE=linux_x
 
   MUSSERV:=linux_x/musserv
-  SNDSERV:=linux_x/sndserv
+  SUPPORT_EXE:=dll musserv
   
   DEP_HARD:=1
   DEP_X11:=1
@@ -734,7 +824,16 @@ ifeq ($(SMIF), LINUX_X11)
   # Uncomment if you want to use SOUND_RESET, only valid without SNDSERV
   #OPTS+=-DSOUND_RESET
 
-  OPTS+=-DSMIF_X11 -DSNDSERV -DHWRENDER
+  OPTS+=-DSMIF_X11 -DHWRENDER $(SND_DEVS)
+  ifdef SOUND_SERVER
+    OPTS+=-DSNDSERV
+    SNDSERV:=linux_x/sndserv
+    SUPPORT_EXE+=sndserv
+  else
+    OPTS+=$(SND_CFLAGS)
+    OPTLIB+=$(SND_LIBS)
+    OPTLD+=$(SND_LDFLAGS)
+  endif
   ifdef CDMUS
     OPTS+=-DMUSSERV
   endif
@@ -753,8 +852,8 @@ ifeq ($(SMIF), LINUX_X11)
     # GGI
     OPTS+=-DSMIF_X11_GGI
     OPTINC:=$(SRCINC)
-    LDFLAGS:=
-    LIBS:=-lggi -lm
+    LDFLAGS:=$(OPTLD)
+    LIBS:=-lggi -lm $(OPTLIB)
     # name of the exefile
     EXENAME:=llggidoom
     SFLAGS:=-g $(OPTS)
@@ -763,8 +862,8 @@ ifeq ($(SMIF), LINUX_X11)
     # standard X11
     OPTS+=$(POLL_POINTER)
     OPTINC+=$(SRCINC) -I/usr/X11R6/include
-    LDFLAGS:=-L/usr/X11R6/lib
-    LIBS:=-lGL -lGLU -lXext -lX11 -lm -ldl -lXxf86vm
+    LDFLAGS:=-L/usr/X11R6/lib $(OPTLD)
+    LIBS:=-lGL -lGLU -lXext -lX11 -lm -ldl -lXxf86vm $(OPTLIB)
 
     #WITH_DGA=1
     ifdef WITH_DGA
@@ -786,9 +885,10 @@ ifeq ($(SMIF), FREEBSD_X11)
   INTERFACE=linux_x
 
 #  MUSSERV=linux_x/musserv
-  SNDSERV=linux_x/sndserv
   OSVERSION:=$(shell /sbin/sysctl -n kern.osreldate)
   OSMAJOR:=$(shell echo $(OSVERSION) | sed 's/.....$$//')
+
+  SUPPORT_EXE:=dll
 
   DEP_HARD:=1
   DEP_X11:=1
@@ -802,7 +902,16 @@ ifeq ($(SMIF), FREEBSD_X11)
   # Uncomment if you want to use SOUND_RESET, only valid without SNDSERV
   #OPTS+=-DSOUND_RESET
 
-  OPTS+=-DSMIF_X11 -DSNDSERV -DHWRENDER
+  OPTS+=-DSMIF_X11 -DHWRENDER
+  ifdef SOUND_SERVER
+    OPTS+=-DSNDSERV
+    SNDSERV=linux_x/sndserv
+    SUPPORT_EXE+=sndserv
+  else
+    OPTS+=$(SND_CFLAGS)
+    OPTLIB+=$(SND_LIBS)
+    OPTLD+=$(SND_LDFLAGS)
+  endif
   # objs common to xshm and ggi, video is added later
   # Note: free-bsd version of cdmus
   MAINOBJ:=i_main.o
@@ -817,8 +926,8 @@ ifeq ($(SMIF), FREEBSD_X11)
     # GGI
     OPTS+=-DSMIF_X11_GGI
     OPTINC+=$(SRCINC) -I/usr/local/include
-    LDFLAGS:=
-    LIBS:=-lggi -lm -lipx
+    LDFLAGS:=$(OPTLD)
+    LIBS:=-lggi -lm -lipx $(OPTLIB)
     # name of the exefile
     EXENAME:=llggidoom
     SFLAGS:=-g $(OPTS)
@@ -827,8 +936,8 @@ ifeq ($(SMIF), FREEBSD_X11)
     # standard X11
     OPTS+=$(POLL_POINTER)
     OPTINC+=$(SRCINC) -I/usr/X11R6/include
-    LDFLAGS:=-L/usr/X11R6/lib
-    LIBS:=-lXext -lX11 -lm -lXxf86vm -lipx -lkvm -lpthread
+    LDFLAGS:=-L/usr/X11R6/lib $(OPTLD)
+    LIBS:=-lXext -lX11 -lm -lXxf86vm -lipx -lkvm -lpthread $(OPTLIB)
     # name of the exefile
     EXENAME:=llxdoom
     SFLAGS:=-g $(OPTS)
@@ -1074,11 +1183,6 @@ else
 endif
 endif
 
-SNDSERV_EXTRAFLAGS:=
-ifdef HAVE_ESD
-  SNDSERV_EXTRAFLAGS:=HAVE_ESD=1
-endif
-
 
 # objs that are in main directories
 MOBJS:=\
@@ -1128,18 +1232,7 @@ ifndef MAKE_OPTIONS_PRESENT
 endif
 
 # ALL, compile and link
-ifeq ($(SMIF), LINUX_X11)
-all: $(BIN)/$(EXENAME) dll musserv sndserv
-
-else
-ifeq ($(SMIF), FREEBSD_X11)
-all:	 $(BIN)/$(EXENAME) dll sndserv
-
-else
-all:	 $(BIN)/$(EXENAME)
-
-endif
-endif
+all:	 $(BIN)/$(EXENAME)  $(SUPPORT_EXE)
 
 
 # Directly using $(error) prevents the output of the other commands.
@@ -1215,17 +1308,14 @@ dll : $(O)/r_opengl.o $(O)/ogl_x11.o
 ifdef MUS_OS
   export MUS_OS
 endif
-ifdef HAVE_ESD
-  export HAVE_ESD
-endif
 
-ifdef MUSSERV
 musserv:
+ifdef MUSSERV
 	cd $(SD)$(MUSSERV) && $(MAKE)
 endif
 
-ifdef SNDSERV
 sndserv:
+ifdef SNDSERV
 	cd $(SD)$(SNDSERV) && $(MAKE) $(SNDSERV_EXTRAFLAGS)
 endif
 

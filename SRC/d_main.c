@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1573 2021-01-28 09:27:41Z wesleyjohnson $
+// $Id: d_main.c 1574 2021-01-28 09:32:04Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1573"
+#define SVN_REV "1574"
 #endif
 
 
@@ -1042,13 +1042,9 @@ void D_DoomLoop(void)
         {
             //Other implementations might need to update the sound here.
 #ifndef SNDSERV
-            // Sound mixing for the buffer is snychronous.
+            // Sound mixing for the buffer is called by the sound driver.
+            // Handles sychronous driver, and SNDINTR.
             I_UpdateSound();
-#endif
-            // Synchronous sound output is explicitly called.
-#ifndef SNDINTR
-            // Update sound output.
-            I_SubmitSound();
 #endif
 
 #ifdef CDMUS

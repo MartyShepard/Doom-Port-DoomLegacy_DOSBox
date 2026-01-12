@@ -8513,5 +8513,16 @@ patchfile = w109_034_ver1489
 - commit revision 1573
 Up to 1.48.9, to separate identity.
 
+*** w109_sound1
+patchfile = w109_035_sound1
+- commit revision 1574
+Remove I_SetChannels, as name was misleading.
+Moved any table setup to a function setup_mixer_tables().
+Created I_SetSfxChannels to pass  cv_numChannels setting
+to ports that depend upon it.
+Only the X11 port does anything with the setting,
+and that may change.
+Prepare for X11 sound enhancements with support in the
+Makefile.
 
 === commit
