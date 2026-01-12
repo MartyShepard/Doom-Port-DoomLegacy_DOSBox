@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: g_input.h 1566 2020-12-19 06:22:58Z wesleyjohnson $
+// $Id: g_input.h 1570 2021-01-28 09:24:16Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -146,7 +146,7 @@ extern consvar_t   cv_mouse2_sens_y;
 #ifdef MOUSE2
 extern consvar_t   cv_mouse2port;
 extern consvar_t   cv_mouse2opt;
-#ifdef SMIF_SDL
+#if defined( SMIF_SDL ) || defined( SMIF_WIN32 ) || defined( SMIF_X11 )
 extern consvar_t   cv_mouse2type;
 #endif
 # ifdef LINUX

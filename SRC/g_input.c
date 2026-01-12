@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: g_input.c 1566 2020-12-19 06:22:58Z wesleyjohnson $
+// $Id: g_input.c 1570 2021-01-28 09:24:16Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -90,19 +90,17 @@ CV_PossibleValue_t mouse2port_cons_t[] = {
   {0, NULL} };
 #define CV_DEFAULT_PORT  "gpmdata"
 #endif
-
 #ifdef MOUSE2_WIN
 CV_PossibleValue_t mouse2port_cons_t[] = {
   {1, "COM1"}, {2, "COM2"}, {3, "COM3"}, {4, "COM4"},
   {5, "COM5"}, {6, "COM6"}, {7, "COM7"}, {8, "COM8"},  // Some Windows are reported to connect USB or other devices to COM ports
   {0, NULL} };
 #define CV_DEFAULT_PORT  "COM2"
-consvar_t cv_mouse2port = { "mouse2port", CV_DEFAULT_PORT , CV_SAVE|CV_STRING|CV_CALL|CV_NOINIT, mouse2port_cons_t, I_StartupMouse2 };
 #endif
-
+consvar_t cv_mouse2port = { "mouse2port", CV_DEFAULT_PORT , CV_SAVE|CV_STRING|CV_CALL|CV_NOINIT, mouse2port_cons_t, I_StartupMouse2 };
 consvar_t cv_mouse2opt = { "mouse2opt", "0", CV_SAVE|CV_STRING|CV_CALL|CV_NOINIT, NULL, I_StartupMouse2 };
-#if defined( SMIF_SDL ) || defined( SMIF_WIN32 )
-// Only in SDL, WIN32 for now.
+#if defined( SMIF_SDL ) || defined( SMIF_WIN32 ) || defined( SMIF_X11 )
+// Only in SDL, WIN32, X11 for now.
 CV_PossibleValue_t mouse2type_cons_t[] = { {0, "PC"}, {1, "MS"}, {2, "PS2"}, {0, NULL} };
 consvar_t cv_mouse2type = { "mouse2type", "0" , CV_SAVE|CV_STRING|CV_CALL|CV_NOINIT, mouse2type_cons_t, I_StartupMouse2 };
 #endif
