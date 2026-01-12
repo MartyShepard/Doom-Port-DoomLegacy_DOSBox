@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: g_game.c 1571 2021-01-28 09:24:43Z wesleyjohnson $
+// $Id: g_game.c 1582 2021-08-10 20:41:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -434,6 +434,7 @@ boolean         netgame;                // only true if packets are broadcast
 boolean         multiplayer;
 
 // players and bots
+byte            max_num_players = 32;      // dependent upon demo
 byte            num_game_players = 0;      // number of actual players, from playeringame, incl bots
 byte            playeringame[MAXPLAYERS];  // player active
 byte            player_state[MAXPLAYERS];  // from where, and pending player
@@ -2994,6 +2995,7 @@ void G_gamemode_EN_defaults( void )
 void G_set_gamemode( byte new_gamemode )
 {
     gamemode = new_gamemode;
+    max_num_players = MAXPLAYERS;  // dependent upon demo
     EV_legacy = VERSION;  // current DoomLegacy version
     // Legacy defaults.
     EN_doom_etc = 1;
@@ -3093,6 +3095,7 @@ void G_demo_defaults( void )
 #ifdef DOORDELAY_CONTROL
     adj_ticks_per_sec = 35; // default
 #endif
+    max_num_players = MAXPLAYERS;  // dependent upon demo
 }
 
 
@@ -3644,14 +3647,13 @@ void G_DoPlayDemo (const char *defdemoname)
     lumpnum_t  lmp;
     int   i, episode, map;
     int   demo_size;
-    int   num_players = 4;
     boolean boomdemo = 0;
     byte  demo144_format = 0;
     byte  boom_compatibility_mode = 0;  // Boom 2.00 compatibility flag
     byte  boom_compatibility_level = 0;
 
     playdemo_save_settings();  // [WDJ] Save user settings.
-   
+
     // Enables that might be set directly by the demo.
     // Defaults
     EN_boom = 0;
@@ -3911,7 +3913,7 @@ void G_DoPlayDemo (const char *defdemoname)
     if( demoversion==109 )
     {
         // header[9..12]: byte: player[1..4] present boolean
-        num_players = 4;
+        max_num_players = 4;
     }
     else if( boomdemo )
     {
@@ -4015,7 +4017,7 @@ void G_DoPlayDemo (const char *defdemoname)
 
         // byte: player[1..32] present boolean
         // Boom saved room for 32 players even though only supported 4
-        num_players = (boom_compatibility_level < 200)? 4 : 32;
+        max_num_players = (boom_compatibility_level < 200)? 4 : 32;
 
         if( boom_compatibility_mode )
         {
@@ -4042,7 +4044,7 @@ void G_DoPlayDemo (const char *defdemoname)
         if (demoversion<113)
         {
             // header[9..16]: byte: player[1..8] present boolean
-            num_players = 8;	    
+            max_num_players = 8;	    
         }
         else
         {
@@ -4055,7 +4057,7 @@ void G_DoPlayDemo (const char *defdemoname)
             }
 
             // header[18..50]: byte: player[1..32] present boolean
-            num_players = 32;
+            max_num_players = 32;
         }
     }
 
@@ -4067,7 +4069,7 @@ void G_DoPlayDemo (const char *defdemoname)
 
     // Read players in game.
     memset( playeringame, 0, sizeof(playeringame) );
-    for (i=0 ; i<num_players ; i++)
+    for (i=0 ; i<max_num_players ; i++)
     {
         playeringame[i] = *demo_p++;
 #ifdef DEBUG_DEMO

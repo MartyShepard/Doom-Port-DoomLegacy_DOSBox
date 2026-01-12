@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1580 2021-07-23 20:55:58Z wesleyjohnson $
+// $Id: d_clisrv.c 1582 2021-08-10 20:41:33Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1650,7 +1650,7 @@ static void control_msg_handler( void )
 
             if( server )  break;  // protection, should not happen
 
-	    byte mode = netbuffer->u.control.data1;
+            byte mode = netbuffer->u.control.data1;
             gametic = read_N32( & netbuffer->u.control.gametic );
             cl_need_tic = maketic = gametic;  // sync
 
@@ -1706,18 +1706,28 @@ static void get_random_state( random_state_t * rs )
     write_N32( &rs->e_rand2, rand2 );
 }
 
-#define SET_RANDOM    1
+typedef enum  {
+   RSC_server_report, // Server reporting a client message.
+   RSC_client_set     // Client, sets values from server
+}  checkset_e;
+
 // Client
 // Receive: Update client random state.
-//   set_enable : 1=enable set,  0=check only
-static void random_state_checkset( random_state_t * rs, const char * msg, byte set_enable )
+//   mode : checkset_e
+static void
+  random_state_checkset( random_state_t * rs, const char * msg, byte mode )
 {
     uint32_t  o_ernd1, o_ernd2, rs_ernd1, rs_ernd2;
     byte  o_pr, o_br, rs_pr, rs_br;
-
-    if( ! msg )
+    // RSC_server_report
+    const char * u1 = "server";
+    const char * u2 = "client";
+   
+    if( mode == RSC_client_set )
     {
-        msg = "Client random state repair";
+        // Client, set to server values
+        u1 = "update client";
+        u2 = "to server";
     }
 
     o_pr = P_Rand_GetIndex();
@@ -1725,9 +1735,9 @@ static void random_state_checkset( random_state_t * rs, const char * msg, byte s
     if( o_pr != rs_pr )
     {
         // Warn when different P_Random index.
-        GenPrintf( EMSG_warn, "%s: gametic %i, update P_random index %i to %i\n",
-             msg, gametic, o_pr, rs_pr );
-        if( set_enable )
+        GenPrintf( EMSG_warn, "%s: gametic %i, %s P_random index %i %s %i\n",
+             msg, gametic, u1, o_pr, u2, rs_pr );
+        if( mode == RSC_client_set )
             P_Rand_SetIndex( rs_pr ); // to sync P_Random
     }
    
@@ -1735,8 +1745,8 @@ static void random_state_checkset( random_state_t * rs, const char * msg, byte s
     rs_br = rs->b_rand_index;
     if( o_br != rs_br )
     {
-        GenPrintf( EMSG_warn, "%s: update B_Random index %i to %i\n", msg, o_br, rs_br );
-        if( set_enable )
+        GenPrintf( EMSG_warn, "%s: %s B_Random index %i %s %i\n", msg, u1, o_br, u2, rs_br );
+        if( mode == RSC_client_set )
             B_Rand_SetIndex( rs_br ); // to sync B_Random
     }
 
@@ -1745,9 +1755,9 @@ static void random_state_checkset( random_state_t * rs, const char * msg, byte s
     rs_ernd2 = read_N32( &rs->e_rand2 );
     if( o_ernd1 != rs_ernd1 || o_ernd2 != rs_ernd2 )
     {
-        GenPrintf( EMSG_warn, "%s: update E_Random (%08X,%08X) to (%08X,%08X)\n",
-                   msg, o_ernd1, o_ernd2, rs_ernd1, rs_ernd2 );
-        if( set_enable )
+        GenPrintf( EMSG_warn, "%s: %s E_Random (%08X,%08X) %s (%08X,%08X)\n",
+                   msg, u1, o_ernd1, o_ernd2, u2, rs_ernd1, rs_ernd2 );
+        if( mode == RSC_client_set )
             E_Rand_Set( rs_ernd1, rs_ernd2 ); // to sync E_Random
     }
 }
@@ -1784,7 +1794,7 @@ static void state_handler( void )
     else
     {
         // Update the random generators.
-        random_state_checkset( & netbuffer->u.state.rs, "PT_STATE", SET_RANDOM ); // to sync P_Random
+        random_state_checkset( & netbuffer->u.state.rs, "PT_STATE", RSC_client_set ); // to sync P_Random
     }
     paused = netbuffer->u.state.server_pause;
 
@@ -2542,7 +2552,7 @@ static void repair_handler_client( byte nnode )
             GenPrintf( EMSG_warn, "Client repair: gametic client %u  server %u\n", gametic, net_gametic );
             gametic = net_gametic;
         }
-        random_state_checkset( & netbuffer->u.repair.rs, NULL, SET_RANDOM ); // to sync P_Random
+        random_state_checkset( & netbuffer->u.repair.rs, "Client repair", RSC_client_set ); // to sync P_Random
     }
 
     switch( rq_type )
@@ -2654,7 +2664,8 @@ reset_to_title_exit:
 static void repair_handler_server( byte nnode )
 {
     // Message is PT_REPAIR
-    random_state_checkset( & netbuffer->u.repair.rs, "Repair", 0 ); // to check P_Random
+    random_state_checkset( & netbuffer->u.repair.rs, "Report", RSC_server_report ); // to check P_Random
+
     byte rq_type = netbuffer->u.repair.repair_type;
     switch( rq_type )
     {
@@ -2691,7 +2702,7 @@ static void repair_handler_server( byte nnode )
 
      case RQ_CLOSE_ACK:
         // Client is ending the repair.
-//        random_state_checkset( & netbuffer->u.repair.rs, "Repair Close", 0 ); // to check P_Random
+//        random_state_checkset( & netbuffer->u.repair.rs, "Repair Close", RSC_server_report ); // to check P_Random
         nnode_state[nnode] = NOS_active;
         GenPrintf(EMSG_warn, "Repair: closed.\n" );
         SV_network_wait_handler();
@@ -2734,7 +2745,7 @@ static void netwait_handler( void )
     num_netplayer = netbuffer->u.netwait.num_netplayer;
     wait_netplayer = netbuffer->u.netwait.wait_netplayer;
     wait_tics = LE_SWAP16( netbuffer->u.netwait.wait_tics );
-    random_state_checkset( & netbuffer->u.netwait.rs, NULL, SET_RANDOM ); // to sync P_Random
+    random_state_checkset( & netbuffer->u.netwait.rs, "Client netwait", RSC_client_set ); // to sync P_Random
 }
 
 // Called from D_Display when GS_WAITINGPLAYERS, CL_ConnectToServer?
@@ -4093,7 +4104,7 @@ void Got_NetXCmd_AddPlayer(xcmd_t * xc)
             // Otherwise starting a splitscreen game, will not send the player2 config.
             Send_NameColor_pind(pind);
             Send_WeaponPref_pind(pind);
-	}
+        }
        
         DEBFILE(va("Spawning player[%i] pind=%i at this node.\n", newplayernum, pind));
     }

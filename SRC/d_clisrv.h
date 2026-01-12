@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.h 1539 2020-06-30 06:41:28Z wesleyjohnson $
+// $Id: d_clisrv.h 1582 2021-08-10 20:41:33Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -287,7 +287,7 @@ typedef struct {
 
 // aligned to 4 bytes
 typedef struct {
-    byte  pid; // player index   
+    byte  pid; // player index
     byte  playerstate;  // alive or DEAD
     byte  flags;
     byte  readyweapon;

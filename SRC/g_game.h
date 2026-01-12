@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: g_game.h 1541 2020-07-06 20:50:52Z wesleyjohnson $
+// $Id: g_game.h 1582 2021-08-10 20:41:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -102,6 +102,7 @@ extern byte       player_state[MAXPLAYERS];
 // changed to 2d array 19990220 by Kin
 extern char       player_names[MAXPLAYERS][MAXPLAYERNAME];
 extern byte       num_game_players;  // number of actual players
+extern byte       max_num_players;   // dependent upon demo
 
 
 

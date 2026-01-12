@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01582 ]: w109_043 numplayer, P_Random, repair report
 [01581 ]: w109_042 splat netgame bug
 [01580 ]: w109_041 wait99
 [01579 ]: w109 040 x11sound3

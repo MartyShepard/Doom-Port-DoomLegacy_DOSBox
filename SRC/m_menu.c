@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: m_menu.c 1580 2021-07-23 20:55:58Z wesleyjohnson $
+// $Id: m_menu.c 1582 2021-08-10 20:41:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -4037,7 +4037,7 @@ void  get_directory_entries( int skip_count )
         if( slotindex >= 0 )  // because of dir list scrolling
         {
             // Only want the name after legacyhome
-            dl_strcpy( savegamedisp[slotindex].desc, dent->d_name, SAVESTRINGSIZE );
+            dl_strncpy( savegamedisp[slotindex].desc, dent->d_name, SAVESTRINGSIZE );
             // The up-dir is passed as an empty string.
             if( strcmp( savegamedisp[slotindex].desc, ".." ) == 0 )
                 savegamedisp[slotindex].desc[0] = 0;

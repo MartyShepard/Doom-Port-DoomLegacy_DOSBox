@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1563 2020-11-29 11:52:09Z wesleyjohnson $
+// $Id: p_enemy.c 1582 2021-08-10 20:41:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -593,7 +593,8 @@ static boolean P_CheckMissileRange (mobj_t* actor)
         // Boom has two calls of P_Random, which affect demos
         // killough 7/18/98: no friendly fire at corpses
         // killough 11/98: prevent too much infighting among friends
-        return  !(actor->flags & MF_FRIEND)
+        return
+         !(actor->flags & MF_FRIEND)
          ||( (target->health > 0)
              &&( !(target->flags & MF_FRIEND)
                  || (target->player ?
@@ -650,6 +651,7 @@ static boolean P_CheckMissileRange (mobj_t* actor)
     if (actor->type == MT_CYBORG && dist > 160)
         dist = 160;
 
+    // Same as PrBoom.
     if (PP_Random(pr_missrange) < dist)
         goto ret_false;
 
@@ -924,11 +926,15 @@ static boolean P_MoveActor (mobj_t* actor, byte dropoff)
             // A line blocking the monster got activated, a little randomness
             // to get unstuck from door frame.
             if (EN_mbf_doorstuck)
+            {
                 good = (PP_Random(pr_opendoor) >= 230) ^ (hit_block);  // MBF
+            }
             else
+            {
                 good = PP_Random(pr_trywalk) & 3;  // Boom jff, 25% fail
                 // Causes monsters to back out when they should not,
                 // and causes secondary stickiness.
+            }
         }
         return good;
     }
@@ -1004,14 +1010,14 @@ static boolean P_SmartMove(mobj_t *actor)
 
     // haleyjd: allow all friends of Helper_MT Type to also jump down
 
-    if( cv_mbf_dog_jumping.EV
-        && (actor->type == MT_DOG
+    if( (actor->type == MT_DOG
             || ((actor->type == helper_MT) && (actor->flags & MF_FRIEND)) )
+        && cv_mbf_dog_jumping.EV
         && target
         && SAME_FRIEND(target, actor)
         && P_AproxDistance(actor->x - target->x, actor->y - target->y)
              < FRACUNIT*144
-        && (PP_Random(pr_dropoff) < 235)
+        && (PP_Random(pr_dropoff) < 235)  // usage enabled by dog_jumping
       )
         dropoff = 2;
 #endif
@@ -1020,6 +1026,7 @@ static boolean P_SmartMove(mobj_t *actor)
         return false;
 
     // killough 9/9/98: avoid crushing ceilings or other damaging areas
+    // P_Random usage enabled by mbf_staylift => on_lift.
     if( on_lift
         && (PP_Random(pr_stayonlift) < 230) // Stay on lift
         && !P_IsOnLift(actor)
@@ -1029,6 +1036,7 @@ static boolean P_SmartMove(mobj_t *actor)
     if( cv_mbf_monster_avoid_hazard.EV
         && (under_damage == 0) )
     {
+        // P_Random usage enabled by mbf_monster_avoid_hazard.
         // Get away from damage
         under_damage = P_IsUnderDamage(actor);
         if( under_damage
@@ -1201,10 +1209,7 @@ void P_NewChaseDir_P2 (mobj_t * actor, fixed_t deltax, fixed_t deltay )
 
     if( xdir == turnaround)
         xdir = DI_NODIR;
-    if( ydir == turnaround)
-        ydir = DI_NODIR;
-
-    if( xdir != DI_NODIR )
+    else if( xdir != DI_NODIR )
     {
         actor->movedir = xdir;
         if( P_TryWalk(actor) )
@@ -1214,7 +1219,9 @@ void P_NewChaseDir_P2 (mobj_t * actor, fixed_t deltax, fixed_t deltay )
         }
     }
 
-    if( ydir != DI_NODIR )
+    if( ydir == turnaround)
+        ydir = DI_NODIR;
+    else if( ydir != DI_NODIR )
     {
         actor->movedir = ydir;
         if( P_TryWalk(actor) )
@@ -1407,6 +1414,7 @@ static void P_NewChaseDir(mobj_t *actor)
                                 || target->player->readyweapon == wp_chainsaw) ))
                   )
                 {   // Back away from melee attacker
+                    // P_Random usage enabled by mbf_monster_backing.		   
                     actor->strafecount = PP_Random(pr_enemystrafe) & 0x0F;
                     deltax = -deltax;
                     deltay = -deltay;
@@ -1579,8 +1587,13 @@ static boolean P_LookForPlayers ( mobj_t*       actor,
     if( (lastlook < 0) && (EV_legacy >= 129) )
     {
         // Legacy use of P_Random, enabled by EV_legacy >= 129.
+#ifdef MAX_PLAYERS_VARIABLE  // unneeded
         // Boom, MBF demo assumes MAXPLAYERS=4, but Legacy MAXPLAYERS=32.
+        lastlook = PP_Random(pL_initlastlook) % max_num_players;
+#else
+        // Boom, MBF Demo cannot reach here.
         lastlook = PP_Random(pL_initlastlook) % MAXPLAYERS;
+#endif
     }
 
     actor->lastlook = lastlook;
