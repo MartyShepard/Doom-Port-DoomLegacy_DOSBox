@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1574 2021-01-28 09:32:04Z wesleyjohnson $
+// $Id: d_main.c 1575 2021-02-04 11:26:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1574"
+#define SVN_REV "1575"
 #endif
 
 
@@ -1042,8 +1042,7 @@ void D_DoomLoop(void)
         {
             //Other implementations might need to update the sound here.
 #ifndef SNDSERV
-            // Sound mixing for the buffer is called by the sound driver.
-            // Handles sychronous driver, and SNDINTR.
+            // Handles sound mixing, and synchronous driver.
             I_UpdateSound();
 #endif
 
@@ -3327,9 +3326,6 @@ fatal_error_action:
     }
     // Music init is in I_StartupSound
     I_StartupSound();
-#if defined( __DJGPP__ )		
-    I_InitMusic();      // setup music buffer for quick mus2mid  
-#endif		
     S_Init(cv_soundvolume.value, cv_musicvolume.value);
 
     CONS_Printf(text[ST_INIT_NUM]);

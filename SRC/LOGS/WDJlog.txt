@@ -8526,3 +8526,19 @@ Prepare for X11 sound enhancements with support in the
 Makefile.
 
 === commit
+
+*** w109_sound2
+patchfile = w109_036_sound1
+- commit revision 1575
+Finish the changes to sound interface in all the ports.
+
+*** w109_zip3
+patchfile = w109_037_zip3
+- commit revision 1576
+The optional libzip support does not use dlopen correctly.
+Using dlsym is required.
+I don't know why it worked during the test, it should not have.
+Also made changes in some names, to meet uniformity goals,
+such as enable OPT_LIBZIP.
+
+

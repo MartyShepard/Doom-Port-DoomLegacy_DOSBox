@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: I_sound.c 1574 2021-01-28 09:32:04Z wesleyjohnson $
+// $Id: I_sound.c 1575 2021-02-04 11:26:49Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -80,6 +80,8 @@
 #define SAMPLECOUNT    512
 
 
+static void  init_music(void);
+static void  shutdown_music(void);
 
 //
 // this function converts raw 11khz, 8-bit data to a SAMPLE* that allegro uses
@@ -154,6 +156,7 @@ void I_FreeSfx (sfxinfo_t* sfx)
 //  num_sfx_channels : the number of sfx maintained at one time.
 void I_SetSfxChannels( byte num_sfx_channels )
 {
+    // Allegro has the channels.
 }
 
 void I_SetSfxVolume(int volume)
@@ -241,6 +244,7 @@ int I_SoundIsPlaying(int handle)
 
   if(voice_check(handle & (VIRTUAL_VOICES-1))==S_sfx[handle>>VOICESSHIFT].data)
       return TRUE;
+
   return FALSE;
 }
 
@@ -321,6 +325,9 @@ void I_ShutdownSound(void)
   //added:08-01-98: remove_sound() explicitly because we don't use
   //                Allegro's allegro_exit();
   remove_sound();
+
+  shutdown_music();
+
   sound_started = false;
 }
 
@@ -357,6 +364,9 @@ void I_StartupSound()
     //added:08-01-98:we use a similar startup/shutdown scheme as Allegro.
     I_AddExitFunc(I_ShutdownSound);
     sound_started = true;
+   
+    // InitMusic
+    init_music();
 }
 
 
@@ -380,7 +390,7 @@ char*           musicbuffer;
  *  a MIDI structure, *  or NULL on error.
  *  It is the load_midi from Allegro modified to load it from memory
  */
-MIDI *load_midi_mem(char *mempointer,int *e)
+MIDI * load_midi_mem(char *mempointer,int *e)
 {
    int c;
    long data=0;
@@ -441,7 +451,9 @@ MIDI *load_midi_mem(char *mempointer,int *e)
 
 #define MIDBUFFERSIZE   128*1024L
 
-void I_InitMusic(void)
+// Called by I_StartupSound
+static
+void  init_music(void)
 {
     if(nomusic)
        return;
@@ -450,11 +462,13 @@ void I_InitMusic(void)
     musicbuffer=(char *)Z_Malloc(MIDBUFFERSIZE,PU_STATIC,NULL);
 
     _go32_dpmi_lock_data(musicbuffer,MIDBUFFERSIZE);
-    I_AddExitFunc(I_ShutdownMusic);
+//    I_AddExitFunc( shutdown_music );  // also done by I_ShutdownSound
     music_started = true;
 }
 
-void I_ShutdownMusic(void)
+// Called by I_ShutdownSound
+static 
+void  shutdown_music(void)
 {
     if( !music_started )
         return;
