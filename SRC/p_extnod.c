@@ -7,6 +7,7 @@
 //  Copyright (C) 1999 by
 //  id Software, Chi Hoang, Lee Killough, Jim Flynn, Rand Phares, Ty Halderman
 //  Copyright(C) 2015-2020 Fabian Greffrath
+//  Copyright (C) 2021 by DooM Legacy Team.
 //
 //  This program is free software; you can redistribute it and/or
 //  modify it under the terms of the GNU General Public License
@@ -312,6 +313,7 @@ void P_LoadNodes_DeePBSP (int lump)
 # ifdef DEEPSEA_EXTENDED_SIGNED_NODES
             no->children[j] = LE_SWAP32(mn->children[j]);
 # else
+            // [WDJ]  There are no valid negative node children.
             no->children[j] = (uint32_t)( LE_SWAP32(mn->children[j]) );
 # endif
 
@@ -684,6 +686,7 @@ void P_LoadNodes_ZDBSP (int lump, boolean compressed)
 # ifdef DEEPSEA_EXTENDED_SIGNED_NODES
             no->children[j] = (uint32_t)LE_SWAP32(mn->children[j]);
 # else
+            // [WDJ]  There are no valid negative node children.
             no->children[j] = (uint32_t)( LE_SWAP32(mn->children[j]) );
 # endif
 

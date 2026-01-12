@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_main.c 1498 2020-01-05 22:13:26Z wesleyjohnson $
+// $Id: r_main.c 1585 2021-09-26 05:31:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -1506,7 +1506,11 @@ void R_RenderPlayerView( byte pind, player_t* player )
     mytotal=0;
     ProfZeroTimer();
 #endif
-    R_RenderBSPNode (numnodes-1);
+
+    // [WDJ] Intercept degenerate case, so BSP node is never -1.
+    R_RenderBSPNode( ( numnodes > 0 )? numnodes-1
+                   : ( 0 | NF_SUBSECTOR ) );  // Degenerate, sector 0
+
 #ifdef TIMING
     RDMSR(0x10,&mycount);
     mytotal += mycount;   //64bit add

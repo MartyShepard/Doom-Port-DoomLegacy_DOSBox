@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: r_defs.h 1583 2021-09-26 05:29:41Z wesleyjohnson $
+// $Id: r_defs.h 1585 2021-09-26 05:31:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -795,12 +795,15 @@ typedef struct
 #ifdef DEEPSEA_EXTENDED_NODES
     // [MB] 2020-04-22: Changed to 32-Bit for extended nodes
 // [WDJ] BSP code has been examined and made unsigned safe.
-#define DEEPSEA_EXTENDED_SIGNED_NODES
+// Do not want to go back to signed, would rather fix the new code.
+// Other DoomLegacy code has already changed to use 0xFFFFFFFF instead of -1.
+// #define DEEPSEA_EXTENDED_SIGNED_NODES
 # ifdef DEEPSEA_EXTENDED_SIGNED_NODES
     //      Use int to match rest of the code (should be uint32_t)
     typedef int  bsp_child_t;
 # else
     // The logic only used one neg value, and all rest are unsigned indexes.
+    // This could be uint16_t without changing the code.
     typedef uint32_t  bsp_child_t;
 # endif
 # define NF_SUBSECTOR    0x80000000

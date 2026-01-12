@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: p_setup.c 1583 2021-09-26 05:29:41Z wesleyjohnson $
+// $Id: p_setup.c 1585 2021-09-26 05:31:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -807,38 +807,66 @@ void P_LoadNodes (int lump)
         no->dy = LE_SWAP16(mn->dy)<<FRACBITS;
         for (j=0 ; j<2 ; j++)
         {
+            // [WDJ] Unsigned 16 bit children.
+            // -1 is not a valid value for children, as it only invokes an I_Error.
+            bsp_child_t chld = (uint16_t) ( LE_SWAP16(mn->children[j]) );
 
 #ifdef DEEPSEA_EXTENDED_NODES
-            // [WDJ] Unsigned 16 bit children.
-            bsp_child_t chld = (uint16_t) ( LE_SWAP16(mn->children[j]) );
 
             // [MB] 2020-04-21: Changed for extended nodes
             // Must detect first as it conflicts with MAP_NF_SUBSECTOR.
-            if( chld == 0xFFFF )
+            if( chld == 0xFFFF )  // special value of questionable validity
             {
+                GenPrintf( EMSG_warn, "Load Node %i, side %i has -1 value\n", i, j );
+# if 1
+                // [WDJ] -1 is not a valid value for children, as it only invokes an I_Error.
+                // Report it as a Node error, and change it to a safe value.
+                chld = 0 | NF_SUBSECTOR;
+# else
 #  ifdef DEEPSEA_EXTENDED_SIGNED_NODES
                 chld = -1;
 #  else
                 chld = 0xFFFFFFFF;
 #  endif
+# endif	       
             }
             else
+#endif
             if( chld & MAP_NF_SUBSECTOR )
             {
+#ifdef DEEPSEA_EXTENDED_NODES
                 // Convert normal MAP_NF_SUBSECTOR, to extended node NF_SUBSECTOR.
                 chld &= ~MAP_NF_SUBSECTOR;
 
                 if( chld >= numsubsectors )
+                {
+                    GenPrintf( EMSG_warn, "Load Node %i, side %i has bad child sector %i\n", i, j, chld );
                     chld = 0;
+                }
 
                 chld |= NF_SUBSECTOR;
+#else
+                if( (chld & ~MAP_NF_SUBSECTOR) >= numsubsectors )
+                {
+                    GenPrintf( EMSG_warn, "Load Node %i, side %i has bad child sector %i\n", i, j, chld );
+                    chld = 0 | NF_SUBSECTOR;
+                }
+#endif
+            }
+            else	   
+            if( chld >= numnodes
+#  ifdef DEEPSEA_EXTENDED_SIGNED_NODES
+                || ( chld < 0 )
+#  endif
+              )
+            {
+                GenPrintf( EMSG_warn, "Load Node %i, side %i has bad child node %i\n", i, j, chld );
+                // [WDJ] Invalid children value, as it only invokes an I_Error.
+                // Report it as a Node error, and change it to a safe value.
+                chld = 0 | NF_SUBSECTOR;
             }
 
             no->children[j] = chld;
-#else
-            // [WDJ] Unsigned 16 bit children.
-            no->children[j] = (uint16_t) ( LE_SWAP16(mn->children[j]) );
-#endif
 
             for (k=0 ; k<4 ; k++)
                 no->bbox[j][k] = LE_SWAP16(mn->bbox[j][k])<<FRACBITS;

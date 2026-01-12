@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1584 2021-09-26 05:31:20Z wesleyjohnson $
+// $Id: d_main.c 1585 2021-09-26 05:31:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1584"
+#define SVN_REV "1585"
 #endif
 
 
@@ -4096,6 +4096,13 @@ void Commandline_GetCompileFeatures(void)
 #else
         printf("ENGINE [ ] DeePsea Extended Nodes\n");
 #endif
+
+#ifdef DEEPSEA_EXTENDED_NODES
+        printf("ENGINE [X] DeePsea Extended Signed Nodes\n");
+#else
+        printf("ENGINE [ ] DeePsea Extended Signed Nodes\n");
+#endif
+
 
 #ifdef DEEPSEA_TALL_PATCH
         printf("ENGINE [X] DeePsea Tall Patch Support\n");

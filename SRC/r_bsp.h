@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.h 1364 2017-10-17 01:35:41Z wesleyjohnson $
+// $Id: r_bsp.h 1585 2021-09-26 05:31:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -87,7 +87,7 @@ void R_Clear_ClipSegs (void);
 void R_Setup_ClipSegs (void);
 void R_Clear_DrawSegs (void);
 
-void R_RenderBSPNode (int bspnum);
+void R_RenderBSPNode ( bsp_child_t bspnum );
 
 sector_t* R_FakeFlat(sector_t *sec, sector_t *tempsec, boolean back,
              /*OUT*/ lightlev_t *floorlightlevel,

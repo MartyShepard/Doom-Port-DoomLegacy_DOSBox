@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1463 2019-09-29 07:36:51Z wesleyjohnson $
+// $Id: r_bsp.c 1585 2021-09-26 05:31:57Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -811,6 +811,7 @@ boolean R_CheckBBox (fixed_t*   bspcoord)
 drawseg_t*   firstseg;
 
 // Called by R_RenderBSPNode
+static
 void R_Subsector (int num)
 {
     static sector_t     tempsec; //SoM: 3/17/2000: Deep water hack
@@ -1187,9 +1188,29 @@ found:
 //  traversing subtree recursively.
 // Just call with BSP root.
 // Called by R_RenderPlayerView
-#if 1
+
+#if 0
+// [WDJ] Pull the degenerate case out of the main BSP loop.
+// It can only be invoked at the first call.
+// Can get same effect by calling
+// R_RenderBSPNode( 0 | NF_SUBSECTOR )
+void R_RenderBSPNode_degen (int bspnum)
+{
+    if (bspnum == -1)
+    {
+        // BP: never happen : bspnum = int, children = unsigned short
+        // except first call if numsubsectors=0 ! who care ?
+        R_Subsector (0);
+    }
+}
+#endif
+
+
+#if 0
 // Recursive
-void R_RenderBSPNode (int bspnum)
+//  bspnum : children[]
+//  Call R_RenderBSPNode_degen for degenerate case.
+void R_RenderBSPNode ( bsp_child_t bspnum )
 {
     node_t*     bsp;
     int         side;
@@ -1197,12 +1218,7 @@ void R_RenderBSPNode (int bspnum)
     // Found a subsector?
     if (bspnum & NF_SUBSECTOR)
     {
-        if (bspnum == -1)
-            // BP: never happen : bspnum = int, children = unsigned short
-            // except first call if numsubsectors=0 ! who care ?
-            R_Subsector (0);
-        else
-            R_Subsector (bspnum&(~NF_SUBSECTOR));
+        R_Subsector (bspnum&(~NF_SUBSECTOR));
         return;
     }
 
@@ -1218,10 +1234,46 @@ void R_RenderBSPNode (int bspnum)
     if (R_CheckBBox (bsp->bbox[side^1]))
         R_RenderBSPNode (bsp->children[side^1]);
 }
-#else
+#endif
+
+#if 1
+// Recursive and Loop, as in PrBoom.
+//  bspnum : children[]
+//  Call R_RenderBSPNode_degen for degenerate case.
+void R_RenderBSPNode ( bsp_child_t bspnum )
+{
+    node_t*     bsp;
+    int         side;
+
+  for(;;)
+  {
+    // Found a subsector?
+    if (bspnum & NF_SUBSECTOR)
+    {
+        R_Subsector (bspnum&(~NF_SUBSECTOR));
+        return;
+    }
+
+    bsp = &nodes[bspnum];
+
+    // Decide which side the view point is on.
+    side = R_PointOnSide (viewx, viewy, bsp);
+
+    // Recursively divide front space.
+    R_RenderBSPNode (bsp->children[side]);
+
+    // Possibly divide back space.
+    if( ! R_CheckBBox (bsp->bbox[side^1]))
+        return;
+
+    // Use loop to do back space, instead of calling R_RenderBSPNode recursively.
+    bspnum = bsp->children[side^1];
+  }
+}
+#endif
 
 
-
+#if 0
 //
 // RenderBSPNode : DATA RECURSION version, slower :<
 //
@@ -1233,7 +1285,9 @@ void R_RenderBSPNode (int bspnum)
 #define MAX_BSPNUM_PUSHED 512
 
 // Stack based descent
-void R_RenderBSPNode (int bspnum)
+//  bspnum : children[]
+//  Call R_RenderBSPNode_degen for degenerate case.
+void R_RenderBSPNode (bsp_child_t bspnum)
 {
     node_t*     bsp;
     int         side;
@@ -1264,10 +1318,7 @@ void R_RenderBSPNode (int bspnum)
         }
 
         // Found a subsector
-        if (bspnum == -1)
-            R_Subsector (0);
-        else
-            R_Subsector (bspnum&(~NF_SUBSECTOR));
+        R_Subsector (bspnum&(~NF_SUBSECTOR));
 
         side = (int) *--bspnum_p;
         if ((bsp = *--bspnum_p) == NULL )
@@ -1285,3 +1336,4 @@ void R_RenderBSPNode (int bspnum)
 
 }
 #endif
+
