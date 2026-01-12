@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netcmd.h 1505 2020-03-17 02:32:01Z wesleyjohnson $
+// $Id: d_netcmd.h 1580 2021-07-23 20:55:58Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -111,7 +111,11 @@ typedef enum {
 // add game commands, needs cleanup
 void D_Register_ClientCommands (void);
 void D_Send_PlayerConfig(void);
+
 void Command_ExitGame_f(void);
+
+void Send_NameColor_pind( byte pind );
+void Send_WeaponPref_pind( byte pind );
 //void Send_NameColor_player( byte pn, byte pind );
 void Send_NameColor_pn( byte pn, const char * playername, byte color, const char * skinname, byte textcmd_pind );
 

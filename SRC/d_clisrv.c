@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1572 2021-01-28 09:25:24Z wesleyjohnson $
+// $Id: d_clisrv.c 1580 2021-07-23 20:55:58Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -4085,6 +4085,16 @@ void Got_NetXCmd_AddPlayer(xcmd_t * xc)
             displayplayer2=newplayernum;
             displayplayer2_ptr = &players[displayplayer2];
         }
+
+        if( sendconfigtic == gametic )
+        {
+            // [WDJ] When players have previously started on the same tic,
+            // the new player config gets sent here.
+            // Otherwise starting a splitscreen game, will not send the player2 config.
+            Send_NameColor_pind(pind);
+            Send_WeaponPref_pind(pind);
+	}
+       
         DEBFILE(va("Spawning player[%i] pind=%i at this node.\n", newplayernum, pind));
     }
 
@@ -4099,6 +4109,7 @@ void Got_NetXCmd_AddPlayer(xcmd_t * xc)
     if( sendconfigtic!=gametic )
     {
         sendconfigtic=gametic;
+        // Send all our player config to server, and other players.
         D_Send_PlayerConfig();
         if( server )
             B_Send_all_bots_NameColor();

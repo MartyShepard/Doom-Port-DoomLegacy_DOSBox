@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: m_menu.c 1578 2021-05-19 03:41:06Z wesleyjohnson $
+// $Id: m_menu.c 1580 2021-07-23 20:55:58Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1331,13 +1331,17 @@ consvar_t cv_wait_timeout = {"wait_timeout" ,"0",CV_HIDEN,wait_timeout_cons_t};
 
 static boolean StartSplitScreenGame = false;
 
+// Called from ServerMenu
 void M_StartServer( int choice )
 {
     M_Clear_Menus(true);
 
+    // [WDJ] May have been client.
+    server = true;
     netgame = true;
     multiplayer = true;
-    if( choice == 10 )
+
+    if( choice == 10 )  // menu
     {
         // Dedicated server menu choice.
         dedicated = true;
@@ -1346,13 +1350,13 @@ void M_StartServer( int choice )
         I_ShutdownGraphics();
     }
 
+    // Need to set server before this func.
     D_WaitPlayer_Setup();
 
     // Before game start setup.
-    COM_BufAddText(va("stopdemo;splitscreen %d;deathmatch %d;map \"%s\" -skill %d -monsters %d\n", 
-                      StartSplitScreenGame, cv_deathmatch_menu.value, 
-                      (gamemode==doom2_commercial)? cv_nextmap.string : cv_nextepmap.string,
-                      cv_skill.value, cv_monsters.value));
+    COM_BufAddText(va("stopdemo;splitscreen %d;deathmatch %d\n", 
+                      StartSplitScreenGame, cv_deathmatch_menu.value ) );
+
     // skin change
     if (StartSplitScreenGame
         && ! ( displayplayer2_ptr
@@ -1362,6 +1366,10 @@ void M_StartServer( int choice )
     {
         COM_BufAddText ( va("%s \"%s\"\n", cv_skin[1].name, cv_skin[1].string));
     }
+
+    COM_BufAddText(va("map \"%s\" -skill %d -monsters %d\n", 
+                      (gamemode==doom2_commercial)? cv_nextmap.string : cv_nextepmap.string,
+                      cv_skill.value, cv_monsters.value));
    
 #if 0
 // Needs to be done after players have grabbed the player slots.
@@ -2360,7 +2368,9 @@ menuitem_t MouseOptionsMenu[]=
 #ifdef SMIF_SDL
     {IT_STRING | IT_CVAR,0,"Mouse motion",  &cv_mouse_motion    ,0},
 #endif
+#ifndef __DJGPP__
     {IT_STRING | IT_CVAR,0,"Grab input", &cv_grabinput ,0},
+#endif
 #if 0
 //[WDJ] disabled in 143beta_macosx
 //[segabor]
