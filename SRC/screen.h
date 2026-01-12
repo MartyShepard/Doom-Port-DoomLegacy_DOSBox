@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.h 1543 2020-08-22 02:36:35Z wesleyjohnson $
+// $Id: screen.h 1569 2021-01-28 09:23:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -273,7 +273,7 @@ void SCR_SetMode( byte change_flag );
 // Recalc screen size dependent stuff
 void SCR_Recalc (void);
 // Apply config or command line settings.
-void SCR_apply_video_settings( void );
+void SCR_apply_video_settings( byte calc_setmodeneeded );
 // Set the mode number which is saved in the config
 void SCR_SetDefaultMode (void);
 

@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01569 ]: w109_030 fullvideo
+          DOS: Fix Bits Mode selection. Again...
+
 [01568 ]: Update docs. Release script can now update legacy.wad.
 [01567 ]: w109_029 Version 1.48.8
 [01566 ]: w109_27 mouse2

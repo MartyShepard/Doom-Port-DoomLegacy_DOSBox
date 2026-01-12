@@ -8431,7 +8431,7 @@ The Windows code was for a PS mouse, and the Linux code was for MS
 mouse format.
 Rewrote the mouse2 code entirely.
 Added support for PS/2 mouse.
-It allows the selection of mouse type (PS, MS, PS/2).
+It allows the selection of mouse type (PC, MS, PS/2).
 Fixed the port selection to have 8bit serial data for MS and PS/2 mice.
 
 Discovered several bugs:
@@ -8450,5 +8450,68 @@ patchfile = w109_029_ver1488
 Update to 1.48.8.
 Update docs.
 
-=== commit
+*** w109_fullvideo
+patchfile = w109_030_fullvideo
+- commit revision 1569
+Added failure detection for setting drawmode from config file.
+If config file drawmode fails then use a window at native bpp.
+If that fails, then I_Error out.  In linux_x this used to fail
+ungracefully.
 
+Video initialization was changed to use mode tables until
+after ReqestFullVideo is completed. The earlier uses of QueryModes
+does not initialize the modetables. At least not in the sdl port,
+it tests an independent mode table query so that it does not
+disturb the mode tables for the current video setup.
+
+Turned off using direct draw in linux_x (draw directly to the XLib buffer).
+This worked for my nVidia card, but with my Radeon it segfaults after
+a few prints to the console.
+Have to investigate more do discover why, or if there are some rules.
+May make this a user switch but the test would invite segfaults.
+
+*** w109_x11mouse2
+patchfile = w109_031_x_mouse2
+- commit revision 1570
+Update the linux_x mouse2 code using the new mouse drivers from sdl.
+This allows using PC, mousesystems, and PS2 type mice.
+The ports that have mouse2 are SDL, WIN32, and X11.
+
+*** w109_gcc10c
+patchfile = w109_032_gcc10c
+- commit revision 1571
+Fixes complaints from Gcc10 about snprintf, and strncpy.
+Michael Bauerle worked to find workable solutions.
+There needs to be an assign of term 0 after snprintf, and after strncpy.
+Gcc10 also complains when truncating a larger buffer into a shorter
+buffer using strncpy.
+The strncpy solutions are ugly, and tempting to rework again.
+To prevent future problems, made a dl_strncpy that does
+what is right, does not pad the dest, and always terminates with 0.
+Fixes bug 0671.
+
+*** w109_clang
+patchfile = w109_033_clang
+- commit revision 1572
+The Clang compiler caught some mistakes.
+A parameter had been changed from boolean to an enum, and had to
+use SP_reliable as an input.  The old code probably did work.
+It does not like extra parenthesis around a comparision, as they
+think that an assign might have been intended.  Not a good check.
+Does not like using -1 on an unsigned.
+A few places where a char was used, where a glib function
+was implemented using tables, so had to use unsigned char.
+A bad test was found is the savegame header, where it decided
+if fragglescript had to be included in the savegame.
+It complains when a printf of a string does not have a format,
+for security reasons.
+Did not like an assign of a const float value to a int.
+Fixes bug 0672.
+
+*** w109_ver1489
+patchfile = w109_034_ver1489
+- commit revision 1573
+Up to 1.48.9, to separate identity.
+
+
+=== commit

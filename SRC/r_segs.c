@@ -494,9 +494,9 @@ void expand_drawsegs( void )
     if( new_drawsegs == 0 )
     {
 #if !defined( __DJGPP__ )
-        I_Error( "Failed realloc for (new_)drawsegs (Need %dkb)\n",newmax* sizeof(drawseg_t)/1024);
-#else
         I_Error( "Failed realloc for drawsegs\n" );
+#else
+        I_Error( "Failed realloc for (new_)drawsegs (Need %dkb)\n",newmax* sizeof(drawseg_t)/1024);
 #endif
     }
     drawsegs = new_drawsegs;

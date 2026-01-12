@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1567 2020-12-21 02:43:17Z wesleyjohnson $
+// $Id: d_main.c 1569 2021-01-28 09:23:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1568"
+#define SVN_REV "1569"
 #endif
 
 
@@ -1300,6 +1300,7 @@ void D_End_commandline( void )
 }
 
 
+
 // =========================================================================
 //   D_DoomMain
 // =========================================================================
@@ -1899,7 +1900,7 @@ void IdentifyVersion()
             }
 #endif
         }
-#endif       
+#endif
     }
    
 
@@ -2393,7 +2394,6 @@ void D_DoomMain()
     #if defined( __DJGPP__ )
         Commandline_GetBitModi();
     #endif
-
     if( ! dedicated )
     {
         I_StartupGraphics();    // window
@@ -2459,7 +2459,7 @@ void D_DoomMain()
     // game and wad selection, and finding files and directories.
     // It may retry some actions and may execute functions multiple times.
 
-#ifdef LAUNCHER   
+#ifdef LAUNCHER
     //---------------------------------------------------- LAUNCHER restarts here
 restart_command:
 
@@ -2565,7 +2565,7 @@ restart_command:
 #endif
         }
 
-#ifdef LAUNCHER       
+#ifdef LAUNCHER
         if( (! userhome_parm || init_sequence == 0)
           && userhome )
         {
@@ -2887,7 +2887,8 @@ restart_command:
     V_Clear_Display();		
     I_RequestConGraphics();
 #endif  
-#ifdef LAUNCHER   
+#ifdef LAUNCHER
+fatal_error_action:
     //---------------------------------------------------- LAUNCHER display
     if ( fatal_error || init_sequence == 1 || (init_sequence == 0 && myargc < 2 ))
     {
@@ -2977,7 +2978,7 @@ restart_command:
     else
     {
         //--------------------------------------------------------- GRAPHICS SETTINGS
-        set_drawmode = cv_drawmode.EV;
+        set_drawmode = cv_drawmode.EV;  // from config file
         req_bitpp = 0;  // because of launcher looping
         req_alt_bitpp = 0;
 
@@ -3004,15 +3005,17 @@ restart_command:
             req_bitpp = atoi(myargv[p + 1]);
             if( ! V_CanDraw( req_bitpp ) )
             {
-#ifdef LAUNCHER   
+#ifdef LAUNCHER
               I_SoftError( "-bpp invalid\n");
-              goto restart_command;
+              fatal_error = 1;
+              goto fatal_error_action;
 #else
               I_Error( "-bpp invalid\n");
 #endif
             }
             set_drawmode = DRM_explicit_bpp;
         }
+        req_command_video_settings = req_bitpp & 0x3F;
 
         // Allow a config file for opengl to overload the config settings.
         // It may be edited to set only what settings should be specific to opengl.
@@ -3054,35 +3057,62 @@ restart_command:
 
         p = M_CheckParm("-width");
         if (p && p < myargc-1)
+        {
             req_width = atoi(myargv[p+1]);
+            req_command_video_settings |= 0x80;
+        }
 
         p = M_CheckParm("-height");
         if (p && p < myargc-1)
+        {
             req_height = atoi(myargv[p+1]);
+            req_command_video_settings |= 0x40;
+        }
 
-        req_command_video_settings = ((req_width > 0) && (req_height > 0));
 
         //--------------------------------------------------------- FULL GRAPHICS
         // setup loading screen
         // Still using font1 during this init, up into CON_Init_Video.
         CONS_Printf("RequestFullGraphics...\n");
+
         // Allow VID_QueryModelist to detect fullscreen capability.
         allow_fullscreen = ! M_CheckParm("-window");
         cv_fullscreen.EV = cv_fullscreen.value && allow_fullscreen;
+        cv_fullscreen.state |= CS_EV_PROT;  // protect against restore
 
         // Initial setup of rendermode
-        V_switch_drawmode( set_drawmode, 0 );  // command line, do not change config files
+        // Does VID_QueryModelist, which does not change the current modelist in all ports.
+        byte validv = V_switch_drawmode( set_drawmode, 0 );  // command line, do not change config files
+        if( ! validv )
+        {
+            GenPrintf( EMSG_error, "FullGraphics: setup drawmode failed, no valid modes.\n" );
+            // The set_drawmode, from config or command line, was not possible.
+            // The drawmode may not be included in the compile options, or no modes.
+            // Recover to native window.
+            cv_fullscreen.EV = 0;   // window mode
+            req_bitpp = native_bitpp;  // native drawing
+            req_command_video_settings |= 0x01;
+            set_drawmode = DRM_native;
+            validv = V_switch_drawmode( set_drawmode, 0 );  // default, do not change config files
+            if( ! validv )
+            {
+                I_Error( "FullGraphics: setup drawmode failed, cannot use native window.\n" );
+            }
+        }
 
         // set user default mode or mode set at cmdline
-        SCR_apply_video_settings();  // command line settings, or config file settings.
+        // Disable setmodeneeded, do not have correct modelist yet.
+        SCR_apply_video_settings( 0 );  // command line settings, or config file settings.
+        setmodeneeded.modetype = MODE_NOP;  // initialization is not exactly a mode change.
 
         // Full graphics.
         // param: req_drawmode, req_bitpp, req_alt_bitpp, req_width, req_height.
         // If fails for one fullscreen mode, does not mean fails for all fullscreen modes.
         // Calls  I_Rendermode_setup, V_Setup_VideoDraw, HWR_Startup_Render.
         // Calls  V_SetPalette, HWR_SetPalette.
-        drawmode_recalc = true;
+        drawmode_recalc = true;  // bypass setmodeneeded
         rendermode_recalc = true;
+        // Gets the new Modelist.
         SCR_SetMode( 0 );
 
         SCR_Recalc();
@@ -3585,7 +3615,7 @@ void D_Quit_Save ( quit_severity_e severity )
             printf("\r");
             I_Show_EndText( endtext );
         }
-    }	
+    }
 }
 
 // I_Quit exits with (exit 0).

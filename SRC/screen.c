@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: screen.c 1543 2020-08-22 02:36:35Z wesleyjohnson $
+// $Id: screen.c 1569 2021-01-28 09:23:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -201,7 +201,7 @@ void SCR_SetMode( byte change_flag )
         goto done;
 
     // Possible change of rendermode
-    if( drawmode_recalc && set_drawmode )
+    if( change_flag && drawmode_recalc && set_drawmode )
     {
         // Switch the drawmode, this may change the rendermode, setmodeneeded.
         ret_value = V_switch_drawmode( set_drawmode, change_flag );
@@ -263,7 +263,7 @@ void SCR_SetMode( byte change_flag )
     {
         // Graphics drawmode setup, get video modes
         // param: req_drawmode, req_bitpp, req_alt_bitpp, req_width, req_height.
-        cv_fullscreen.EV = cv_fullscreen.value && allow_fullscreen;
+//        cv_fullscreen.EV = cv_fullscreen.value && allow_fullscreen;
         ret_value = I_RequestFullGraphics( cv_fullscreen.EV );
         if( ret_value < 0 )
             GenPrintf(EMSG_error, "Change Graphics failed: err=%i, fullscreen=%i\n", ret_value, cv_fullscreen.EV );
@@ -599,18 +599,30 @@ void SCR_Recalc (void)
 
 
 // Apply the config video settings.
-void SCR_apply_video_settings( void )
+void SCR_apply_video_settings( byte calc_setmodeneeded )
 {
     // command line settings have precedence
-    if( ! req_command_video_settings )
+    if( ! (req_command_video_settings & 0x3F) ) // bitpp
     {
-        req_width = cv_scr_width.value;
-        req_height = cv_scr_height.value;
 #if defined (__DJGPP__)
         // Make bit mode selectet working again
         if (req_bitpp == cv_scr_depth.value)
-#endif          
-        req_bitpp = cv_scr_depth.value;                             
+#endif  
+        // From config file, or menu.
+        req_bitpp = cv_scr_depth.value;
+    }
+    if( req_command_video_settings & 0xC0 ) // width, height
+    {
+        if( req_width < 100 )
+            req_width = ((int)req_height) * 4 / 3;  // approximate
+        if( req_height < 100 )
+            req_height = ((int)req_width) * 3 / 4;  // approximate
+    }
+    else
+    {
+        // From config file, or menu.
+        req_width = cv_scr_width.value;
+        req_height = cv_scr_height.value;
     }
 
     if( verbose )
@@ -618,8 +630,11 @@ void SCR_apply_video_settings( void )
         CONS_Printf("Request video: %d x %d (%d bits)\n", req_width, req_height, req_bitpp );
     }
 
-    // returns -1 if not found, (no mode change)
-    setmodeneeded = VID_GetModeForSize( req_width, req_height, vid_mode_table[cv_fullscreen.EV] );
+    if( calc_setmodeneeded )  // not during init
+    {
+        // returns MODE_NOP if not found, (no mode change)
+        setmodeneeded = VID_GetModeForSize( req_width, req_height, vid_mode_table[cv_fullscreen.EV] );
+    }
 }
 
 
@@ -637,19 +652,21 @@ void SCR_SetDefaultMode (void)
 // Change fullscreen on/off according to cv_fullscreen
 void SCR_ChangeFullscreen (void)
 {
-    // used to prevent switching to fullscreen during startup
-    if (!allow_fullscreen)  // by I_RequestFullGraphics
-    {
-        cv_fullscreen.EV = 0;
-        return;
-    }
+    // Can cancel allow_fullscreen, when past I_RequestFullGraphics.
+    if( graphics_state >= VGS_fullactive )  // by I_RequestFullGraphics
+        allow_fullscreen = true;  // override command line
+
+    // Prevent switching to fullscreen during startup
 
 //    if( graphics_state >= VGS_fullactive )  // by I_RequestFullGraphics
 //    if( graphics_state >= VGS_active )  //  by I_StartupGraphics()
     if( graphics_state >= VGS_startup )  // by I_StartupGraphics()
     {
-        // I_RequestFullGraphics can cancel allow_fullscreen
-        cv_fullscreen.EV = cv_fullscreen.value;
-        SCR_apply_video_settings();
+        cv_fullscreen.EV = cv_fullscreen.value && allow_fullscreen;
+        SCR_apply_video_settings( 1 );
+    }
+    else
+    {
+        cv_fullscreen.EV = 0;
     }
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
+// $Id: v_video.c 1569 2021-01-28 09:23:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -213,6 +213,8 @@ consvar_t cv_drawmode = { "drawmode", "Software 8bit", CV_SAVE | CV_CALL | CV_CF
 const byte vid_mode_table[2] = { MODE_window, MODE_fullscreen };
 
 byte set_drawmode = 255;  // vid_drawmode_e
+// Do not use cv_drawmode to keep current drawmode because cv_drawmode can get changed so many ways.
+static byte cur_drawmode = 254;  // vid_drawmode_e
 const byte num_drawmode_sel = 8;
 
 void Set_drawmode_OnChange( void )
@@ -346,6 +348,7 @@ static byte  bpp_to_drawmode( byte bitpp )
 }
 #endif
 
+//#define DEBUG_DRAWMODE
 
 // Set rendermode
 //  drawmode : vid_drawmode_e
@@ -353,7 +356,6 @@ static byte  bpp_to_drawmode( byte bitpp )
 // Called by D_DoomMain, SCR_SetMode
 byte  V_switch_drawmode( byte drawmode, byte change_config )
 {
-    byte old_drawmode = cv_drawmode.EV;
     byte old_render = rendermode;
 
 #ifdef DEBUG_DRAWMODE
@@ -425,7 +427,7 @@ byte  V_switch_drawmode( byte drawmode, byte change_config )
     }
 
     // Setup HWR calls so can set values.
-    if( (old_drawmode != drawmode) || (old_render != rendermode) )
+    if( (cur_drawmode != drawmode) || (old_render != rendermode) )
     {
 #ifdef DEBUG_DRAWMODE
         GenPrintf( EMSG_debug, "V_switch_drawmode  rendermode= %i\n", rendermode );
@@ -440,7 +442,7 @@ byte  V_switch_drawmode( byte drawmode, byte change_config )
     if( change_config )
     {
         // Need to change the configfile_drawmode.
-        if( old_drawmode < DRM_END )
+        if( cur_drawmode < DRM_END )
         {
             M_SaveConfig( CFG_drawmode, configfile_drawmode );
         }
@@ -457,12 +459,13 @@ byte  V_switch_drawmode( byte drawmode, byte change_config )
             M_Set_configfile_drawmode( drawmode );
             // WARNING : this do a "COM_BufExecute()"
             M_LoadConfig( CFG_drawmode, configfile_drawmode );
-            SCR_apply_video_settings();  // setmodeneeded
+            SCR_apply_video_settings( 1 );  // setmodeneeded
         }
     }
 
     if( drawmode < DRM_END )
     {
+        cur_drawmode = drawmode;
         // save the new drawmode as temporary
         cv_drawmode.EV = drawmode;
         cv_drawmode.state |= CS_EV_PROT;  // protect against restore
@@ -484,7 +487,7 @@ candraw_reject:
 
 query_reject:
     if( verbose )
-        GenPrintf( EMSG_ver, "No modes for %s, %i\n", cv_fullscreen.EV ? "Fullscreen":"Window", req_bitpp );
+        GenPrintf( EMSG_ver, "No modes for %s, %i bitpp\n", cv_fullscreen.EV ? "Fullscreen":"Window", req_bitpp );
 
 reject:
 #ifdef DEBUG_DRAWMODE
