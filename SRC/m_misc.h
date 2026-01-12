@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: m_misc.h 1520 2020-05-05 03:29:56Z wesleyjohnson $
+// $Id: m_misc.h 1571 2021-01-28 09:24:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -120,5 +120,9 @@ void cat_filename( char * dest, const char * dn, const char * fn );
 // s1=s2+s3+s1 (1024 lenghtmax)
 void strcatbf(char *s1, const char *s2, const char *s3);
 #endif
+
+// This truncates the src when the dest buffer is full.
+// Will always write the terminating 0.
+void dl_strncpy( char * dest, const char * src, int destsize );
 
 #endif

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1542 2020-08-22 02:35:24Z wesleyjohnson $
+// $Id: d_clisrv.c 1571 2021-01-28 09:24:43Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1380,7 +1380,7 @@ static void SV_Send_ServerInfo(int to_node, tic_t reqtime)
     netbuffer->u.serverinfo.maxplayer = cv_maxplayers.value;
     netbuffer->u.serverinfo.load = 0;        // unused for the moment
     netbuffer->u.serverinfo.deathmatch = cv_deathmatch.EV;  // menu setting
-    strncpy(netbuffer->u.serverinfo.servername, cv_servername.string, MAXSERVERNAME);
+    dl_strncpy(netbuffer->u.serverinfo.servername, cv_servername.string, MAXSERVERNAME);
     if(game_map_filename[0])
     {
         // Map command external wad file.
@@ -4378,8 +4378,7 @@ void SV_StartSinglePlayerServer(void)
 // Called by client_join_handler.
 static void SV_Send_Refuse(int to_node, char *reason)
 {
-    strncpy(netbuffer->u.stringpak.str, reason, MAX_STRINGPAK_LEN-1);
-    netbuffer->u.stringpak.str[MAX_STRINGPAK_LEN-1] = 0;
+    dl_strncpy(netbuffer->u.stringpak.str, reason, MAX_STRINGPAK_LEN);
 
     netbuffer->packettype = PT_SERVERREFUSE;
     HSendPacket( to_node, SP_reliable|SP_queue, 0, strlen(netbuffer->u.stringpak.str)+1 );  // ignore failure

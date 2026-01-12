@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: m_misc.c 1520 2020-05-05 03:29:56Z wesleyjohnson $
+// $Id: m_misc.c 1571 2021-01-28 09:24:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -363,8 +363,7 @@ void Command_SaveConfig_f (void)
         CONS_Printf("saveconfig <filename[.cfg]> : save config to a file\n");
         return;
     }
-    strncpy(cfgname, carg.arg[1], MAX_WADPATH-1);
-    cfgname[MAX_WADPATH-1] = '\0';
+    dl_strncpy(cfgname, carg.arg[1], MAX_WADPATH);
     if( cfgname[0] == 0 )  goto failed;
 
     FIL_DefaultExtension (cfgname,".cfg");
@@ -408,8 +407,7 @@ void Command_LoadConfig_f (void)
         other_flag = carg.arg[2][1];
     }
 
-    strncpy(cfgname, carg.arg[namearg], MAX_WADPATH-1);
-    cfgname[MAX_WADPATH-1] = '\0';
+    dl_strncpy(cfgname, carg.arg[namearg], MAX_WADPATH);
     if( cfgname[0] == 0 )  goto failed;
 
     FIL_DefaultExtension (cfgname,".cfg");
@@ -1137,3 +1135,17 @@ void strcatbf(char *s1, const char *s2, const char *s3)
 }
 #endif
 
+// A strncpy that gcc10 does not complain about.
+// This truncates the src when the dest buffer is full.
+// Will always write the terminating 0.
+// Does not pad the dest, like strncpy does.
+//  destsize: 1..  must have room for term 0
+void dl_strncpy( char * dest, const char * src, int destsize )
+{
+    char * ep = dest + destsize - 1;
+    while( (dest < ep) && (* src) )
+    {
+        * (dest++) = * (src++);
+    }
+    * dest = 0;
+}

@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: m_menu.c 1566 2020-12-19 06:22:58Z wesleyjohnson $
+// $Id: m_menu.c 1571 2021-01-28 09:24:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -3951,8 +3951,7 @@ int  ftw_directory_entry( const char *file, const struct stat * sb, int flag )
         if( slotindex >= 0 )  // because of dir list scrolling
         {
             // Only want the name after legacyhome
-            strncpy( savegamedisp[slotindex].desc, &file[legacyhome_len], SAVESTRINGSIZE-1 );
-            savegamedisp[slotindex].desc[SAVESTRINGSIZE-1] = '\0';
+            dl_strncpy( savegamedisp[slotindex].desc, &file[legacyhome_len], SAVESTRINGSIZE );
         }
         slotindex++;
     }
@@ -4014,8 +4013,7 @@ void  get_directory_entries( int skip_count )
         if( slotindex >= 0 )  // because of dir list scrolling
         {
             // Only want the name after legacyhome
-            strncpy( savegamedisp[slotindex].desc, dent->d_name, SAVESTRINGSIZE-1 );
-            savegamedisp[slotindex].desc[SAVESTRINGSIZE-1] = '\0';
+            dl_strcpy( savegamedisp[slotindex].desc, dent->d_name, SAVESTRINGSIZE );
             // The up-dir is passed as an empty string.
             if( strcmp( savegamedisp[slotindex].desc, ".." ) == 0 )
                 savegamedisp[slotindex].desc[0] = 0;
@@ -4244,9 +4242,9 @@ void M_ReadSaveStrings( int scroll_direction )
                 if( sginfo.map == NULL ) sginfo.map = " -  ";
                 if( sginfo.levtime == NULL ) sginfo.levtime = "";
                 // info from a valid legacy save game
-                snprintf( &sgdp->levtime[0], SAVEGAME_MTLEN,
+                snprintf( &sgdp->levtime[0], SAVEGAME_MTLEN-1,
                           "%s %s", sginfo.map, sginfo.levtime);
-                sgdp->levtime[SAVEGAME_MTLEN-1] = '\0';
+                sgdp->levtime[SAVEGAME_MTLEN-1] = '\0';  // term snprintf
                 slot_str = sginfo.name;
                 slot_status = IT_CALL | IT_NOTHING | 1;
             }
@@ -4258,10 +4256,9 @@ void M_ReadSaveStrings( int scroll_direction )
                 slot_status = IT_SPACE | IT_NOTHING;
             }
         }
-        // fill in savegame strings for menu display
-        strncpy( &sgdp->desc[0], slot_str, SAVESTRINGSIZE );
-        sgdp->desc[SAVESTRINGSIZE-1] = '\0';
-        sgdp->levtime[SAVEGAME_MTLEN-1] = '\0';
+        sgdp->levtime[SAVEGAME_MTLEN-1] = '\0';  // safe
+       // fill in savegame strings for menu display
+        dl_strncpy( &sgdp->desc[0], slot_str, SAVESTRINGSIZE );
         sgdp->savegameid = nameid;
         LoadgameMenu[sgslot + SAVEGAME_MSLOT_0].status = slot_status;
         sgslot++; // uses savegamedisp[0..5]
@@ -4324,7 +4321,7 @@ void M_ReadSaveStrings(void)
         if( P_Read_Savegame_Header( &sginfo ) )
         {
             // info from a valid legacy save game
-            strncpy( &sgdp->desc[0], sginfo.name, SAVESTRINGSIZE );
+            dl_strncpy( &sgdp->desc[0], sginfo.name, SAVESTRINGSIZE );
             if( sginfo.map == NULL ) sginfo.map = " -  ";
             if( sginfo.levtime == NULL ) sginfo.levtime = "";
             snprintf( &sgdp->levtime[0], SAVEGAME_MTLEN,
@@ -4334,10 +4331,9 @@ void M_ReadSaveStrings(void)
         }
         else
         {
-            strncpy( &sgdp->desc[0], sginfo.msg, SAVESTRINGSIZE );
+            dl_strncpy( &sgdp->desc[0], sginfo.msg, SAVESTRINGSIZE );
             LoadgameMenu[i].status = IT_SPACE | IT_NOTHING;
         }
-        sgdp->desc[SAVESTRINGSIZE-1] = '\0';
     }
     free( savebuffer );
 }

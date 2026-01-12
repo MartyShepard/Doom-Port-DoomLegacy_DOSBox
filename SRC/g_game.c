@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: g_game.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
+// $Id: g_game.c 1571 2021-01-28 09:24:43Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1686,8 +1686,11 @@ void G_Ticker (void)
             {
 #define TURBO_MSG_LEN  80	       
                 static char turbomessage[TURBO_MSG_LEN];
-                snprintf (turbomessage, TURBO_MSG_LEN-1, "%s is turbo!", player_names[i]);
-                turbomessage[TURBO_MSG_LEN-1] = 0;
+                // [WDJ] Gcc10 thinks that the entire player_name array MAY be written to this string.
+                // [MB] Using the return value will silence the warning.
+                // Assignment to a dummy variable (even if declared "volatile") is not sufficient.
+                if (0 > snprintf (turbomessage, TURBO_MSG_LEN-1, "%s is turbo!", player_names[i]) )
+                    turbomessage[TURBO_MSG_LEN-1] = 0;  // good as anything else
                 consoleplayer_ptr->message = turbomessage;
             }
         }
@@ -2920,8 +2923,7 @@ void G_InitNew (skill_e skill, const char* mapname, boolean resetplayer)
     if (FIL_CheckExtension(mapname))
     {
         // external map file
-        strncpy (game_map_filename, mapname, MAX_WADPATH-1);
-        game_map_filename[MAX_WADPATH-1] = 0;
+        dl_strncpy(game_map_filename, mapname, MAX_WADPATH);
         // dummy values, to be set by P_SetupLevel.
         gameepisode = 1;
         gamemap = 1;
@@ -3446,8 +3448,8 @@ void G_RecordDemo (const char* name)
     int             i;
     int             maxsize;
 
-    strncpy (demoname, name, DEMONAME_LEN);
-    demoname[DEMONAME_LEN-1] = 0;
+    // demoname is DEMONAME_LEN+5
+    dl_strncpy(demoname, name, DEMONAME_LEN);
     strcat (demoname, ".lmp");
     maxsize = 0x20000;
     i = M_CheckParm ("-maxdemo");
@@ -3667,8 +3669,7 @@ void G_DoPlayDemo (const char *defdemoname)
 //
 
     //it's an internal demo
-    strncpy (demoname, defdemoname, DEMONAME_LEN);
-    demoname[DEMONAME_LEN-1] = 0;
+    dl_strncpy(demoname, defdemoname, DEMONAME_LEN);
 
     lmp = W_CheckNumForName(defdemoname);
     if( VALID_LUMP( lmp ) )

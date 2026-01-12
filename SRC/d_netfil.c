@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: d_netfil.c 1544 2020-08-22 02:40:35Z wesleyjohnson $
+// $Id: d_netfil.c 1571 2021-01-28 09:24:43Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -640,8 +640,7 @@ static void SV_SendFile(byte to_node, char *filename, char fileid)
 
     p->filename = tx_filename;  // filename buffer owner
 
-    strncpy(tx_filename, filename, MAX_WADPATH-1);
-    tx_filename[MAX_WADPATH-1] = '\0';
+    dl_strncpy(tx_filename, filename, MAX_WADPATH);
     
     // a minimum of security, can only get file in legacy wad directories
     nameonly(tx_filename);
@@ -654,8 +653,7 @@ static void SV_SendFile(byte to_node, char *filename, char fileid)
         if(strcasecmp(wadfilename, tx_filename)==0)
         {
             // copy filename with full path
-            strncpy(tx_filename, wadfiles[i]->filename, MAX_WADPATH-1);
-            tx_filename[MAX_WADPATH-1] = '\0';
+            dl_strncpy(tx_filename, wadfiles[i]->filename, MAX_WADPATH);
             goto send_found;
         }
     }
