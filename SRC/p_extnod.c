@@ -1,5 +1,6 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
 // $Id: p_extnodes.c,v 1.1 2020/05/19 11:20:16 micha Exp $
 //
@@ -326,8 +327,50 @@ void P_LoadNodes_DeePBSP (int lump)
 #ifdef HAVE_ZLIB
 #include <string.h>  // [MB] 2020-05-19: For memcpy()
 #include <zlib.h>
-#endif  // HAVE_ZLIB
 
+#if HAVE_ZLIB == 3
+// Optional, load using dlopen.
+#include <dlfcn.h>
+  // dlopen
+
+// Indirections to libzip functions.
+static int ZEXPORT (*DL_inflateInit)(z_streamp, const char *, int);
+#define inflateInit   (*DL_inflateInit)
+
+static int ZEXPORT (*DL_inflate)(z_streamp, int);
+#define inflate  (*DL_inflate)
+
+static int ZEXPORT (*DL_inflateEnd)(z_streamp);
+#define inflateEnd  (*DL_inflateEnd)
+
+byte  zlib_present = 0;
+
+#ifdef LINUX
+# define ZLIB_NAME   "libz.so"
+#else
+# define ZLIB_NAME   "libz.so"
+#endif
+
+
+void WZ_available( void )
+{
+    // Test for zlib being loaded.
+    void * lzp = dlopen( ZLIB_NAME, RTLD_LAZY );
+    // No reason to close it as it would dec the reference count.
+    
+    zlib_present = ( lzp != NULL );
+
+    if( ! zlib_present )  return;
+   
+    // Get ptrs for libzip functions.
+    DL_inflateInit = dlsym( lzp, "inflateInit" );
+    DL_inflate = dlsym( lzp, "inflate" );
+    DL_inflateEnd = dlsym( lzp, "inflateEnd" );
+}
+
+#undef ZLIB_NAME
+#endif
+#endif  // HAVE_ZLIB
 
 
 // [FG] support maps with compressed or uncompressed ZDBSP nodes
@@ -368,6 +411,14 @@ void P_LoadNodes_ZDBSP (int lump, boolean compressed)
 #ifdef HAVE_ZLIB
         const int len =  W_LumpLength(lump);
         int outlen, err;
+
+# if HAVE_ZLIB == 3
+        if( ! zlib_present )  // zlib optional and not present
+        {
+            msg = "ZDBSP nodes decompression, zlib not present";
+            goto nodes_fail;
+        }
+# endif
 
         // first estimate for compression rate:
         // zoutput buffer size == 2.5 * input size
@@ -669,7 +720,7 @@ memory_err:
     msg = "ZDBSP nodes decompression, out-of-memory";
     goto nodes_fail;
 #endif
-   
+
 nodes_fail:
     I_SoftError( "P_LoadNodes_ZDBSP: %s\n", msg );
     goto free_memory;
