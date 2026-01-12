@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01583 ]: w109_044 extnodes
+          DOS: Add p_extnodes.c and p_extnodes.h
+          For DOS need rename 8.3 format p_extnod.c and p_extnod.h
+
 [01582 ]: w109_043 numplayer, P_Random, repair report
 [01581 ]: w109_042 splat netgame bug
 [01580 ]: w109_041 wait99

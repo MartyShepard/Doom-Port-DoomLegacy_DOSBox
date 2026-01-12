@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: p_setup.c 1565 2020-12-19 06:21:39Z wesleyjohnson $
+// $Id: p_setup.c 1583 2021-09-26 05:29:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -155,6 +155,13 @@
 #include "p_tick.h"
   // think
 #include "p_setup.h"
+#ifdef DEEPSEA_EXTENDED_NODES
+#if defined(__DJGPP__)
+#include "p_extnod.h"    // [MB] 2020-04-21: For import of extended nodes
+#else
+#include "p_extnodes.h"  // [MB] 2020-04-21: For import of extended nodes
+#endif
+#endif
 #include "p_spec.h"
 #include "p_info.h"
 #include "g_game.h"
@@ -284,8 +291,11 @@ int             numdmstarts;
 mapthing_t  *   playerstarts[MAXPLAYERS];
 
 
+// [MB] 2020-04-21: Used the woof code from p_extnodes.c instead.
+// mapformat_t P_CheckMapFormat (int lumpnum)
 #if 0
 // [WDJ] Checks from PrBoom.
+// Unfinished.
 
 // figgi 08/21/00 -- constants and globals for glBsp support
 #define gNd2  0x32644E67
@@ -797,7 +807,39 @@ void P_LoadNodes (int lump)
         no->dy = LE_SWAP16(mn->dy)<<FRACBITS;
         for (j=0 ; j<2 ; j++)
         {
-            no->children[j] = (uint16_t)( LE_SWAP16(mn->children[j]) );
+
+#ifdef DEEPSEA_EXTENDED_NODES
+            // [WDJ] Unsigned 16 bit children.
+            bsp_child_t chld = (uint16_t) ( LE_SWAP16(mn->children[j]) );
+
+            // [MB] 2020-04-21: Changed for extended nodes
+            // Must detect first as it conflicts with MAP_NF_SUBSECTOR.
+            if( chld == 0xFFFF )
+            {
+#  ifdef DEEPSEA_EXTENDED_SIGNED_NODES
+                chld = -1;
+#  else
+                chld = 0xFFFFFFFF;
+#  endif
+            }
+            else
+            if( chld & MAP_NF_SUBSECTOR )
+            {
+                // Convert normal MAP_NF_SUBSECTOR, to extended node NF_SUBSECTOR.
+                chld &= ~MAP_NF_SUBSECTOR;
+
+                if( chld >= numsubsectors )
+                    chld = 0;
+
+                chld |= NF_SUBSECTOR;
+            }
+
+            no->children[j] = chld;
+#else
+            // [WDJ] Unsigned 16 bit children.
+            no->children[j] = (uint16_t) ( LE_SWAP16(mn->children[j]) );
+#endif
+
             for (k=0 ; k<4 ; k++)
                 no->bbox[j][k] = LE_SWAP16(mn->bbox[j][k])<<FRACBITS;
         }
@@ -1969,6 +2011,7 @@ boolean P_SetupLevel (int      to_episode,
     const char  *errstr;
     char  *sl_mapname = NULL;
     int   i;
+    mapformat_t mapformat;
 
     GenPrintf( (verbose? (EMSG_ver|EMSG_now) : (EMSG_console|EMSG_now)),
                "Setup Level\n" );
@@ -2117,6 +2160,33 @@ boolean P_SetupLevel (int      to_episode,
         goto load_reject;
     }
 
+    // [MB] 2020-04-21: Node format check from woof (p_extnodes.c)
+    mapformat = P_CheckMapFormat(level_lumpnum);
+    switch (mapformat)
+    {
+    case MFMT_DOOMBSP:
+        GenPrintf(EMSG_info, "Node format: Regular\n" );
+        break;
+    case MFMT_DEEPBSP:
+        GenPrintf(EMSG_info, "Node format: DeeP V4 extended\n" );
+        break;
+    case MFMT_ZDBSPX:
+        GenPrintf(EMSG_info, "Node format: ZDoom extended\n" );
+        break;
+    case MFMT_ZDBSPZ:
+        GenPrintf(EMSG_info, "Node format: ZDoom extended (compressed)\n" );
+#if HAVE_ZLIB
+//#ifdef HAVE_LIBZIP
+        break;
+#else
+        errstr = "Compressed nodes not supported";
+        goto load_reject;
+#endif
+    default:
+        errstr = "Node format not supported";
+        goto load_reject;
+    }
+
     // note: most of this ordering is important
     P_LoadBlockMap (level_lumpnum+ML_BLOCKMAP);
     P_LoadVertexes (level_lumpnum+ML_VERTEXES);
@@ -2126,9 +2196,30 @@ boolean P_SetupLevel (int      to_episode,
     P_LoadLineDefs (level_lumpnum+ML_LINEDEFS);
     P_LoadSideDefs2(level_lumpnum+ML_SIDEDEFS);
     P_LoadLineDefs2();
-    P_LoadSubsectors (level_lumpnum+ML_SSECTORS);
-    P_LoadNodes (level_lumpnum+ML_NODES);
-    P_LoadSegs (level_lumpnum+ML_SEGS);
+
+#ifdef DEEPSEA_EXTENDED_NODES
+    // [MB] 2020-04-21: Hook in code imported from woof 1.2.0 (p_extnodes.c)
+    if (mapformat == MFMT_ZDBSPX || mapformat == MFMT_ZDBSPZ)
+    {
+        // Combined nodes, subsectors, and segs.  May be compressed.
+        // Modifies vertexes.
+        P_LoadNodes_ZDBSP (level_lumpnum+ML_NODES, mapformat == MFMT_ZDBSPZ);
+    }
+    else if (mapformat == MFMT_DEEPBSP)
+    {
+        P_LoadSubsectors_DeePBSP (level_lumpnum+ML_SSECTORS);
+        P_LoadNodes_DeePBSP (level_lumpnum+ML_NODES);
+        P_LoadSegs_DeePBSP (level_lumpnum+ML_SEGS);
+    }
+    else
+#endif
+    {
+        // [WDJ] Normal node format loaders.        
+        P_LoadSubsectors (level_lumpnum+ML_SSECTORS);
+        P_LoadNodes (level_lumpnum+ML_NODES);
+        P_LoadSegs (level_lumpnum+ML_SEGS);
+    }
+
     rejectmatrix = W_CacheLumpNum (level_lumpnum+ML_REJECT,PU_LEVEL);
     P_GroupLines ();
 

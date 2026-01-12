@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: r_defs.h 1558 2020-11-17 23:36:10Z wesleyjohnson $
+// $Id: r_defs.h 1583 2021-09-26 05:29:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -131,8 +131,14 @@
 
 
 // Max index (or -1). Used in line_t::sidenum and maplinedef_t::sidenum.
+#ifdef DEEPSEA_EXTENDED_NODES
+// Define as stdint uint16_t.
+// Marks it as an unsigned value, so it does not sign extend, and compares are unsigned.
+#define NULL_INDEX   UINT16_C(0xFFFF)
+#else
+// The plain unsigned test, for uint16_t.  Has been compatible with all 32 bit compilers involved.
 #define NULL_INDEX   0xFFFF
-
+#endif
 
 // Silhouette, needed for clipping Segs (mainly)
 // and sprites representing things.
@@ -572,9 +578,15 @@ typedef struct subsector_s
 {
     sector_t*   sector;   // (ref) part of this sector, from segs->sector of firstline
     // numlines and firstline are from the subsectors lump (nodebuilder)
+#ifdef DEEPSEA_EXTENDED_NODES
+    // [MB] 2020-04-22: Changed to 32-Bit for extended nodes
+    uint32_t  numlines;   // number of segs in this subsector
+    uint32_t  firstline;  // index into segs lump (loaded from wad)
+#else   
     // [WDJ] some wad may be large enough to overflow signed short.
     unsigned short  numlines;   // number of segs in this subsector
     unsigned short  firstline;  // index into segs lump (loaded from wad)
+#endif
     // floorsplat_t list
     void*       splats;
     //Hurdler: added for optimized mlook in hw mode
@@ -780,6 +792,25 @@ typedef struct
 
 
 
+#ifdef DEEPSEA_EXTENDED_NODES
+    // [MB] 2020-04-22: Changed to 32-Bit for extended nodes
+// [WDJ] BSP code has been examined and made unsigned safe.
+#define DEEPSEA_EXTENDED_SIGNED_NODES
+# ifdef DEEPSEA_EXTENDED_SIGNED_NODES
+    //      Use int to match rest of the code (should be uint32_t)
+    typedef int  bsp_child_t;
+# else
+    // The logic only used one neg value, and all rest are unsigned indexes.
+    typedef uint32_t  bsp_child_t;
+# endif
+# define NF_SUBSECTOR    0x80000000
+#else
+    // Normal BSP child.
+    typedef uint16_t  bsp_child_t;
+# define NF_SUBSECTOR    0x8000
+#endif
+
+
 //
 // BSP node.
 //
@@ -796,7 +827,7 @@ typedef struct
 
     // If NF_SUBSECTOR is set then rest of it is a subsector index,
     // otherwise it is another node index.
-    uint16_t    children[2];
+    bsp_child_t  children[2];
         // children[0]= right
         // children[1]= left
 } node_t;

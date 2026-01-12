@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdata.h 1473 2019-10-05 10:19:20Z wesleyjohnson $
+// $Id: doomdata.h 1583 2021-09-26 05:29:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2011 by DooM Legacy Team.
@@ -203,7 +203,7 @@ typedef struct
 // BSP node structure.
 
 // Indicate a leaf.
-#define NF_SUBSECTOR    0x8000
+#define MAP_NF_SUBSECTOR    0x8000
 
 // WAD lump structure
 typedef struct

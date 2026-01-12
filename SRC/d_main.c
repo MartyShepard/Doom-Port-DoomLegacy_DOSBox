@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1582 2021-08-10 20:41:33Z wesleyjohnson $
+// $Id: d_main.c 1583 2021-09-26 05:29:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1582"
+#define SVN_REV "1583"
 #endif
 
 
@@ -4091,10 +4091,16 @@ void Commandline_GetCompileFeatures(void)
        printf("ENGINE [ ] DevParm: Special handling for devparm\n");
 #endif
 
-#ifdef DEEPSEA_TALL_PATCH
-        printf("ENGINE [X] DeePsea tall Patch Support\n");
+#ifdef DEEPSEA_EXTENDED_NODES
+        printf("ENGINE [X] DeePsea Extended Nodes\n");
 #else
-        printf("ENGINE [ ] DeePsea tall Patch\n");
+        printf("ENGINE [ ] DeePsea Extended Nodes\n");
+#endif
+
+#ifdef DEEPSEA_TALL_PATCH
+        printf("ENGINE [X] DeePsea Tall Patch Support\n");
+#else
+        printf("ENGINE [ ] DeePsea Tall Patch\n");
 #endif
 
 #ifdef DOORDELAY_CONTROL

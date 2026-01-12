@@ -8573,7 +8573,6 @@ A working ALSA music player.
 Not quite done debugging yet.
 Other devices, like FluidSynth have no code yet.
 
-=== commit
 
 *** w109_wait99
 patchfile = w109_041_wait99
@@ -8634,7 +8633,45 @@ Caught some typos in optional code.
 
 === commit
 
+*** w109_extnode
+patchfile = w109_044_extnode
+- commit revision 1583
+Support for extended nodes.
+Allows playing several wads, such as Avactor.WAD, and Lost Civilization,
+that are otherwise playable by DoomLegacy, but use
+extended nodes for several of their maps.
 
+Code from FR_0095 by Michael Bäuerle, woof, and crispy doom.
+DeePBSP nodes.
+ZDoom extended nodes based on woof 1.2.0, supporting uncompressed.
+Will support compressed when ZLIB support is added.
 
+This fixes bug #657, due to DeepBSP V4 extended nodes.
+Fixes the segfault in Eviternity.wad Map15 and Map32, due to
+use of uncompressed ZDoom extended nodes.
 
+Add file: p_extnode.c
+Add file: p_extnode.h
+
+*** w109_zlib
+patchfile = w109_045_zlib
+- commit revision 1584
+Add support for ZLIB.
+Used to uncompress compressed ZDoom nodes.
+Supports dynamic loading of ZLIB, so DoomLegacy
+can run without it.
+
+*** w109_bsp
+patchfile = w109_046_bsp
+- commit revision 1585
+Some incremental performance revision of bsp
+search code.
+Removes tail recursion, like PrBoom.
+Removes the -1 test from the bsp search loop, saving a test.
+The children nodes are unsigned, and cannot be negative.
+The only case this was supporting is the degenerate case
+of a single sector, where upon there will be no nodes.
+This case has been moved to be handled outside the search loop.
+
+=== commit
 
