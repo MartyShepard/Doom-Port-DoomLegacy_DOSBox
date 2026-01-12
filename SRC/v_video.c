@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: v_video.c 1572 2021-01-28 09:25:24Z wesleyjohnson $
+// $Id: v_video.c 1589 2021-10-11 02:45:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -223,31 +223,6 @@ void Set_drawmode_OnChange( void )
 }
 
 
-// Reverse index into drawmode_sel_t
-// indexed by vid_drawmode_e
-byte drawmode_to_drawmode_sel_t[] = {
-   0,  // DRM_none
-   0,  // DRM_8pal
-   1,  // DRM_15,
-   2,  // DRM_16,
-   3,  // DRM_24,
-   4,  // DRM_32,
-   0,  // DRM_explicit_bpp
-   5,  // DRM_native
-#ifdef HWRENDER
-   6,  // DRM_opengl
-#ifdef SMIF_WIN_NATIVE
-   7,  // DRM_minigl
-   8,  // DRM_glide
-   9,  // DRM_d3d
-#else
-   0, 0, 0,
-#endif
-#else
-   0, 0, 0, 0,
-#endif
-   0   // DRM_END
-};
 
 // indexed by vid_drawmode_e
 byte drawmode_sel_avail[] = {

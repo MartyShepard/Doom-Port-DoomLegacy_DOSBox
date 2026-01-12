@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: command.c 1578 2021-05-19 03:41:06Z wesleyjohnson $
+// $Id: command.c 1589 2021-10-11 02:45:14Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1211,6 +1211,18 @@ update:
     return;
 }
 
+// Get string for CV_PossibleValue_t
+//  pv_value: a value in the CV_PossibleValue_t list
+const char *  CV_get_possiblevalue_string( CV_PossibleValue_t * pv,  byte pv_value )
+{
+    while( pv->strvalue )
+    {
+        if( pv->value == pv_value )
+            return pv->strvalue;
+        pv++;
+    }
+    return NULL;
+}
 
 // Do the CV_CALL, with validity tests, and enforcing user_enable rules.
 void  CV_cvar_call( consvar_t *cvar, byte user_enable )

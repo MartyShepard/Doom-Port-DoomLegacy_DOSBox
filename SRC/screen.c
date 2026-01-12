@@ -606,6 +606,7 @@ void SCR_apply_video_settings( byte calc_setmodeneeded )
     {
 #if defined (__DJGPP__)
         // Make bit mode selectet working again
+        GenPrintf(EMSG_ver, "\n DrawMode: req_bitpp =  %d",req_bitpp);
         if (req_bitpp == cv_scr_depth.value)
 #endif  
         // From config file, or menu.

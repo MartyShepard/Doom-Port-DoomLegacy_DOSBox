@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: command.h 1578 2021-05-19 03:41:06Z wesleyjohnson $
+// $Id: command.h 1589 2021-10-11 02:45:14Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -235,6 +235,10 @@ extern byte command_EV_param;
 //   str : a reference to a string, it will by copied.
 void  CV_Set_cvar_string( consvar_t * cvar, const char * str );
 void  CV_Free_cvar_string( consvar_t * cvar );
+
+// Get string for CV_PossibleValue_t
+//  pv_value: a value in the CV_PossibleValue_t list
+const char *  CV_get_possiblevalue_string( CV_PossibleValue_t * pv,  byte pv_value );
 
 // If a OnChange func tries to change other values,
 // this function should be used.

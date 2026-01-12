@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01589 ]: w109_050 draw select
+          DOS: Nativ Drawmode selction fixed.
+
 [01588 ]: w109_049 hw data
 [01587*]: w109_048 hw bsp
 [01586 ]: w109_047 deh cmp

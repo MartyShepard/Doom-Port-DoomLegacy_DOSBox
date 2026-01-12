@@ -489,6 +489,13 @@ int VID_SetMode (modenum_t modenum)
                          "\t cv_drawmode.EV               = %d\n",
                          __FILE__,__LINE__,currentmode_p->bytesperpixel, vid.bytepp*8, req_bitpp,vid.drawmode, cv_drawmode.EV);
 
+    /*
+     * Benutzer hat den Nativ mode angewählt und im req_bitpp ist immer noch die    
+     * der alte bitmode drin. 
+     */
+    if ((cv_drawmode.EV == 7) && (req_bitpp > 8))   
+        req_bitpp = 8;
+   
     switch(req_bitpp)
     {
       case 8 : vid.bitpp =  8; vid.drawmode = DRAW8PAL; vid.bytepp=1;break;
