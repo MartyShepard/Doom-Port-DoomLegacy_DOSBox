@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: d_clisrv.c 1571 2021-01-28 09:24:43Z wesleyjohnson $
+// $Id: d_clisrv.c 1572 2021-01-28 09:25:24Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1585,7 +1585,7 @@ static void SV_Send_control( byte nnode, byte ctrl_command, byte data1, uint16_t
     if( nnode == BROADCAST_NODE )
     {
         // Broadcast it
-        SV_SendPacket_All( true, sizeof(control_pak_t), NULL );
+        SV_SendPacket_All( SP_reliable, sizeof(control_pak_t), NULL );
     }
     else if( nnode < MAXNETNODES )
     {
@@ -1764,7 +1764,7 @@ void SV_Send_State( byte server_pause )
     get_random_state( & netbuffer->u.state.rs ); // to sync P_Random
     netbuffer->u.state.server_pause = server_pause;
 
-    SV_SendPacket_All( true, sizeof(state_pak_t), NULL );
+    SV_SendPacket_All( SP_reliable, sizeof(state_pak_t), NULL );
 }
 
 // By Client
@@ -2721,9 +2721,9 @@ static void SV_Send_NetWait( void )
 #ifdef WAITPLAYER_DEBUG
     debug_Printf( "WaitPlayer update: num_netnodes=%d num_netplayer=%d  wait_netplayer=%d  wait_tics=%d\n",
                num_netnodes, num_netplayer, wait_netplayer, wait_tics );
-    SV_SendPacket_All( false, sizeof(netwait_pak_t), "  sent to player" );
+    SV_SendPacket_All( 0, sizeof(netwait_pak_t), "  sent to player" );
 #else
-    SV_SendPacket_All( false, sizeof(netwait_pak_t), NULL );
+    SV_SendPacket_All( 0, sizeof(netwait_pak_t), NULL );
 #endif
 }
 

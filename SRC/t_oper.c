@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_oper.c 1112 2014-06-03 21:54:41Z smite-meister $
+// $Id: t_oper.c 1572 2021-01-28 09:25:24Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -372,10 +372,14 @@ fs_value_t OPdivide(int start, int n, int stop)
   
 //  if(left.type == FSVT_fixed || right.type == FSVT_fixed)
     {
-      fixed_t fr;
+      fixed_t fr = fixedvalue(right);
 
-      if((fr = fixedvalue(right)) == 0)
-        script_error("divide by zero\n");
+      if(fr == 0)
+      {
+          returnvar.type = FSVT_fixed;
+          returnvar.value.f = 0x80000000;
+          script_error("divide by zero\n");
+      }
       else
       {
           returnvar.type = FSVT_fixed;
@@ -406,8 +410,13 @@ fs_value_t OPremainder(int start, int n, int stop)
   left = evaluate_expression(start, n-1);
   right = evaluate_expression(n+1, stop);
   
-  if(!(ir = intvalue(right)))
-    script_error("divide by zero\n");
+  ir = intvalue(right);
+  if(ir == 0)
+  {
+      returnvar.type = FSVT_int;
+      returnvar.value.f = 0;
+      script_error("divide by zero\n");
+  }
   else
   {
       returnvar.type = FSVT_int;

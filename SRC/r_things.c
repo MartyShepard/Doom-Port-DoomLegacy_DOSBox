@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
+// $Id: r_things.c 1572 2021-01-28 09:25:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -486,10 +486,10 @@ void R_InstallSpriteLump ( lumpnum_t     pat_lumpnum,   // graphics patch
     fmp->rotation_pattern = SRP_8;
 #endif
 
-    if( (rtp->spritelump_id != -1) && devparm )
+    if( (rtp->spritelump_id != 0xFFFF) && devparm )
     {
         GenPrintf(EMSG_dev,
-           "R_Init_Sprites: Sprite %s : %c : %c has two lumps mapped to it\n",
+           "R_Init_Sprites: Sprite %s : %c : %c  overwrite previous spritelump mapping\n",
            spritename, 'A'+frame, rotation_char );
     }
 
@@ -534,7 +534,7 @@ boolean R_AddSingleSpriteDef (char* sprname, spritedef_t* spritedef, int wadnum,
 
     numname = *(uint32_t *)sprname;
 
-    memset (sprfrot,-1, sizeof(sprfrot));
+    memset (sprfrot, 0xFF, sizeof(sprfrot));  // init spritetmp for devparm check
     memset (sprfrm, 0, sizeof(sprfrm));
     maxframe = -1;
  

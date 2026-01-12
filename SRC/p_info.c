@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_info.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
+// $Id: p_info.c 1572 2021-01-28 09:25:24Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -621,7 +621,7 @@ void P_Load_LevelInfo( void )
     endlump_cp = lump + lumpsize; // end of lump
     while(fs_src_cp < endlump_cp)
     {
-        register char ch = *fs_src_cp;
+        register unsigned char ch = *fs_src_cp;
         if(ch == '\n') // end of line
         {
           *rlp = '\0';

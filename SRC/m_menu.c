@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: m_menu.c 1571 2021-01-28 09:24:43Z wesleyjohnson $
+// $Id: m_menu.c 1572 2021-01-28 09:25:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -370,7 +370,7 @@ typedef void (*menufunc_t)(int choice);
 
 // [smite] dirty hack, contains a second parameter to IT_KEYHANDLER functions
 // (int choice is the key)
-static char input_char;
+static unsigned char input_char;
 // Return 0= continue, 1= intercept key, 2= testing.
 static byte (*key_handler2)(int key) = NULL;  // keyboard intercept 
 
@@ -4257,7 +4257,7 @@ void M_ReadSaveStrings( int scroll_direction )
             }
         }
         sgdp->levtime[SAVEGAME_MTLEN-1] = '\0';  // safe
-       // fill in savegame strings for menu display
+        // fill in savegame strings for menu display
         dl_strncpy( &sgdp->desc[0], slot_str, SAVESTRINGSIZE );
         sgdp->savegameid = nameid;
         LoadgameMenu[sgslot + SAVEGAME_MSLOT_0].status = slot_status;
@@ -5326,7 +5326,7 @@ boolean M_Responder (event_t* ev)
     int i;
     int key = KEY_NULL; // key pressed (if any)
     int button_key = 0; // mouse and joystick specific
-    char ch = '\0';  // ASCII char it corresponds to
+    unsigned char ch = '\0';  // ASCII char it corresponds to
 
     switch (ev->type )
     {

@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //----------------------------------------------------------------------------
 //
-// $Id: t_parse.h 1368 2017-11-01 01:17:48Z wesleyjohnson $
+// $Id: t_parse.h 1572 2021-01-28 09:25:24Z wesleyjohnson $
 //
 // Copyright(C) 2000 Simon Howard
 // Copyright (C) 2001-2011 by DooM Legacy Team.
@@ -119,29 +119,29 @@ struct script_s
 {
   // script data
   
-  char *data;
+  char * data;
   int scriptnum;  // this script's number
   int len;
   
   // {} sections
-  fs_section_t *sections[SECTIONSLOTS];
+  fs_section_t * sections[SECTIONSLOTS];
   
   // variables:
-  fs_variable_t *variables[VARIABLESLOTS];
+  fs_variable_t * variables[VARIABLESLOTS];
   
   // ptr to the parent script
   // the parent script is the script above this level
   // eg. individual linetrigger scripts are children of the levelscript,
   // which is a child of the global_script
-  script_t *parent;
+  script_t * parent;
 
   // child scripts.
   // levelscript holds ptrs to all of the level's scripts
   // here.
   
-  script_t *children[MAXSCRIPTS];
+  script_t * children[MAXSCRIPTS];
   
-  mobj_t *trigger;        // object which triggered this script
+  mobj_t * trigger;        // object which triggered this script
 
   //SoM: Used for if/elseif/else statements
   boolean  lastiftrue;

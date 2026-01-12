@@ -1,7 +1,7 @@
 // Emacs style mode select -*- C++ -*-
 //---------------------------------------------------------------------------
 //
-// $Id: t_func.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
+// $Id: t_func.c 1572 2021-01-28 09:25:24Z wesleyjohnson $
 //
 // Copyright (C) 2000 Simon Howard
 // Copyright (C) 2001-2016 by DooM Legacy Team.
@@ -2050,7 +2050,7 @@ void SF_LineAttack(void)
     mobj_t * mo;
     angle_t aiming;
     int  damage, angle, slope;
-    int	 short fixedtodeg = 182.033;
+    const int short fixedtodeg = 182; // 182.033
 
     if (t_argc < 3)  goto err_numarg; // [WDJ]
 

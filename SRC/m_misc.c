@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: m_misc.c 1571 2021-01-28 09:24:43Z wesleyjohnson $
+// $Id: m_misc.c 1572 2021-01-28 09:25:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -392,7 +392,7 @@ void Command_LoadConfig_f (void)
     char cfgname[MAX_WADPATH];
     COM_args_t  carg;
     byte  namearg = 1;
-    char  other_flag = 0;
+    unsigned char  other_flag = 0;
     
     COM_Args( &carg );
     if( carg.num < 2 || carg.num > 3 )  goto bad_syntax;

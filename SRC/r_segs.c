@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: r_segs.c 1558 2020-11-17 23:36:10Z wesleyjohnson $
+// $Id: r_segs.c 1572 2021-01-28 09:25:24Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2411,7 +2411,7 @@ void R_StoreWallRange( int   start, int   stop)
     
     // calculate rw_distance for scale calculation
     rw_normalangle = curline->angle + ANG90;
-    offsetangle = abs(rw_normalangle-rw_angle1);
+    offsetangle = abs((signed_angle_t)rw_normalangle - (signed_angle_t)rw_angle1);
     
     if (offsetangle > ANG90)
         offsetangle = ANG90;
