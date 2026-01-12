@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_data.h 1422 2019-01-29 08:05:39Z wesleyjohnson $
+// $Id: hw_data.h 1588 2021-10-11 02:44:26Z wesleyjohnson $
 //
 // Copyright (C) 1998-2012 by DooM Legacy Team.
 //
@@ -58,10 +58,26 @@
 //                                                               TEXTURE INFO
 // ==========================================================================
 
+#define GLIDE_data
+#ifdef GLIDE_data
 // grInfo.data holds the address of the graphics data cached in heap memory
 //                NULL if the texture is not in Doom heap cache.
+#define GR_data    grInfo.data
+#define GR_format  grInfo.format
+#else
+// mipmap data holds the address of the graphics data cached in heap memory
+//                NULL if the texture is not in Doom heap cache.
+#define GR_data    data
+#define GR_format  format
+#endif
+
 struct Mipmap_s {
+#ifdef GLIDE_data
     GrTexInfo       grInfo;         //for TexDownloadMipMap
+#else
+    void          * data;
+    byte            format;      // GR_TEXFMT_xx, or GT_RGBA
+#endif
     uint32_t        tfflags;	 // TF_ texture flags
     uint16_t        height;
     uint16_t        width;

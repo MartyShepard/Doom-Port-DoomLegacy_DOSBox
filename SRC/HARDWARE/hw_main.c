@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.c 1525 2020-05-09 12:07:29Z wesleyjohnson $
+// $Id: hw_main.c 1587 2021-10-11 02:42:17Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -3015,15 +3015,29 @@ static boolean HWR_CheckHackBBox(fixed_t * bb)
 #endif
 
 // BP: big hack for a test in lighning ref:1249753487AB
-int *bbox;
+int * bsp_bbox;
+
+#if 0
+// [WDJ] Pull the degenerate case out of the main BSP loop.
+// It can only be invoked at the first call.
+// Can get same effect by calling with ( 0 | NF_SUBSECTOR ).
+static void HWR_RenderBSPNode_degen(int bspnum)
+{
+    if (bspnum == -1)
+    { 
+        // [WDJ] Degenerate map with no nodes.
+        //*(gr_drawsubsector_p++) = 0;
+        HWR_Subsector(0);
+    }
+}
+#endif
 
 // Recursive walk through BSP tree.
 // Called from HWR_RenderPlayerView.
-static void HWR_RenderBSPNode(int bspnum)
+static void HWR_RenderBSPNode(bsp_child_t bspnum)
 {
     node_t *bsp;
     unsigned int  side;  // 0, 1
-    unsigned int  subsecnum;  // subsector index
 
     // [WDJ] From EternityEngine, killough 5/2/98: remove tail recursion
     while( ! (bspnum & NF_SUBSECTOR) )
@@ -3035,7 +3049,7 @@ static void HWR_RenderBSPNode(int bspnum)
         side = R_PointOnSide(viewx, viewy, bsp);
 
         // BP: big hack for a test in lighning ref:1249753487AB
-        bbox = bsp->bbox[side];
+        bsp_bbox = bsp->bbox[side];
 
         // Recursively divide front space.
         HWR_RenderBSPNode(bsp->children[side]);
@@ -3046,27 +3060,28 @@ static void HWR_RenderBSPNode(int bspnum)
             return;  // Not in back space
 
         // BP: big hack for a test in lighning ref:1249753487AB
-        bbox = bsp->bbox[side];
+        bsp_bbox = bsp->bbox[side];
         // [WDJ] Convert tail recursion to loop.
         // This does HWR_RenderBSPNode(bsp->children[side]);
         bspnum = bsp->children[side];
     }
 
     // Found a subsector
-    subsecnum = bspnum & (~NF_SUBSECTOR);
-    if( subsecnum >= numsubsectors )  goto bad_subsector;
-    //*(gr_drawsubsector_p++) = subsecnum;
-    HWR_Subsector(subsecnum);
-    return;
+    {
+        unsigned int  subsecnum = bspnum & (~NF_SUBSECTOR);  // subsector index
+        if( subsecnum >= numsubsectors )  goto bad_subsector;
+        //*(gr_drawsubsector_p++) = subsecnum;
+        // HWR_Subsector->HWR_RenderPlane->HWR_PlaneLighting  which uses bsp_bbox.
+        HWR_Subsector(subsecnum);
+        return;
 
 bad_subsector:
-    // Error situations, should not get here.
-    if (bspnum == -1)
-    { 
-        // [WDJ] Degenerate map with no nodes.
-        //*(gr_drawsubsector_p++) = 0;
-        HWR_Subsector(0);
+        // Error situations, should not get here.
+#ifdef PARANOIA
+        GenPrintf( EMSG_warn, "Bad BSP subsector: %i\n", subsecnum );
+#endif
     }
+    return;
 }
 
 /*
@@ -4191,25 +4206,30 @@ void HWR_RenderPlayerView(byte pind, player_t * player)
     HWR_set_view_transform();
 
     validcount++;
-    HWR_RenderBSPNode(numnodes - 1);
+
+    // [WDJ] Intercept degenerate case, so BSP node is never -1.
+    bsp_child_t top_node = ( numnodes > 0 )? numnodes-1
+       : ( 0 | NF_SUBSECTOR );  // Degenerate, sector 0
+
+    HWR_RenderBSPNode( top_node );
 
 #ifndef NO_MLOOK_EXTENDS_FOV
     if (cv_grmlook_extends_fov.value && (aimingangle || cv_grfov.value > 90))
     {
         dup_viewangle += ANG90;
         HWR_Clear_ClipSegs();
-        HWR_RenderBSPNode(numnodes - 1);        //left
+        HWR_RenderBSPNode( top_node );        //left
 
         dup_viewangle += ANG90;
         if (cv_grmlook_extends_fov.value == 2 && ((int) aimingangle > ANG45 || (int) aimingangle < -ANG45))
         {
             HWR_Clear_ClipSegs();
-            HWR_RenderBSPNode(numnodes - 1);    //back
+            HWR_RenderBSPNode( top_node );    //back
         }
 
         dup_viewangle += ANG90;
         HWR_Clear_ClipSegs();
-        HWR_RenderBSPNode(numnodes - 1);        //right
+        HWR_RenderBSPNode( top_node );        //right
 
         dup_viewangle += ANG90;
     }

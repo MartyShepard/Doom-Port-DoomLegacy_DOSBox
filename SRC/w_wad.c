@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: w_wad.c 1576 2021-02-04 11:30:13Z wesleyjohnson $
+// $Id: w_wad.c 1588 2021-10-11 02:44:26Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1205,14 +1205,14 @@ void* W_CachePatchNum ( lumpnum_t lumpnum, int ztag )
 
     grPatch = &(wadfiles[WADFILENUM(lumpnum)]->hwrcache[LUMPNUM(lumpnum)]);
 
-    if( ! grPatch->mipmap.grInfo.data ) 
+    if( ! grPatch->mipmap.GR_data ) 
     {   // first time init grPatch fields
         // we need patch w,h,offset,...
         patch_t* tmp_patch = W_CachePatchNum_Endian(grPatch->patch_lumpnum, PU_LUMP); // temp use
         // default no TF_Opaquetrans
         HWR_MakePatch ( tmp_patch, grPatch, &grPatch->mipmap, 0);
         Z_Free (tmp_patch);
-        // HWR_MakePatch makes grInfo.data as PU_HWRCACHE
+        // HWR_MakePatch makes GR_data as PU_HWRCACHE
     }
 
     // return MipPatch_t, which can be casted to (patch_t) with valid patch header info
@@ -1242,14 +1242,14 @@ void* W_CacheMappedPatchNum ( lumpnum_t lumpnum, uint32_t drawflags )
 
     grPatch = &(wadfiles[WADFILENUM(lumpnum)]->hwrcache[LUMPNUM(lumpnum)]);
 
-    if( ! grPatch->mipmap.grInfo.data )
+    if( ! grPatch->mipmap.GR_data )
     {   // first time init grPatch fields
         // we need patch w,h,offset,...
         patch_t *tmp_patch = W_CachePatchNum_Endian(grPatch->patch_lumpnum, PU_LUMP); // temp use
         // pass TF_Opaquetrans
         HWR_MakePatch ( tmp_patch, grPatch, &grPatch->mipmap, drawflags);
         Z_Free (tmp_patch);
-        // HWR_MakePatch makes grInfo.data as PU_HWRCACHE
+        // HWR_MakePatch makes GR_data as PU_HWRCACHE
     }
 
     // return MipPatch_t, which can be casted to (patch_t) with valid patch header info

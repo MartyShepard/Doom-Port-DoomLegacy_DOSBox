@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01588 ]: w109_049 hw data
+[01587*]: w109_048 hw bsp
 [01586 ]: w109_047 deh cmp
           DOS: No zip. support. ZDoom extended nodes based
           on woof 1.2.0, does'nt supporting uncompressing.
