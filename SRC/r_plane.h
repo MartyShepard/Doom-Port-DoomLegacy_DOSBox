@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.h 1444 2019-06-12 04:08:18Z wesleyjohnson $
+// $Id: r_plane.h 1592 2021-10-16 07:36:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -146,7 +146,7 @@ void R_MakeSpans ( int x, int t1, int b1, int t2, int b2 );
 
 visplane_t* R_FindPlane( fixed_t height,
                          int     picnum,
-                         int     lightlevel,
+                         lightlev_t  lightlevel,
                          fixed_t xoff,
                          fixed_t yoff,
                          extracolormap_t* planecolormap,

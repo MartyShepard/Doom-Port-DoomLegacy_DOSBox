@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_plane.c 1558 2020-11-17 23:36:10Z wesleyjohnson $
+// $Id: r_plane.c 1592 2021-10-16 07:36:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -405,7 +405,7 @@ static visplane_t*  new_visplane(unsigned hash)
 //
 visplane_t* R_FindPlane( fixed_t height,
                          int     picnum,
-                         int     lightlevel,
+                         lightlev_t  lightlevel,
                          fixed_t xoff,
                          fixed_t yoff,
                          extracolormap_t* planecolormap,

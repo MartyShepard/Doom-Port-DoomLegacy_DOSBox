@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_lights.c 1440 2019-05-19 02:31:03Z wesleyjohnson $
+// $Id: p_lights.c 1592 2021-10-16 07:36:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -58,7 +58,7 @@
 //
 void T_FireFlicker (fireflicker_t* flick)
 {
-    int amount;
+    lightlev_t  amount;
 
     if (--flick->count)
         return;
@@ -115,7 +115,7 @@ void T_LightFlash (lightflash_t* flash)
 
     if (flash->sector->lightlevel == flash->maxlight)
     {
-        flash-> sector->lightlevel = flash->minlight;
+        flash->sector->lightlevel = flash->minlight;
         flash->count = (PP_Random(pr_lights)&flash->mintime)+1;
     }
     else
@@ -136,7 +136,7 @@ void T_LightFlash (lightflash_t* flash)
 //
 void P_SpawnLightFlash (sector_t* sector)
 {
-    lightflash_t*       flash;
+    lightflash_t*  flash;
 
     // nothing special about it during gameplay
     sector->special &= ~31; //SoM: 3/7/2000: Clear non-generalized type
@@ -246,9 +246,8 @@ int EV_StartLightStrobing(line_t* line)
 //
 int EV_TurnTagLightsOff(line_t* line)
 {
-    int                 i;
-    int                 j;
-    int                 min;
+    int                 i, j;
+    lightlev_t          min;
     sector_t*           sector;
     sector_t*           tsec;
     line_t*             templine;

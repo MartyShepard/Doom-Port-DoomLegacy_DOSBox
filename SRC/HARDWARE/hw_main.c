@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.c 1591 2021-10-11 02:46:18Z wesleyjohnson $
+// $Id: hw_main.c 1592 2021-10-16 07:36:14Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -357,7 +357,7 @@ struct hwdriver_s hwdriver;
 
 static void HWR_AddSprites(sector_t* sec, lightlev_t lightlevel);
 static void HWR_ProjectSprite(mobj_t * thing);
-static void HWR_Add3DWater(int picnum, poly_subsector_t * xsub, fixed_t fixedheight, int lightlevel, int alpha);
+static void HWR_Add3DWater(int picnum, poly_subsector_t * xsub, fixed_t fixedheight, lightlev_t lightlevel, int alpha);
 static void HWR_Render3DWater();
 static void HWR_RenderSorted( void );
 
@@ -592,14 +592,20 @@ void HWR_transform_sprite_FOut(float cx, float cy, float cz, vxtx3d_t * fovp)
 //                                    LIGHT stuffs
 // ==========================================================================
 
-static byte lightleveltonumlut[256];
+static byte lightlevel_to_lum_table[256];
 
 // added to Doom's sector lightlevel to make things a bit brighter (sprites/walls/planes)
 byte LightLevelToLum(lightlev_t l)
 {
     if (fixedcolormap)
         return 255;
-    l = lightleveltonumlut[l];
+
+    // [WDJ] Map light is int16, for unknown reasons.
+    // Some maps are using 256, or higher.
+    if( l > 255 )  l = 255;
+    if( l < 0 )  l = 0;
+
+    l = lightlevel_to_lum_table[l];
     l += extralight;	// from guns
     if (l > 255)
         l = 255;
@@ -611,7 +617,13 @@ byte LightLevelToLum_extra(lightlev_t l, lightlev_t extra)
 {
     if (fixedcolormap)
         return 255;
-    l = lightleveltonumlut[l];
+
+    // [WDJ] Map light is int16, for unknown reasons.
+    // Some maps are using 256, or higher.
+    if( l > 255 )  l = 255;
+    if( l < 0 )  l = 0;
+
+    l = lightlevel_to_lum_table[l];
     l += extra;	// from guns, etc..
     if (l > 255)
         l = 255;
@@ -639,7 +651,7 @@ static void Init_LumLut()
         xxx = x * xx;
         k = 255 * (A * xx * xxx + B * xx * xx + C * xxx + D * xx);
 
-        lightleveltonumlut[i] = min(255, k);
+        lightlevel_to_lum_table[i] = min(255, k);
     }
 }
 
@@ -724,7 +736,7 @@ static uint32_t  flat_flatmask_tab[ 8 ] =
 static
 void HWR_RenderPlane(poly_subsector_t * xsub, fixed_t fixedheight,
                      FBITFIELD PolyFlags, extracolormap_t* planecolormap,
-                     int lightlevel, int picnum) 
+                     lightlev_t lightlevel, int picnum)
 {
     polyvertex_t *pv;
     vxtx3d_t * v3d;
@@ -1592,6 +1604,20 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
     }
     else
     {
+#if 1
+#define ORIENT_LIGHT   16
+        lightlev_t lightv = gr_frontsector->lightlevel;
+
+        // wall orient light
+        // Added before conversion to lum to take advantage of limit clip in LightLevelToLum.
+        if( vs.y == ve.y )
+            lightv -= ORIENT_LIGHT;
+        else if( vs.x == ve.x )
+            lightv += ORIENT_LIGHT;
+
+        byte lightlum = LightLevelToLum( lightv );
+#else
+        lightlev_t lightv = gr_frontsector->lightlevel;
         byte lightlum = LightLevelToLum(gr_frontsector->lightlevel);
 
         // wall orient light
@@ -1599,6 +1625,7 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
             lightlum -= (255 / LIGHTLEVELS);
         else if ((vs.x == ve.x) && lightlum < (255 - (255 / LIGHTLEVELS)))
             lightlum += (255 / LIGHTLEVELS);
+#endif
 
         // store Surface->FlatColor to modulate wall texture
         Surf.FlatColor.s.red = Surf.FlatColor.s.green = Surf.FlatColor.s.blue = lightlum;
@@ -1890,8 +1917,10 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
             // I don't think that solid walls can use translucent linedef types...
             Surf.polyflags = PF_Environment;
             if (gr_frontsector->numlights)
+            {
                 HWR_SplitWall(gr_frontsector, vxtx, midtexnum, &Surf,
                               0, FF_CUTSOLIDS);
+            }
             else
             {
                 if (miptex->mipmap.tfflags & TF_TRANSPARENT)
@@ -3889,6 +3918,7 @@ static void HWR_DrawPlayerSprites(void)
 {
     int i;
     pspdef_t *psp;
+    lightlev_t sll;
     byte lightlum;
 
     // [WDJ] 11/14/2012 use viewer variables for viewplayer
@@ -3897,13 +3927,14 @@ static void HWR_DrawPlayerSprites(void)
     {
         ff_light_t * ff_light =
           R_GetPlaneLight(viewer_sector, viewmobj->z + viewmobj->info->height);
-        lightlum = LightLevelToLum(*ff_light->lightlevel);
+        sll = *ff_light->lightlevel;
     }
     else
     {
         // get light level
-        lightlum = LightLevelToLum(viewer_sector->lightlevel);
+        sll = viewer_sector->lightlevel;
     }
+    lightlum = LightLevelToLum(sll);
 
     // add all active psprites
     for (i = 0, psp = viewplayer->psprites; i < NUMPSPRITES; i++, psp++)
@@ -4652,7 +4683,7 @@ static int planeinfo_len = 0;  // num allocated
 
 // Add translucent plane, called for each plane visible
 //  picnum : index to levelflats
-void HWR_Add3DWater(int picnum, poly_subsector_t * xsub, fixed_t fixedheight, int lightlevel, int alpha)
+void HWR_Add3DWater(int picnum, poly_subsector_t * xsub, fixed_t fixedheight, lightlev_t lightlevel, int alpha)
 {
     planeinfo_t * pl;
 
@@ -4671,7 +4702,7 @@ void HWR_Add3DWater(int picnum, poly_subsector_t * xsub, fixed_t fixedheight, in
         planeinfo_len = planeinfo_req;
     }
 
-    // [WDJ] Merge sort is faster than bubble-sort or quicksort, because
+    // [WDJ] Insert sort is faster than bubble-sort or quicksort, because
     // the tests can be made simpler, takes advantage of already sorted list,
     // and it moves all closer entries at once, and only once.
     planeinfo_t * plnew = & planeinfo[numplanes];

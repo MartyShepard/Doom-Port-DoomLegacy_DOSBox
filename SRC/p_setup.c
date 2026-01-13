@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: p_setup.c 1585 2021-09-26 05:31:57Z wesleyjohnson $
+// $Id: p_setup.c 1592 2021-10-16 07:36:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -720,6 +720,16 @@ void P_LoadSectors( lumpnum_t lumpnum )
         ss->ceilingpic = P_AddLevelFlat (ms->ceilingpic);
 
         ss->lightlevel = (uint16_t)( LE_SWAP16(ms->lightlevel) );
+#if 0
+        // [WDJ] Clamp the int16_t light field to valid values.
+        // Was inadequate, some 256 light levels still got through.
+        // There are some lighting tricks with glowing sectors, that
+	// would be blocked.
+        // Have implemented light clip tests at StoreWall.
+        if( ss->lightlevel > 255 )  ss->lightlevel = 255;
+        if( ss->lightlevel < 0 )    ss->lightlevel = 0;
+#endif
+
         // all values are unsigned, but special field is signed short
         ss->special = (uint16_t)( LE_SWAP16(ms->special) );
         ss->tag = (uint16_t)( LE_SWAP16(ms->tag) );  // unsigned

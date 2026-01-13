@@ -8573,7 +8573,6 @@ A working ALSA music player.
 Not quite done debugging yet.
 Other devices, like FluidSynth have no code yet.
 
-
 *** w109_wait99
 patchfile = w109_041_wait99
 - commit revision 1580
@@ -8670,8 +8669,6 @@ The only case this was supporting is the degenerate case
 of a single sector, where upon there will be no nodes.
 This case has been moved to be handled outside the search loop.
 
-=== commit
-
 *** w109_dehcmp
 patchfile = w109_047_dehcmp
 - commit revision 1586
@@ -8683,3 +8680,100 @@ as in PrBoom and Eternity.
 Detect comments that start with "//", as Avactor has some, even
 though I have not seen documentation that says they are valid.
 Dehacked itself is not really documented.  It is "do what the other ports did".
+
+*** w109_dehcmp
+patchfile = w109_048_hwrbsp
+- commit revision 1587
+The changes of w109_046_bsp applied to the hardware render bsp.
+Somehow they got left out.
+
+*** w109_hwrdata
+patchfile = w109_049_hwrdata
+- commit revision 1588
+Preparation for hw data to be independent of Glide.
+Made macros for hw data and format.
+Improved some of the loop code found in hw_cache and r_opengl.
+Made the allocation of mip blocks keep the previous data allocation
+block if it was the right size.  This happens at run-time, so
+it can save significant time in opengl.
+
+*** w109_drawsel
+patchfile = w109_050_drawsel
+- commit revision 1589
+Fix broken drawing mode select string.
+The table used to get the string for a draw mode was broken,
+due to many optional draw modes.
+It could fail to get the right string for some optional draw modes.
+Replaced it with a generic function that looks up a value
+in the PossibleValue list and returns the string.
+
+*** w109_voodoo
+patchfile = w109_051_voodoo
+- commit revision 1590
+Make Compile option for Voodoo card support and Glide: USE_VOODOO_GLIDE.
+Disable the option, as there are not likely any Voodoo cards in use.
+Drivers for voodoo card are in win32, and linux_x.
+They probably do not work anymore, after so many changes.
+
+*** w109_hwsky
+patchfile = w109_052_hwsky
+- commit revision 1591
+Make the hardware sky draw use the extended textures from r_sky.
+Fix the hardware sky draw scaling, which was off.
+Adjust the movement to draw translations to keep the sky stationary
+relative to nearby walls.
+The constants do not make sense, but it looks better when the
+sky does not wander.
+There is still some horizontal wander.
+
+The hardware sky has only one colormap, so it does not change when
+Invulnerable.  Fixing the sky Invulnerable bug will require multiple
+mipmaps for the sky, which is not supported right now.
+
+=== commit
+
+
+*** w109_hwlight
+patchfile = w109_053_hwlight
+- commit revision 1592
+The wad light field is int16_t, but the valid light range is 0..255.
+Most ports allow the light field to exceed 255, allowing some
+lighting tricks (that few wads take advantage of).
+Some wad editors put in a default light value of 256.
+Avactor.wad has some lights at 256, and these show up as black sectors.
+Fixed the hardware draws to clip lights at 0..255.
+Fixed the light values passed around in the code to use the proper type.
+
+*** w109_hwblend
+patchfile = w109_054_hwblend
+- commit revision 1593
+Revise the hardware render blend mutually exclusive flags to be a field.
+Revise the OpenGL and other hardware drivers to use a lookup table
+for blend, and more efficient attribute setting where possible.
+Possibly slightly faster code.
+No change in capabilities, but can expand the blends.
+Moved the invisibility flag to a blend.
+
+*** w109_hwpowtwo
+patchfile = w109_055_hwpowtwo
+- commit revision 1594
+Make the hardware render texture memory sizes a power of two,
+so GL renders more efficiently for all video cards.
+This is what the Voodoo card was forcing, so it mostly restores
+part of one function.
+
+*** w109_blockmap
+patchfile = w109_056_blockmap
+- commit revision 1595
+Added the blockmap generation code provided by Michael Bäuerle (FR_0096).
+Some of the code is borrowed from crispy doom, altered a bit by
+Michael Bäuerle to suit DoomLegacy.
+And then totally mangled by me (it violated some programming principles,
+could be made much easier to maintain by rewriting, and I think
+a bit more efficient).
+May help with Lost Civilization, map04.
+A blockmap control has been put into the menu.
+1. Vanilla  - Load the blockmap, preserves blockmap tricks.
+2. Large    - On large blockmaps (error prone), Generate instead.
+3. Generate - Always Generate a blockmap.
+4. Auto     - Try to Load, upon significant errors then Generate.

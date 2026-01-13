@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_bsp.c 1585 2021-09-26 05:31:57Z wesleyjohnson $
+// $Id: r_bsp.c 1592 2021-10-16 07:36:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2012 by DooM Legacy Team.
@@ -344,8 +344,8 @@ int R_DoorClosed(void)
 // Called by R_Subsector, R_AddLine, R_RenderThickSideRange.
 // Called by HWR_Subsector, HWR_AddLine.
 sector_t* R_FakeFlat(sector_t *sec, sector_t *tempsec, boolean back,
-             /*OUT*/ lightlev_t *floorlightlevel,
-                     lightlev_t *ceilinglightlevel )
+             /*OUT*/ lightlev_t *floor_lightlevel,
+                     lightlev_t *ceiling_lightlevel )
 {
   int  colormapnum = -1; //SoM: 4/4/2000
   int  floorlightsubst, ceilinglightsubst; // light from another sector
@@ -540,13 +540,13 @@ sector_t* R_FakeFlat(sector_t *sec, sector_t *tempsec, boolean back,
     sec->extra_colormap = NULL;
 
   // [WDJ] return light parameters in one place
-  if (floorlightlevel) {
-    *floorlightlevel = (floorlightsubst >= 0) ?
+  if (floor_lightlevel) {
+    *floor_lightlevel = (floorlightsubst >= 0) ?
        sectors[floorlightsubst].lightlevel : sec->lightlevel ;
   }
 
-  if (ceilinglightlevel) {
-    *ceilinglightlevel = (ceilinglightsubst >= 0) ?
+  if (ceiling_lightlevel) {
+    *ceiling_lightlevel = (ceilinglightsubst >= 0) ?
        sectors[ceilinglightsubst].lightlevel : sec->lightlevel ;
   }
    
@@ -819,10 +819,10 @@ void R_Subsector (int num)
     int                 segcount;
     seg_t*              lineseg;
     subsector_t*        sub;
-    lightlev_t          floorlightlevel;
-    lightlev_t          ceilinglightlevel;
-    extracolormap_t*    floorcolormap;
-    extracolormap_t*    ceilingcolormap;
+    lightlev_t          floor_lightlevel;
+    lightlev_t          ceiling_lightlevel;
+    extracolormap_t*    floor_colormap;
+    extracolormap_t*    ceiling_colormap;
     ff_light_t *        ff_light;  // lightlist index
 
 #ifdef RANGECHECK
@@ -844,9 +844,9 @@ void R_Subsector (int num)
 
     //SoM: 3/17/2000: Deep water/fake ceiling effect.
     frontsector = R_FakeFlat(frontsector, &tempsec, false,
-                             /*OUT*/ &floorlightlevel, &ceilinglightlevel );
+                             /*OUT*/ &floor_lightlevel, &ceiling_lightlevel );
 
-    floorcolormap = ceilingcolormap = frontsector->extra_colormap;
+    floor_colormap = ceiling_colormap = frontsector->extra_colormap;
 
     // SoM: Check and prep all 3D floors. Set the sector floor/ceiling light
     // levels and colormaps.
@@ -863,13 +863,13 @@ void R_Subsector (int num)
 
       ff_light = R_GetPlaneLight(frontsector, frontsector->floorheight);
       if(frontsector->floorlightsec == -1)
-        floorlightlevel = *ff_light->lightlevel;
-      floorcolormap = ff_light->extra_colormap;
+        floor_lightlevel = *ff_light->lightlevel;
+      floor_colormap = ff_light->extra_colormap;
 
       ff_light = R_GetPlaneLight(frontsector, frontsector->ceilingheight);
       if(frontsector->ceilinglightsec == -1)
-        ceilinglightlevel = *ff_light->lightlevel;
-      ceilingcolormap = ff_light->extra_colormap;
+        ceiling_lightlevel = *ff_light->lightlevel;
+      ceiling_colormap = ff_light->extra_colormap;
     }
 
     sub->sector->extra_colormap = frontsector->extra_colormap;
@@ -881,10 +881,10 @@ void R_Subsector (int num)
         // visplane global parameter
         vsp_floorplane = R_FindPlane (frontsector->floorheight,
                                   frontsector->floorpic,
-                                  floorlightlevel,
+                                  floor_lightlevel,
                                   frontsector->floor_xoffs,
                                   frontsector->floor_yoffs,
-                                  floorcolormap,
+                                  floor_colormap,
                                   NULL);
     }
     else
@@ -898,10 +898,10 @@ void R_Subsector (int num)
         // visplane global parameter
         vsp_ceilingplane = R_FindPlane (frontsector->ceilingheight,
                                     frontsector->ceilingpic,
-                                    ceilinglightlevel,
+                                    ceiling_lightlevel,
                                     frontsector->ceiling_xoffs,
                                     frontsector->ceiling_yoffs,
-                                    ceilingcolormap,
+                                    ceiling_colormap,
                                     NULL);
     }
     else
