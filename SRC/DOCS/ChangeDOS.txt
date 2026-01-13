@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01590 ]: w109_051 voodoo card
 [01589 ]: w109_050 draw select
           DOS: Nativ Drawmode selction fixed.
 

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_data.h 1588 2021-10-11 02:44:26Z wesleyjohnson $
+// $Id: hw_data.h 1590 2021-10-11 02:45:45Z wesleyjohnson $
 //
 // Copyright (C) 1998-2012 by DooM Legacy Team.
 //
@@ -58,8 +58,7 @@
 //                                                               TEXTURE INFO
 // ==========================================================================
 
-#define GLIDE_data
-#ifdef GLIDE_data
+#ifdef USE_VOODOO_GLIDE
 // grInfo.data holds the address of the graphics data cached in heap memory
 //                NULL if the texture is not in Doom heap cache.
 #define GR_data    grInfo.data
@@ -72,7 +71,7 @@
 #endif
 
 struct Mipmap_s {
-#ifdef GLIDE_data
+#ifdef USE_VOODOO_GLIDE
     GrTexInfo       grInfo;         //for TexDownloadMipMap
 #else
     void          * data;
@@ -81,21 +80,26 @@ struct Mipmap_s {
     uint32_t        tfflags;	 // TF_ texture flags
     uint16_t        height;
     uint16_t        width;
+
+// Public read-only, Write only by driver.
     unsigned int    downloaded;  // dll driver has it in cache
                                  // opengl : texture num, must match GLuint
                                  //   typedef unsigned int GLuint
-
+// Public   
     // multiple texture renderings, by colormap and TF_Opaquetrans
     struct Mipmap_s   *nextcolormap;  // next for this texture
     byte              *colormap;
 
+// Private to driver   
     // opengl/glide
     struct Mipmap_s*  nextmipmap;// glide  : the FIFO list of texture in the memory
                                  //          _DO NOT TOUCH IT_
                                  // opengl : list of all texture in opengl driver
+#ifdef USE_VOODOO_GLIDE
     // glide only
     FxU32           cachepos;        //offset in hardware cache
     FxU32           mipmapSize;      //size of mipmap
+#endif   
 };
 typedef struct Mipmap_s Mipmap_t;
 

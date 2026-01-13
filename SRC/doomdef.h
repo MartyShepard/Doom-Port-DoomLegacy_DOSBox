@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1583 2021-09-26 05:29:41Z wesleyjohnson $
+// $Id: doomdef.h 1590 2021-10-11 02:45:45Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -145,6 +145,12 @@
 // If IPX network code is to be included
 // This may be overridden for some ports.
 #define USE_IPX
+
+// Voodoo video card support (old, from 1990's)
+// Only supports Voodoo 1 and Voodoo 2 card.
+// Glide is the XOrg X11 driver for Voodoo cards,
+// but the driver is also available as a dll for the win32 port.
+//#define USE_VOODOO_GLIDE
 
 // Set the initial window size (width).
 // Expected sizes are 320x200, 640x480, 800x600, 1024x768.
