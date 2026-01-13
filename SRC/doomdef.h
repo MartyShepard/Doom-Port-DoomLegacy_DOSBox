@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1590 2021-10-11 02:45:45Z wesleyjohnson $
+// $Id: doomdef.h 1595 2021-10-16 07:39:26Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -238,6 +238,10 @@
 // Extended Nodes
 // Reads wads that use extended wads format, such as from DeePBSP.
 #define DEEPSEA_EXTENDED_NODES
+
+// Generate blockmap option and controls.
+#define GENERATE_BLOCKMAP
+
 
 // Player morph canceling invisibility and MF_SHADOW, is inconsistent.
 // The Heretic vanilla behavior cancels SHADOW when turned into a chicken.

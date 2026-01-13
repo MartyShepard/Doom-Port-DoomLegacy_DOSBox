@@ -1244,7 +1244,7 @@ z_zone.o \
 p_sight.o p_mobj.o p_enemy.o p_user.o p_inter.o p_pspr.o \
 p_lights.o p_ceilng.o p_doors.o p_plats.o p_floor.o p_spec.o \
 p_switch.o p_genlin.o p_telept.o p_tick.o p_fab.o p_info.o p_setup.o \
-p_extnodes.o \
+p_blockmap.o p_extnodes.o \
 p_map.o p_maputl.o \
 p_heretic.o p_hsight.o \
 p_chex.o \

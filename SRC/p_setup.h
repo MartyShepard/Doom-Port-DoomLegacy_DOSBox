@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_setup.h 1420 2019-01-29 08:03:08Z wesleyjohnson $
+// $Id: p_setup.h 1595 2021-10-16 07:39:26Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -123,5 +123,8 @@ subsector_t* R_PointInSubsector(fixed_t x, fixed_t y);
 
 extern boolean  newlevel;
 extern boolean  doom1level;
+
+// Create a blockmap.
+void P_create_blockmap( void );
 
 #endif

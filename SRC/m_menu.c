@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: m_menu.c 1589 2021-10-11 02:45:14Z wesleyjohnson $
+// $Id: m_menu.c 1595 2021-10-16 07:39:26Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2502,6 +2502,9 @@ menuitem_t AdvOption2Menu[]=
     {IT_STRING | IT_CVAR,0,"Door Delay"          ,&cv_doordelay          ,0},  // [WDJ]
 #endif
     {IT_STRING | IT_CVAR,0,"Zero Tags"           ,&cv_zerotags           ,0},
+#ifdef GENERATE_BLOCKMAP
+    {IT_STRING | IT_CVAR,0,"Blockmap"            ,&cv_blockmap_gen       ,0},  // [MB,WDJ]
+#endif
     {IT_CALL | IT_WHITESTRING | IT_YOFFSET, 0,"Games Options >>"    ,M_GameOption    ,130},
 };
 

@@ -1,5 +1,8 @@
 * Not need to Compile.
 
+[01595 ]: w109_056 blockmap generate
+[01594*]: w109_055 hw powtwo
+[01593*]: w109_054 hw blend
 [01592 ]: w109_053 hw light
 [01591 ]: w109_052 hw sky extend
 [01590 ]: w109_051 voodoo card

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_fab.c 1511 2020-04-04 08:50:49Z wesleyjohnson $
+// $Id: p_fab.c 1595 2021-10-16 07:39:26Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -62,6 +62,7 @@ void DoorDelay_OnChange( void )
 consvar_t cv_doordelay = {"doordelay","1",CV_NETVAR|CV_CALL|CV_SAVE,doordelay_cons_t,DoorDelay_OnChange};
 
 #endif
+
 
 
 // [WDJ] 2/3/2011  Insta-death by voodoo doll, subverted.
@@ -370,6 +371,9 @@ void D_Register_MiscCommands (void)
     CV_RegisterVar (&cv_mbf_staylift);
     CV_RegisterVar (&cv_mbf_help_friend);
     CV_RegisterVar (&cv_mbf_monkeys);
+#ifdef GENERATE_BLOCKMAP
+    CV_RegisterVar (&cv_blockmap_gen);
+#endif
 }
 
 void  DemoAdapt_p_fab(void)  // local enables of p_fab

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: r_glide.c 1590 2021-10-11 02:45:45Z wesleyjohnson $
+// $Id: r_glide.c 1593 2021-10-16 07:36:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2012 by DooM Legacy Team.
 //
@@ -115,7 +115,7 @@ static GrContext_t grPreviousContext = 0;
 // align boundary for textures in texture cache, set at Init()
 static FxU32 gr_alignboundary;
 
-static FBITFIELD CurrentPolyFlags;
+static FBITFIELD cur_polyflags;
 static FBITFIELD CurrentTextureFlags;
 
 static vxtx3d_t tmpVerts[MAXCLIPVERTS*2];
@@ -602,8 +602,8 @@ static void GR_ResetStates (viddef_t *lvid)
 
     grAlphaTestReferenceValue( 0 );
 
-    // this set CurrentPolyFlags to the acctual configuration
-    CurrentPolyFlags = 0xffffffff;
+    // this set cur_polyflags to the actual configuration
+    cur_polyflags = 0xffffffff;
     SetBlend(0);
 
     BufferClear();
@@ -830,14 +830,48 @@ EXPORT void HWRAPI( SetTexture ) (Mipmap_t* grMipmap)
 }
 
 
+#ifdef BLEND_FIELD
+typedef struct  
+{
+    uint16_t p1, p2;
+} blend_param_t;
+
+// The blend param for the PF_blend_field values.
+blend_param_t blend_param[8] =
+{
+  // { sfac, dfac }
+  //   sfac = alpha to apply to source
+  //   dfac = alpha to apply to existing dest
+// none, Overwrite
+  { GR_BLEND_ONE, GR_BLEND_ZERO },   // the same as no blending
+// PF_Masked,       Poly is alpha scaled and 0 alpha pels are discarded (holes in texture)
+  { GR_BLEND_SRC_ALPHA, GR_BLEND_ZERO },                // 0 alpha = holes in texture
+// PF_Translucent,  Poly is transparent, alpha = level of transparency
+  { GR_BLEND_SRC_ALPHA, GR_BLEND_ONE_MINUS_SRC_ALPHA }, // alpha = level of transparency
+// PF_Additive,     Poly is added to the frame buffer
+  // blend destination for transparency, but no source for additive 
+  { GR_BLEND_SRC_ALPHA, GR_BLEND_ONE },                 // alpha = level of transparency
+// PF_Environment,  Poly should be drawn environment mapped (text drawing)
+  { GR_BLEND_ONE, GR_BLEND_ONE_MINUS_SRC_ALPHA },       // 
+// PF_Subtractive, for splat
+  // not realy but what else ?
+  { GR_BLEND_ZERO, GR_BLEND_ONE_MINUS_SRC_COLOR },      //
+// PF_InvisibleB
+  { GR_BLEND_ZERO, GR_BLEND_ONE },
+// Unused   
+  { GR_BLEND_ZERO, GR_BLEND_ONE },
+};
+#endif
+
+
 // -----------------+
 // SetBlend         : Set render mode
 // -----------------+
 // PF_Masked - we could use an ALPHA_TEST of GL_EQUAL, and alpha ref of 0,
 //             is it faster when pixels are discarded ?
-EXPORT void HWRAPI(     SetBlend ) ( FBITFIELD PolyFlags )
+EXPORT void HWRAPI(     SetBlend ) ( FBITFIELD polyflags )
 {
-    FBITFIELD Xor;
+    FBITFIELD xf;
 
     if (!grPreviousContext) {
         DBG_Printf ("HWRAPI SetBlend() : display not set\n");
@@ -845,13 +879,46 @@ EXPORT void HWRAPI(     SetBlend ) ( FBITFIELD PolyFlags )
     }
 
     // Detect changes in the blending modes.
-    Xor = CurrentPolyFlags^PolyFlags;
-    if( !Xor )
+    xf = cur_polyflags^polyflags;
+    if( xf == 0 )
         return;
 
-    if( Xor&(PF_Blending) ) // if blending mode must be changed
+#ifdef BLEND_FIELD
+    if( xf & (PF_blend_field | PF_NoAlphaTest) )
     {
-        switch(PolyFlags & PF_Blending) {
+        // if blending mode must be changed
+	unsigned int  bf = polyflags & PF_blend_field8; // only 8 entries
+        blend_param_t * bp = & blend_param[ bf ];
+        grAlphaBlendFunction( bp->p1, bp->p2, GR_BLEND_ONE, GR_BLEND_ZERO );
+
+#if 1
+        // Seems to be unnecessary as other ports do invisible using just blend.
+        // see ClearBuffer logic that may use Invisible to affect color mask indirectly.
+        if( bf == PF_InvisibleB )
+        {
+	    grColorMask( 0, FXFALSE );
+	}
+        else if( cur_polyflags & PF_blend_field == PF_InvisibleB )
+	    grColorMask( 1, FXFALSE );
+#endif
+
+        // This is highly correlated with PF_Additive
+        if( xf & PF_NoAlphaTest)
+        {
+          if( polyflags & PF_NoAlphaTest)
+            grAlphaTestFunction(GR_CMP_ALWAYS);    // disable alpha testing 
+          else
+            grAlphaTestFunction(GR_CMP_GREATER);  // discard 0 alpha pixels (holes in texture)
+        }
+        xf &= ~(PF_blend_field | PF_NoAlphaTest);
+    }
+
+    if( xf )
+    {
+#else   
+    if( xf & (PF_Blending) ) // if blending mode must be changed
+    {
+        switch(polyflags & PF_Blending) {
             case PF_Translucent & PF_Blending:
                 grAlphaBlendFunction (GR_BLEND_SRC_ALPHA, GR_BLEND_ONE_MINUS_SRC_ALPHA,
                                       GR_BLEND_ONE      , GR_BLEND_ZERO );
@@ -868,7 +935,7 @@ EXPORT void HWRAPI(     SetBlend ) ( FBITFIELD PolyFlags )
                 grAlphaBlendFunction (GR_BLEND_ONE, GR_BLEND_ONE_MINUS_SRC_ALPHA,
                                       GR_BLEND_ONE, GR_BLEND_ZERO );
                 break;
-            case PF_Substractive & PF_Blending:
+            case PF_Subtractive & PF_Blending:
                 // not realy but what else ?
                 grAlphaBlendFunction (GR_BLEND_ZERO, GR_BLEND_ONE_MINUS_SRC_COLOR,
                                       GR_BLEND_ONE , GR_BLEND_ZERO );
@@ -878,26 +945,27 @@ EXPORT void HWRAPI(     SetBlend ) ( FBITFIELD PolyFlags )
                 break;
         }
     }
-    if( Xor & PF_NoAlphaTest)
+    if( xf & PF_NoAlphaTest)
     {
-        if( PolyFlags & PF_NoAlphaTest)
+        if( polyflags & PF_NoAlphaTest)
             // desable alpha testing 
             grAlphaTestFunction (GR_CMP_ALWAYS);
         else
             // discard 0 alpha pixels (holes in texture)
             grAlphaTestFunction (GR_CMP_GREATER); 
-    }    
-    if( Xor & PF_Decal )
+    }
+#endif
+    if( xf & PF_Decal )
     {
         // work a little but not like opengl one :(
-        if( PolyFlags & PF_Decal )
+        if( polyflags & PF_Decal )
             grDepthBiasLevel( -1 );
         else
             grDepthBiasLevel( 0 );
     }
-    if( Xor&(PF_Modulated | PF_NoTexture))
+    if( xf&(PF_Modulated | PF_NoTexture))
     {
-        switch (PolyFlags & (PF_Modulated | PF_NoTexture)) {
+        switch (polyflags & (PF_Modulated | PF_NoTexture)) {
         case 0 :
             // colour from texture is unchanged before blending
             grColorCombine( GR_COMBINE_FUNCTION_SCALE_OTHER,
@@ -946,24 +1014,30 @@ EXPORT void HWRAPI(     SetBlend ) ( FBITFIELD PolyFlags )
             break;
         }
     }
-    if( Xor&PF_NoDepthTest )
+    if( xf&PF_NoDepthTest )
     {
-        if( PolyFlags & PF_NoDepthTest )
+        if( polyflags & PF_NoDepthTest )
             grDepthBufferFunction(GR_CMP_ALWAYS);
         else
             grDepthBufferFunction(GR_CMP_LEQUAL);
     }
-    if( Xor & PF_Occlude )
+    if( xf & PF_Occlude )
     {
         // depth is tested but no writed
-        grDepthMask( (PolyFlags&PF_Occlude)!=0 );
+        grDepthMask( (polyflags&PF_Occlude)!=0 );
     }
-    if( Xor & PF_Invisible )
+#ifndef BLEND_FIELD
+    if( xf & PF_InvisibleColor )
     {
-        grColorMask( (PolyFlags&PF_Invisible)==0 , FXFALSE );
+        grColorMask( (polyflags&PF_InvisibleColor)==0 , FXFALSE );
     }
+#endif
 
-    CurrentPolyFlags = PolyFlags;
+#ifdef BLEND_FIELD
+    }
+#endif
+
+    cur_polyflags = polyflags;
 }
 
 
@@ -1006,7 +1080,11 @@ EXPORT void HWRAPI( GClipRect ) (int minx, int miny, int maxx, int maxy, float n
 EXPORT void HWRAPI( ClearBuffer ) ( boolean ColorMask, boolean DepthMask,
                                     RGBA_float_t * ClearColor )
 {
-    FBITFIELD polyflags;
+#ifdef BLEND_FIELD
+    FBITFIELD polyflags = cur_polyflags & ~(PF_Occlude | PF_blend_field);
+#else   
+    FBITFIELD polyflags = cur_polyflags & ~(PF_Occlude | PF_InvisibleColor);
+#endif
 
     if (!grPreviousContext) {
         DBG_Printf ("HWRAPI ClearBuffer() : display not set\n");
@@ -1015,19 +1093,23 @@ EXPORT void HWRAPI( ClearBuffer ) ( boolean ColorMask, boolean DepthMask,
 
     grColorMask (ColorMask, FXFALSE);
 
-    polyflags = CurrentPolyFlags;
-    // enable or desable z-buffer
+    // enable or disable z-buffer
     if( DepthMask )
         polyflags |= PF_Occlude;
-    else
-        polyflags &= ~PF_Occlude;
     // enable disable colorbuffer
-    if( ColorMask )
-        polyflags &= ~PF_Invisible;
-    else
-        polyflags |= PF_Invisible;
+#ifdef BLEND_FIELD
+    if( ! ColorMask )
+        cur_polyflags |= PF_InvisibleB;
+#else
+    if( ! ColorMask )
+        polyflags |= PF_InvisibleColor;
+#endif
 
     SetBlend( polyflags );
+
+#ifdef BLEND_FIELD
+    grColorMask( ColorMask, FXFALSE );
+#endif
 
     if( ClearColor ) 
         grBufferClear ((int)(ClearColor->alpha*255)<<24|
@@ -1192,7 +1274,7 @@ static vxtx3d_t * doTransform(vxtx3d_t *projVerts,
 EXPORT void HWRAPI( DrawPolygon ) ( FSurfaceInfo  *pSurf,
                                     vxtx3d_t      *projVerts,
                                     FUINT         nClipVerts,
-                                    FBITFIELD     PolyFlags )
+                                    FBITFIELD     polyflags )
 {
     int i;
 
@@ -1204,13 +1286,13 @@ EXPORT void HWRAPI( DrawPolygon ) ( FSurfaceInfo  *pSurf,
     if (nClipVerts < 3)
         return;
 
-    SetBlend( PolyFlags );
+    SetBlend( polyflags );
 
     projVerts = doTransform(projVerts, nClipVerts);
 
     // this test is added for new coronas' code (without depth buffer)
     // I think I should do a separate function for drawing coronas, so it will be a little faster
-    if (PolyFlags & PF_Corona) // check to see if we need to draw the corona
+    if (polyflags & PF_Corona) // check to see if we need to draw the corona
     {
         RGBA_t c;
         float  scalef;
@@ -1223,14 +1305,14 @@ EXPORT void HWRAPI( DrawPolygon ) ( FSurfaceInfo  *pSurf,
         grConstantColorValue(c.rgba);
     }
     else
-    if( (CurrentPolyFlags & PF_Modulated) && pSurf )
+    if( (cur_polyflags & PF_Modulated) && pSurf )
         grConstantColorValue(pSurf->FlatColor.rgba);
 
 
-    // cut polygone to the screen 
-    if( CurrentPolyFlags & PF_Clip )
+    // cut polygon to the screen 
+    if( cur_polyflags & PF_Clip )
     {
-        if( CurrentPolyFlags & PF_NoZClip )
+        if( cur_polyflags & PF_NoZClip )
         {
             nClipVerts = ClipToFrustum (projVerts, tmp2Verts, nClipVerts );
             
@@ -1245,6 +1327,7 @@ EXPORT void HWRAPI( DrawPolygon ) ( FSurfaceInfo  *pSurf,
             // -!!!- EXIT HERE if not enough points
             if (nClipVerts<3)
                 return;
+
             nClipVerts = ClipToFrustum (tmpVerts, tmp2Verts, nClipVerts );
             
             if (nClipVerts<3) 

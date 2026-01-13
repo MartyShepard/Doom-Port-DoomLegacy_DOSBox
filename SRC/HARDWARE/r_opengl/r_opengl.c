@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_opengl.c 1591 2021-10-11 02:46:18Z wesleyjohnson $
+// $Id: r_opengl.c 1593 2021-10-16 07:36:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2012 by DooM Legacy Team.
 //
@@ -723,6 +723,7 @@ EXPORT void HWRAPI( ClearBuffer ) ( boolean ColorMask, boolean DepthMask,
 {
     // DBG_Printf ("ClearBuffer(%d)\n", alpha);
     FUINT   ClearMask = 0;
+    FBITFIELD  polyflags = cur_polyflags & ~PF_Occlude;
 
     if( ColorMask )
     {
@@ -739,11 +740,10 @@ EXPORT void HWRAPI( ClearBuffer ) ( boolean ColorMask, boolean DepthMask,
         //glDepthRange( 0.0, 1.0 );
         //glDepthFunc( GL_LEQUAL );
         ClearMask |= GL_DEPTH_BUFFER_BIT;
+        polyflags |= PF_Occlude;
     }
 
-    SetBlend( (DepthMask ?
-                 (cur_polyflags | PF_Occlude)
-               : (cur_polyflags & ~PF_Occlude) )  );
+    SetBlend( polyflags );
 
     glClear( ClearMask );
 }
@@ -805,6 +805,45 @@ EXPORT void HWRAPI( Draw2DLine ) ( v2d_t * v1, v2d_t * v2, RGBA_t Color )
 }
 
 
+#ifdef BLEND_FIELD
+typedef struct  
+{
+    uint16_t sfac, dfac;
+} gl_blend_param_t;
+
+// The blend param for the PF_blend_field values.
+gl_blend_param_t blend_param[8] =
+{
+  // { sfac, dfac }
+  //   sfac = alpha to apply to source
+  //   dfac = alpha to apply to existing dest
+// none, Overwrite
+  { GL_ONE, GL_ZERO },   // the same as no blending
+// PF_Masked,       Poly is alpha scaled and 0 alpha pels are discarded (holes in texture)
+  // Hurdler: does that mean lighting is only made by alpha src?
+  // it sounds ok, but not for polygonsmooth
+  { GL_SRC_ALPHA, GL_ZERO },                // 0 alpha = holes in texture
+// PF_Translucent,  Poly is transparent, alpha = level of transparency
+  { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA }, // alpha = level of transparency
+// PF_Additive,     Poly is added to the frame buffer
+#ifdef ATI_RAGE_PRO_COMPATIBILITY
+  { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA }, // alpha = level of transparency
+#else
+  { GL_SRC_ALPHA, GL_ONE },                 // src * alpha + dest
+#endif
+// PF_Environment,  Poly should be drawn environment mapped (text drawing)
+  { GL_ONE, GL_ONE_MINUS_SRC_ALPHA },       // 
+// PF_Subtractive, for splat
+  // good for shadow
+  // not realy but what else ?
+  { GL_ZERO, GL_ONE_MINUS_SRC_COLOR },      //
+// PF_InvisibleB
+  { GL_ZERO, GL_ONE },                      // Transparent
+// Unused
+  { GL_ZERO, GL_ONE },
+};
+#endif
+
 // -----------------+
 // SetBlend         : Set render mode
 // -----------------+
@@ -816,10 +855,31 @@ EXPORT void HWRAPI( SetBlend ) ( FBITFIELD polyflags )
     // xf are the polyflags that changed.
     FBITFIELD  xf = cur_polyflags ^ polyflags;
 
-    if( xf & ( PF_Blending|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Invisible|PF_NoAlphaTest ) )
+#ifdef BLEND_FIELD
+    if( xf &  (PF_blend_field | PF_NoAlphaTest) )
+    {
+        // PF_blend_field values: 0, PF_Environment, PF_Additive, PF_Translucent, PF_Masked, PF_Subtractive
+        // Blend mode must be changed.
+        gl_blend_param_t *  bp = & blend_param[ polyflags & PF_blend_field8 ];  // PF_Blend field, only 8 entries
+        glBlendFunc( bp->sfac, bp->dfac );
+
+        // This is highly correlated with PF_Additive.
+        if( xf & PF_NoAlphaTest )
+        {
+            if( polyflags & PF_NoAlphaTest)
+                glDisable( GL_ALPHA_TEST );
+            else
+                glEnable( GL_ALPHA_TEST );      // discard 0 alpha pixels (holes in texture)
+        }
+    }
+
+    if( xf &  (PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal) )
+    {       
+#else
+    if( xf & ( PF_Blending|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_InvisibleColor|PF_NoAlphaTest ) )
     {
         // One of these flags has changed
-        // PF_Blending = (PF_Environment|PF_Additive|PF_Translucent|PF_Masked|PF_Substractive)
+        // PF_Blending = (PF_Environment|PF_Additive|PF_Translucent|PF_Masked|PF_Subtractive)
         if( xf & PF_Blending ) // if blending mode must be changed
         {
             // PF_Blending flags are mutually exclusive
@@ -842,7 +902,7 @@ EXPORT void HWRAPI( SetBlend ) ( FBITFIELD polyflags )
                 case PF_Environment & PF_Blending:
                      glBlendFunc( GL_ONE, GL_ONE_MINUS_SRC_ALPHA );
                      break;
-                case PF_Substractive & PF_Blending:
+                case PF_Subtractive & PF_Blending:
                      // good for shadow
                      // not realy but what else ?
                      glBlendFunc( GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
@@ -853,6 +913,7 @@ EXPORT void HWRAPI( SetBlend ) ( FBITFIELD polyflags )
                      break;
             }
         }
+
         if( xf & PF_NoAlphaTest)
         {
             if( polyflags & PF_NoAlphaTest)
@@ -860,6 +921,7 @@ EXPORT void HWRAPI( SetBlend ) ( FBITFIELD polyflags )
             else
                 glEnable( GL_ALPHA_TEST );      // discard 0 alpha pixels (holes in texture)
         }
+#endif
 
         if( xf & PF_Decal )
         {
@@ -904,12 +966,15 @@ EXPORT void HWRAPI( SetBlend ) ( FBITFIELD polyflags )
             else
                 glDepthMask( 0 );
         }
-        if( xf & PF_Invisible )
-        {                     
-//            glColorMask( (polyflags&PF_Invisible)==0, (polyflags&PF_Invisible)==0,
-//                         (polyflags&PF_Invisible)==0, (polyflags&PF_Invisible)==0 );
+#ifndef BLEND_FIELD
+        if( xf & PF_InvisibleColor )
+        {
+#if 0
+	    boolean nic = (polyflags & PF_InvisibleColor)==0;  // normally true
+            glColorMask( nic, nic, nic, nic );
+#endif
             
-            if (polyflags & PF_Invisible)
+            if (polyflags & PF_InvisibleColor)
                 glBlendFunc( GL_ZERO, GL_ONE );         // transparent blending
             else
             {   // big hack: (TODO: manage that better)
@@ -919,6 +984,7 @@ EXPORT void HWRAPI( SetBlend ) ( FBITFIELD polyflags )
                     glBlendFunc( GL_SRC_ALPHA, GL_ZERO );  
             }
         }
+#endif
         if( polyflags & PF_NoTexture )
         {
             SetNoTexture();

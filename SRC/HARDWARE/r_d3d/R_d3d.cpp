@@ -103,7 +103,7 @@ static  GLuint      tex_downloaded  = 0;
 static  GLfloat     fov             = 90.0;
 static  GLuint      pal_col         = 0;
 static  FRGBAFloat  const_pal_col;
-static  FBITFIELD   CurrentPolyFlags;
+static  FBITFIELD   cur_polyflags;
 
 static  FTextureInfo*  gr_cachetail = NULL;
 static  FTextureInfo*  gr_cachehead = NULL;
@@ -122,7 +122,7 @@ static GLdouble    projMatrix[16];
 static GLint       viewport[4]; 
 
 
-static const GLfloat    int2float[256] = {
+static const GLfloat    to_glcolor_float[256] = {
     0.000000f, 0.003922f, 0.007843f, 0.011765f, 0.015686f, 0.019608f, 0.023529f, 0.027451f,
     0.031373f, 0.035294f, 0.039216f, 0.043137f, 0.047059f, 0.050980f, 0.054902f, 0.058824f,
     0.062745f, 0.066667f, 0.070588f, 0.074510f, 0.078431f, 0.082353f, 0.086275f, 0.090196f,
@@ -624,7 +624,7 @@ void SetStates( void )
     gl.DepthRange( 0.0, 1.0 );
     gl.DepthFunc(GL_LEQUAL);
 
-    CurrentPolyFlags = PF_Occlude;
+    cur_polyflags = PF_Occlude;
 
     for(i=0; i<64; i++ )
         Data[i] = 0xffFFffFF;       // white pixel
@@ -769,6 +769,7 @@ EXPORT void HWRAPI( ClearBuffer ) ( FBOOLEAN ColorMask,
 {
     // DBG_Printf ("ClearBuffer(%d)\n", alpha);
     FUINT   ClearMask = 0;
+    FBITFIELD  polyflags = cur_polyflags & ~PF_Occlude;
 
     if( ColorMask ) {
         if( ClearColor )
@@ -783,9 +784,10 @@ EXPORT void HWRAPI( ClearBuffer ) ( FBOOLEAN ColorMask,
         //glDepthRange( 0.0, 1.0 );
         //glDepthFunc( GL_LEQUAL );
         ClearMask |= GL_DEPTH_BUFFER_BIT;
+        polyflags |= PF_Occlude;
     }
 
-    SetBlend( DepthMask ? PF_Occlude | CurrentPolyFlags : CurrentPolyFlags&~PF_Occlude );
+    SetBlend( polyflags );
 
     gl.Clear( ClearMask );
 }
@@ -807,10 +809,10 @@ EXPORT void HWRAPI( Draw2DLine ) ( F2DCoord * v1,
 
     gl.Disable( GL_TEXTURE_2D );
 
-    c.red   = int2float[Color.s.red];
-    c.green = int2float[Color.s.green];
-    c.blue  = int2float[Color.s.blue];
-    c.alpha = int2float[Color.s.alpha];
+    c.red   = to_glcolor_float[Color.s.red];
+    c.green = to_glcolor_float[Color.s.green];
+    c.blue  = to_glcolor_float[Color.s.blue];
+    c.alpha = to_glcolor_float[Color.s.alpha];
 
     gl.Color4fv( (float *)&c );    // is in RGBA float format
     gl.Begin(GL_LINES);
@@ -822,19 +824,85 @@ EXPORT void HWRAPI( Draw2DLine ) ( F2DCoord * v1,
 }
 
 
+
+#ifdef BLEND_FIELD
+typedef struct  
+{
+    uint16_t sfac, dfac;
+} gl_blend_param_t;
+
+// The blend param for the PF_blend_field values.
+gl_blend_param_t blend_param[8] =
+{
+  // { sfac, dfac }
+  //   sfac = alpha to apply to source
+  //   dfac = alpha to apply to existing dest
+// none, Overwrite
+  { GL_ONE, GL_ZERO },   // the same as no blending
+// PF_Masked,       Poly is alpha scaled and 0 alpha pels are discarded (holes in texture)
+  // Hurdler: does that mean lighting is only made by alpha src?
+  // it sounds ok, but not for polygonsmooth
+  { GL_SRC_ALPHA, GL_ZERO },                // 0 alpha = holes in texture
+// PF_Translucent,  Poly is transparent, alpha = level of transparency
+  { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA }, // alpha = level of transparency
+// PF_Additive,     Poly is added to the frame buffer
+#ifdef ATI_RAGE_PRO_COMPATIBILITY
+  { GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA }, // alpha = level of transparency
+#else
+  { GL_SRC_ALPHA, GL_ONE },                 // src * alpha + dest
+#endif
+// PF_Environment,  Poly should be drawn environment mapped (text drawing)
+  { GL_ONE, GL_ONE_MINUS_SRC_ALPHA },       // 
+// PF_Subtractive, for splat
+  // good for shadow
+  // not realy but what else ?
+  { GL_ZERO, GL_ONE_MINUS_SRC_COLOR },      //
+// PF_Invisible
+  { GL_ZERO, GL_ONE },                      // Transparent
+// Unused
+  { GL_ZERO, GL_ONE },
+};
+#endif
+
+
 // -----------------+
 // SetBlend         : Set render mode
 // -----------------+
 // PF_Masked - we could use an ALPHA_TEST of GL_EQUAL, and alpha ref of 0,
 //             is it faster when pixels are discarded ?
-EXPORT void HWRAPI( SetBlend ) ( FBITFIELD PolyFlags )
+EXPORT void HWRAPI( SetBlend ) ( FBITFIELD polyflags )
 {
-    FBITFIELD   Xor = CurrentPolyFlags^PolyFlags;
-    if( Xor & ( PF_Blending|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Invisible ) )
+    FBITFIELD   xf = cur_polyflags^polyflags;
+
+    if( xf == 0 )
+        return;
+   
+#ifdef BLEND_FIELD
+    if( xf &  (PF_blend_field | PF_NoAlphaTest) )
     {
-        if( Xor&(PF_Blending) ) // if blending mode must be changed
+        // PF_Blend values: 0, PF_Environment, PF_Additive, PF_Translucent, PF_Masked, PF_Subtractive
+        // Blend mode must be changed.
+        gl_blend_param_t *  bp = & blend_param[ polyflags & PF_blend_field8 ];  // blending field, 8 entries
+        gl.BlendFunc( bp->sfac, bp->dfac );
+
+        // This is highly correlated with PF_Additive.
+        if( xf & PF_NoAlphaTest)
         {
-            switch(PolyFlags & PF_Blending) {
+            if( polyflags & PF_NoAlphaTest )
+                gl.Disable( GL_ALPHA_TEST );
+            else
+                gl.Enable( GL_ALPHA_TEST );      // discard 0 alpha pixels (holes in texture)
+        }
+    }
+
+    if( xf &  (PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal) )
+    {       
+#else
+    if( xf & ( PF_Blending|PF_Occlude|PF_NoTexture|PF_Modulated|PF_NoDepthTest|PF_Decal|PF_Invisible ) )
+    {
+        if( xf & (PF_Blending) ) // if blending mode must be changed
+        {
+            switch(polyflags & PF_Blending) {
                 case PF_Translucent :
                      gl.BlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA ); // alpha = level of transparency
                      break;
@@ -853,7 +921,7 @@ EXPORT void HWRAPI( SetBlend ) ( FBITFIELD PolyFlags )
                 case PF_Environment :
                      gl.BlendFunc( GL_ONE, GL_ONE_MINUS_SRC_ALPHA );
                      break;
-                case PF_Substractive :
+                case PF_Subtractive :
                      // not realy but what else ?
                      gl.BlendFunc( GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
                      break;
@@ -862,31 +930,32 @@ EXPORT void HWRAPI( SetBlend ) ( FBITFIELD PolyFlags )
                      gl.BlendFunc( GL_ONE, GL_ZERO );   // the same as no blending
                      break;
             }
-            if( Xor & PF_AlphaTest)
+            if( xf & PF_NoAlphaTest)
             {
-                if( PolyFlags & PF_AlphaTest)
-                    gl.Enable( GL_ALPHA_TEST );      // discard 0 alpha pixels (holes in texture)
-                else
+                if( polyflags & PF_NoAlphaTest)
                     gl.Disable( GL_ALPHA_TEST );
+                else
+                    gl.Enable( GL_ALPHA_TEST );      // discard 0 alpha pixels (holes in texture)
             }
         }
-        if( Xor & PF_Decal )
+#endif       
+        if( xf & PF_Decal )
         {
-            if( PolyFlags & PF_Decal )
+            if( polyflags & PF_Decal )
                 gl.Enable(GL_POLYGON_OFFSET_FILL);
             else
                 gl.Disable(GL_POLYGON_OFFSET_FILL);
         }
-        if( Xor&PF_NoDepthTest )
+        if( xf&PF_NoDepthTest )
         {
-            if( PolyFlags & PF_NoDepthTest )
+            if( polyflags & PF_NoDepthTest )
                 gl.Disable( GL_DEPTH_TEST );
             else
                 gl.Enable( GL_DEPTH_TEST );
         }
-        if( Xor&PF_Modulated )
+        if( xf&PF_Modulated )
         {
-            if( PolyFlags & PF_Modulated )
+            if( polyflags & PF_Modulated )
             {   // mix texture colour with Surface->FlatColor
                 gl.TexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
             }
@@ -895,33 +964,35 @@ EXPORT void HWRAPI( SetBlend ) ( FBITFIELD PolyFlags )
                 gl.TexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE );
             }
         }
-        if( Xor & PF_Occlude ) // depth test but (no) depth write
+        if( xf & PF_Occlude ) // depth test but (no) depth write
         {
-            if (PolyFlags&PF_Occlude)
+            if (polyflags&PF_Occlude)
                 gl.DepthMask( GL_TRUE );
             else
                 gl.DepthMask( GL_FALSE );
         }
-        if( Xor & PF_Invisible )
+#ifndef BLEND_FIELD
+        if( xf & PF_Invisible )
         {                     
-//            gl.ColorMask( (PolyFlags&PF_Invisible)==0, (PolyFlags&PF_Invisible)==0,
-//                         (PolyFlags&PF_Invisible)==0, (PolyFlags&PF_Invisible)==0 );
+//            gl.ColorMask( (polyflags&PF_Invisible)==0, (polyflags&PF_Invisible)==0,
+//                         (polyflags&PF_Invisible)==0, (polyflags&PF_Invisible)==0 );
             
-            if (PolyFlags&PF_Invisible)
+            if (polyflags&PF_Invisible)
                 gl.BlendFunc( GL_ZERO, GL_ONE );         // transparent blending
             else
             {   // big hack: (TODO: manage that better)
                 // be sure we are in PF_Masked mode which was overwrited
-                if (PolyFlags&PF_Masked)
+                if (polyflags&PF_Masked)
                     gl.BlendFunc( GL_SRC_ALPHA, GL_ZERO );  
             }
         }
-        if( PolyFlags & PF_NoTexture )
+#endif
+        if( polyflags & PF_NoTexture )
         {
             SetNoTexture();
         }
     }
-    CurrentPolyFlags = PolyFlags;
+    cur_polyflags = polyflags;
 }
 
 
@@ -1088,38 +1159,38 @@ EXPORT void HWRAPI( DrawPolygon ) ( FSurfaceInfo  *pSurf,
                                     //FTextureInfo  *pTexInfo,
                                     FOutVector    *pOutVerts,
                                     FUINT         iNumPts,
-                                    FBITFIELD     PolyFlags )
+                                    FBITFIELD     polyflags )
 {
     FUINT i, j;
     FRGBAFloat c;
 
-    if (PolyFlags & PF_Corona)
-        PolyFlags &= ~(PF_NoDepthTest|PF_Corona);
+    if (polyflags & PF_Corona)
+        polyflags &= ~(PF_NoDepthTest|PF_Corona);
 
-    SetBlend( PolyFlags );    //TODO: inline (#pragma..)
+    SetBlend( polyflags );    //TODO: inline (#pragma..)
 
     // If Modulated, mix the surface colour to the texture
-    if( (CurrentPolyFlags & PF_Modulated) && pSurf)
+    if( (cur_polyflags & PF_Modulated) && pSurf)
     {
         if (pal_col) { // hack for non-palettized mode
-            c.red   = (const_pal_col.red  +int2float[pSurf->FlatColor.s.red])  /2.0f;
-            c.green = (const_pal_col.green+int2float[pSurf->FlatColor.s.green])/2.0f;
-            c.blue  = (const_pal_col.blue +int2float[pSurf->FlatColor.s.blue]) /2.0f;
-            c.alpha = int2float[pSurf->FlatColor.s.alpha];
+            c.red   = (const_pal_col.red  +to_glcolor_float[pSurf->FlatColor.s.red])  /2.0f;
+            c.green = (const_pal_col.green+to_glcolor_float[pSurf->FlatColor.s.green])/2.0f;
+            c.blue  = (const_pal_col.blue +to_glcolor_float[pSurf->FlatColor.s.blue]) /2.0f;
+            c.alpha = to_glcolor_float[pSurf->FlatColor.s.alpha];
         }
         else
         {
-            c.red   = int2float[pSurf->FlatColor.s.red];
-            c.green = int2float[pSurf->FlatColor.s.green];
-            c.blue  = int2float[pSurf->FlatColor.s.blue];
-            c.alpha = int2float[pSurf->FlatColor.s.alpha];
+            c.red   = to_glcolor_float[pSurf->FlatColor.s.red];
+            c.green = to_glcolor_float[pSurf->FlatColor.s.green];
+            c.blue  = to_glcolor_float[pSurf->FlatColor.s.blue];
+            c.alpha = to_glcolor_float[pSurf->FlatColor.s.alpha];
         }
         gl.Color4fv( (float *)&c );    // is in RGBA float format
     }
 
     // this test is added for new coronas' code (without depth buffer)
     // I think I should do a separate function for drawing coronas, so it will be a little faster
-    if (PolyFlags & PF_Corona) // check to see if we need to draw the corona
+    if (polyflags & PF_Corona) // check to see if we need to draw the corona
     {
         //rem: all 8 (or 8.0f) values are hard coded: it can be changed to a higher value
         GLfloat     buf[8][8];
@@ -1193,18 +1264,18 @@ EXPORT void HWRAPI( SetSpecialState ) (hwdspecialstate_t IdState, int Value)
 
         case HWD_SET_PALETTECOLOR: {
             pal_col = Value;
-            const_pal_col.blue  = int2float[((Value>>16)&0xff)];
-            const_pal_col.green = int2float[((Value>>8)&0xff)];
-            const_pal_col.red   = int2float[((Value)&0xff)];
+            const_pal_col.blue  = to_glcolor_float[((Value>>16)&0xff)];
+            const_pal_col.green = to_glcolor_float[((Value>>8)&0xff)];
+            const_pal_col.red   = to_glcolor_float[((Value)&0xff)];
             break;
         }
 
         case HWD_SET_FOG_COLOR: {
             GLfloat fogcolor[4];
 
-            fogcolor[0] = int2float[((Value>>16)&0xff)];
-            fogcolor[1] = int2float[((Value>>8)&0xff)];
-            fogcolor[2] = int2float[((Value)&0xff)];
+            fogcolor[0] = to_glcolor_float[((Value>>16)&0xff)];
+            fogcolor[1] = to_glcolor_float[((Value>>8)&0xff)];
+            fogcolor[2] = to_glcolor_float[((Value)&0xff)];
             fogcolor[3] = 0x0;
             gl.Fogfv(GL_FOG_COLOR, fogcolor);
             break;

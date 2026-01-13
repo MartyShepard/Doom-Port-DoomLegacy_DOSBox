@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: p_setup.c 1592 2021-10-16 07:36:14Z wesleyjohnson $
+// $Id: p_setup.c 1595 2021-10-16 07:39:26Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -289,6 +289,7 @@ byte     *      rejectmatrix;
 mapthing_t  *   deathmatchstarts[MAX_DM_STARTS];
 int             numdmstarts;
 mapthing_t  *   playerstarts[MAXPLAYERS];
+
 
 
 // [MB] 2020-04-21: Used the woof code from p_extnodes.c instead.
@@ -1388,6 +1389,10 @@ void P_LoadSideDefs2(int lump)
 
 
 
+#ifdef GENERATE_BLOCKMAP
+CV_PossibleValue_t blockmap_gen_cons_t[]={{0,"Vanilla"}, {1,"Large"}, {2,"Generate"}, {3, "Auto"}, {0,NULL}};
+consvar_t cv_blockmap_gen = {"blockmap_gen", "3", CV_SAVE|CV_NETVAR, blockmap_gen_cons_t, NULL};
+#endif
 
 //
 // P_LoadBlockMap
@@ -1396,8 +1401,7 @@ void P_LoadSideDefs2(int lump)
 // Expand from 16bit wad to internal 32bit blockmap.
 void P_LoadBlockMap (int lump)
 {
-  int count = W_LumpLength(lump)/2;  // number of 16 bit blockmap entries
-  uint16_t * wadblockmaplump = W_CacheLumpNum (lump, PU_LEVEL); // blockmap lump temp
+  uint16_t * wadblockmaplump; // blockmap lump temp
   uint32_t firstlist, lastlist;  // blockmap block list bounds
   uint32_t overflow_corr = 0;
   uint32_t bme;
@@ -1405,20 +1409,44 @@ void P_LoadBlockMap (int lump)
 #ifdef TRACE_BLOCKMAPHEAD
   uint32_t head_bmi = 0;
 #endif
-  int blockmap_errors = 0;
-  int i;
-   
 #ifdef DUMP_BLOCKMAP
   char dbmfn[MAX_WADPATH];  // DUMP_BLOCKMAP file name
-  snprintf( dbmfn, MAX_WADPATH-1, "%s_M%i", DUMP_BLOCKMAP, gamemap );
-  FILE * dbmfp = fopen( dbmfn, "w" );
+  FILE * dbmfp = NULL;
+#endif
+  int blockmap_errors = 0;
+  int count;  // number of 16 bit blockmap entries
+  int i;
+
+  blockmaphead = NULL;
+  wadblockmaplump = NULL;
+   
+#ifdef GENERATE_BLOCKMAP
+  if( cv_blockmap_gen.EV == 2 )
+      goto  generate_blockmap;
 #endif
 
   // [WDJ] when zennode has not been run, this code will corrupt Zone memory.
   // It assumes a minimum size blockmap.
+  count = W_LumpLength(lump)/2;  // number of 16 bit blockmap entries
   if( count < 5 )
-      I_Error( "Missing blockmap, node builder has not been run.\n" );
+  {
+      I_SoftError( "Missing blockmap, node builder has not been run.\n" );
+#ifdef GENERATE_BLOCKMAP
+      if( cv_blockmap_gen.EV >= 2 )  // Generate, Auto
+          goto  generate_blockmap;
+#endif
+  }
+#ifdef GENERATE_BLOCKMAP
+  if( cv_blockmap_gen.EV == 1 )  // Large blockmaps
+  {
+      if( count > (0xFFFF / 4) )
+          goto  generate_blockmap;
+  }
+#endif
 
+   
+  wadblockmaplump = W_CacheLumpNum (lump, PU_LEVEL); // blockmap lump temp
+   
   // [WDJ] Do endian as read from blockmap lump temp
   blockmaphead = Z_Malloc(sizeof(*blockmaphead) * count, PU_LEVEL, NULL);
 
@@ -1437,10 +1465,14 @@ void P_LoadBlockMap (int lump)
   bmaporgy = blockmaphead[1]<<FRACBITS;
   bmapwidth = blockmaphead[2];
   bmapheight = blockmaphead[3];
-  blockmapindex = & blockmaphead[4];
+
   firstlist = 4 + (bmapwidth*bmapheight);
   lastlist = count - 1;
 
+#ifdef DUMP_BLOCKMAP
+  snprintf( dbmfn, MAX_WADPATH-1, "%s_M%i", DUMP_BLOCKMAP, gamemap );
+  dbmfp = fopen( dbmfn, "w" );
+#endif
 #ifdef TRACE_BLOCKMAPHEAD
   GenPrintf(EMSG_warn,"Blockmap: width=%i, height=%i, org=(%4X.%4X,%4X.%4X), firstlist=%i, count=%i\n",
             bmapwidth, bmapheight, (bmaporgx>>16), (bmaporgx&0xFFFF), (bmaporgy>>16), (bmaporgy&0xFFFF), firstlist, count );
@@ -1485,6 +1517,10 @@ void P_LoadBlockMap (int lump)
 #ifdef DUMP_BLOCKMAP
               fprintf( dbmfp,"Blockmap offset[%i]: Overflow 0x%X,  exceeds lastlist=0x%X\n", i, overflow_corr_n, lastlist );
 #endif
+#ifdef GENERATE_BLOCKMAP
+	      if( cv_blockmap_gen.EV > 0 )
+	          goto  generate_blockmap;
+#endif
           }
           else
           {
@@ -1493,6 +1529,10 @@ void P_LoadBlockMap (int lump)
               GenPrintf(EMSG_warn,"Blockmap offset[%i...]: Overflow correct 0x%X\n", i, overflow_corr );
 #ifdef DUMP_BLOCKMAP
               fprintf( dbmfp,"Blockmap offset[%X...]: Overflow correct 0x%X\n", i, overflow_corr );
+#endif
+#ifdef GENERATE_BLOCKMAP
+	      if( cv_blockmap_gen.EV == 1 )
+	          goto  generate_blockmap;
 #endif
           }
       }
@@ -1561,6 +1601,10 @@ void P_LoadBlockMap (int lump)
 #ifdef DUMP_BLOCKMAP
           fprintf( dbmfp, "Blockmap offset not a list head: bme=%X bmec=%X\n", bme, bmec );
           fprintf( dbmfp, "   prev blockmaphead[%i]=%X\n", i-1, blockmaphead[i-1] );
+#endif
+#ifdef GENERATE_BLOCKMAP
+	  if( cv_blockmap_gen.EV > 0 )
+	     goto  generate_blockmap;
 #endif
 
           // FIXME: Replace this with something that is more likely to find a usable blockmap list.
@@ -1691,6 +1735,10 @@ void P_LoadBlockMap (int lump)
       continue;
 
   fake_it:
+#ifdef GENERATE_BLOCKMAP
+      if( cv_blockmap_gen.EV > 0 )  // other than Vanilla
+         goto  generate_blockmap;
+#endif
       // put something reasonable, so rest of map can be played.
       // This does not work if i=0, but in that case there is no blockmap at all,
       // and it will error out anyway.
@@ -1700,7 +1748,12 @@ void P_LoadBlockMap (int lump)
    
   if( blockmap_errors > 32 )
   {
-      I_Error("Too many blockmap errors.\n");
+#ifdef GENERATE_BLOCKMAP
+      if( cv_blockmap_gen.EV > 0 )  // other than Vanilla
+         goto  generate_blockmap;
+#endif
+      I_SoftError("Too many blockmap errors.\n");
+      goto  blockmap_failed;
   }
 
 
@@ -1720,14 +1773,73 @@ void P_LoadBlockMap (int lump)
       fprintf( dbmfp, "#%6X    %6X\n", i, bme );
 #endif
   }
+#ifdef DUMP_BLOCKMAP
+  fclose(dbmfp);
+#endif
 
   Z_Free(wadblockmaplump);
+  goto activate_blockmap;
 
+
+#ifdef GENERATE_BLOCKMAP
+generate_blockmap:
+  // Remove remains of loading blockmap.
+#ifdef DUMP_BLOCKMAP
+  if( dbmfp )
+      fclose(dbmfp);
+#endif
+  // Remove partial blockmap.
+  if( blockmaphead )
+  {
+     Z_Free(blockmaphead);
+  }
+  if( wadblockmaplump )
+  {
+     Z_Free(wadblockmaplump);
+  }
+
+  // Create a new blockmap.
+  GenPrintf( EMSG_warn, "Generate blockmap\n" );
+  P_create_blockmap();
+  if( ! blockmaphead )
+      goto blockmap_failed;
+
+  // success, activate the blockmap
+  goto activate_blockmap;
+#endif
+
+   
+activate_blockmap:
+  // Normal exit.
+  // Activate position index.
+  blockmapindex = & blockmaphead[4];
 
   // clear out mobj chains
   unsigned int bm_size = sizeof(*blocklinks) * bmapwidth * bmapheight;
   blocklinks = Z_Malloc (bm_size, PU_LEVEL, NULL);
   memset (blocklinks, 0, bm_size);
+  return;
+
+
+blockmap_failed:
+  fatal_error = true;
+   
+#ifdef DUMP_BLOCKMAP
+  if( dbmfp )
+      fclose(dbmfp);
+#endif
+  // Remove partial blockmap.
+  if( blockmaphead )
+  {
+     Z_Free(blockmaphead);
+     blockmaphead = NULL;
+  }
+  if( wadblockmaplump )
+  {
+     Z_Free(wadblockmaplump);
+  }
+  return;
+
 /* Original
                 blockmaplump = W_CacheLumpNum (lump,PU_LEVEL);
                 blockmap = blockmaplump+4;
@@ -1747,9 +1859,6 @@ void P_LoadBlockMap (int lump)
         blocklinks = Z_Malloc (count, PU_LEVEL, NULL);
         memset (blocklinks, 0, count);
  */
-#ifdef DUMP_BLOCKMAP
-  fclose(dbmfp);
-#endif
 }
 
 
@@ -2226,7 +2335,6 @@ boolean P_SetupLevel (int      to_episode,
     }
 
     // note: most of this ordering is important
-    P_LoadBlockMap (level_lumpnum+ML_BLOCKMAP);
     P_LoadVertexes (level_lumpnum+ML_VERTEXES);
     P_LoadSectors  (level_lumpnum+ML_SECTORS);
     P_LoadSideDefs (level_lumpnum+ML_SIDEDEFS);
@@ -2234,6 +2342,15 @@ boolean P_SetupLevel (int      to_episode,
     P_LoadLineDefs (level_lumpnum+ML_LINEDEFS);
     P_LoadSideDefs2(level_lumpnum+ML_SIDEDEFS);
     P_LoadLineDefs2();
+
+    // Generate blockmap needs vertexes and linedefs.
+    // PrBoom has here after, instead of before as in Vanilla.
+    P_LoadBlockMap (level_lumpnum+ML_BLOCKMAP);
+    if( fatal_error )
+    {
+        errstr = "Blockmap error";
+        goto load_reject;
+    }
 
 #ifdef DEEPSEA_EXTENDED_NODES
     // [MB] 2020-04-21: Hook in code imported from woof 1.2.0 (p_extnodes.c)

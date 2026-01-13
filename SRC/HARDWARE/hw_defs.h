@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_defs.h 1257 2016-09-20 17:14:21Z wesleyjohnson $
+// $Id: hw_defs.h 1593 2021-10-16 07:36:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -174,28 +174,61 @@ typedef struct
 //                                                               RENDER MODES
 // ==========================================================================
 
+// [WDJ] Conditional so can keep original around for comparision.
+// Do not know what gotchas may be lurking in the code.
+#define BLEND_FIELD
+
+
 // Flags describing how to render a polygon
 // You pass a combination of these flags to DrawPolygon()
 typedef enum
 {
+#ifdef BLEND_FIELD
+    // Reserve 4 bits for the blend field, but only use 3 for now.
+    // Blends are mutually exclusive, and allows use of lookup tables.
+    PF_blend_field      = 0x0000000F,   // Blend field
+    PF_blend_field8     = 0x00000007,   // Blend field with only 8 entries.
+    // Values for blend field
+    PF_Overdraw         = 0x00000000,   // Poly writes over existing pixels.
+    PF_Masked           = 0x00000001,   // Poly is alpha scaled and 0 alpha pels are discarded (holes in texture)
+    PF_Translucent      = 0x00000002,   // Poly is transparent, alpha = level of transparency
+    PF_AdditiveAlpha    = 0x00000003,   // Poly is added to the frame buffer
+    PF_Additive         = 0x00000083,   // Poly is added to the frame buffer, no alpha test.
+    PF_Environment      = 0x00000004,   // Poly should be drawn environment mapped.
+                                        // Hurdler: used for text drawing
+    PF_Subtractive      = 0x00000005,   // for splat
+    PF_Fog		= PF_Translucent,   // Fog sheet, alpha = translucency
+   
+    PF_InvisibleB       = 0x00000006,   // Invisible poly affects Z-buffer
+    PF_blend7           = 0x00000007,   // TBD
+    PF_invalid          = 0x0000000F,
+     
+    // additional effects
+    PF_NoAlphaTest      = 0x00000080,   // hidden param, used by Additive
+#else   
     // the first 5 are mutually exclusive Blending
     PF_Masked           = 0x00000001,   // Poly is alpha scaled and 0 alpha pels are discarded (holes in texture)
     PF_Translucent      = 0x00000002,   // Poly is transparent, alpha = level of transparency
     PF_Additive         = 0x00000084,   // Poly is added to the frame buffer
     PF_Environment      = 0x00000008,   // Poly should be drawn environment mapped.
                                         // Hurdler: used for text drawing
-    PF_Substractive     = 0x00000010,   // for splat
+    PF_Subtractive      = 0x00000010,   // for splat
     PF_Fog		= PF_Translucent,   // Fog sheet, alpha = translucency
 //    PF_Fog		= 0x00000020,   // Fog sheet, alpha = translucency
      
     // additional effects
     PF_NoAlphaTest      = 0x00000080,   // hidden param, used by Additive
     PF_Blending         = (PF_Environment|PF_Additive|PF_Translucent|PF_Masked|PF_Substractive)&~PF_NoAlphaTest,
+#endif
 
     // other flag bits
     PF_Occlude          = 0x00000100,   // Update the depth buffer
     PF_NoDepthTest      = 0x00000200,   // Disable the depth test mode
-    PF_Invisible        = 0x00000400,   // Disable write to color buffer
+#ifndef BLEND_FIELD
+    // This disables the color mask.
+    // Only Glide was using it for the Invisible implementation.
+    PF_InvisibleColor   = 0x00000400,   // Disable write to color buffer
+#endif
     PF_Decal            = 0x00000800,   // Enable polygon offset
     PF_Modulated        = 0x00001000,   // Modulation ( multiply output with constant ARGB )
                                         // When set, pass the color constant into the FSurfaceInfo -> FlatColor

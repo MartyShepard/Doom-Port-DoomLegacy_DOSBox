@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_local.h 1565 2020-12-19 06:21:39Z wesleyjohnson $
+// $Id: p_local.h 1595 2021-10-16 07:39:26Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -387,6 +387,9 @@ extern fixed_t          bmaporgx;
 extern fixed_t          bmaporgy;       // origin of block map
 extern mobj_t**         blocklinks;     // for thing chains
 
+#ifdef GENERATE_BLOCKMAP
+extern consvar_t cv_blockmap_gen;
+#endif
 
 //
 // P_INTER

@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1592 2021-10-16 07:36:14Z wesleyjohnson $
+// $Id: d_main.c 1595 2021-10-16 07:39:26Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1592"
+#define SVN_REV "1595"
 #endif
 
 
@@ -4143,6 +4143,13 @@ void Commandline_GetCompileFeatures(void)
 #else
         printf("ENGINE [ ] Game IWad Subdirectories Deeps\n");
 #endif
+
+#ifdef GENERATE_BLOCKMAP
+        printf("ENGINE [X] Generate Blockmap\n");
+#else
+        printf("ENGINE [ ] Generate Blockmap\n");
+#endif
+
 
 #ifdef LOADING_DISK_ICON
         printf("ENGINE [X] Loading disk icon\n");

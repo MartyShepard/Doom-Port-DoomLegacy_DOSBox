@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.c 1592 2021-10-16 07:36:14Z wesleyjohnson $
+// $Id: hw_main.c 1593 2021-10-16 07:36:40Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -949,8 +949,13 @@ void HWR_RenderSkyPlane(poly_subsector_t * skypoly, fixed_t polyheight)
     }
 
     HWD.pfnDrawPolygon(NULL, planeVerts, nrPlaneVerts, 0);
+#ifdef BLEND_FIELD
 //    HWD.pfnDrawPolygon(NULL, planeVerts, nrPlaneVerts,
-//                       PF_Invisible | PF_Occlude | PF_Masked | PF_Clip);
+//                       PF_InvisibleB | PF_Occlude | PF_Clip);
+#else
+//    HWD.pfnDrawPolygon(NULL, planeVerts, nrPlaneVerts,
+//                       PF_InvisibleColor | PF_Occlude | PF_Masked | PF_Clip);
+#endif
 }
 #endif //polysky
 
@@ -1039,7 +1044,7 @@ void HWR_DrawSegsSplats(FSurfaceInfo_t * pSurfin)
                 break;
             case SPLATDRAWMODE_SHADE:
                 pSurf2.FlatColor.s.alpha = 0xff;
-                blendmode = PF_Substractive;
+                blendmode = PF_Subtractive;
                 break;
         }
 
@@ -1953,8 +1958,13 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
 
         // Transparent, to set z buffer to block more distant draws.       
         Surf.polyflags = PF_Environment;
+#ifdef BLEND_FIELD
         HWD.pfnDrawPolygon(&Surf, vxtx, 4,
-                           PF_Invisible | PF_Occlude | PF_Masked | PF_Clip );
+                           PF_InvisibleB | PF_Occlude | PF_Clip );
+#else
+        HWD.pfnDrawPolygon(&Surf, vxtx, 4,
+                           PF_InvisibleColor | PF_Occlude | PF_Masked | PF_Clip );
+#endif
     }
 
     //Hurdler: 3d-floors test
