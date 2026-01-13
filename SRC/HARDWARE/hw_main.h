@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.h 1436 2019-04-26 10:37:06Z wesleyjohnson $
+// $Id: hw_main.h 1591 2021-10-11 02:46:18Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -111,6 +111,8 @@ void HWR_MakePatch (patch_t* patch, MipPatch_t* grPatch, Mipmap_t *grMipmap,
                     uint32_t drawflags);
 // This releases the allocation made with HWR_MakePatch
 void HWR_release_Patch ( MipPatch_t* grPatch, Mipmap_t *grMipmap );
+
+void HWR_sky_mipmap(void);
 
 void HWR_Create_PlanePolygons (void);
 void HWR_Create_StaticLightmaps (void);

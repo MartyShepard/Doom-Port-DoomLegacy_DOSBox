@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_data.h 1590 2021-10-11 02:45:45Z wesleyjohnson $
+// $Id: hw_data.h 1591 2021-10-11 02:46:18Z wesleyjohnson $
 //
 // Copyright (C) 1998-2012 by DooM Legacy Team.
 //
@@ -103,6 +103,10 @@ struct Mipmap_s {
 };
 typedef struct Mipmap_s Mipmap_t;
 
+// ---- SKY
+extern Mipmap_t  sky_mipmap;
+extern Mipmap_t  skytop_mipmap;
+extern Mipmap_t  ground_mipmap;
 
 //
 // Doom texture info, as cached for hardware rendering

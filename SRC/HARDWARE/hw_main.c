@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.c 1587 2021-10-11 02:42:17Z wesleyjohnson $
+// $Id: hw_main.c 1591 2021-10-11 02:46:18Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -3921,75 +3921,145 @@ void HWR_DrawSkyBackground(player_t * player, byte upper_lower)
 {
     vxtx3d_t v[4];
     angle_t angle;
-    float f;
-//    float horizon;
 
 //  3--2
 //  | /|
 //  |/ |
 //  0--1
-    HWR_GetTexture(sky_texture, 0);
 
-    //Hurdler: the sky is the only texture who need 4.0f instead of 1.0
-    //         because it's called just after clearing the screen
-    //         and thus, the near clipping plane is set to 3.99
-    v[0].x = v[3].x = -4.0f;
-    v[1].x = v[2].x = 4.0f;
-    v[0].y = v[1].y = -4.0f;
-    v[2].y = v[3].y = 4.0f;
+#ifdef PARANOIA
+    if( sky_mipmap.GR_data == NULL )
+    {
+        printf( "sky_mipmap missing\n" );
+        HWR_sky_mipmap();
+        if( sky_mipmap.GR_data == NULL )
+	    return;
+    }
+#endif
 
-    v[0].z = v[1].z = v[2].z = v[3].z = 4.0f;
 
-#define WRAPANGLE (ANGLE_MAX/4)
     // ANGLE_MAX = 0xffffffff
     // ANGLE_MAX/4 = 0x3fffffff
     // ANG90 = 0x40000000
-    angle = ((dup_viewangle + gr_x_to_viewangle[0]) % WRAPANGLE);
+    // Sky width 256, covers 1/4 the sky.
+    // Sky width 1024, covers all the sky.
+#define WRAPANGLE (ANGLE_MAX/4)
+    // sky_width is power of 2, so wrapangle is always a mask
+    // sky_width = 1024  ==>  wrapangle = 0xFFFFFFFF
+    // The shift does overflow, but lower bits still give correct result.
+    angle_t wrapangle = (sky_mipmap.width << 22) - 1;
+    angle = dup_viewangle + gr_x_to_viewangle[0] - ANG90;
 
-    v[0].sow = v[3].sow = 1.0f + ((float) angle) / (WRAPANGLE - 1);
-    v[2].sow = v[1].sow = ((float) angle) / (WRAPANGLE - 1);
+    // OpenGL does not really need us to modulo the angle, but we can.
+    angle &= wrapangle; // modulo by the angle of the sky size (it is always a mask)
+   
+    v[2].sow = v[1].sow = ((float) angle) / wrapangle;  // X high
+    v[0].sow = v[3].sow = v[1].sow + (256.0f / sky_mipmap.width) ;  // X low
 
-#if 0
     // View angle effect on screen.
     // -1.0 when looking straight up.
     // 0 when look at horizon.
     float vpf = FIXED_TO_FLOAT(
         finetangent[(FINE_ANG90 - ((int) aimingangle >> (ANGLETOFINESHIFT + 1))) & FINEMASK] );
-#endif
+        // finetangent_ANG( -(aimingangle/2) )
+
+    // At vpf= 0, top of screen is top of 127 high texture.   
+    // With 240 high sky, player can look directly at top of 127 high sky.
+    // Expanding to 240 high sky adds 100 pixels to top of sky, and 12 pixels to bottom.
+    // The view of the sky texture is 200 pixels high.
+    // The tow[] are the texture positions for each corner of the view area, as percentage of texture width, height.
+    // The tow[0], tow[1] are at the bottom of the screen, well below the bottom of the displayed texture.
+    // If tow[3] > tow[0] the sky will be inverted.
+
+    // The sky should stay stationary against window edges when the head is moved.
+    // The previous  40 + ( 200 * vpf ) made the sky slew too fast.
+//    float f = 40 + (200 * vpf);
+    // This value keeps the sky (mostly) still relative to walls when the head is turned.
+    float vpl = vpf * 336.0f; // scale movement to texture line.
+    float tte;  // top texture line
+
+    unsigned int sky_height = sky_mipmap.height;
+    // Original was 320x200, non-square pixels.
     // Doom2 sky texture is 256w x 128h.
+    // TNT sky texture is 1024w x 128h.
     // Heretic and Hexen sky texture are 256w x 200h.
     // Expanded texture for free-look is 256w x 240h.
     // When view is at horizon, draw sky texture [40] as top.
     // When aiming angle > 0x10480000, then sky repeats at top.
     //   horizon = -0.2017
-    //   f = -0.338
     // When aiming angle > 0x38c00000, then sky repeats at top again.
     //   horizon = -0.83
-    //   f = -127.0
-    f = 40 + 200 * FIXED_TO_FLOAT(
-        finetangent[(FINE_ANG90 - ((int) aimingangle >> (ANGLETOFINESHIFT + 1))) & FINEMASK] );
-        // finetangent_ANG( -(aimingangle/2) )
-#if 1
-    if (f < 0)
-        f = 0;
-    if (f > 240 - 127)
-        f = 240 - 127;
+
+    // [WDJ] The special values are determined by experiment.
+    // Attempts to calculate these using logic have generated distorted skies.
+
+    if( cv_sky_gen.EV == 248 )  // Vanilla
+    {
+        // Display the sky texture, at normal vertical scale.
+        tte = vpl;
+       
+        if( sky_height > 128 )
+	   tte += 100.0f;  // view offset for larger skies
+       
+#if 0
+// Reference:
+//        v[3].tow = v[2].tow = (336.0f / 128.0f) * vpf;
+//        v[0].tow = v[1].tow = v[3].tow + (200.0f / 128.0f);
+        sky_tow_top = ( sky_mipmap.height == 128 )?
+              (vpl / 128.0f)
+            : ((vpl + 100.0f) / sky_mipmap.height);
+        sky_tow_bottom = sky_tow_top + (200.0f / sky_mipmap.height);
+
 #endif
+    }
+    else
+    {
+        // Generated textures (240 high), and stretch.
+        // Even though the sky may be 240, the pixels/angle is the same as sky 128.
+        // OpenGL uses percentages, so can pretend it is 240 high and it stretches to fit.
+        if( (cv_sky_gen.EV == 250) && (sky_height < 240) )  // stretch
+            sky_height = 240;  // Stretch the 128 high texture to cover 240 pixels.
 
-    // The view of the sky texture is 128 pixels high.
-    v[3].tow = v[2].tow = f / 127.0f;
-    v[0].tow = v[1].tow = (f + 127) / 127.0f;   //suppose 256x128 sky...
+        tte = vpl + 100.0f;
+        // top edge at vpf=-0.299
+    }
 
+    float top_edge = 4.0f;
+    float bottom_edge = -4.0f;
+    // bottom texture edge (before trimming top)
+    float bte = tte + 200.0f;
+   
+    if( tte < 0 )  // top texture limit
+    {
+        top_edge = 4.0f + (tte * 0.040f);   // in display position
+        tte = 0.4;  // to prevent texture wrap-around
+    }
+
+    if( bte > sky_height )  // bottom texture limit
+    {
+        bottom_edge = -4.0f + ( (bte - sky_height) * 0.040f);  // in display position
+        bte = sky_height - 0.4;  // to prevent texture wrap-around
+    }
+
+    int visible = bte - tte;  // sky texture is visible
+
+    if( bte < 0 )  // bottom is above top of sky texture
+    {
+        bte = 0;
+        visible = -1;
+    }
+       
+   
 #if 0
     // FIXME: This does not handle free-look.
     // FIXME: This does not handle f hitting the limits.
     switch( upper_lower )
     {
-     case DSB_upper:
+     case DSB_upper: // sky as ceiling
         v[0].y = v[1].y = 8.0f * anglef;
 //        v[0].tow = v[1].tow = (f + 64) / 127.0f;
         break;
-     case DSB_lower:
+     case DSB_lower: // sky as floor
         v[2].y = v[3].y = 0.0f;
         v[3].tow = v[2].tow = (f - 64) / 127.0f;
         break;
@@ -3998,8 +4068,55 @@ void HWR_DrawSkyBackground(player_t * player, byte upper_lower)
     }
 #endif
 
-    HWD.pfnDrawPolygon(NULL, v, 4, 0);
+   
+    //Hurdler: the sky is the only texture who need 4.0f instead of 1.0
+    //         because it's called just after clearing the screen
+    //         and thus, the near clipping plane is set to 3.99
+
+    v[0].x = v[3].x = -4.0f;
+    v[1].x = v[2].x = 4.0f;
+
+    v[0].z = v[1].z = v[2].z = v[3].z = 4.0f;
+
+
+    // Setup in R_Setup_SkyDraw(), sky_mipmap, skytop_mipmap, ground_mipmap.
+    if( top_edge < 4.0f )
+    {
+        // Skytop: Over top of sky texture
+        v[2].y = v[3].y = 4.0f;
+        v[0].y = v[1].y = top_edge - 0.1;
+        v[3].tow = v[2].tow = 0;
+        v[0].tow = v[1].tow = 1.0;
+        
+        HWD.pfnSetTexture( &skytop_mipmap );
+        HWD.pfnDrawPolygon(NULL, v, 4, 0);
+    }
+    if( bottom_edge > -4.0f )
+    {
+        // Ground: Below bottom of sky texture
+        v[2].y = v[3].y = bottom_edge + 0.1;
+        v[0].y = v[1].y = -4.0f;
+        v[3].tow = v[2].tow = 0;
+        v[0].tow = v[1].tow = 1.0;
+        
+        HWD.pfnSetTexture( &ground_mipmap );
+        HWD.pfnDrawPolygon(NULL, v, 4, 0);
+    }
+
+    // When normal sky is visible
+    if( visible > 0 )
+    {
+        v[0].y = v[1].y = bottom_edge;
+        v[2].y = v[3].y = top_edge;
+        v[3].tow = v[2].tow = tte / sky_height;
+        v[0].tow = v[1].tow = bte / sky_height;
+   
+        // drawflags = 0
+        HWD.pfnSetTexture( &sky_mipmap );
+        HWD.pfnDrawPolygon(NULL, v, 4, 0);
+    }
 }
+
 
 // -----------------+
 // HWR_Clear_View : clear the viewwindow, with maximum z value

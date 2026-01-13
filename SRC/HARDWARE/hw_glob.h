@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_glob.h 1419 2019-01-29 08:01:42Z wesleyjohnson $
+// $Id: hw_glob.h 1591 2021-10-11 02:46:18Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -117,6 +117,8 @@ extern byte  EN_HWR_flashpalette;
 // Faster palette flashes using tints.
 //  palette_num : 0..15
 void HWR_SetFlashPalette( byte palette_num );
+
+void HWR_sky_mipmap( void );
 
 // --------
 // hw_draw.c

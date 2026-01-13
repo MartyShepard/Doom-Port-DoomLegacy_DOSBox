@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_cache.c 1590 2021-10-11 02:45:45Z wesleyjohnson $
+// $Id: hw_cache.c 1591 2021-10-11 02:46:18Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -118,6 +118,7 @@
 #include "w_wad.h"
 #include "z_zone.h"
 #include "v_video.h"
+#include "r_sky.h"
 
 #if 0
 // [WDJ] Replaced global cache draw flags with drawflags parameter and TF_ flags
@@ -193,7 +194,7 @@ void HWR_DrawPatchInCache (Mipmap_t* mipmap,
         x2 = texture_width;
 
     if( texture_width < 1 )
-         return;
+        return;
 
     col  = x * blockwidth / texture_width;
     ncols= ((x2-x) * blockwidth) / texture_width;
@@ -1502,4 +1503,256 @@ MipPatch_t * HWR_GetPic( lumpnum_t lumpnum )
     //CONS_Printf("picloaded at %x as texture %d\n",grpatch->mipmap.GR_data, grpatch->mipmap.downloaded);
 
     return grpatch;
+}
+
+
+// [WDJ] Do not need these options, yet.
+//#define  TM_PICT_TRANSLUCENT
+//#define  TM_PICT_CHROMAKEY
+
+// May use alpha and chroma key for hole.
+// draw flags in mipmap->tfflags
+//   tm_format: TM_picture, TM_column_image
+// Called from: HWR_sky_mipmap
+static
+void HWR_draw_TM_cache( byte tm_format, Mipmap_t* mipmap,
+			int blockwidth, int blockheight, int blocklinebyte,
+			int pict_width, int pict_height,
+			int originx, int originy, // where to draw the patch in the surface block
+			byte * sw_pict, int bytepp )
+{
+    int          x1, x2;
+    int          col,ncols;
+    int          count, count0;
+    fixed_t      xfrac, xfracstep;
+    fixed_t      yfrac, yfrac0, yfracstep, ypos, ypos0;
+    fixed_t      scale_y;
+
+#ifdef TM_PICT_TRANSLUCENT
+    // also can be called before translucenttables are setup
+    byte        *fx1trans =   // only one opaque trans so far
+        ((mipmap->tfflags & TF_Opaquetrans) && translucenttables)?
+          & translucenttables[ TRANSLU_TABLE_fx1 ]
+          : NULL;
+    byte         alpha;
+#else   
+    const byte   alpha = 0xff;
+#endif
+#ifdef TM_PICT_CHROMAKEY
+    byte         chromakey_mapped = (mipmap->tfflags & TF_CHROMAKEYED)? 1:0;
+#endif
+    byte       * colormap = mipmap->colormap;
+    byte       * block = mipmap->GR_data;
+    byte       * source;  // pixel data, no posts
+    byte       * dest;
+
+#ifdef PARANOIA   
+    if( bytepp<1 || bytepp > 4 )
+    {
+        I_SoftError("HWR_draw_TM_picture_cache: bad bytepp %d\n", bytepp);
+        return;
+    }
+#endif
+
+    if( (pict_width < 1) || (pict_height < 1) )
+        return;
+
+    // TM_picture, All columns are same height.
+    scale_y = (blockheight << 16) / pict_height;  // fixed_t
+    count0 = ((pict_height * scale_y) + (FRACUNIT/2)) >> 16;  // int
+   
+    x1 = originx;
+    x2 = x1 + pict_width;
+    if( x2 > pict_width )
+        x2 = pict_width;
+
+    // source advance
+    xfrac = (x1<0)? -x1<<16 : 0;  // skip source pixels
+    xfracstep = (pict_width << 16) / blockwidth;
+    yfracstep = (pict_height<< 16) / blockheight;
+    yfrac0 = 0;
+    if( originy < 0 )
+    {
+        yfrac0 = (-originy)<<16;  // skip source pixels
+        count0 += (((originy * scale_y) + (FRACUNIT/2)) >> 16);
+        originy = 0;
+    }
+    ypos0 = ((originy * scale_y) + (FRACUNIT/2)) >> 16;
+   
+    if( ypos0 + count0 > blockheight )
+        count0 = blockheight - ypos0;
+   
+   
+    // dest position
+    int x = (x1<0)? 0 : x1;
+    col  = x * blockwidth / pict_width;
+    ncols= ((x2-x) * blockwidth) / pict_width;
+
+   
+#if 0
+    CONS_Printf("Draw TM_picture %dx%d to block %dx%d\n",
+         pict_width, pict_height, blockwidth, blockheight);
+    CONS_Printf("      col %d ncols %d x %d\n", col, ncols, x);
+#endif
+   
+    for( block += col*bytepp; ncols--; block+=bytepp )
+    {
+        unsigned int srccol = xfrac >> 16;
+        source = sw_pict + (
+	    (tm_format == TM_picture)?
+                // TM_picture has columnofs table.
+                ((uint32_t*)sw_pict)[srccol]
+	      : (srccol * pict_height)
+			     );
+
+        // TM_picture is columns of pixels.  Each column is pict_height, no offset.
+        yfrac = yfrac0;
+        ypos = ypos0;
+        dest = block + (ypos * blocklinebyte);
+        count = count0;
+        while( count-- > 0 )
+        {
+	    byte texel = source[yfrac>>16];
+
+#ifdef TM_PICT_TRANSLUCENT
+
+            // [WDJ] Fixed, this is fx1 not fire
+            // Verified that 0x40000 is the fx1 translucent table.
+            if( fx1trans && (fx1trans[(((unsigned int)texel)<<8)] != texel) )
+                alpha = 0x80;
+            else
+                alpha = 0xff;
+#endif
+
+#ifdef TM_PICT_CHROMAKEY
+            //Hurdler: not perfect, but better than holes
+            // Move pixels conflicting with chromakey to a similar color
+            if( chromakey_mapped && texel == HWR_PATCHES_CHROMAKEY_COLORINDEX )
+                texel = HWR_CHROMAKEY_EQUIVALENTCOLORINDEX;
+            else
+#endif
+            //Hurdler: 25/04/2000: now support colormap in hardware mode
+            if (colormap)
+                texel = colormap[texel];
+
+            // hope compiler will get this switch out of the loops (dreams...)
+            // gcc do it ! but vcc not ! (why don't use cygnus gcc for win32 ?)
+            switch (bytepp) {
+	     case 2 :
+                ((pixelalpha_t*)dest)->pixel = texel;
+                ((pixelalpha_t*)dest)->alpha = alpha;
+                break;
+             case 3 :
+	        {
+	        RGBA_t t2 = V_GetColor(texel);
+	        ((RGBA_t*)dest)->s.red   = t2.s.red;
+	        ((RGBA_t*)dest)->s.green = t2.s.green;
+	        ((RGBA_t*)dest)->s.blue  = t2.s.blue;
+	        break;
+		}
+	     case 4 :
+	        *((RGBA_t*)dest) = V_GetColor(texel);
+	        ((RGBA_t*)dest)->s.alpha = alpha;
+	        break;
+	     default:  // default is 1
+	        *dest = texel;
+	        break;
+	    }
+
+            dest += blocklinebyte;
+            yfrac += yfracstep;
+        }
+        xfrac += xfracstep;
+    }
+}
+
+
+// ---- SKY
+
+Mipmap_t  sky_mipmap;
+Mipmap_t  skytop_mipmap;
+Mipmap_t  ground_mipmap;
+byte      sky_mipmap_state = 0;
+
+void HWR_sky_mipmap( void )
+{
+    int sky_width = textures[sky_texture]->width;
+    byte bytepp;
+
+    // drawflags = 0, no chromakey
+    if( sky_mipmap_state == 0 )
+    {
+        memset( &sky_mipmap, 0, sizeof(Mipmap_t));
+        sky_mipmap.tfflags = TF_WRAPXY; // don't use the chromakey for sky
+
+        memset( &skytop_mipmap, 0, sizeof(Mipmap_t));
+        skytop_mipmap.tfflags = TF_WRAPXY; // don't use the chromakey for sky
+       
+        memset( &ground_mipmap, 0, sizeof(Mipmap_t));
+        ground_mipmap.tfflags = TF_WRAPXY; // don't use the chromakey for sky
+       
+        sky_mipmap_state = 1;
+    }
+    else
+    {
+        // Need a way to unload mipmap, or refresh it.
+        // The only tool available to release a loaded mipmap.
+        HWD.pfnClearMipMapCache();  // Release ALL mipmaps.
+
+        // DO NOT TOUCH: sky_mipmap.downloaded
+        // causes mip list corruption due to relinking.
+    }
+   
+    sky_mipmap.GR_format = textureformat;
+    skytop_mipmap.GR_format = textureformat;
+    ground_mipmap.GR_format = textureformat;
+    bytepp = format2bpp[ textureformat ];
+   
+    HWR_ResizeBlock( sky_width, sky_height, &sky_mipmap );
+
+#if 1
+    RGBA_t * block = (RGBA_t*) Make_Mip_Block( &sky_mipmap );  // sets GR_data in sky_mipmap
+
+    // [WDJ] Fill sky with default.
+    // This prevents holes, cracks, or other defects, from incomplete coverage during
+    // the pasting of sky textures into cache block.    
+    // This does not have anything to do with chromakey, it just uses that color.
+    {
+        int i, j;
+        RGBA_t col = V_GetColor(HWR_CHROMAKEY_EQUIVALENTCOLORINDEX);
+        // init sky with col so composite cannot leave any transparent holes,
+        // must be 32bit
+        for (j=0; j<blockheight; j++)
+        {
+            for (i=0; i<blockwidth; i++)
+                block[(j*blockwidth)+i] = col;   // endian tolerant
+        }
+    }
+#else   
+    Make_Mip_Block( &sky_mipmap );  // sets GR_data in sky_mipmap
+#endif
+
+    // Redraw sky_pict in RGB format.
+    HWR_draw_TM_cache( TM_picture, & sky_mipmap,
+                       blockwidth, blockheight, (blockwidth * bytepp),
+                       sky_width, sky_height,
+                       0, 0, // offset
+                       sky_pict, bytepp );
+   
+
+    HWR_ResizeBlock( SKY_FLAT_WIDTH, SKY_FLAT_HEIGHT, &skytop_mipmap );
+    Make_Mip_Block( &skytop_mipmap );  // sets GR_data in skytop_mipmap
+    HWR_draw_TM_cache( TM_column_image, & skytop_mipmap,
+                       blockwidth, blockheight, (blockwidth * bytepp),
+                       SKY_FLAT_WIDTH, SKY_FLAT_HEIGHT,
+                       0, 0, // offset
+                       & skytop_flat[0][0], bytepp );
+
+    HWR_ResizeBlock( SKY_FLAT_WIDTH, SKY_FLAT_HEIGHT, &ground_mipmap );
+    Make_Mip_Block( &ground_mipmap );  // sets GR_data in ground_mipmap
+    HWR_draw_TM_cache( TM_column_image, & ground_mipmap,
+                       blockwidth, blockheight, (blockwidth * bytepp),
+                       SKY_FLAT_WIDTH, SKY_FLAT_HEIGHT,
+                       0, 0, // offset
+                       & ground_flat[0][0], bytepp );
 }

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_sky.c 1560 2020-11-25 12:34:46Z wesleyjohnson $
+// $Id: r_sky.c 1591 2021-10-11 02:46:18Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -59,6 +59,10 @@
 
 #include "m_random.h"
 #include "v_video.h"
+
+#ifdef HWRENDER
+#include "hardware/hw_main.h"
+#endif
 
 
 // SoM: I know I should be moving portals out of r_sky.c and as soon
@@ -977,6 +981,13 @@ void R_Setup_SkyDraw (void)
     skycolfunc = skydrawerfunc[sky_240];
 
     R_Set_Sky_Scale ();
+
+#ifdef HWRENDER
+    if( rendermode != render_soft )
+    {
+        HWR_sky_mipmap();
+    }
+#endif   
 }
 
 
@@ -1002,7 +1013,7 @@ void R_Set_Sky_Scale (void)
     // sky_scale = (FRACUNIT*200)/rdraw_viewheight;  // Boom
     sky_scale = FixedDiv (FRACUNIT, pspriteyscale);  // Legacy
 
-    if( cv_sky_gen.EV == 250 )  // Stretch
+    if( (cv_sky_gen.EV == 250) && (sky_height < 130) )  // Stretch
     {
         // double the texture vertically, bleeergh!!
         sky_scale >>= 1;
@@ -1016,7 +1027,3 @@ void R_Set_Sky_Scale (void)
     sky_yl_min_oc = ( 0 - sky_texturemid ) / sky_scale;  // frac = 0
     sky_yh_max_oc = ( ((sky_height-1)<<16) - sky_texturemid ) / sky_scale;  // frac = sky_height-1
 }
-
-
-
-

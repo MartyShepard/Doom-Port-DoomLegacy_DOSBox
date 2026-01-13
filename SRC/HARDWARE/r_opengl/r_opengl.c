@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_opengl.c 1588 2021-10-11 02:44:26Z wesleyjohnson $
+// $Id: r_opengl.c 1591 2021-10-11 02:46:18Z wesleyjohnson $
 //
 // Copyright (C) 1998-2012 by DooM Legacy Team.
 //
@@ -225,10 +225,10 @@ GLint   textureformatGL;
 GLint min_filter = GL_LINEAR;
 GLint mag_filter = GL_LINEAR;
 
+static const RGBA_t  RGBA_zero = {0}; // union uint32_t
+
 const   GLubyte     *gl_extensions;
 int     oglflags = 0;
-
-static const RGBA_t  RGBA_zero = {0}; // union uint32_t
 
 //Hurdler: 04/10/2000: added for the kick ass coronas as Boris wanted ;-)
 #ifndef MINI_GL_COMPATIBILITY
