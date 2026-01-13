@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: p_setup.c 1595 2021-10-16 07:39:26Z wesleyjohnson $
+// $Id: p_setup.c 1599 2021-11-12 09:05:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2150,6 +2150,7 @@ char*  level_mapname = NULL;  // to savegame and info
 //  to_map : change to map number
 //  to_skill : change to skill
 //  map_wadname : map command, load wad file
+// Called from: G_DoLoadLevel, P_UnArchiveMisc() (savegame)
 boolean P_SetupLevel (int      to_episode,
                       int      to_map,
                       skill_e  to_skill,

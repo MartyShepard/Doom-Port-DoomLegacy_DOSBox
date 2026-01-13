@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: g_game.c 1582 2021-08-10 20:41:33Z wesleyjohnson $
+// $Id: g_game.c 1599 2021-11-12 09:05:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1360,7 +1360,9 @@ void Command_Turbo_f (void)
 
 //
 // G_DoLoadLevel
+// All games, except loading savegames.
 //
+// Called from:  G_InitNew, G_DoReborn, G_DoWorldDone, Command_Restart_f
 void G_DoLoadLevel (boolean resetplayer)
 {
     int             i;

@@ -8785,9 +8785,6 @@ Fix missing stmt in bsp, when not PARANOIA.
 This was fixed a different way, but that got left out
 of the committed patch.
 
-=== commit
-
-
 *** w109_loadesc
 patchfile = w109_058_loadesc
 - commit revision 1597
@@ -8797,7 +8794,7 @@ Make most menu functions static.
 
 *** w109_hwbsp
 patchfile = w109_059_hwbsp
-- commit revision 1597
+- commit revision 1598
 This fixes a missing floor in Avactor.wad (Map04, sector 1757).
 
 The hw_bsp SplitPoly has to deal with a partition line that misses
@@ -8825,4 +8822,77 @@ In Avactor.wad, there are an excessive number of partitionings
 that miss the poly.
 The new blockmap generator seems to be the same.
 
+Added hw_bsp DEBUG and TRACE optional capability.
+Removed an old debug test that no longer worked.
+
+
+=== commit
+
+
+*** w109_hwadjust
+patchfile = w109_060_hwadjust
+- commit revision 1599
+This fixes some bad subsector assigns for hardware-draw
+in Avactor.wad (Map05 sector 1502).
+
+The function Find_Poly_Sector is used on a polygon, to find the its sector.
+With subsectors that have a seg as a side, this can be done by
+inspection.  For subsectors that are not adjacent to a sector side,
+Find_Poly_Sector is used to find the sector that they are within.
+This is done by finding a linedef of that sector.
+
+Find_Poly_Sector generates a vertex within the poly by averaging the
+polygon vertexes.  It then searches all the linedef for the closest.
+The calculation for closest overflows sometimes.
+
+When the wrong linedef is deemed to be closest, the sidedef of that
+linedef is used to assign the sector to the subsector.
+This makes the wrong sector be used to display the floor height, and floor flat.
+
+I tried several approaches to this.  I ended up using of the
+current code, rewritten to be faster, and more robust in large maps.
+The linedef considered are limited to those that bracket the test point.
+The measurement is the distance to the line, on the same x or y
+coordinate.  This ensures that the distance is to a point on the line
+that is within the linedef boundaries.  All the distances are measured
+along the same lines, so it is the closest linedef along a particular line.
+This still finds a linedef of the enclosing sector because any wrong
+linedef would be beaten by the linedef of the sector that crosses that line.
+
+Using a cross product failed due to it finding the closest point to
+the linedef without restricting it to be within the boundaries of the linedef.
+A far linedef that was angled could be considered closest to the
+test point, even though it was farther away using other criterea.
+
+Eliminating linedef from test consideration using dx vrs dy had to be removed.
+There may be only one linedef that beats another wrong linedef
+from being used.  Every linedef has to be tested for every geometric relationship.
+
+*** w109_dogs
+patchfile = w109_061_dogs
+- commit revision 1600
+The extra dogs, enabled in menu, were using the MT code
+instead of the doomed code to spawn them.
+Fixed the spawning by changing Spawn_Mapthing to allow
+MT codes to be specified.
+Fixes bug 0681.
+
+*** w109_sprite
+patchfile = w109_062_sprite
+- commit revision 1601
+Often the dog sprite is missing from the wad.
+Some of the tests for missing sprites is only enabled during DEBUG.
+Include these tests for normal compile too.
+
+*** w109_hw_trans_wall
+patchfile = w109_063_hw_trans_wall
+- commit revision 1602
+Avactor.wad has some masked textures used on upper textures and single
+sided walls.  This is not entirely valid usage, but happens.
+The software render draws black in the missing portions of the texture.
+OpenGL is drawing a masked texture, showing sky through the wall.
+Changed the drawing of such textures in hardware draw to not use the
+texture alpha.
+Changed the SplitWall function to support such alternative drawing
+blends.
 

@@ -1,5 +1,7 @@
 * Not need to Compile.
 
+[01599 ]: w109_060 hw adjust
+[01598 ]: w109_059 hw bsp right/left
 [01597 ]: w109_058 menu load escape
 [01596 ]: w109_057 hw missing stmt
 [01595 ]: w109_056 blockmap generate

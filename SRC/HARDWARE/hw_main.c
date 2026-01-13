@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.c 1596 2021-10-16 11:24:28Z wesleyjohnson $
+// $Id: hw_main.c 1599 2021-11-12 09:05:20Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -334,12 +334,17 @@
 // BP: test change fov when looking up/down but bsp projection messup :(
 //#define NO_MLOOK_EXTENDS_FOV
 
-#define EN_drawtextured  true
-//static  boolean     EN_drawtextured = false;
-
 #ifdef CORONA_CHOICE
 // mirror corona choice, with auto modifications
 byte  corona_draw_choice;
+#endif
+
+//#define DEBUG_TRIG
+#ifdef DEBUG_TRIG
+static uint32_t  trigger_line = 0xFFFFFFFF;
+static uint32_t  trigger_sector = 0xFFFFFFFF;
+static uint32_t  trigger_draw_subsector = 0xFFFFFFFF;
+static uint32_t  trigger_draw_count = 0;
 #endif
 
 // Sky upper and lower halfs.
@@ -1572,7 +1577,6 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
     vxtx[2].z = vxtx[1].z = ve.y;
 //    vxtx[0].w = vxtx[1].w = vxtx[2].w = vxtx[3].w = 1.0f;
 
-    if (EN_drawtextured)
     {
         // x offset the texture
         fixed_t texturehpeg = gr_sidedef->textureoffset + gr_curline->offset;
@@ -1677,29 +1681,19 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
         int toptexnum = texturetranslation[gr_sidedef->toptexture];
         if (worldbacktop < worldtop && toptexnum)
         {
-            if (EN_drawtextured)
-            {
-                fixed_t texturevpegtop; //top
+            // Top pegging
+            // [WDJ] sometimes maybe textureheight[gr_sidedef->toptexture] != textureheight[toptexnum]
+//          texturevpegtop = worldbacktop + textureheight[gr_sidedef->toptexture] - worldtop;
+            fixed_t texturevpegtop = (gr_linedef->flags & ML_DONTPEGTOP)? 0
+                : worldbacktop + textureheight[toptexnum] - worldtop;	     
+            texturevpegtop += gr_sidedef->rowoffset;
 
-                miptex = HWR_GetTexture(toptexnum, 0);
+            miptex = HWR_GetTexture(toptexnum, 0);
 
-                // PEGGING
-                if (gr_linedef->flags & ML_DONTPEGTOP)
-                    texturevpegtop = 0;
-                else
-                {
-                    // [WDJ] sometimes maybe textureheight[gr_sidedef->toptexture] != textureheight[toptexnum]
-//                    texturevpegtop = worldbacktop + textureheight[gr_sidedef->toptexture] - worldtop;
-                    texturevpegtop = worldbacktop + textureheight[toptexnum] - worldtop;
-                }
-
-                texturevpegtop += gr_sidedef->rowoffset;
-
-                vxtx[3].tow = vxtx[2].tow = texturevpegtop * miptex->scaleY;
-                vxtx[0].tow = vxtx[1].tow = (texturevpegtop + worldtop - worldbacktop) * miptex->scaleY;
-                vxtx[0].sow = vxtx[3].sow = cliplow * miptex->scaleX;
-                vxtx[2].sow = vxtx[1].sow = cliphigh * miptex->scaleX;
-            }
+            vxtx[3].tow = vxtx[2].tow = texturevpegtop * miptex->scaleY;
+            vxtx[0].tow = vxtx[1].tow = (texturevpegtop + worldtop - worldbacktop) * miptex->scaleY;
+            vxtx[0].sow = vxtx[3].sow = cliplow * miptex->scaleX;
+            vxtx[2].sow = vxtx[1].sow = cliphigh * miptex->scaleX;
 
             // set top/bottom coords
             vxtx[2].y = vxtx[3].y = skybottom = FIXED_TO_FLOAT( worldtop );
@@ -1720,25 +1714,18 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
         int bottomtexnum = texturetranslation[gr_sidedef->bottomtexture];
         if (worldbackbottom > worldbottom && bottomtexnum)    //only if VISIBLE!!!
         {
-            if (EN_drawtextured)
-            {
-                fixed_t texturevpegbottom = 0;  //bottom
+            // Bottom pegging
+            fixed_t texturevpegbottom = (gr_linedef->flags & ML_DONTPEGBOTTOM)?
+                worldtop - worldbackbottom
+              : 0;
+            texturevpegbottom += gr_sidedef->rowoffset;
 
-                miptex = HWR_GetTexture(bottomtexnum, 0);
+            miptex = HWR_GetTexture(bottomtexnum, 0);
 
-                // PEGGING
-                if (gr_linedef->flags & ML_DONTPEGBOTTOM)
-                    texturevpegbottom = worldtop - worldbackbottom;
-                else
-                    texturevpegbottom = 0;
-
-                texturevpegbottom += gr_sidedef->rowoffset;
-
-                vxtx[3].tow = vxtx[2].tow = texturevpegbottom * miptex->scaleY;
-                vxtx[0].tow = vxtx[1].tow = (texturevpegbottom + worldbackbottom - worldbottom) * miptex->scaleY;
-                vxtx[0].sow = vxtx[3].sow = cliplow * miptex->scaleX;
-                vxtx[2].sow = vxtx[1].sow = cliphigh * miptex->scaleX;
-            }
+            vxtx[3].tow = vxtx[2].tow = texturevpegbottom * miptex->scaleY;
+            vxtx[0].tow = vxtx[1].tow = (texturevpegbottom + worldbackbottom - worldbottom) * miptex->scaleY;
+            vxtx[0].sow = vxtx[3].sow = cliplow * miptex->scaleX;
+            vxtx[2].sow = vxtx[1].sow = cliphigh * miptex->scaleX;
 
             // set top/bottom coords
             vxtx[2].y = vxtx[3].y = FIXED_TO_FLOAT( worldbackbottom );
@@ -1753,6 +1740,7 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
             else
                 HWR_ProjectWall(vxtx, &Surf, PF_Masked);
         }
+
         // texture num are either 0=no-texture, or valid
         midtexnum = texturetranslation[gr_sidedef->midtexture];
         if (midtexnum)
@@ -1800,16 +1788,13 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
                     break;
             }
 
-            if (EN_drawtextured)
-            {
-                // TRANSLU_fx1 requires TF_Opaquetrans flag to draw texture
-                miptex = HWR_GetTexture(midtexnum, Surf.texflags);
+            // TRANSLU_fx1 requires TF_Opaquetrans flag to draw texture
+            miptex = HWR_GetTexture(midtexnum, Surf.texflags);
 
-                if (miptex && (miptex->mipmap.tfflags & TF_TRANSPARENT))
-                {
-                    blendmode = PF_Environment;
-                    clip_disable = 1;  // full height, no (h-l) clipping
-                }
+            if (miptex && (miptex->mipmap.tfflags & TF_TRANSPARENT))
+            {
+                blendmode = PF_Environment;
+                clip_disable = 1;  // full height, no (h-l) clipping
             }
 
 #if 1
@@ -1863,7 +1848,6 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
             else
                 l = (polybottom > openbottom) ? polybottom : openbottom;
 
-            if (EN_drawtextured)
             {
                 fixed_t texturevpeg;
                 // PEGGING
@@ -1898,17 +1882,13 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
         midtexnum = texturetranslation[gr_sidedef->midtexture];
         if (midtexnum)
         {
-            if (EN_drawtextured)
-            {
-                fixed_t texturevpeg;
-                // PEGGING
-                if ((unsigned short)gr_linedef->flags & ML_DONTPEGBOTTOM)
-                    texturevpeg = worldbottom + textureheight[gr_sidedef->midtexture] - worldtop + gr_sidedef->rowoffset;
-                else
-                    // top of texture at top
-                    texturevpeg = gr_sidedef->rowoffset;
+            miptex = HWR_GetTexture(midtexnum, 0);
 
-                miptex = HWR_GetTexture(midtexnum, 0);
+            {
+                // PEGGING
+                fixed_t texturevpeg = ( (uint16_t) gr_linedef->flags & ML_DONTPEGBOTTOM )?
+                    worldbottom + textureheight[gr_sidedef->midtexture] - worldtop + gr_sidedef->rowoffset
+                  : gr_sidedef->rowoffset;  // top of texture at top
 
                 vxtx[3].tow = vxtx[2].tow = texturevpeg * miptex->scaleY;
                 vxtx[0].tow = vxtx[1].tow = (texturevpeg + worldtop - worldbottom) * miptex->scaleY;
@@ -2005,16 +1985,12 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
                 midtexnum = texturetranslation[sides[bff->master->sidenum[0]].midtexture];
                 if( midtexnum == 0 ) continue;  // no texture to display (when 3Dslab is missing side texture)
 
-                if (EN_drawtextured)
-                {
-//		    if( midtexnum == 0 ) continue;  // no texture to display (when 3Dslab is missing side texture)
-                    miptex = HWR_GetTexture( midtexnum, 0 );
+                miptex = HWR_GetTexture( midtexnum, 0 );
 
-                    vxtx[3].tow = vxtx[2].tow = (*bff->topheight - h) * miptex->scaleY;
-                    vxtx[0].tow = vxtx[1].tow = (h - l + (*bff->topheight - h)) * miptex->scaleY;
-                    vxtx[0].sow = vxtx[3].sow = cliplow * miptex->scaleX;
-                    vxtx[2].sow = vxtx[1].sow = cliphigh * miptex->scaleX;
-                }
+                vxtx[3].tow = vxtx[2].tow = (*bff->topheight - h) * miptex->scaleY;
+                vxtx[0].tow = vxtx[1].tow = (h - l + (*bff->topheight - h)) * miptex->scaleY;
+                vxtx[0].sow = vxtx[3].sow = cliplow * miptex->scaleX;
+                vxtx[2].sow = vxtx[1].sow = cliphigh * miptex->scaleX;
 
                 if (bff->flags & FF_FOG)
                 {
@@ -2089,16 +2065,12 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
                 midtexnum = texturetranslation[sides[fff->master->sidenum[0]].midtexture];
                 if( midtexnum == 0 ) continue;  // no texture to display (when 3Dslab is missing side texture)
 
-                if (EN_drawtextured)
-                {
-//		    if( midtexnum == 0 ) continue;  // no texture to display (when 3Dslab is missing side texture)
-                    miptex = HWR_GetTexture( midtexnum, 0 );
+                miptex = HWR_GetTexture( midtexnum, 0 );
 
-                    vxtx[3].tow = vxtx[2].tow = (*fff->topheight - h) * miptex->scaleY;
-                    vxtx[0].tow = vxtx[1].tow = (h - l + (*fff->topheight - h)) * miptex->scaleY;
-                    vxtx[0].sow = vxtx[3].sow = cliplow * miptex->scaleX;
-                    vxtx[2].sow = vxtx[1].sow = cliphigh * miptex->scaleX;
-                }
+                vxtx[3].tow = vxtx[2].tow = (*fff->topheight - h) * miptex->scaleY;
+                vxtx[0].tow = vxtx[1].tow = (h - l + (*fff->topheight - h)) * miptex->scaleY;
+                vxtx[0].sow = vxtx[3].sow = cliplow * miptex->scaleX;
+                vxtx[2].sow = vxtx[1].sow = cliphigh * miptex->scaleX;
 
                 if (fff->flags & FF_FOG)
                 {
@@ -2790,6 +2762,15 @@ static void HWR_Subsector(int num)
         lineseg = NULL;
     }
 
+#ifdef DEBUG_TRIG   
+    if( ( num == trigger_draw_subsector )
+	|| ( trigger_sector < numsectors
+              && sub->sector == & sectors[trigger_sector] ) )
+    {
+        GenPrintf(EMSG_debug, "TRIGGER SECTOR %i SUBSECTOR %i: first line= %i\n", sub->sector - sectors, trigger_draw_subsector, sub->firstline );
+    }
+#endif
+     
     //SoM: 4/7/2000: Test to make Boom water work in Hardware mode.
     gr_frontsector = R_FakeFlat(gr_frontsector, &tempsec, false,
                                 /*OUT*/ &floorlightlevel, &ceilinglightlevel );
@@ -2996,6 +2977,14 @@ static void HWR_Subsector(int num)
         //         what looks really bad with translucency or dynamic light,
         //         without talking about the overdraw of course.
         sub->sector->validcount = validcount;   //TODO: fix that in a better way
+
+#ifdef DEBUG_TRIG       
+        if( trigger_line < numlines
+            && lineseg->linedef == & lines[ trigger_line ] )
+        {
+            GenPrintf(EMSG_debug, "TRIGGER LINE %i: side=%i\n", trigger_line, lineseg->side );
+        }
+#endif
 
         while (segcount--)
         {
@@ -3976,7 +3965,7 @@ void HWR_DrawSkyBackground(player_t * player, byte upper_lower)
         printf( "sky_mipmap missing\n" );
         HWR_sky_mipmap();
         if( sky_mipmap.GR_data == NULL )
-	    return;
+            return;
     }
 #endif
 
@@ -4042,7 +4031,7 @@ void HWR_DrawSkyBackground(player_t * player, byte upper_lower)
         tte = vpl;
        
         if( sky_height > 128 )
-	   tte += 100.0f;  // view offset for larger skies
+           tte += 100.0f;  // view offset for larger skies
        
 #if 0
 // Reference:

@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: m_menu.c 1597 2021-10-27 22:28:06Z wesleyjohnson $
+// $Id: m_menu.c 1599 2021-11-12 09:05:20Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -218,7 +218,6 @@
 #include "p_inter.h"
 #include "m_misc.h"
   // config
-
 
 
 boolean                 menuactive;
@@ -1260,6 +1259,7 @@ void M_ConnectMenu(int choice)
 {
     if( M_already_playing(0) )  return;
 
+    // Restore user settings
     D_End_commandline();
    
     Push_Setup_Menu(&Connectdef);
@@ -1430,6 +1430,7 @@ void M_StartServerMenu(int choice)
 {
     if( M_already_playing(0) )  return;
 
+    // Restore user settings
     D_End_commandline();
    
     ServerMenu[0] = (gamemode==doom2_commercial)?
@@ -2099,6 +2100,7 @@ void M_SingleNewGame(int choice)
 
     if( M_already_playing(1) )  return;
 
+    // Restore user settings
     D_End_commandline();
    
     if ( gamemode == doom2_commercial
@@ -3801,10 +3803,7 @@ void M_Draw_drawmode(void)
     byte sel_dm = vidm_drawmode[vidm_current];  // selected drawmode
     const char * sel_drawmode_str = CV_get_possiblevalue_string( drawmode_sel_t, sel_dm );
     const char * cur_drawmode_str = CV_get_possiblevalue_string( drawmode_sel_t, cv_drawmode.EV );
-
-
     draw_set_mode_instructions( 0, cur_drawmode_str, sel_drawmode_str );
-
 
     // setup key handler for video modes
     key_handler2 = drawmode_test_key_handler;  // key handler
