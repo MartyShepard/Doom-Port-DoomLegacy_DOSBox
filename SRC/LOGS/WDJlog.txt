@@ -8730,7 +8730,6 @@ The hardware sky has only one colormap, so it does not change when
 Invulnerable.  Fixing the sky Invulnerable bug will require multiple
 mipmaps for the sky, which is not supported right now.
 
-=== commit
 
 
 *** w109_hwlight
@@ -8777,3 +8776,53 @@ A blockmap control has been put into the menu.
 2. Large    - On large blockmaps (error prone), Generate instead.
 3. Generate - Always Generate a blockmap.
 4. Auto     - Try to Load, upon significant errors then Generate.
+
+
+*** w109_hw2
+patchfile = w109_057_hw2
+- commit revision 1596
+Fix missing stmt in bsp, when not PARANOIA.
+This was fixed a different way, but that got left out
+of the committed patch.
+
+=== commit
+
+
+*** w109_loadesc
+patchfile = w109_058_loadesc
+- commit revision 1597
+Fix Load savegame menu controls to allow ESCAPE
+from the Load savegame after changing to another directory.
+Make most menu functions static.
+
+*** w109_hwbsp
+patchfile = w109_059_hwbsp
+- commit revision 1597
+This fixes a missing floor in Avactor.wad (Map04, sector 1757).
+
+The hw_bsp SplitPoly has to deal with a partition line that misses
+the poly.  It must be determined if the poly is to the right,
+in which case it is the frontpoly, or to the left, in which case
+it is the backpoly.  This must match the bsp partitioning, as
+those poly will be assigned to the front sector, and back sector.
+
+The particular case was when the divline missed the poly,
+but intersected at one vertex.
+The test for right or left needs to test a polyvertex
+that is not on the divline.
+In this corner case, it was being determined wrong, leading to
+the poly being assigned to the wrong subsector, and the floor
+being missing.
+
+The point_rightside function has been changed to return a float,
+which indicates how much right of the divline the point is.
+The result is porportional to the length of the divline,
+so the test now compensates for the length of the divline.
+The test now looks at all the poly vertex, until it finds
+a point that exceeds half the divline length in right/left.
+
+In Avactor.wad, there are an excessive number of partitionings
+that miss the poly.
+The new blockmap generator seems to be the same.
+
+

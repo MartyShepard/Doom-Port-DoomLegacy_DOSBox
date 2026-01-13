@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.c 1593 2021-10-16 07:36:40Z wesleyjohnson $
+// $Id: hw_main.c 1596 2021-10-16 11:24:28Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -3118,6 +3118,8 @@ bad_subsector:
         // Error situations, should not get here.
 #ifdef PARANOIA
         GenPrintf( EMSG_warn, "Bad BSP subsector: %i\n", subsecnum );
+#else
+        ;  // otherwise compile error
 #endif
     }
     return;
