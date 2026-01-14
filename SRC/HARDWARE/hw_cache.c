@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_cache.c 1594 2021-10-16 07:37:14Z wesleyjohnson $
+// $Id: hw_cache.c 1602 2021-11-12 09:09:41Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -645,22 +645,13 @@ static void HWR_GenerateTexture (int texnum, MipTexture_t* grtex,
         RGBA_t col = V_GetColor(HWR_CHROMAKEY_EQUIVALENTCOLORINDEX);
         // init sky with col so composite cannot leave any transparent holes,
         // must be 32bit
+        RGBA_t * bc = (RGBA_t*) block;
         for (j=0; j<blockheight; j++)
         {
-#if 1	       
             for (i=0; i<blockwidth; i++)
             {
-                ((RGBA_t*)block)[(j*blockwidth)+i] = col;   // endian tolerant
+                *bc++ = col;  // endian tolerant
             }
-#else
-            for (i=0; i<blockwidth; i++)
-            {
-                block[4*(j*blockwidth+i)+0] = col.s.red;
-                block[4*(j*blockwidth+i)+1] = col.s.green;
-                block[4*(j*blockwidth+i)+2] = col.s.blue;
-                block[4*(j*blockwidth+i)+3] = 0xff;
-            }
-#endif
         }
     }
 
@@ -933,7 +924,7 @@ void HWR_release_Patch ( MipPatch_t* grPatch, Mipmap_t *grMipmap )
 // =================================================
 
 static int  gr_numtextures = 0;
-static MipTexture_t*  gr_textures = NULL;  // for ALL Doom textures
+static MipTexture_t*  gr_textures = NULL;  // for ALL Doom textures, malloc
 
 void HWR_Init_TextureCache (void)
 {
@@ -945,7 +936,7 @@ void HWR_Init_TextureCache (void)
 // Coordinate with malloc in HWR_GetMappedPatch
 void HWR_Free_TextureCache (void)
 {
-    int i,j;
+    int i, wf;
 
     if( HWD.pfnClearMipMapCache == NULL )   return;  // cache never set
    
@@ -958,16 +949,19 @@ void HWR_Free_TextureCache (void)
     Z_FreeTags (PU_HWRCACHE, PU_HWRCACHE);
 
     // free all skin after each level: must be done after pfnClearMipMapCache!
-    for (j=0; j<numwadfiles; j++)
+    for(wf=0; wf<numwadfiles; wf++)
     {
-        for (i=0; i<wadfiles[j]->numlumps; i++)
+        for (i=0; i<wadfiles[wf]->numlumps; i++)
         {
-            MipPatch_t *grpatch = &(wadfiles[j]->hwrcache[i]);
-            while (grpatch->mipmap.nextcolormap)
+            // Free all colormap mipmaps.
+            MipPatch_t *grpatch = &(wadfiles[wf]->hwrcache[i]);
+            Mipmap_t * grmip = grpatch->mipmap.nextcolormap;
+            grpatch->mipmap.nextcolormap = NULL;	   
+            while( grmip )
             {
-                Mipmap_t *grmip = grpatch->mipmap.nextcolormap;
-                grpatch->mipmap.nextcolormap = grmip->nextcolormap;
+                Mipmap_t * grmip_nxt = grmip->nextcolormap;
                 free(grmip);
+                grmip = grmip_nxt;	        
             }
         }
     }
@@ -1441,8 +1435,8 @@ MipPatch_t * HWR_GetPic( lumpnum_t lumpnum )
         && !grpatch->mipmap.GR_data )
     {
         pic_t *pic;
-        int   len;
         byte  *block;
+        int   len;
         int   newwidth,newheight;
 
         if( grpatch->mipmap.tfflags & TF_Her_Raw_Pic )
@@ -1747,15 +1741,17 @@ void HWR_sky_mipmap( void )
         RGBA_t col = V_GetColor(HWR_CHROMAKEY_EQUIVALENTCOLORINDEX);
         // init sky with col so composite cannot leave any transparent holes,
         // must be 32bit
+        RGBA_t * bc = (RGBA_t*) block;	
         for (j=0; j<blockheight; j++)
         {
             for (i=0; i<blockwidth; i++)
-                block[(j*blockwidth)+i] = col;   // endian tolerant
+                *bc++ = col;   // endian tolerant
         }
     }
 #else   
     Make_Mip_Block( &sky_mipmap );  // sets GR_data in sky_mipmap
 #endif
+    Z_ChangeTag (block, PU_STATIC);
 
     // Redraw sky_pict in RGB format.
     HWR_draw_TM_cache( TM_picture, & sky_mipmap,
@@ -1766,7 +1762,8 @@ void HWR_sky_mipmap( void )
    
 
     HWR_ResizeBlock( SKY_FLAT_WIDTH, SKY_FLAT_HEIGHT, &skytop_mipmap );
-    Make_Mip_Block( &skytop_mipmap );  // sets GR_data in skytop_mipmap
+    byte * sblk = Make_Mip_Block( &skytop_mipmap );  // sets GR_data in skytop_mipmap
+    Z_ChangeTag (sblk, PU_STATIC);
     HWR_draw_TM_cache( TM_column_image, & skytop_mipmap,
                        blockwidth, blockheight, (blockwidth * bytepp),
                        SKY_FLAT_WIDTH, SKY_FLAT_HEIGHT,
@@ -1774,7 +1771,8 @@ void HWR_sky_mipmap( void )
                        & skytop_flat[0][0], bytepp );
 
     HWR_ResizeBlock( SKY_FLAT_WIDTH, SKY_FLAT_HEIGHT, &ground_mipmap );
-    Make_Mip_Block( &ground_mipmap );  // sets GR_data in ground_mipmap
+    sblk = Make_Mip_Block( &ground_mipmap );  // sets GR_data in ground_mipmap
+    Z_ChangeTag (sblk, PU_STATIC);
     HWR_draw_TM_cache( TM_column_image, & ground_mipmap,
                        blockwidth, blockheight, (blockwidth * bytepp),
                        SKY_FLAT_WIDTH, SKY_FLAT_HEIGHT,

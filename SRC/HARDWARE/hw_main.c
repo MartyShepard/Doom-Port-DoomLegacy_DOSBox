@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.c 1601 2021-11-12 09:07:25Z wesleyjohnson $
+// $Id: hw_main.c 1602 2021-11-12 09:09:41Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -1343,9 +1343,10 @@ float HWR_ClipViewSegment(int x, polyvertex_t * v1, polyvertex_t * v2)
 //
 // HWR_SplitWall
 //
+//   drawflag : draw flags appropriate for the texture position
 static
 void HWR_SplitWall(sector_t * sector, vxtx3d_t * vxtx, int texnum,
-                   FSurfaceInfo_t * Surfp, uint32_t fflags, uint32_t cutflag)
+                   FSurfaceInfo_t * Surfp, uint32_t fflags, uint32_t cutflag, uint32_t drawflag)
 {
     /*
        SoM: split up and light walls according to the
@@ -1442,7 +1443,7 @@ void HWR_SplitWall(sector_t * sector, vxtx3d_t * vxtx, int texnum,
            ||  ( Surfp->polyflags & (PF_Translucent|PF_Fog)) )
             HWR_AddTransparentWall(vxtx, Surfp, texnum, Surfp->polyflags);
         else
-            HWR_ProjectWall(vxtx, Surfp, PF_Masked);
+            HWR_ProjectWall(vxtx, Surfp, drawflag);
 
         top = (solid)? bheight : height;
     }
@@ -1479,7 +1480,7 @@ void HWR_SplitWall(sector_t * sector, vxtx3d_t * vxtx, int texnum,
         ||  ( Surfp->polyflags & (PF_Translucent|PF_Fog)) )
         HWR_AddTransparentWall(vxtx, Surfp, texnum, Surfp->polyflags);
     else
-        HWR_ProjectWall(vxtx, Surfp, PF_Masked);
+        HWR_ProjectWall(vxtx, Surfp, drawflag);
 }
 
 //
@@ -1701,12 +1702,24 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
 
             Surf.polyflags = PF_Environment;
             if (gr_frontsector->numlights)
+            {
+                Surf.polyflags = PF_Masked | PF_NoAlphaTest;
                 HWR_SplitWall(gr_frontsector, vxtx, toptexnum, &Surf,
-                              0, FF_CUTSOLIDS);
+                              0, FF_CUTSOLIDS, PF_Masked | PF_NoAlphaTest );
+            }
             else if (miptex->mipmap.tfflags & TF_TRANSPARENT)
-                HWR_AddTransparentWall(vxtx, &Surf, toptexnum, PF_Environment);
+            {
+                // Top texture, above opening.
+                // Transparent texture drawn single sided.	      
+                // Draw with transparent as black.
+                HWR_ProjectWall(vxtx, &Surf, PF_Masked | PF_NoAlphaTest);  // ignores alpha, alpha=0 ==> black
+//                HWR_AddTransparentWall(vxtx, &Surf, toptexnum, PF_Environment);   // previously
+            }
             else
-                HWR_ProjectWall(vxtx, &Surf, PF_Masked);
+	    {
+//                HWR_ProjectWall(vxtx, &Surf, PF_Masked);
+                HWR_ProjectWall(vxtx, &Surf, PF_Masked | PF_NoAlphaTest);
+            }
         }
 
         // check BOTTOM TEXTURE
@@ -1733,12 +1746,23 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
 
             Surf.polyflags = PF_Environment;
             if (gr_frontsector->numlights)
+            {
+                Surf.polyflags = PF_Masked | PF_NoAlphaTest;
                 HWR_SplitWall(gr_frontsector, vxtx, bottomtexnum, &Surf,
-                              0, FF_CUTSOLIDS);
+                              0, FF_CUTSOLIDS, PF_Masked | PF_NoAlphaTest );
+            }
             else if (miptex->mipmap.tfflags & TF_TRANSPARENT)
-                HWR_AddTransparentWall(vxtx, &Surf, bottomtexnum, PF_Environment);
+            {
+                // Bottom texture, below opening.
+                // Transparent texture drawn single sided.	      
+                HWR_ProjectWall(vxtx, &Surf, PF_Masked | PF_NoAlphaTest);  // ignores alpha, alpha=0 ==> black
+//                HWR_AddTransparentWall(vxtx, &Surf, bottomtexnum, PF_Environment);  // previously
+            }
             else
-                HWR_ProjectWall(vxtx, &Surf, PF_Masked);
+            {
+                HWR_ProjectWall(vxtx, &Surf, PF_Masked | PF_NoAlphaTest);
+//                HWR_ProjectWall(vxtx, &Surf, PF_Masked);
+            }
         }
 
         // texture num are either 0=no-texture, or valid
@@ -1904,14 +1928,20 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
             if (gr_frontsector->numlights)
             {
                 HWR_SplitWall(gr_frontsector, vxtx, midtexnum, &Surf,
-                              0, FF_CUTSOLIDS);
+                              0, FF_CUTSOLIDS, PF_Masked | PF_NoAlphaTest);
+            }
+            else if (miptex->mipmap.tfflags & TF_TRANSPARENT)
+            {
+                // Mid texture, single sided wall.
+                // Transparent texture drawn single sided.	      
+                // Draw with transparent as black.
+                HWR_ProjectWall(vxtx, &Surf, PF_Masked | PF_NoAlphaTest);  // ignores alpha, alpha=0 ==> black
+//                HWR_AddTransparentWall(vxtx, &Surf, midtexnum, PF_Environment);  // previously
             }
             else
             {
-                if (miptex->mipmap.tfflags & TF_TRANSPARENT)
-                    HWR_AddTransparentWall(vxtx, &Surf, midtexnum, PF_Environment);
-                else
-                    HWR_ProjectWall(vxtx, &Surf, PF_Masked);
+                HWR_ProjectWall(vxtx, &Surf, PF_Masked | PF_NoAlphaTest);
+//                HWR_ProjectWall(vxtx, &Surf, PF_Masked );
             }
         }
         else
@@ -2024,17 +2054,16 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
                     Surf.polyflags = blendmode;
                     HWR_SplitWall(gr_frontsector, vxtx, midtexnum, &Surf,
                                   bff->flags,
-                                  bff->flags & FF_EXTRA ? FF_CUTEXTRA : FF_CUTSOLIDS);
+                                  bff->flags & FF_EXTRA ? FF_CUTEXTRA : FF_CUTSOLIDS, PF_Masked );
+                }
+                else if (blendmode != PF_Masked)
+                {
+//                  if( midtexnum == 0 ) continue;  // no texture to display (when 3Dslab is missing side texture)
+                    HWR_AddTransparentWall(vxtx, &Surf, midtexnum, blendmode);
                 }
                 else
                 {
-                    if (blendmode != PF_Masked)
-                    {
-//			    if( midtexnum == 0 ) continue;  // no texture to display (when 3Dslab is missing side texture)
-                        HWR_AddTransparentWall(vxtx, &Surf, midtexnum, blendmode);
-                    }
-                    else
-                        HWR_ProjectWall(vxtx, &Surf, PF_Masked);
+                    HWR_ProjectWall(vxtx, &Surf, PF_Masked);
                 }
             }
         }
@@ -2103,17 +2132,16 @@ static void HWR_StoreWallRange(float startfrac, float endfrac)
                     Surf.polyflags = blendmode;
                     HWR_SplitWall(gr_backsector, vxtx, midtexnum, &Surf,
                                   fff->flags,
-                                  fff->flags & FF_EXTRA ? FF_CUTEXTRA : FF_CUTSOLIDS);
+                                  fff->flags & FF_EXTRA ? FF_CUTEXTRA : FF_CUTSOLIDS, PF_Masked );
+                }
+                else if (blendmode != PF_Masked)
+                {
+//                  if( midtexnum == 0 ) continue;  // no texture to display (when 3Dslab is missing side texture)
+                    HWR_AddTransparentWall(vxtx, &Surf, midtexnum, blendmode);
                 }
                 else
                 {
-                    if (blendmode != PF_Masked)
-                    {
-//			    if( midtexnum == 0 ) continue;  // no texture to display (when 3Dslab is missing side texture)
-                        HWR_AddTransparentWall(vxtx, &Surf, midtexnum, blendmode);
-                    }
-                    else
-                        HWR_ProjectWall(vxtx, &Surf, PF_Masked);
+                    HWR_ProjectWall(vxtx, &Surf, PF_Masked);
                 }
             }
         }
@@ -2764,7 +2792,7 @@ static void HWR_Subsector(int num)
 
 #ifdef DEBUG_TRIG   
     if( ( num == trigger_draw_subsector )
-	|| ( trigger_sector < numsectors
+        || ( trigger_sector < numsectors
               && sub->sector == & sectors[trigger_sector] ) )
     {
         GenPrintf(EMSG_debug, "TRIGGER SECTOR %i SUBSECTOR %i: first line= %i\n", sub->sector - sectors, trigger_draw_subsector, sub->firstline );

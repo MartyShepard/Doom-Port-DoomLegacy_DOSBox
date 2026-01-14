@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_bsp.c 1599 2021-11-12 09:05:20Z wesleyjohnson $
+// $Id: hw_bsp.c 1602 2021-11-12 09:09:41Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -2662,7 +2662,7 @@ sector_t *  find_poly_sector( wpoly_t * ssp )
         {
             // Distance to line, measured along y-axis.
             // This calc has a tendency to overflow, so use int64_t.
-	    int64_t  dx3 = ((int64_t)dy1) * lp->dx / lp->dy;
+            int64_t  dx3 = ((int64_t)dy1) * lp->dx / lp->dy;
 #ifdef DEBUG_FPS
             GenPrintf( EMSG_debug, "FPS Y: line= %i  (%6.2f,%6.2f) to (%6.2f,%6.2f) dx,dy=(%6.2f,%6.2f) \n",
                 k, FIXED_TO_FLOAT(lp->v1->x), FIXED_TO_FLOAT(lp->v1->y), FIXED_TO_FLOAT(lp->v2->x), FIXED_TO_FLOAT(lp->v2->y),

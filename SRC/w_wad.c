@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: w_wad.c 1588 2021-10-11 02:44:26Z wesleyjohnson $
+// $Id: w_wad.c 1602 2021-11-12 09:09:41Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -531,9 +531,9 @@ int W_Load_WadFile ( const char * filename )
 #ifdef ZIPWAD
     wadfile->classify = fc;
     wadfile->lumpcache = NULL;
-#ifdef HWRENDER  
+# ifdef HWRENDER
     wadfile->hwrcache = NULL;
-#endif
+# endif
     // Immediately after the archive wadfile_t are the wadfile_t for files within the archive.
     wadfile->archive_num_wadfile = 0;  // number of wadfile in this archive
     wadfile->archive_parent = 0xFF;  // contained in archive wadfile index,  0xFF= normal file
