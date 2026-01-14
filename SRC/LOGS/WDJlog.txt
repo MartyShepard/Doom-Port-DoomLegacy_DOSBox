@@ -8914,8 +8914,6 @@ of the thing numbers in this range.  If one of these words is found,
 the thing number is changed to our MT code.
 This fixes the rocket-launcher in Valiant.wad.
 
-=== commit
-
 *** w109_dehack_dog2
 patchfile = w109_065_dehack_dog2
 - commit revision 1604
@@ -8929,4 +8927,22 @@ Some masked textures are used on 1s walls, in lost_civilization.
 These were fixed in 1602, but if a blackened textures is encountered first
 the software draw will get stuck with it when it should use the masked texture.
 This fixes the Generate texture post detect to indicate 1s or 2s draw ability directly.
+
+=== commit
+
+*** w109_dehack_dog3
+patchfile = w109_067_dehack_dog3
+- commit revision 1606
+The previous dehack_dog patches only worked because they moved the
+dehack thing numbers.  The code to adjust thing numbers was non-functional.
+This patch creates a more comprehensive dehacked thing number
+adjustment.
+
+Created a command line parameter to force the adjustment of DEH thing
+numbers.  It currently has four possible values.
+-dehthing legacy
+-dehthing boom
+-dehthing prboom
+-dehthing ee
+
 

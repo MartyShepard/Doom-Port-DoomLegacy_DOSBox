@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_user.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
+// $Id: p_user.c 1606 2021-12-09 23:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -625,7 +625,7 @@ void P_ChickenPlayerThink(player_t *player)
 
     if(player->health > 0)
     { // Handle beak movement
-        P_UpdateBeak(player, &player->psprites[ps_weapon]);
+        P_UpdateBeak(player, &player->psprites[PS_weapon]);
     }
     if(player->chickenTics&15)
     {
@@ -1331,12 +1331,12 @@ void P_PlayerThink (player_t* player)
             player->weaponinfo = wpnlev1info;
             // end of weaponlevel2 power
             if((player->readyweapon == wp_phoenixrod)
-                && (player->psprites[ps_weapon].state
+                && (player->psprites[PS_weapon].state
                 != &states[S_PHOENIXREADY])
-                && (player->psprites[ps_weapon].state
+                && (player->psprites[PS_weapon].state
                 != &states[S_PHOENIXUP]))
             {
-                P_SetPsprite(player, ps_weapon, S_PHOENIXREADY);
+                P_SetPsprite(player, PS_weapon, S_PHOENIXREADY);
                 player->ammo[am_phoenixrod] -= USE_PHRD_AMMO_2;
                 player->refire = 0;
             }
@@ -1569,11 +1569,11 @@ boolean P_UseArtifact(player_t *player, artitype_t arti)
                 goto ret_fail;
             if(player->readyweapon == wp_staff)
             {
-                P_SetPsprite(player, ps_weapon, S_STAFFREADY2_1);
+                P_SetPsprite(player, PS_weapon, S_STAFFREADY2_1);
             }
             else if(player->readyweapon == wp_gauntlets)
             {
-                P_SetPsprite(player, ps_weapon, S_GAUNTLETREADY2_1);
+                P_SetPsprite(player, PS_weapon, S_GAUNTLETREADY2_1);
             }
         }
         break;

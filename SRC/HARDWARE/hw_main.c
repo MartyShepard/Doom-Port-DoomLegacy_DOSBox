@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.c 1602 2021-11-12 09:09:41Z wesleyjohnson $
+// $Id: hw_main.c 1606 2021-12-09 23:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -3570,7 +3570,7 @@ static void HWR_ProjectSprite(mobj_t * thing)
     if ((unsigned) thing->sprite >= numsprites)
     {
 #ifdef RANGECHECK
-        I_SoftError("HWR_ProjectSprite: invalid sprite number %i ", thing->sprite);
+        I_SoftError("HWR_ProjectSprite: invalid sprite number %i \n", thing->sprite);
 #endif
         return;
     }
@@ -3585,7 +3585,7 @@ static void HWR_ProjectSprite(mobj_t * thing)
     if(fr >= sprdef->numframes)
     {
 #ifdef RANGECHECK
-        I_SoftError("HWR_ProjectSprite: invalid sprite frame %i : %i for %s",
+        I_SoftError("HWR_ProjectSprite: invalid sprite frame %i : %i for %s\n",
                     thing->sprite, fr, sprnames[thing->sprite]);
 #endif
         return;
@@ -3803,7 +3803,7 @@ void HWR_DrawPSprite(pspdef_t * psp,  byte lightlum)
 #ifdef RANGECHECK
     if ((unsigned) psp->state->sprite >= numsprites)
     {
-        I_SoftError("HWR_ProjectSprite: invalid sprite number %i ", psp->state->sprite);
+        I_SoftError("HWR_ProjectSprite: invalid sprite number %i\n", psp->state->sprite);
         return;       
     }
 #endif
@@ -3812,7 +3812,7 @@ void HWR_DrawPSprite(pspdef_t * psp,  byte lightlum)
 #ifdef RANGECHECK
     if ((psp->state->frame & FF_FRAMEMASK) >= sprdef->numframes)
     {
-        I_SoftError("HWR_ProjectSprite: invalid sprite frame %i : %i ", psp->state->sprite, psp->state->frame);
+        I_SoftError("HWR_ProjectSprite: invalid sprite frame %i : %i\n", psp->state->sprite, psp->state->frame);
         return;
     }
 #endif

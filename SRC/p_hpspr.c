@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_hpspr.c 1510 2020-04-04 08:50:24Z wesleyjohnson $
+// $Id: p_hpspr.c 1606 2021-12-09 23:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by Raven Software, Corp.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -338,8 +338,8 @@ void P_ActivateBeak(player_t *player)
 {
     player->pendingweapon = wp_nochange;
     player->readyweapon = wp_beak;
-    player->psprites[ps_weapon].sy = WEAPONTOP;
-    P_SetPsprite(player, ps_weapon, S_BEAKREADY);
+    player->psprites[PS_weapon].sy = WEAPONTOP;
+    P_SetPsprite(player, PS_weapon, S_BEAKREADY);
 }
 
 //---------------------------------------------------------------------------
@@ -356,8 +356,8 @@ void P_PostChickenWeapon(player_t *player, weapontype_t weapon)
     }
     player->pendingweapon = wp_nochange;
     player->readyweapon = weapon;
-    player->psprites[ps_weapon].sy = WEAPONBOTTOM;
-    P_SetPsprite(player, ps_weapon, wpnlev1info[weapon].upstate);
+    player->psprites[PS_weapon].sy = WEAPONBOTTOM;
+    P_SetPsprite(player, PS_weapon, wpnlev1info[weapon].upstate);
 }
 
 //---------------------------------------------------------------------------
@@ -386,11 +386,11 @@ void A_BeakReady(player_t *player, pspdef_t *psp)
         P_SetMobjState(pmo, S_CHICPLAY_ATK1);
         if(player->powers[pw_weaponlevel2])
         {
-            P_SetPsprite(player, ps_weapon, S_BEAKATK2_1);
+            P_SetPsprite(player, PS_weapon, S_BEAKATK2_1);
         }
         else
         {
-            P_SetPsprite(player, ps_weapon, S_BEAKATK1_1);
+            P_SetPsprite(player, PS_weapon, S_BEAKATK1_1);
         }
         P_NoiseAlert(pmo, pmo);
     }
@@ -413,7 +413,7 @@ void A_BeakReady(player_t *player, pspdef_t *psp)
 void A_BeakRaise(player_t *player, pspdef_t *psp)
 {
     psp->sy = WEAPONTOP;
-    P_SetPsprite(player, ps_weapon,
+    P_SetPsprite(player, PS_weapon,
                  wpnlev1info[player->readyweapon].readystate);
 }
 
@@ -1333,7 +1333,7 @@ void A_FirePhoenixPL2(player_t *player, pspdef_t *psp)
 
     if(--player->flamecount == 0)
     { // Out of flame
-        P_SetPsprite(player, ps_weapon, S_PHOENIXATK2_4);
+        P_SetPsprite(player, PS_weapon, S_PHOENIXATK2_4);
         player->refire = 0;
         return;
     }

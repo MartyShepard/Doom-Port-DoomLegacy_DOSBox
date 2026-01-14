@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.c 1513 2020-04-18 10:49:18Z wesleyjohnson $
+// $Id: p_pspr.c 1606 2021-12-09 23:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -74,14 +74,15 @@
 //
 // P_SetPsprite
 //
+//  ps_position : PS_weapon or PS_flash
 void P_SetPsprite ( player_t*     player,
-                    int           position,
+                    int           ps_position,
                     statenum_t    stnum )
 {
     pspdef_t*   psp;
     state_t*    state;
 
-    psp = &player->psprites[position];
+    psp = &player->psprites[ps_position];
 
     do
     {
@@ -93,19 +94,24 @@ void P_SetPsprite ( player_t*     player,
         }
 #ifdef PARANOIA
         if(stnum>=NUMSTATES)
-            I_Error("P_SetPsprite : state %d unknown\n",stnum);
+        {
+            I_SoftError("P_SetPsprite : state %d unknown\n",stnum);
+            return;
+	}
 #endif
         state = &states[stnum];
         psp->state = state;
         psp->tics = state->tics;        // could be 0
-/* UNUSED
-        if (state->misc1)
+
+        // MBF
+        state_ext_t * sep =  P_state_ext( state );
+        if( sep->parm1)
         {
             // coordinate set
-            psp->sx = state->misc1 << FRACBITS;
-            psp->sy = state->misc2 << FRACBITS;
+            psp->sx = sep->parm1 << FRACBITS;
+            psp->sy = sep->parm2 << FRACBITS;
         }
-*/
+
         // Call action routine.
         // Modified handling.
         if (state->action.acp2)
@@ -178,9 +184,9 @@ void P_BringUpWeapon (player_t* player)
     newstate = player->weaponinfo[player->pendingweapon].upstate;
 
     player->pendingweapon = wp_nochange;
-    player->psprites[ps_weapon].sy = WEAPONBOTTOM;
+    player->psprites[PS_weapon].sy = WEAPONBOTTOM;
 
-    P_SetPsprite (player, ps_weapon, newstate);
+    P_SetPsprite (player, PS_weapon, newstate);
 }
 
 //
@@ -308,7 +314,7 @@ boolean P_CheckAmmo (player_t* player)
 
     // Now set appropriate weapon overlay.
     P_SetPsprite (player,
-                  ps_weapon,
+                  PS_weapon,
                   player->weaponinfo[player->readyweapon].downstate);
 
     return false;
@@ -340,7 +346,7 @@ void P_FireWeapon (player_t* player)
         P_SetMobjState (pmo, S_PLAY_ATK1);
         newstate = player->weaponinfo[player->readyweapon].atkstate;
     }
-    P_SetPsprite (player, ps_weapon, newstate);
+    P_SetPsprite (player, PS_weapon, newstate);
     P_NoiseAlert (pmo, pmo);
 }
 
@@ -353,7 +359,7 @@ void P_FireWeapon (player_t* player)
 void P_DropWeapon (player_t* player)
 {
     P_SetPsprite (player,
-                  ps_weapon,
+                  PS_weapon,
                   player->weaponinfo[player->readyweapon].downstate);
 }
 
@@ -403,7 +409,7 @@ void A_WeaponReady ( player_t*     player,
     {
         // change weapon
         //  (pending weapon should allready be validated)
-        P_SetPsprite (player, ps_weapon, player->weaponinfo[player->readyweapon].downstate);
+        P_SetPsprite (player, PS_weapon, player->weaponinfo[player->readyweapon].downstate);
         return;
     }
 
@@ -492,7 +498,7 @@ A_CheckReload
     P_CheckAmmo (player);
 #if 0
     if (player->ammo[am_shell]<2)
-        P_SetPsprite (player, ps_weapon, S_DSNR1);
+        P_SetPsprite (player, PS_weapon, S_DSNR1);
 #endif
 }
 
@@ -529,7 +535,7 @@ void A_Lower ( player_t*     player,
     if (!player->health)
     {
         // Player is dead, so keep the weapon off screen.
-        P_SetPsprite (player,  ps_weapon, S_NULL);
+        P_SetPsprite (player,  PS_weapon, S_NULL);
         return;
     }
 
@@ -554,7 +560,7 @@ void A_Raise( player_t*     player,
 
     // The weapon has been raised all the way,
     //  so change to the ready state.
-    P_SetPsprite (player, ps_weapon, 
+    P_SetPsprite (player, PS_weapon, 
                   player->weaponinfo[player->readyweapon].readystate);
 }
 
@@ -583,9 +589,10 @@ static const int recoil_values[] =
   80  // wp_supershotgun
 };
 
+//  flash_state_offset : 0..4 or less
 static void A_fire_flash_recoil(player_t* player, int flash_state_offset)
 {
-    P_SetPsprite(player, ps_flash,
+    P_SetPsprite(player, PS_flash,
         player->weaponinfo[player->readyweapon].flashstate + flash_state_offset );
 
     // killough 3/27/98: prevent recoil in no-clipping mode
@@ -1033,8 +1040,8 @@ void P_MovePsprites (player_t* player)
         }
     }
 
-    player->psprites[ps_flash].sx = player->psprites[ps_weapon].sx;
-    player->psprites[ps_flash].sy = player->psprites[ps_weapon].sy;
+    player->psprites[PS_flash].sx = player->psprites[PS_weapon].sx;
+    player->psprites[PS_flash].sy = player->psprites[PS_weapon].sy;
 }
 
 

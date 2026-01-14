@@ -1149,3 +1149,27 @@ void dl_strncpy( char * dest, const char * src, int destsize )
     }
     * dest = 0;
 }
+
+#if defined (__DJGPP__)
+	#include <string.h>
+	#include <ctype.h>
+// No strcasestr under DJGPP
+// Case-insensitive strstr (GNU-kompatibel)
+char *strcasestr(const char *haystack, const char *needle)
+{
+    if (!haystack || !needle || !*needle)
+        return (char *)haystack;
+
+    size_t needle_len = strlen(needle);
+
+    while (*haystack)
+    {
+        if (strncasecmp(haystack, needle, needle_len) == 0)
+            return (char *)haystack;
+
+        haystack++;
+    }
+
+    return NULL;
+}
+#endif

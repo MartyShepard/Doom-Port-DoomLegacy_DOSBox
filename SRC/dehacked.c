@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1604 2021-11-22 15:40:32Z wesleyjohnson $
+// $Id: dehacked.c 1606 2021-12-09 23:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -92,6 +92,10 @@
 #include "p_fab.h"
   // translucent change
 
+#if defined (__DJGPP__)
+// No strcasestr under DJGPP.
+  #include "m_misc.h"
+#endif
 boolean deh_loaded = false;
 byte  flags_valid_deh = false;  // flags altered flags (from DEH), boolean
 byte  pars_valid_bex = false;  // have valid PAR values (from BEX), boolean
@@ -653,7 +657,11 @@ enum {
   STS_DOGS_RAISE6 = 998,
   STS_MUSHROOM = 1075,
 // Doom Beta
-  STS_OLDBFG1 = 999,
+  STS_OLDBFG1 = 999,  // 1..43
+  STS_PLS1BALL = 1042,
+  STS_PLS2BALL = 1049,
+  STS_BON3 = 1054,
+  STS_BSKUL_STND = 1056,
   STS_BSKUL_DIE8 = 1074,
 // HERETIC
   STH_FREETARGMOBJ = 1,
@@ -677,57 +685,82 @@ enum {
   STH_SND_WATERFALL = 1204,
 };
 
+typedef struct {
+    uint16_t  frame1, frame2;  // source range
+    uint16_t  dest_frame;      // Legacy frame
+} remap_frame_t;
+
+remap_frame_t  heretic_frame_remap[] =
+{
+   { 0, STH_CRBOWFX4_2,  S_FREETARGMOBJ },
+   { STH_BLOOD1, STH_BLOOD3,  S_BLOOD1 },  // STH_BLOOD Mapped to the doom blood
+   { STH_BLOODSPLATTER1, STH_BLOODSPLATTERX,  S_BLOODSPLATTER1 },
+   { STH_PLAY, STH_PLAY_XDIE9,  S_PLAY },  // STH_PLAY Mapped to the doom player, except for STH_PLAY_FDTH.
+//   { STH_PLAY_FDTH1, STH_PLAY_FDTH20, S_PLAY_FDTH1 },       // TODO
+   { STH_BLOODYSKULL1, STH_SND_WATERFALL,  S_BLOODYSKULL1 },
+};
+
+remap_frame_t  prboom_frame_remap[] =
+{
+   { 0, STS_TECH2LAMP4,  0 },
+   { STS_TNT1, STS_TNT1,  S_TNT1 },
+   { STS_GRENADE, STS_DOGS_RAISE6,  S_GRENADE },
+   { STS_MUSHROOM, STS_MUSHROOM,  S_MUSHROOM },
+   { STS_OLDBFG1, STS_BSKUL_DIE8,  S_FREETARGMOBJ },  // prboom deh compatibility blanks
+};
+
+static byte deh_prboom_states = 0;  // blanking of prboom deh compatibility states
+
 
 // Translate deh frame number to internal state index.
 // return S_NULL when invalid state (deh frame)
 statenum_t  deh_frame_to_state( int deh_frame )
 {
+  remap_frame_t  * remap;
+  int  num_remap, i;
+   
   // Some old wads had negative frame numbers, which should be S_NULL.
   if( deh_frame <= 0 )  goto null_frame;
  
   // remapping
   if( EN_heretic )
   {
-     if( deh_frame <= STH_CRBOWFX4_2 )
-       return deh_frame + (S_FREETARGMOBJ - STH_FREETARGMOBJ);
-     // STH_BLOOD Mapped to the doom blood
-     if( deh_frame >= STH_BLOOD1
-         && deh_frame <= STH_BLOOD3 )
-       return deh_frame + (S_BLOOD1 - STH_BLOOD1);
-     if( deh_frame >= STH_BLOODSPLATTER1
-         && deh_frame <= STH_BLOODSPLATTERX )
-       return deh_frame + (S_BLOODSPLATTER1 - STH_BLOODSPLATTER1);
-     // STH_PLAY Mapped to the doom player, except for STH_PLAY_FDTH.
-     if( deh_frame >= STH_PLAY
-         && deh_frame <= STH_PLAY_XDIE9 )
-       return deh_frame + (S_PLAY - STH_PLAY);
-#if 0
-     // TODO
-     if( deh_frame >= STH_PLAY_FDTH1
-         && deh_frame <= STH_PLAY_FDTH20 )
-       return deh_frame + (S_PLAY_FDTH1 - STH_PLAY_FDTH1);
-#endif
-     if( deh_frame >= STH_BLOODYSKULL1
-         && deh_frame <= STH_SND_WATERFALL )
-       return deh_frame + (S_BLOODYSKULL1 - STH_BLOODYSKULL1);
+      remap = heretic_frame_remap;
+      num_remap = sizeof(heretic_frame_remap)/sizeof(remap_frame_t);
   }
   else
   {
-     if( deh_frame <= STS_TECH2LAMP4 )
-       return deh_frame;
-     if( deh_frame == STS_TNT1 )
-       return S_TNT1;
-     if( deh_frame >= STS_GRENADE
-         && deh_frame <= STS_DOGS_RAISE6 )
-       return deh_frame + (S_GRENADE - STS_GRENADE);
-     if( deh_frame == STS_MUSHROOM )
-       return S_MUSHROOM;
+      remap = prboom_frame_remap;
+      num_remap = sizeof(prboom_frame_remap)/sizeof(remap_frame_t);
+
+      if( deh_prboom_states == 0
+//          && prboom_detect
+          && (deh_frame >= STS_OLDBFG1) && (deh_frame <= STS_BSKUL_DIE8) )
+      {
+          deh_prboom_states = 1;
+          // There are 76 blank states in prboom for deh compatibility.
+          // Some dehacked loads may depend upon them being blanked.
+          for( i = 0; i <= STS_BSKUL_DIE8 - STS_OLDBFG1; i++ )
+	  {
+	       memcpy( &states[S_FREETARGMOBJ + i], &states[S_BLANK], sizeof(state_t) );
+	  }
+     }
+  }
+  
+  while( num_remap-- > 0 )
+  {
+      if( (deh_frame >= remap->frame1) && (deh_frame <= remap->frame2) )
+      {
+	  return  deh_frame - remap->frame1 + remap->dest_frame;
+      }
+      remap++;
   }
 
   // Necessary for DEH that add new states, like chex newmaps.wad.
   if( deh_frame >= 0 && deh_frame < NUMSTATES )
        return  deh_frame;  // emulate old behavior, without translation
 
+     
 null_frame:
   return S_NULL;
 }
@@ -760,39 +793,107 @@ static int searchvalue(char *s)
 // Not all ports agree on what these type codes are.
 typedef struct {
     const char *  desc;
-    uint16_t  mt_type;
+    uint16_t  prboom_type;
+    uint16_t  ee_type; // eternity
+    uint16_t  mt_type; // legacy
 } deh_thing_desc_t;
 
+// Thing ids in dehacked files are 1.., MT_xx codes are 0..
+// These are all MT_xxx codes.
 deh_thing_desc_t  deh_thing_desc_table[] =
 {
-  { "push", MT_PUSH },  // Boom
-  { "pull", MT_PULL },  // Boom
-  { "dog", MT_DOG },    // MBF
-  { "camera", MT_CAMERA },  // SMMU
-  { "plasma1", MT_PLASMA1 },  //
-  { "plasma2", MT_PLASMA2 },  //
-  { "splash", MT_SPLASH },  // Legacy
-  { "smoke", MT_SMOK },     // Legacy
-  { "spirit", MT_SPIRIT },  // Legacy, LAST
+  { "push",  137, 138, MT_PUSH },  // Boom
+  { "pull",  138, 139, MT_PULL },  // Boom
+  { "dog",   139, 140, MT_DOGS },  // MBF
+  { "plasma1", 0, 141, MT_PLASMA1 },  // beta, from prboom
+  { "plasma2", 0, 142, MT_PLASMA2 },  // beta, from prboom
+  { "soul",    0, 142, MT_PLASMA2 },  // antaxyz
+//  { "soul",    0, 142, MT_IMP },  // eviternity, antaxyz
+  { "plasma3", 0, 144, MT_FIREBOMB }, // burst bfg, use Heretic missile
+  { "camera",  0, 143, MT_CAMERA },  // SMMU
+  { "lunch",   0, 143, MT_CAMERA },  // antaxyz
+//  { "lunch",   0, 143, MT_HSPLASH },  // antaxyz
+     // use Heretic splash to stop it using MT_DOGS.
+  { "splash",  0,   0, MT_SPLASH },  // Legacy
+  { "smoke",   0,   0, MT_SMOK },    // Legacy
+  { "spirit",  0,   0, MT_SPIRIT },  // Legacy
 };
 
-// Return an mt_xxx, or 0.
-uint16_t  lookup_thing_desc( const char * str )
-{
-   deh_thing_desc_t * dtd = & deh_thing_desc_table[0];
-   for(;;)
-   {
-       if( strstr( str, dtd->desc ) )
-	   return dtd->mt_type;
-       if( dtd->mt_type == MT_SPIRIT )  // last
-           return 0;
+typedef enum { TTC_unk, TTC_legacy, TTC_boom, TTC_prboom, TTC_ee }  thing_type_code_e;
+static thing_type_code_e  deh_thing_code = TTC_unk;
 
-       dtd++;
-   }
+// Indexed by thing_type_code_e, skipping TTC_unk.
+const char *  ttc_name_table[] = {
+   "legacy",  // TTC_legacy
+   "boom",    // TTC_boom
+   "prboom",  // TTC_prboom
+   "ee",      // TTC_ee
+};
+
+// From command line
+static
+void  DEH_set_deh_thing_code( const char *  str )
+{
+    thing_type_code_e  ttt;
+
+    for( ttt = TTC_legacy; ttt <= TTC_ee; ttt++ )
+    {
+        if( strcasecmp( ttc_name_table[ttt-1], str ) == 0 )
+        {
+            deh_thing_code = ttt;   // DEH global setting
+            break;
+        }
+    }
+}
+
+
+// Return an mt_xxx, or 0.
+//  ttcoding : thing type coding in dehacked
+//  ttin : thing type as read in dehacked
+uint16_t  lookup_thing_type( const char * str, uint16_t ttin )
+{
+    deh_thing_desc_t * dtd;
+
+    thing_type_code_e  ttc = deh_thing_code;  // DEH command line setting
+    if( ttc == TTC_unk )
+    {
+        if( legacy_detect )  ttc = TTC_legacy;
+//      else if( mbf_detect )  ttc = TTC_ee;
+        else if( boom_detect )  ttc = TTC_boom;
+    }
+
+    // Thing code translations
+    if( (ttc == TTC_prboom)
+        || ((ttc == TTC_boom) && (ttin <= 139)) )
+    {
+        for( dtd = & deh_thing_desc_table[0]; (byte*)dtd < ((byte*)deh_thing_desc_table + sizeof(deh_thing_desc_table)); dtd++ )
+        {
+            if( dtd->prboom_type == ttin )	    
+                 return dtd->mt_type;
+        }
+    }
+
+    if( ttc == TTC_ee )
+    {
+        for( dtd = & deh_thing_desc_table[0]; (byte*)dtd < ((byte*)deh_thing_desc_table + sizeof(deh_thing_desc_table)); dtd++ )
+        {
+            if( dtd->ee_type == ttin )	    
+                 return dtd->mt_type;
+        }
+    }
+
+    // Look at the comments for characteristic words.
+    for( dtd = & deh_thing_desc_table[0]; (byte*)dtd < ((byte*)deh_thing_desc_table + sizeof(deh_thing_desc_table)); dtd++ )
+    {
+        if( strcasestr( str, dtd->desc ) )
+	    return dtd->mt_type;  // if no direct code is found
+    }
+
+    return ttin;  // default, keep same
 }
 
 // Have read  "Thing <deh_thing_id>"
-static void readthing(myfile_t *f, int deh_thing_id )
+static void read_thing(myfile_t *f, int deh_thing_id )
 {
   // DEH thing 1.. , but mobjinfo array is 0..
   mobjinfo_t *  mip = & mobjinfo[ deh_thing_id - 1 ];
@@ -965,7 +1066,7 @@ Next frame = 200
 Unknown 1 = 5
 Unknown 2 = 17
 */
-static void readframe(myfile_t* f, int deh_frame_id)
+static void read_frame(myfile_t* f, int deh_frame_id)
 {
   state_t * fsp;
   char s[MAXLINELEN];
@@ -1018,7 +1119,7 @@ static void readframe(myfile_t* f, int deh_frame_id)
 // Have read  "Pointer <xref>"
 // The xref is a dehacked cross ref number.
 static
-void  readpointer( myfile_t* f, int xref )
+void  read_pointer( myfile_t* f, int xref )
 {
   char s[MAXLINELEN];
   char *word2;
@@ -1053,7 +1154,7 @@ void  readpointer( myfile_t* f, int xref )
 }
 
 
-static void readsound(myfile_t* f, int deh_sound_id)
+static void read_sound(myfile_t* f, int deh_sound_id)
 {
   sfxinfo_t *  ssp = & S_sfx[ deh_sound_id ];
   char s[MAXLINELEN];
@@ -1187,7 +1288,7 @@ static hash_text_t   hash_text_table[] =
     {0, 0xFFFF}  // last has invalid indirect
 };
 
-static void readtext(myfile_t* f, int len1, int len2 )
+static void read_text(myfile_t* f, int len1, int len2 )
 {
   char s[2001];
   char * str2;
@@ -2277,7 +2378,7 @@ Bobbing frame = 13
 Shooting frame = 17
 Firing frame = 10
 */
-static void readweapon(myfile_t *f, int deh_weapon_id)
+static void read_weapon(myfile_t *f, int deh_weapon_id)
 {
   weaponinfo_t * wip = & doomweaponinfo[ deh_weapon_id ];
   char s[MAXLINELEN];
@@ -2295,8 +2396,11 @@ static void readweapon(myfile_t *f, int deh_weapon_id)
       else if(!strcasecmp(word,"Deselect"))   set_state( &wip->upstate, value );
       else if(!strcasecmp(word,"Select"))     set_state( &wip->downstate, value );
       else if(!strcasecmp(word,"Bobbing"))    set_state( &wip->readystate, value );
-      else if(!strcasecmp(word,"Shooting")) { set_state( &wip->atkstate, value );
-                                              wip->holdatkstate = wip->atkstate; }
+      else if(!strcasecmp(word,"Shooting")) {
+	 set_state( &wip->atkstate, value );
+         wip->holdatkstate = wip->atkstate;
+//         set_state( &wip->holdatkstate, wip->atkstate );
+      }
       else if(!strcasecmp(word,"Firing"))     set_state( &wip->flashstate, value );
       else deh_error("Weapon %d : unknown word '%s'\n", deh_weapon_id,word);
     }
@@ -2318,7 +2422,7 @@ where:
 extern int clipammo[];
 extern int GetWeaponAmmo[];
 
-static void readammo(myfile_t *f,int num)
+static void read_ammo(myfile_t *f,int num)
 {
   char s[MAXLINELEN];
   char *word;
@@ -2360,7 +2464,7 @@ extern int soul_health;
 extern int mega_health;
 
 
-static void readmisc(myfile_t *f)
+static void read_misc(myfile_t *f)
 {
   char s[MAXLINELEN];
   char *word,*word2;
@@ -2440,7 +2544,7 @@ static void readmisc(myfile_t *f)
               break;
           }
       }
-      else deh_error("Misc : unknown word '%s'\n",word);
+      else deh_error("Misc : unknown  '%s'\n", word);
     }
   } while(s[0]!='\n' && !myfeof(f));
 }
@@ -2495,7 +2599,7 @@ static void change_cheat_code(byte *cheatseq, byte *newcheat)
 }
 
 // Read cheat section
-static void readcheat(myfile_t *f)
+static void read_cheat(myfile_t *f)
 {
   char s[MAXLINELEN];
   char *word,*word2;
@@ -2624,28 +2728,28 @@ void DEH_LoadDehackedFile(myfile_t* f, byte bex_permission)
 	  if( i >= 138 && i <= 150 )  // problem area
 	  {
             // Test for keywords in description
-            uint16_t i2 = lookup_thing_desc( s );
-            if( i2 )
-                i = i2 + 1; // substitute to deh_thing_id
+	    char * nc = word2 + strlen(word2) + 1;
+	    // substitute to deh_thing_id
+	    i = lookup_thing_type( nc, i - 1 ) + 1;
           }
 
-	  readthing(f,i);
+	  read_thing(f,i);
         }
         else if(!strcasecmp(word,"Frame"))
              {
                // "Frame <num>"
-               readframe(f,i);
+               read_frame(f,i);
              }
         else if(!strcasecmp(word,"Pointer"))
              {
                // "Pointer <xref>"
-               readpointer(f,i);
+               read_pointer(f,i);
              }
         else if(!strcasecmp(word,"Sound"))
              {
                // "Sound <num>"
                if(i<NUMSFX && i>=0)
-                   readsound(f,i);
+                   read_sound(f,i);
                else
                    deh_error("Sound %d don't exist\n", i);
              }
@@ -2676,7 +2780,7 @@ void DEH_LoadDehackedFile(myfile_t* f, byte bex_permission)
                if((word=strtok(NULL," "))!=NULL)
                {
                  j=atoi(word);
-                 readtext(f,i,j);
+                 read_text(f,i,j);
                }
                else
                    deh_error("Text : missing second number\n");
@@ -2686,7 +2790,7 @@ void DEH_LoadDehackedFile(myfile_t* f, byte bex_permission)
              {
                // "Weapon <num>"
                if(i<NUMWEAPONS && i>=0)
-                   readweapon(f,i);
+                   read_weapon(f,i);
                else
                    deh_error("Weapon %d don't exist\n",i);
              }
@@ -2694,16 +2798,16 @@ void DEH_LoadDehackedFile(myfile_t* f, byte bex_permission)
              {
                // "Ammo <num>"
                if(i<NUMAMMO && i>=0)
-                   readammo(f,i);
+                   read_ammo(f,i);
                else
                    deh_error("Ammo %d don't exist\n",i);
              }
         else if(!strcasecmp(word,"Misc"))
                // "Misc <num>"
-               readmisc(f);
+               read_misc(f);
         else if(!strcasecmp(word,"Cheat"))
                // "Cheat <num>"
-               readcheat(f);
+               read_cheat(f);
         else if(!strcasecmp(word,"Doom"))
              {
                // "Doom <num>"
@@ -2781,7 +2885,14 @@ void DEH_Init(void)
       deh_musicname[i]=S_music[i].name;
   for(i=0;i<NUMTEXT;i++)
       deh_text[i]=text[i];
+
   monster_infight_deh = INFT_none; // not set
+
+  if( M_CheckParm("-dehthing") )
+  {
+      DEH_set_deh_thing_code( M_GetNextParm() );
+  }
+   
 #if defined DEBUG_WINDOWED || defined PARANOIA
   // [WDJ] Checks of constants that I could not do at compile-time (enums).
   if( (int)STS_TECH2LAMP4 != (int)S_TECH2LAMP4 )

@@ -125,4 +125,11 @@ void strcatbf(char *s1, const char *s2, const char *s3);
 // Will always write the terminating 0.
 void dl_strncpy( char * dest, const char * src, int destsize );
 
+
+#if defined (__DJGPP__)
+	// No strcasestr under DJGPP
+	// Case-insensitive strstr (GNU-kompatibel)
+	char *strcasestr(const char *haystack, const char *needle);
+#endif
+
 #endif

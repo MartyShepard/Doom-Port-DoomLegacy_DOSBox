@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: p_inter.c 1537 2020-06-16 05:30:37Z wesleyjohnson $
+// $Id: p_inter.c 1606 2021-12-09 23:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1719,7 +1719,7 @@ void P_KillMobj ( mobj_t*  target,
 
 #ifdef DOGS
     // [WDJ] MBF dogs, extension for DoomLegacy.
-    if( (target->type == MT_DOG) || (target->type == helper_MT) )
+    if( (target->type == MT_DOGS) || (target->type == helper_MT) )
         G_KillDog( target );     
 #endif
 

@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1605 2021-11-22 15:41:08Z wesleyjohnson $
+// $Id: d_main.c 1606 2021-12-09 23:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -316,7 +316,7 @@
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1605"
+#define SVN_REV "1606"
 #endif
 
 
@@ -3650,6 +3650,7 @@ static void Help( void )
         "-iwad file      The game wad\n"
         "-file file      Load DEH and PWAD files (one or more)\n"
         "-deh  file      Load DEH files (one or more)\n"
+	"-dehthing name  DEH translation: legacy, boom, prboom, ee.\n"
         "-loadgame num   Load savegame num\n"  
         "-episode 2      Goto episode 2, level 1\n"
         "-skill 3        Skill 1 to 5\n"

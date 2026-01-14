@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_enemy.c 1582 2021-08-10 20:41:33Z wesleyjohnson $
+// $Id: p_enemy.c 1606 2021-12-09 23:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1010,7 +1010,7 @@ static boolean P_SmartMove(mobj_t *actor)
 
     // haleyjd: allow all friends of Helper_MT Type to also jump down
 
-    if( (actor->type == MT_DOG
+    if( (actor->type == MT_DOGS
             || ((actor->type == helper_MT) && (actor->flags & MF_FRIEND)) )
         && cv_mbf_dog_jumping.EV
         && target
@@ -4041,7 +4041,7 @@ void A_Mushroom(mobj_t *actor)
 // The following were inspired by Len Pitre
 // A small set of highly-sought-after code pointers
 
-
+// MBF
 void A_Spawn(mobj_t *mo)
 {
     state_ext_t * sep = P_state_ext( mo->state );
@@ -4055,6 +4055,7 @@ void A_Spawn(mobj_t *mo)
     }
 }
 
+// MBF
 void A_Turn(mobj_t *mo)
 {
     state_ext_t * sep = P_state_ext( mo->state );
@@ -4067,6 +4068,7 @@ void A_Face(mobj_t *mo)
     mo->angle = (uint32_t)((((uint64_t) sep->parm1) << 32) / 360);
 }
 
+// MBF
 // Melee attack
 void A_Scratch(mobj_t *mo)
 {
@@ -4084,6 +4086,7 @@ void A_Scratch(mobj_t *mo)
     P_DamageMobj(mo->target, mo, mo, sep->parm1);
 }
 
+// MBF
 void A_PlaySound(mobj_t *mo)
 {
     state_ext_t * sep = P_state_ext( mo->state );
@@ -4093,6 +4096,7 @@ void A_PlaySound(mobj_t *mo)
         S_StartObjSound( mo, sep->parm1 );
 }
 
+// MBF
 void A_RandomJump(mobj_t *mo)
 {
     state_ext_t * sep = P_state_ext( mo->state );
@@ -4105,6 +4109,7 @@ void A_RandomJump(mobj_t *mo)
         P_SetMobjState(mo, si);
 }
 
+// MBF
 //
 // This allows linedef effects to be activated inside deh frames.
 //
@@ -4147,11 +4152,14 @@ void A_LineEffect(mobj_t *mo)
 
 #if 0
     // From EternityEngine
-    // If type cleared, no more for this thing.
+    // If line special cleared, no more for this thing.
     if( !fake_line.special )
         mo->eflags |= MIF_LINEDONE;
 #else
-    // If type cleared, no more for this state line type.
+    // As in PrBoom.
+    // If line special cleared, no more for this state line type.
+    // Only get here when sep->parm1 != 0, so it is not the dummy.
+    // fake_line.special was copy of sep->parm1, so update it.
     sep->parm1 = fake_line.special;
 #endif
 }

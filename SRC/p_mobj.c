@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1600 2021-11-12 09:06:51Z wesleyjohnson $
+// $Id: p_mobj.c 1606 2021-12-09 23:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2765,7 +2765,7 @@ void P_Spawn_Mapthing( mapthing_t* mthing, uint16_t mt_type )
                 // killough 10/98: force it to be a friend
                 mthing->options |= MTF_FRIEND;
                 // haleyjd 9/22/99: deh, bex substitution	       
-                mt_type = ( helper_MT < ENDDOOM_MT )? helper_MT : MT_DOG;
+                mt_type = ( helper_MT < ENDDOOM_MT )? helper_MT : MT_DOGS;
                 goto spawnit;
             }
 #endif

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: info.c 1603 2021-11-16 11:44:33Z wesleyjohnson $
+// $Id: info.c 1606 2021-12-09 23:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2378,6 +2378,7 @@ state_t states[NUMSTATES] = {
 #endif
     // killough 10/98: mushroom effect
     { SPR_MISL,32769,    8, {A_Mushroom}, S_EXPLODE2},  // S_MUSHROOM
+    { 0,0,-1,{NULL},S_NULL}, // S_BLANK
 };
 
 
@@ -6396,8 +6397,9 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
 
     //SoM: Dogs, and BetaBFG are NOT implemented! These things are here to
     //hold spaces.
+    // [WDJ] MBF dogs implemented.
     // Marine's best friend :)      // killough 7/19/98
-    {   // MT_DOG
+    {   // MT_DOGS
       888,            // doomednum
 #ifdef DOGS
       S_DOGS_STND,    // spawnstate

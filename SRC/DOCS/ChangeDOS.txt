@@ -1,5 +1,10 @@
 * Not need to Compile.
 
+[01606 ]: w109_067 dehack_dog3
+          DOS: With this commit, `strcasestr` (a GNU extension (glibc))
+          was used once in dehacked, and this function is completely
+          missing in DJGPP 2.0x. Added a 'strcasestr' command to "m_misc.c"
+
 [01605 ]: w109_066 draw_1s
 [01604 ]: w109_065 dehack_dog2
 [01603 ]: w109_064 dehack dog

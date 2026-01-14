@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_pspr.h 1112 2014-06-03 21:54:41Z smite-meister $
+// $Id: p_pspr.h 1606 2021-12-09 23:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -93,8 +93,8 @@
 //
 typedef enum
 {
-    ps_weapon,
-    ps_flash,
+    PS_weapon,
+    PS_flash,
     NUMPSPRITES
 
 } psprnum_t;

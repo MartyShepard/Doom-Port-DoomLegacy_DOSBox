@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: g_game.c 1600 2021-11-12 09:06:51Z wesleyjohnson $
+// $Id: g_game.c 1606 2021-12-09 23:03:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -1851,7 +1851,7 @@ boolean  G_SpawnExtraDog( mapthing_t * spot )
         for (i=0 ; i<MAXPLAYERS ; i++)
         {
             if( playerstarts[i] == NULL )  continue;
-            if( scatter_spawn( MT_DOG, 0, playerstarts[i] )  )
+            if( scatter_spawn( MT_DOGS, 0, playerstarts[i] )  )
                 return true;
         }
         return false;
@@ -1866,7 +1866,7 @@ boolean  G_SpawnExtraDog( mapthing_t * spot )
     extra_dog_spot.options &= ~(MTF_MPSPAWN | MTF_NODM | MTF_NOCOOP);
 
     // haleyjd 9/22/99: deh, bex substitution	       
-    int extra_dog_MT = ( helper_MT < ENDDOOM_MT )? helper_MT : MT_DOG;
+    int extra_dog_MT = ( helper_MT < ENDDOOM_MT )? helper_MT : MT_DOGS;
 
     // [WDJ] Test spawn spot for any player or blocking object.
     // Use tstobj, so do not need player mobj.  There may not be one.
@@ -1874,7 +1874,7 @@ boolean  G_SpawnExtraDog( mapthing_t * spot )
     x = extra_dog_spot.x << FRACBITS;
     y = extra_dog_spot.y << FRACBITS;
     sec = R_PointInSubsector(x,y)->sector;
-    // Needs MT_DOG to get its radius from info.
+    // Needs MT_DOGS to get its radius from info.
     if( ! test_spot_unoccupied( extra_dog_MT, x, y, sec->floorheight ) )
         return false;
    
