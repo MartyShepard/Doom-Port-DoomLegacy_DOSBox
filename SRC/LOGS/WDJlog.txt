@@ -8944,8 +8944,6 @@ numbers.  It currently has four possible values.
 -dehthing prboom
 -dehthing ee
 
-=== commit
-
 *** w109_odd_width
 patchfile = w109_068_odd_width
 - commit revision 1607
@@ -8956,5 +8954,14 @@ Added modulo operations to tile such odd width textures.
 
 *** w109_version 1.48.10
 patchfile = w109_069_ver14810
+- commit revision 1608
 Update to version 1.48.10, with docs.
+
+=== commit
+
+*** w109_strcasestr
+patchfile = w109_070_strcasestr
+- commit revision 1609
+Mingw32 does not have strcasestr.
+Had to write one for Mingw32 and Watcom.
 

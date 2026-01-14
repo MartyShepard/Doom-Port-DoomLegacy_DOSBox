@@ -1,7 +1,8 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
+// Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: m_misc.h 1571 2021-01-28 09:24:43Z wesleyjohnson $
+// $Id: m_misc.h 1609 2021-12-22 05:57:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -125,11 +126,12 @@ void strcatbf(char *s1, const char *s2, const char *s3);
 // Will always write the terminating 0.
 void dl_strncpy( char * dest, const char * src, int destsize );
 
+// For systems that are missing strcasestr
+char * dl_strcasestr( const char * haystack,  const char * needle );
 
 #if defined (__DJGPP__)
 	// No strcasestr under DJGPP
 	// Case-insensitive strstr (GNU-kompatibel)
 	char *strcasestr(const char *haystack, const char *needle);
 #endif
-
 #endif

@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1606 2021-12-09 23:03:08Z wesleyjohnson $
+// $Id: dehacked.c 1609 2021-12-22 05:57:14Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -91,11 +91,9 @@
 
 #include "p_fab.h"
   // translucent change
+#include "m_misc.h"
+  // dl_strcasestr
 
-#if defined (__DJGPP__)
-// No strcasestr under DJGPP.
-  #include "m_misc.h"
-#endif
 boolean deh_loaded = false;
 byte  flags_valid_deh = false;  // flags altered flags (from DEH), boolean
 byte  pars_valid_bex = false;  // have valid PAR values (from BEX), boolean
@@ -885,7 +883,11 @@ uint16_t  lookup_thing_type( const char * str, uint16_t ttin )
     // Look at the comments for characteristic words.
     for( dtd = & deh_thing_desc_table[0]; (byte*)dtd < ((byte*)deh_thing_desc_table + sizeof(deh_thing_desc_table)); dtd++ )
     {
+#if defined( __MINGW32__ ) || defined( __WATCOM__ )
+        if( dl_strcasestr( str, dtd->desc ) )
+#else	 
         if( strcasestr( str, dtd->desc ) )
+#endif	   
 	    return dtd->mt_type;  // if no direct code is found
     }
 

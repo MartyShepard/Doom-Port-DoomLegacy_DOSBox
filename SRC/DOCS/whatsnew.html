@@ -13,7 +13,7 @@
 
 <div class="column">
 
-<h2>1.48.10 SVN1608 (2021-12-13)</h2>
+<h2>1.48.10 SVN1609 (2021-12-13)</h2>
 
 <h3>FEATURES 1.48.10</h3>
 
@@ -73,6 +73,11 @@ This overrides the Automatic translation detection.
 <li>prboom : Boom and Beta things</li>
 <li>ee : Eternity Engine things</li>
 </ul>
+</li>
+<li>
+A separate supplementary wad is provided that has dog sprites and sounds.
+Specified before a wad, it provides default dog sprites and sounds.
+Specified after a wad, it replaces the dog sprites in a wad.
 </li>
 </ul>
 
@@ -175,10 +180,11 @@ problems with dehacked dogs arose.
 Fixes bug 0681.
 </li>
 <li>
-Fixed the rocket in Valiant.wad.  Dehacked using
+Fixed the rocket in Valiant.wad.  It uses dehacked
 thing numbers from Beta versions, that are valid in PrBoom,
-hit Dogs and other things in DoomLegacy.
-Implemented dehacked detection that translates these to
+but in Doom Legacy they match thing numbers for Dogs, smoke, and other Legacy specific
+things.
+<p>Implemented dehacked detection that translates these to
 more appropriate DoomLegacy things.
 This affects dehacked things in Lost Civilization, Avactor,
 Valiant, and especially antaxyz.
@@ -189,7 +195,7 @@ Often the dog sprite is missing from the wad.
 </li>
 <li>
 Made Voodoo card support optional.
-The code is no longer tied to support for Glide.
+The base code is no longer tied to support for Glide.
 </li>
 <li>
 Fix Load savegame menu controls to allow ESCAPE

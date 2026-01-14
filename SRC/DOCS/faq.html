@@ -11,7 +11,7 @@
 <body>
 <div class="column">
 <h1>DoomLegacy 1.48 FAQ</h1>
-<h1 class="tagline">Last updated 2020-12-19</h1>
+<h1 class="tagline">Last updated 2021-12-21</h1>
 
 <p>
 If you have any trouble with DoomLegacy, you might find a solution here.
@@ -378,10 +378,9 @@ Is there any way to save my settings?
 <p>Give your friend (George) their own config file.
 <br>Start DoomLegacy with "-config george.cfg".
 <p>George will now have his own config settings, such as keyboard
-settings, and option settings.  As long as you do not
-delete the file, George's settings will still be there next time he comes
-to visit.  However,
-any video settings (such as gamma) in drawmode config files will still be shared.
+settings, and option settings.  As long as you do not delete the file,
+George's settings will still be there next time he comes to visit.
+However, any video settings (such as gamma) in drawmode config files will still be shared.
 Make him a savegame subdirectory, otherwise his savegames will be mixed in with your savegames.
   </dd>
 </dl>
@@ -470,6 +469,64 @@ the Doom switches that are not in the Heretic wad.
 
 <h2><a name="misc">Compatibility</a></h2>
 
+<dl>
+  <dt>
+Wads with Dehacked monsters are not working properly ?
+<br>In wads like Valiant.wad, shooting the rocket launcher creates a
+monster in mid-air, and detonates the missile.
+<br>The "Lunch" item in this wad runs around the room and tries to bite me.
+  </dt>
+  <dd>
+This is due to the wad creator using PrBoom thing numbers in the
+dehacked lump.  PrBoom provides things for some of the Beta monsters,
+and their monster states.  The matching thing numbers in Legacy are used for
+Legacy additions, and things like MBF Dogs.  These things are hard-wired
+into the Legacy code, such as the rocket missile creating smoke, and
+the dog behavior.
+The PrBoom thing number for the Beta monster happens to match the
+smoke thing number in Doom Legacy.
+<p>
+As of Doom Legacy 1.48.10, there is automatic translation of dehacked
+thing numbers in the range 138 to 150.
+This detects the comment to translate the dehacked thing number to a
+thing in Doom Legacy that is similar.
+<p>
+To force the dehacked thing translation, use the dehthing command line switch.
+This forces the dehacked thing translation for the range 138 to 150.
+The switch selects: legacy, boom, prboom, or ee (Eternity Engine).
+Without the switch, it is automatic.
+<pre>
+> doomlegacy -game doom2 -dehthing prboom -file prboom_specific.wad
+</pre>
+If you have a wad with legacy dehacked things in the range 138 to 150,
+and one with prboom dehacked things in the range 138 to 150,
+on the same command line, you will have to leave it at automatic.
+<p>This is an improvised solution, and will likely see changes.
+For new wads, please use BEX.
+  </dd>
+</dl>
+
+<dl>
+  <dt>
+The dogs in this wad are not displayed.
+  </dt>
+  <dd>
+Doom Legacy does provide dog sprites nor sounds in the legacy.wad.
+An IWAD or PWAD is expected to supply its own dogs, and dog sounds.
+<p>A supplementary dogs wad for Doom Legacy has been created, called dogs.wad.
+It has a basic German Shepard, with dog sounds.
+<p>
+Specify the dogs.wad first, in case the wad does supply its own
+dog sprites or sounds.  The dogs sprites and sounds, from the wad that is
+specified last, will be the ones that are used.  This does not always
+work, due to some wads changing the names using dehacked.
+<pre>
+> doomlegacy -game doom2 -file dogs.wad dogs_specific.wad
+</pre>
+<p>The wad can be renamed to dogs_dl.wad, if necessary.
+  </dd>
+</dl>
+
 
 <dl>
   <dt>
@@ -488,8 +545,9 @@ Is there a setting to make the demos work right?
   </dt>
   <dd>
 No, Demo compatibility is automated.
+Some improvements have been made in this compatibility with each release.
 <p>
-DoomLegacy does not maintain sync with the Doom demos.  It was decided some
+DoomLegacy loses sync with most of the Doom demos.  It was decided some
 years back, that demo compatibility would be sacrificed in favor of
 new features and improvements.
 <p>The demos only record the player actions and movements.
@@ -624,7 +682,7 @@ Both mice will move the same screen pointer.</p>
 <p>If the serial mouse is plugged in after the computer is started,
 then there is a risk of damaging the serial port.  However, this is
 often done anyway (do at your own risk). Try to minimize static
-differences by touching the shells first.
+differences by touching the connector shell to the computer frame first.
 In this case, Windows does not install the "Serial Mouse" driver.
 </p>
 <p>
@@ -640,7 +698,7 @@ This will prevent it from connecting in the future.
   <dd>
 We don't know yet.  Be the first to discover this amazing secret, and
 tell us so we can put that information here.
-The main problem seems to get X11 to not attach to the mouse.
+The main problem seems to be getting X11 to not attach to the mouse.
   </dd>
 </dt>
 
@@ -656,7 +714,7 @@ Don't know for older Windows, nor which Windows versions.
   <dt>Connecting a USB mouse as MOUSE2 in Linux.</dt>
   <dd>
 This is really desireable, but needs someone to figure it out.
-The main problem seems to get X11 to not attach to the mouse.
+The main problem seems to be getting X11 to not attach to the mouse.
   </dd>
 </dl>
 
@@ -665,11 +723,11 @@ The main problem seems to get X11 to not attach to the mouse.
   <dt>My mouse/joystick does not work.</dt>
   <dd>
 <p>
-First, check that the mouse/joystick is activated : go at the
-console and type either 'use_mouse' (or use the respective
-menuitem) or 'use_joystick'.
+First, check that the mouse/joystick is activated.
+On the console type either 'use_mouse', or 'use_joystick'.
 If it is '0' or off then that mouse/joystick is disabled.
-Set the variable to 1. eg: 'use_mouse 1'.
+To set the variable to 1, type 'use_mouse 1'.
+There are also mouse menus with these control items.
 </p>
 <p>
 Once the mouse or joystick is activated, you have to
@@ -689,7 +747,8 @@ DoomLegacy 1.48 changed some of the KEY names, and the config file key names.
   <dt>How do I use an XBOX controller.</dt>
   <dd>
 <p>Support for XBOX controller is in DoomLegacy 1.48, but only
-for the SDL port.  It is a compile option, so if you have a custom compilation, check that
+for the SDL port.
+It is a compile option, so if you have a custom compilation, check that
 XBOX_CONTROLLER is defined.
 <p>If you are using the XBOX controller, without a keyboard, then
 several button controls need to be defined to access the menus and
@@ -711,20 +770,26 @@ and Heretic wads without a keyboard.
 I played DoomLegacy.
   </dt>
   <dd>
+Doom Legacy lets the user test video modes before committing to using them.
+If you select a bad video mode, wait and let Doom Legacy timeout, and
+it will revert to the last good video mode.
+If you crash Doom Legacy or the system during a video mode test,
+do not worry, Doom Legacy will revert to the default Video Mode saved in the config.
+<p>
 When you change the video mode using the menus, it is only for the
 current session.  To save it to the config file, it has to be made the
 'default' video mode.  The next time DoomLegacy is started it will
 use the 'default' video mode from the config file.
-<br>Press the 'd' key when in the Video mode menu to set the current video mode as the default.
-<p>This supports testing modes before committing to using them.
-If you select some video mode that will not display
-properly and you have to abort, or even reboot, you can kill
-DoomLegacy without saving config.  The next time DoomLegacy is started it will
-revert to the known good video mode saved in the config file.
-<p>Use the 't' key to test an unknown video mode.  This provides an
+<p>To set the current video mode as the default, press the 'd' key when in the Video mode menu.
+<p>To test an unknown video mode, press the 't' key.  This provides an
 escape, and a timeout, in case the video mode displays badly.
+<p>If you select some video mode that will not display
+properly and you have to abort, or even reboot, you can kill
+DoomLegacy without letting it save config.  The next time DoomLegacy is started it will
+revert to the known good video mode saved in the config file.
 <p>Do not set a video mode to default until you know it is good.
-If you have saved a bad video mode and cannot see the video controls in the DoomLegacy menu,
+If you have saved a bad video mode in the config
+and cannot see the video controls in the DoomLegacy menu,
 you will have to edit the config file by hand,
 or delete your config file to clear the bad video mode.
 The config file is re-written when DoomLegacy exits, so do not leave
@@ -749,7 +814,7 @@ Use the 800x600 video mode instead.
   <dd>
   <p>
 The original Doom graphics were designed for a 320x200 VGA display with
-a 4:3 physical aspect ratio. Consequently the pixels on these displays
+a screen 4:3 physical aspect ratio. Consequently the pixels on these displays
 had a 5:6 physical aspect ratio, unlike most modern displays which have
 square pixels. This makes rendering the graphics on modern displays
 somewhat complicated.

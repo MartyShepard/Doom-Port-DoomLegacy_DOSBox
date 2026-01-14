@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: m_misc.c 1572 2021-01-28 09:25:24Z wesleyjohnson $
+// $Id: m_misc.c 1609 2021-12-22 05:57:14Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -1150,24 +1150,55 @@ void dl_strncpy( char * dest, const char * src, int destsize )
     * dest = 0;
 }
 
-#if defined (__DJGPP__)
-	#include <string.h>
-	#include <ctype.h>
+#if defined( __MINGW32__ ) || defined( __WATCOM__ )
+// For systems that are missing strcasestr
+char * dl_strcasestr( const char * haystack,  const char * needle )
+{
+    // Empty needle will match anything.
+    int vcnt = strlen( haystack ) - strlen( needle );
+    while( vcnt-- >= 0 )
+    {
+        const char * e = needle;
+        const char * h = haystack;
+
+        for(;;)
+        {
+            unsigned char ce = * (e ++);
+            unsigned char ch = * (h ++);
+            if( ce == 0 )  goto found;
+            if( ch == 0 )  goto not_found;  // haystack shorter than needle
+            if( tolower(ce) != tolower(ch) )  break;
+        }
+        haystack++;
+    }
+
+not_found:
+    // not found
+    return NULL;
+   
+found:
+    return (char*) haystack;
+}
+#endif
+
+#if defined( __DJGPP__ )
+#include <string.h>
+#include <ctype.h>
 // No strcasestr under DJGPP
 // Case-insensitive strstr (GNU-kompatibel)
 char *strcasestr(const char *haystack, const char *needle)
 {
     if (!haystack || !needle || !*needle)
-        return (char *)haystack;
+      return (char *)haystack;
 
     size_t needle_len = strlen(needle);
 
     while (*haystack)
     {
-        if (strncasecmp(haystack, needle, needle_len) == 0)
-            return (char *)haystack;
+      if (strncasecmp(haystack, needle, needle_len) == 0)
+          return (char *)haystack;
 
-        haystack++;
+          haystack++;
     }
 
     return NULL;

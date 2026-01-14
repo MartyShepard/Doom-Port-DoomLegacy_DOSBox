@@ -1,5 +1,9 @@
 * Not need to Compile.
 
+[01609 ]: w109_070 strcasestr
+          It was added for non-system use 'strcasestr' (GNU extension (glibc)).
+          WATCOM and MINGW32. I'm leaving my version in (without goto) for DJGPP.
+
 [01608 ]: w109_069 Version 1.48.10
 [01607 ]: w109_068 odd width texture
 [01606 ]: w109_067 dehack_dog3
