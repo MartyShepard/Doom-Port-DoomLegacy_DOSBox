@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1603 2021-11-16 11:44:33Z wesleyjohnson $
+// $Id: dehacked.c 1604 2021-11-22 15:40:32Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -2613,19 +2613,20 @@ void DEH_LoadDehackedFile(myfile_t* f, byte bex_permission)
 
         if(!strcasecmp(word,"Thing"))
         {
-          // "Thing <num>"
-          if(i<=NUMMOBJTYPES && i>0)
+          // "Thing <num>", 1..
+          // deh_thing_id = MT_xxx + 1
+          if( i<=0 || i>NUMMOBJTYPES )
 	  {
             deh_error("Thing %d don't exist\n",i);
-	    i = MT_UNK1;
+	    i = MT_UNK1 + 1;  // 1..
 	  }
 
-	  if( i >= 138 && i < 150 )  // problem area
+	  if( i >= 138 && i <= 150 )  // problem area
 	  {
-             // Test for keywords in description
-             uint16_t i2 = lookup_thing_desc( s );
-             if( i2 )
-                 i = i2; // substitute
+            // Test for keywords in description
+            uint16_t i2 = lookup_thing_desc( s );
+            if( i2 )
+                i = i2 + 1; // substitute to deh_thing_id
           }
 
 	  readthing(f,i);
