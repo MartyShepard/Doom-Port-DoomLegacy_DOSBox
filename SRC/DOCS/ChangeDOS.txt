@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01605 ]: w109_066 draw_1s
 [01604 ]: w109_065 dehack_dog2
 [01603 ]: w109_064 dehack dog
 [01602 ]: w109_063 hw transparent wall

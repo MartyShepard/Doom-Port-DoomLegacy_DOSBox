@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_data.c 1564 2020-12-19 06:21:07Z wesleyjohnson $
+// $Id: r_data.c 1605 2021-11-22 15:41:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -748,7 +748,10 @@ use_common_texren:
         // Wrong content, so clear it.
         if( common_texren.cache )
             Z_Free( common_texren.cache );
-        
+
+        common_texren.width = base_texren->width;
+        common_texren.width_tile_mask = base_texren->width_tile_mask;
+        common_texren.detect = base_texren->detect;
     }
 
     return & common_texren; // must return something
@@ -1093,7 +1096,7 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
 
                 post_t * ppp = (post_t*)( (byte*)realpatch + cofs );
                 if( ppp->topdelta || (ppp->length != realpatch->height) )
-                    detect_post = TD_post;  // patch is not single column
+                    detect_post = TD_odd_post;  // patch is not single column
 
                 // Look for holes
                 segbot_y = -1;
@@ -1266,7 +1269,8 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
         texren->pixel_data_offset = 3;  // skip over post header and pad byte
         texren->texture_model = TM_patch;
         //debug_Printf ("R_GenTex SINGLE %.8s size: %d\n",texture->name,patchsize);
-        detect |= detect_hole | detect_post;
+        if( (detect_hole | detect_post) == 0 )  detect |= TD_1s_ready;
+        detect |= TD_2s_ready;
         goto done;
        
         // [WDJ] Dummy texture generation.
@@ -1601,7 +1605,7 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
                }
                if( postlength + seglen > 255 )   // if postlength would be too long
                {
-                   detect_post = TD_post;  // whole texture
+                   detect_post = TD_odd_post;  // whole texture
                    postlength = 0;  // start new post
                }
                if( postlength == 0 )
@@ -1641,7 +1645,7 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
                     if( ds_topdelta > seg_topdelta )  goto exceed_topdelta;
                     // DeePsea relative topdelta successful.
                     destpost->topdelta = ds_topdelta;
-		    detect_post = TD_post;  // Due to DeePsea
+		    detect_post = TD_odd_post;  // Due to DeePsea
                 }
                 else
                 {
@@ -1719,7 +1723,8 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
     texren->pixel_data_offset = 3;  // skip over post header and pad byte
     texren->texture_model = TM_combine_patch;  // transparent combined
 
-    detect |= detect_hole | detect_post;
+    detect |= TD_2s_ready;
+    if( (detect_hole | detect_post) == 0 )  detect |= TD_1s_ready;
 #if 0
     // Enable to print memory usage
     I_SoftError("R_GenerateTexture: %8s allocated %i, used %i bytes\n",
@@ -1808,10 +1813,11 @@ byte* R_GenerateTexture2 ( int texnum, texture_render_t *  texren, byte  texture
     texren->columnofs = colofs;
     texren->pixel_data_offset = 0;
     texren->texture_model = TM_picture;  // non-transparent picture format
+    detect |= TD_1s_ready;
+    if( detect_hole == 0 )  detect |= TD_2s_ready;  // no loss
 
 done:
-    if( (detect & (TD_post | TD_hole)) == 0 )
-        detect |= TD_solid_column;  // can be drawn by wall column draw
+    detect |= detect_hole | detect_post;  // debug, not used externally
     texren->detect = detect;
 
     // unlock all the patches, no longer needed, but may be in another texture

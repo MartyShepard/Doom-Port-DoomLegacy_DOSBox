@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: r_segs.c 1572 2021-01-28 09:25:24Z wesleyjohnson $
+// $Id: r_segs.c 1605 2021-11-22 15:41:08Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -231,8 +231,8 @@ texture_render_t *  R_WallTexture_setup( int texture_num )
    
     // The texture must be setup for monolithic column draw.
     // Cannot use masked draw because it does not tile on walls.
-    if( ! texren->cache
-        || (texren->detect & (TD_post | TD_hole)) )
+    if( texren->cache == NULL
+        || ! (texren->detect & TD_1s_ready) )
     {
         if( texren->detect & TD_masked )
         {
@@ -240,7 +240,7 @@ texture_render_t *  R_WallTexture_setup( int texture_num )
             // Switch to one of the extra texren to make a picture format.
             texren = R_Get_extra_texren( texture_num, texren, TM_picture );
             if( texren->cache
-                && ! (texren->detect & (TD_post | TD_hole)) )
+                && (texren->detect & TD_1s_ready) )
                 goto done;  // found existing
         }
 
@@ -1035,7 +1035,8 @@ void R_RenderMaskedSegRange( drawseg_t* ds, int x1, int x2 )
     //faB: handle case where multipatch texture is drawn on a 2sided wall, multi-patch textures
     //     are not stored per-column with post info anymore in Doom Legacy
     // [WDJ] multi-patch transparent texture restored
-    if( texren->cache == NULL )
+    if( texren->cache == NULL
+        || ! (texren->detect & TD_2s_ready) )
     {
         R_GenerateTexture( texren, TM_masked ); // first time
     }
@@ -1529,7 +1530,8 @@ void R_RenderThickSideRange( drawseg_t* ds, int x1, int x2, ffloor_t* ffloor)
     //faB: handle case where multipatch texture is drawn on a 2sided wall, multi-patch textures
     //     are not stored per-column with post info anymore in Doom Legacy
     // [WDJ] multi-patch transparent texture restored
-    if( texren->cache == NULL )
+    if( texren->cache == NULL
+	|| ! (texren->detect & TD_2s_ready) )
     {
         R_GenerateTexture( texren, TM_masked );	// first time
     }
