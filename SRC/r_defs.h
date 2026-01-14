@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: r_defs.h 1585 2021-09-26 05:31:57Z wesleyjohnson $
+// $Id: r_defs.h 1601 2021-11-12 09:07:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2015 by DooM Legacy Team.
@@ -1104,9 +1104,9 @@ typedef struct
     sprite_frot_t *     framerotation;  // array[numframes * frame_rot]
 } spritedef_t;
 
-spriteframe_t *  get_spriteframe( const spritedef_t * spritedef, int frame_num );
+spriteframe_t *  get_spriteframe( const spritedef_t * spritedef, unsigned int frame_num );
 sprite_frot_t *  get_framerotation( const spritedef_t * spritedef,
-                                    int frame_num, byte rotation );
+                                    unsigned int frame_num, byte rotation );
 
 extern const byte srp_to_num_rot[4];
 

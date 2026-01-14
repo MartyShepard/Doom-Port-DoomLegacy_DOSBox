@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: hw_main.c 1599 2021-11-12 09:05:20Z wesleyjohnson $
+// $Id: hw_main.c 1601 2021-11-12 09:07:25Z wesleyjohnson $
 //
 // Copyright (C) 1998-2016 by DooM Legacy Team.
 //
@@ -3539,13 +3539,13 @@ static void HWR_ProjectSprite(mobj_t * thing)
     tx = (tr_x * gr_viewsin) - (tr_y * gr_viewcos);  // view x
 
     // decide which patch to use for sprite relative to player
-#ifdef RANGECHECK
     if ((unsigned) thing->sprite >= numsprites)
     {
+#ifdef RANGECHECK
         I_SoftError("HWR_ProjectSprite: invalid sprite number %i ", thing->sprite);
+#endif
         return;
     }
-#endif
 
     //Fab:02-08-98: 'skin' override spritedef currently used for skin
     if (thing->skin)
@@ -3554,14 +3554,14 @@ static void HWR_ProjectSprite(mobj_t * thing)
         sprdef = &sprites[thing->sprite];
 
     fr = thing->frame & FF_FRAMEMASK;
-#ifdef RANGECHECK
     if(fr >= sprdef->numframes)
     {
+#ifdef RANGECHECK
         I_SoftError("HWR_ProjectSprite: invalid sprite frame %i : %i for %s",
-                    thing->sprite, thing->frame, sprnames[thing->sprite]);
+                    thing->sprite, fr, sprnames[thing->sprite]);
+#endif
         return;
     }
-#endif
     sprframe = get_spriteframe( sprdef, fr );
 
     if( sprframe->rotation_pattern == SRP_1 )

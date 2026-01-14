@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: r_things.c 1572 2021-01-28 09:25:24Z wesleyjohnson $
+// $Id: r_things.c 1601 2021-11-12 09:07:25Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -234,13 +234,13 @@ static sprite_frot_t   sprfrot[MAX_FRAMES * NUM_SPRITETMP_ROT];
 // ==========================================================================
 
 
-spriteframe_t *  get_spriteframe( const spritedef_t * spritedef, int frame_num )
+spriteframe_t *  get_spriteframe( const spritedef_t * spritedef, unsigned int frame_num )
 {
    return & spritedef->spriteframe[ frame_num ];
 }
 
 sprite_frot_t *  get_framerotation( const spritedef_t * spritedef,
-                                    int frame_num, byte rotation )
+                                    unsigned int frame_num, byte rotation )
 {
    return & spritedef->framerotation[ (frame_num * spritedef->frame_rot) + rotation ];
 }
@@ -1402,7 +1402,7 @@ static void R_ProjectSprite (mobj_t* thing)
     fixed_t             xscale;
     fixed_t             yscale; //added:02-02-98:aaargll..if I were a math-guy!!!
 
-    int                 x1, x2, fr;
+    int                 x1, x2;
 
     sector_t*		thingsector;	 // [WDJ] 11/14/2009
    
@@ -1411,7 +1411,7 @@ static void R_ProjectSprite (mobj_t* thing)
     sprite_frot_t *     sprfrot;
     spritelump_t *      sprlump;  // sprite patch header (no pixels)
 
-    unsigned int        rot;
+    unsigned int        rot, fr;
     byte                flip;
 
     byte                dist_pri;  // distance priority
@@ -1449,14 +1449,15 @@ static void R_ProjectSprite (mobj_t* thing)
         return;
 
     // decide which patch to use for sprite relative to player
+    if ((unsigned)thing->sprite >= numsprites)
+    {
 #ifdef RANGECHECK
-    if ((unsigned)thing->sprite >= numsprites) {
         // [WDJ] Give msg and don't draw it
         I_SoftError ("R_ProjectSprite: invalid sprite number %i\n",
                  thing->sprite);
+#endif
         return;
     }
-#endif
 
     //Fab:02-08-98: 'skin' override spritedef currently used for skin
     if (thing->skin)
@@ -1464,14 +1465,16 @@ static void R_ProjectSprite (mobj_t* thing)
     else
         sprdef = &sprites[thing->sprite];
 
+    fr = thing->frame & FF_FRAMEMASK;
+    if( fr >= sprdef->numframes )
+    {
 #ifdef RANGECHECK
-    if ( (thing->frame&FF_FRAMEMASK) >= sprdef->numframes ) {
         // [WDJ] Give msg and don't draw it
         I_SoftError ("R_ProjectSprite: invalid sprite frame %i : %i for %s\n",
-                 thing->sprite, thing->frame, sprnames[thing->sprite]);
+                 thing->sprite, fr, sprnames[thing->sprite]);
+#endif
         return;
     }
-#endif
 
     // [WDJ] segfault control in heretic shareware, not all sprites present
     if( (byte*)sprdef->spriteframe < (byte*)0x1000 )
@@ -1480,7 +1483,6 @@ static void R_ProjectSprite (mobj_t* thing)
         return;
     }
 
-    fr = thing->frame & FF_FRAMEMASK;
     sprframe = get_spriteframe( sprdef, fr );
 
     if( sprframe->rotation_pattern == SRP_1 )

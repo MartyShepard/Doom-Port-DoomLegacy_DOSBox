@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01601 ]: w109_062 missing sprite
 [01600 ]: w109_061 spawn dogs
 [01599 ]: w109_060 hw adjust
 [01598 ]: w109_059 hw bsp right/left
