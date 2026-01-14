@@ -8885,7 +8885,7 @@ Include these tests for normal compile too.
 *** w109_hw_trans_wall
 patchfile = w109_063_hw_trans_wall
 - commit revision 1602
-Avactor.wad has some masked textures used on upper textures and single
+Lost Civilization has some masked textures used on upper textures and single
 sided walls.  This is not entirely valid usage, but happens.
 The software render draws black in the missing portions of the texture.
 OpenGL is drawing a masked texture, showing sky through the wall.
@@ -8928,7 +8928,6 @@ These were fixed in 1602, but if a blackened textures is encountered first
 the software draw will get stuck with it when it should use the masked texture.
 This fixes the Generate texture post detect to indicate 1s or 2s draw ability directly.
 
-=== commit
 
 *** w109_dehack_dog3
 patchfile = w109_067_dehack_dog3
@@ -8945,4 +8944,17 @@ numbers.  It currently has four possible values.
 -dehthing prboom
 -dehthing ee
 
+=== commit
+
+*** w109_odd_width
+patchfile = w109_068_odd_width
+- commit revision 1607
+Some textures in LostCiv have an odd texture, with a width that is not
+a power of two.  Such odd textures cannot have their column number
+masked.
+Added modulo operations to tile such odd width textures.
+
+*** w109_version 1.48.10
+patchfile = w109_069_ver14810
+Update to version 1.48.10, with docs.
 
