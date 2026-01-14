@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.h 1367 2017-11-01 01:15:56Z wesleyjohnson $
+// $Id: p_mobj.h 1600 2021-11-12 09:06:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -477,7 +477,7 @@ typedef struct mobj_s
 // check mobj against water content, before movement code
 void P_MobjCheckWater (mobj_t* mobj);
 
-void P_SpawnMapthing (mapthing_t*  mthing);
+void P_Spawn_Mapthing( mapthing_t* mthing, uint16_t mt_type );
 // [WJD] spawn as playernum
 void P_SpawnPlayer(mapthing_t * mthing, int playernum );
 

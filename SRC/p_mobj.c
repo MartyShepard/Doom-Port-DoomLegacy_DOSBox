@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: p_mobj.c 1582 2021-08-10 20:41:33Z wesleyjohnson $
+// $Id: p_mobj.c 1600 2021-11-12 09:06:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2000 by DooM Legacy Team.
@@ -2664,17 +2664,16 @@ static byte  gameskill_bit[ 5 ] = { MTF_EASY, MTF_EASY, MTF_NORMAL, MTF_HARD, MT
 
 //
 // P_SpawnMapthing
-// The fields of the mapthing should
-// already be in host byte order.
 //
-void P_SpawnMapthing (mapthing_t* mthing)
+// Called by P_LoadThings, G_SpawnExtraDog
+void P_Spawn_Mapthing( mapthing_t* mthing, uint16_t mt_type )
 {
-    int i;
-    mobj_t *mobj;
+    mobjinfo_t * minfo;
+    mobj_t * mobj;
     fixed_t x, y, z;
     byte  coop_index = 0;
 
-    if (!mthing->type)
+    if( mt_type == 0 && mthing->type == 0 )
         return; //SoM: 4/7/2000: Ignore type-0 things as NOPs
 
 #if 1   
@@ -2693,7 +2692,21 @@ void P_SpawnMapthing (mapthing_t* mthing)
       mthing->options &= MTF_EASY|MTF_NORMAL|MTF_HARD|MTF_AMBUSH|MTF_MPSPAWN;
    }
 #endif
+    
 
+    if( mt_type )  // Directly specify monster type.
+    {
+        if(mt_type >= NUMMOBJTYPES)
+        {
+            I_SoftError("\2P_Spawn_Mapthing: Unknown mt_type %i\n", mt_type );
+            return;
+        }
+
+        // Called from SpawnExtraDog.
+	// May have scatter spawn.
+        goto spawnit;
+    }
+   
     // count deathmatch start positions
     if (mthing->type == 11)
     {
@@ -2752,10 +2765,11 @@ void P_SpawnMapthing (mapthing_t* mthing)
                 // killough 10/98: force it to be a friend
                 mthing->options |= MTF_FRIEND;
                 // haleyjd 9/22/99: deh, bex substitution	       
-                i = ( helper_MT < ENDDOOM_MT )? helper_MT : MT_DOG;
+                mt_type = ( helper_MT < ENDDOOM_MT )? helper_MT : MT_DOG;
                 goto spawnit;
             }
 #endif
+
             P_SpawnPlayer(mthing, playernum);
         }
 
@@ -2814,22 +2828,24 @@ void P_SpawnMapthing (mapthing_t* mthing)
         return;
 #endif
 
-    // find which type to spawn
-    for (i = 0; i < NUMMOBJTYPES; i++)
-        if (mthing->type == mobjinfo[i].doomednum)
+    // find monster type to spawn, from doomed code
+    for( mt_type = 0; mt_type < NUMMOBJTYPES; mt_type++)
+        if (mthing->type == mobjinfo[mt_type].doomednum)
             break;
 
-    if (i == NUMMOBJTYPES)
+    if( mt_type >= NUMMOBJTYPES )
     {
-        I_SoftError("\2P_SpawnMapthing: Unknown type %i at (%i, %i)\n", mthing->type, mthing->x, mthing->y);
+        I_SoftError("\2P_Spawn_Mapthing: Unknown type %i at (%i, %i)\n", mthing->type, mthing->x, mthing->y);
         return;
     }
+   
+    minfo = & mobjinfo[mt_type];
 
     // [WDJ] Coop items that do not appear in single player mode.
     if( coop_index && ( mthing->options & MTF_MPSPAWN ) )
     {
         // [WDJ] Legacy 1.48: restricted coop settings, COOP_60, COOP_80.
-        if((mobjinfo[i].spawnhealth > 1000) && (mobjinfo[i].painstate != S_NULL))
+        if((minfo->spawnhealth > 1000) && (minfo->painstate != S_NULL))
         {
             // Legacy use of P_Random, not in Doom, enabled by Legacy coop mode settings.
             // Boss monster, not appropriate for lower levels.
@@ -2844,42 +2860,41 @@ void P_SpawnMapthing (mapthing_t* mthing)
 		  (EN_heretic)? coop_heretic_mon_table
 	          : (gamemode == doom2_commercial)? coop_doom2_mon_table
 		  : coop_doom1_mon_table;
-	        i = tab[ mon_index ];  // substitute monster
+                mt_type = tab[ mon_index ];  // substitute monster
 	    }
 	}
     }
 
     // don't spawn keycards and players in deathmatch
-    if( deathmatch && (mobjinfo[i].flags & MF_NOTDMATCH) )
+    if( deathmatch && (minfo->flags & MF_NOTDMATCH) )
         return;
 
     // don't spawn any monsters if -nomonsters
-    if (nomonsters && (i == MT_SKULL || (mobjinfo[i].flags & MF_COUNTKILL)))
+    if (nomonsters && (mt_type == MT_SKULL || (minfo->flags & MF_COUNTKILL)))
     {
         return;
     }
 
-    if (i == MT_WMACE)
+    if( mt_type == MT_WMACE)
     {
         P_AddMaceSpot(mthing);
         return;
     }
 
-#ifdef DOGS
 spawnit:
-#endif
     // spawn it
     x = mthing->x << FRACBITS;
     y = mthing->y << FRACBITS;
 
-    if (mobjinfo[i].flags & MF_SPAWNCEILING)
+    minfo = & mobjinfo[mt_type];
+    if (minfo->flags & MF_SPAWNCEILING)
         z = ONCEILINGZ;
-    else if (mobjinfo[i].flags2 & MF2_SPAWNFLOAT)
+    else if (minfo->flags2 & MF2_SPAWNFLOAT)
         z = FLOATRANDZ;
     else
         z = ONFLOORZ;
 
-    mobj = P_SpawnMobj(x, y, z, i);
+    mobj = P_SpawnMobj(x, y, z, mt_type);
     mobj->spawnpoint = mthing;
 
     // Seed random starting index for bobbing motion

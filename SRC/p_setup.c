@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: p_setup.c 1599 2021-11-12 09:05:20Z wesleyjohnson $
+// $Id: p_setup.c 1600 2021-11-12 09:06:51Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -950,7 +950,7 @@ void P_LoadThings (int lump)
         P_Setup_Mapthing(mt);
 #endif
 
-        P_SpawnMapthing (mt);
+        P_Spawn_Mapthing(mt, 0);
     }
 
     Z_Free(data);

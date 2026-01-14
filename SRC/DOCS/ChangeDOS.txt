@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01600 ]: w109_061 spawn dogs
 [01599 ]: w109_060 hw adjust
 [01598 ]: w109_059 hw bsp right/left
 [01597 ]: w109_058 menu load escape

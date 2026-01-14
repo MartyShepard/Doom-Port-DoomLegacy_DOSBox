@@ -8826,9 +8826,6 @@ Added hw_bsp DEBUG and TRACE optional capability.
 Removed an old debug test that no longer worked.
 
 
-=== commit
-
-
 *** w109_hwadjust
 patchfile = w109_060_hwadjust
 - commit revision 1599
@@ -8868,6 +8865,7 @@ Eliminating linedef from test consideration using dx vrs dy had to be removed.
 There may be only one linedef that beats another wrong linedef
 from being used.  Every linedef has to be tested for every geometric relationship.
 
+
 *** w109_dogs
 patchfile = w109_061_dogs
 - commit revision 1600
@@ -8896,3 +8894,4 @@ texture alpha.
 Changed the SplitWall function to support such alternative drawing
 blends.
 
+=== commit
