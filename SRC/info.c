@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: info.c 1600 2021-11-12 09:06:51Z wesleyjohnson $
+// $Id: info.c 1603 2021-11-16 11:44:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -11050,6 +11050,33 @@ mobjinfo_t mobjinfo[NUMMOBJTYPES] = {
      0                          // flags2
      },
 
+    {                           // MT_UNK1
+     -1,                        // doomednum
+     0,                         // spawnstate
+     1,                         // spawnhealth
+     S_NULL,                    // seestate
+     sfx_None,                  // seesound
+     sfx_None,                  // activesound
+     8,                         // reactiontime
+     sfx_None,                  // attacksound
+     S_NULL,                    // painstate
+     0,                         // painchance
+     sfx_None,                  // painsound
+     S_NULL,                    // meleestate
+     S_NULL,                    // missilestate
+     S_NULL,                    // crashstate
+     S_NULL,                    // deathstate
+     S_NULL,                    // xdeathstate
+     sfx_None,                  // deathsound
+     S_NULL,                    // raisestate
+     0,                         // speed
+     1 * FRACUNIT,              // radius
+     1 * FRACUNIT,              // height
+     1,                         // mass
+     0,                         // damage
+     MF_NOBLOCKMAP | MF_NOSECTOR,       // flags
+     0                          // flags2
+     },
 };
 
 // patch the info mobjinfo table and state table for new legacy needs

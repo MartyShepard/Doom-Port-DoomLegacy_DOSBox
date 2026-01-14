@@ -8895,3 +8895,26 @@ Changed the SplitWall function to support such alternative drawing
 blends.
 
 === commit
+
+*** w109_dehack_dog
+patchfile = w109_064_dehack_dog
+- commit revision 1603
+Thing 140, in Valiant.wad dehacked, is changing the rocket smoke to
+a monster.  When the rocket-launcher is fired, a monster immediately
+appears and explodes the rocket.
+
+The line has: Thing 140 (Avanc... (DOG SLOT)).
+In Eternity Engine MT_DOG = 140, but in PrBoom MT_DOG = 138, but in
+Legacy MT_DOG = 143.
+Legacy savegames are dependent, as will be Legacy specific wads.
+This cannot be fixed by moving the MT_DOG code.
+
+For Thing numbers in the range 138..150, have added an additional
+test of the dehacked text.
+Have created a table of a characteristic words that might appear for each
+of the thing numbers in this range.  If one of these words is found,
+the thing number is changed to our MT code.
+This fixes the rocket-launcher in Valiant.wad.
+
+
+

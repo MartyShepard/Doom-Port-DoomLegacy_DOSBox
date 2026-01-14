@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: dehacked.c 1586 2021-09-29 02:49:02Z wesleyjohnson $
+// $Id: dehacked.c 1603 2021-11-16 11:44:33Z wesleyjohnson $
 //
 // Copyright (C) 1998-2000 by DooM Legacy Team.
 //
@@ -498,6 +498,21 @@ int activesound;   Action sound = 32        sfx_None,       // activesound
 int flags;         Bits = 3232              MF_SOLID|MF_SHOOTABLE|MF_DROPOFF|MF_PICKUP|MF_NOTDMATCH,
 int raisestate;    Respawn frame = 32       S_NULL          // raisestate
                                          }, */
+// [WDJ] mobjinfo fields added
+/*
+int flags2;        Bits2 = 3232             MF2_xxx,        // implemented, Heretic
+    // Mostly does not match flags2 values from Eternity Engine,
+    LOGRAV
+    FLOATBOB
+ */
+
+// [WDJ] mobjinfo fields from Eternity Engine, not implemented
+/*
+int flags3;        Bits3 = 3233             ??? Heretic
+int translucency;  Translucency = 3         ???
+int bloodcolor;    Blood color = 3          ???
+ */
+
 // [WDJ] BEX flags 9/10/2011
 typedef enum { BFexit, BF1, BF2, BF2x, BFT } bex_flags_ctrl_e;
 
@@ -739,6 +754,41 @@ static int searchvalue(char *s)
     deh_error("No value found\n");
     return 0;
   }
+}
+
+// [WDJ] Thing type code substitutions.
+// Not all ports agree on what these type codes are.
+typedef struct {
+    const char *  desc;
+    uint16_t  mt_type;
+} deh_thing_desc_t;
+
+deh_thing_desc_t  deh_thing_desc_table[] =
+{
+  { "push", MT_PUSH },  // Boom
+  { "pull", MT_PULL },  // Boom
+  { "dog", MT_DOG },    // MBF
+  { "camera", MT_CAMERA },  // SMMU
+  { "plasma1", MT_PLASMA1 },  //
+  { "plasma2", MT_PLASMA2 },  //
+  { "splash", MT_SPLASH },  // Legacy
+  { "smoke", MT_SMOK },     // Legacy
+  { "spirit", MT_SPIRIT },  // Legacy, LAST
+};
+
+// Return an mt_xxx, or 0.
+uint16_t  lookup_thing_desc( const char * str )
+{
+   deh_thing_desc_t * dtd = & deh_thing_desc_table[0];
+   for(;;)
+   {
+       if( strstr( str, dtd->desc ) )
+	   return dtd->mt_type;
+       if( dtd->mt_type == MT_SPIRIT )  // last
+           return 0;
+
+       dtd++;
+   }
 }
 
 // Have read  "Thing <deh_thing_id>"
@@ -2565,9 +2615,20 @@ void DEH_LoadDehackedFile(myfile_t* f, byte bex_permission)
         {
           // "Thing <num>"
           if(i<=NUMMOBJTYPES && i>0)
-            readthing(f,i);
-          else
+	  {
             deh_error("Thing %d don't exist\n",i);
+	    i = MT_UNK1;
+	  }
+
+	  if( i >= 138 && i < 150 )  // problem area
+	  {
+             // Test for keywords in description
+             uint16_t i2 = lookup_thing_desc( s );
+             if( i2 )
+                 i = i2; // substitute
+          }
+
+	  readthing(f,i);
         }
         else if(!strcasecmp(word,"Frame"))
              {

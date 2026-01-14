@@ -1,5 +1,6 @@
 * Not need to Compile.
 
+[01603 ]: w109_064 dehack dog
 [01602 ]: w109_063 hw transparent wall
 [01601 ]: w109_062 missing sprite
 [01600 ]: w109_061 spawn dogs

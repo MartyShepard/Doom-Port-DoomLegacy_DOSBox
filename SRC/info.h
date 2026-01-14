@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: info.h 1451 2019-08-03 07:02:00Z wesleyjohnson $
+// $Id: info.h 1603 2021-11-16 11:44:33Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -2635,6 +2635,7 @@ typedef enum {
     MT_SERGEANT,
     MT_SHADOWS,
     MT_HEAD,
+// 15   
     MT_BRUISER,
     MT_BRUISERSHOT,
     MT_KNIGHT,
@@ -2643,6 +2644,7 @@ typedef enum {
     MT_BABY,
     MT_CYBORG,
     MT_PAIN,
+// 23
     MT_WOLFSS,
     MT_KEEN,
     MT_BOSSBRAIN,
@@ -2663,6 +2665,7 @@ typedef enum {
     MT_IFOG,
     MT_TELEPORTMAN,
     MT_EXTRABFG,
+// 43
     MT_MISC0,
     MT_MISC1,
     MT_MISC2,
@@ -2692,6 +2695,7 @@ typedef enum {
     MT_MISC22,
     MT_MISC23,
     MT_MISC24,
+// 72
     MT_BFG9000,
     MT_CHAINGUN,
     MT_SHAINSAW,
@@ -2699,6 +2703,7 @@ typedef enum {
     MT_PLASMAGUN,
     MT_SHOTGUN,
     MT_SUPERSHOTGUN,
+// 79
     MT_MISC29,
     MT_MISC30,
     MT_MISC31,
@@ -2757,12 +2762,20 @@ typedef enum {
     MT_MISC84,
     MT_MISC85,
     MT_MISC86,
+// 137   
     MT_CHASECAM,
+// 138
     MT_SPIRIT,
     MT_SMOK,        // test lave/slime damage smoke
     MT_SPLASH,      // test water splash
+// 141   
+// eternity = 138
+// pbroom = 137
     MT_PUSH,    //SoM: 3/8/2000: controls push source
     MT_PULL,    //SoM: 3/8/2000: controls pull source
+// 143
+// eternity = 140
+// 
     MT_DOG,     //[WDJ] 6/2017
     MT_PLASMA1, //SoM: Hold the place.
     MT_PLASMA2, //SoM: Hold the place.
@@ -2932,7 +2945,9 @@ MT_AMBLSRWIMPY,  // ENERGY ORB        (ammo S claw)
 MT_AMBLSRHEFTY,  // ENERGY ORB LARGE  (ammo M claw)
 MT_SOUNDWIND,  // SOUND WIND  (ambience sound)
 MT_SOUNDWATERFALL,   // SOUND WATERFALL  (ambience sound)
+    END_HERTIC_MT = MT_SOUNDWATERFALL,
 
+MT_UNK1,  // dehacked usage
 
     NUMMOBJTYPES
 
