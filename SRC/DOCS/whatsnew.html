@@ -13,6 +13,191 @@
 
 <div class="column">
 
+<h2>1.48.10 SVN1608 (2021-12-13)</h2>
+
+<h3>FEATURES 1.48.10</h3>
+
+<ul>
+<li>
+More ports now allow a second mouse.
+This allows using PC, mousesystems, and PS2 type mice.
+The ports that have the second mouse are SDL, WIN32, and X11.
+</li>
+<li>
+The linux X11 port got a total rewrite of sfx sound.
+Added support for ALSA, JACK, and PulseAudio sound,
+as it was only supporting OSS sound, and ESD sound.
+The sound device is selectable in the sound menu.
+</li>
+<li>
+Support for DeepBSP V4 extended nodes (based on crispy doom).
+Also ZDoom extended nodes (based on code from woof 1.2.0), supporting
+uncompressed, and compressed nodes (when zlib is present).
+
+Allows playing several wads, such as Avactor, and Lost Civilization,
+that are otherwise playable by DoomLegacy,
+but use extended nodes for several of their maps.
+Code provided by Michael Bäuerle (FR_0095).
+</li>
+<li>
+Added the blockmap generation code provided by Michael Bäuerle (FR_0096).
+Some of the code is borrowed from crispy doom, altered a bit by
+Michael Bäuerle to suit DoomLegacy, and then totally mangled by WJ.
+<br>
+A blockmap control has been put into the menu.
+<ul>
+<li>Vanilla: Load the blockmap, preserves blockmap tricks.</li>
+<li>Large: On large blockmaps (error prone), Generate the blockmap instead.</li>
+<li>Generate: Always Generate a blockmap.</li>
+<li>Auto: Try to Load the blockmap, upon significant errors then
+Generate a blockmap.</li>
+</ul>
+</li>
+<li>
+The hardware sky draw (OpenGL, etc.) now uses the extended textures.
+The scaling and alignment of the sky in hardware draw has been made
+consistent with software draw.
+The sky movement from head turning is greatly reduced.
+There is still some horizontal wander.
+
+The hardware sky still does not change when the player is Invulnerable.
+The hardware draw sky does not support the necessary multiple colormaps right now.
+</li>
+<li>
+A dehacked thing translation command line switch, -dehthing.
+This selects the dehacked translation for thing numbers in the range 138 to 150.
+This overrides the Automatic translation detection.
+<ul>
+<li>legacy : DoomLegacy untranslated</li>
+<li>boom : translate things according to Boom</li>
+<li>prboom : Boom and Beta things</li>
+<li>ee : Eternity Engine things</li>
+</ul>
+</li>
+</ul>
+
+<h3>BUG FIXES 1.48.10</h3>
+
+<ul>
+<li>
+Added failure detection for setting drawmode from config file.
+If the config file drawmode fails then use a window at native bpp.
+This used to fail ungracefully.
+</li>
+<li>
+Improved Gcc10 compilation, eliminating most of the nuisance messages.
+Fixed usages of snprintf, and strncpy.
+Fixed bug 0671.
+</li>
+<li>
+The Clang compiler caught some mistakes.
+The old code probably did work.
+Fixed bug 0672.
+</li>
+<li>
+Fixed where the program is stuck in client mode.
+Once having tried to connect as client, the program would not go back
+to server mode, not even when starting a netgame as server.
+A symptom was the player wait count being initialized to 99.
+Fixed to set server mode.
+Fixes bug 0677.
+</li>
+<li>
+Players were kicked during netgame when their blood splat setting
+was different than the server.
+As it was desireable to allow players to turn off blood splats
+independently of the server setting, this was fixed by making the
+off code call P_Random appropriately.
+This also fixes a demo consistency error.
+Fixes bug 0678.
+</li>
+<li>
+Changed the netgame repair function to correctly
+report differences in random number settings for the server.
+The message syntax was only appropriate for the client,
+displaying reversed server/client values at the server.
+</li>
+<li>
+Adding extended nodes fixed several bugs.
+Fixes bug #657, due to DeepBSP V4 extended nodes.
+Fixes the segfault in Eviternity.wad Map15 and Map32, due to
+use of uncompressed ZDoom extended nodes.
+</li>
+<li>
+Fixed dehacked code to read Avactor.wad dehacked lump.
+Increased the dehacked buffer length to 1028.
+Made all the string comparisons caseless.
+Adopted some logic from PrBoom and Eternity regarding exiting sections
+on a blank line.
+Detect "//" lines as comments.
+</li>
+<li>
+Fixed the hardware draw to clip lights at 0..255.
+Some wad editors put in a default light value of 256.
+This fixes some wads, like Avactor.wad, which has light values
+of 256 for some sectors. These would show up as black sectors.
+Most ports allow the light field to exceed 255, allowing some
+lighting tricks (that few wads take advantage of).
+</li>
+<li>
+In Avactor.wad, there are an excessive number of BSP partition
+lines that miss the subsector.
+
+In this case the hardware draw BSP must determine if the subsector poly is to
+the right, or to the left of the divide line.
+This must match the BSP partitioning, as
+those poly will be assigned to the front sector, and back sector.
+Sometimes it was testing a vertex on the divline, leading to
+the poly being assigned to the wrong subsector.
+
+This fixes a missing floor in Avactor.wad (Map04, sector 1757).
+</li>
+<li>
+Fixed some bad subsector draws for hardware-draw
+in Avactor.wad (Map05 sector 1502).  These were using the wrong sector
+to draw the subsector.
+For the polygons that do not have a linedef as a side,
+there must be a search of all linedefs to find
+one that indentifies the sector that this subsector is within.
+The test needed to be more robust for large maps.
+</li>
+<li>
+Lost Civilization uses some masked textures on upper textures and single
+sided walls.  This is not entirely valid usage, but it happens.
+The software render draws black in the missing portions of the texture.
+With hardware render, OpenGL, this shows sky through the wall.
+Fixed the hardware render to also draw black in this usage.
+</li>
+<li>
+Fixed the menu selected extra dogs, to be spawned using the
+correct type code.  This fix was revised three times, as more
+problems with dehacked dogs arose.
+Fixes bug 0681.
+</li>
+<li>
+Fixed the rocket in Valiant.wad.  Dehacked using
+thing numbers from Beta versions, that are valid in PrBoom,
+hit Dogs and other things in DoomLegacy.
+Implemented dehacked detection that translates these to
+more appropriate DoomLegacy things.
+This affects dehacked things in Lost Civilization, Avactor,
+Valiant, and especially antaxyz.
+</li>
+<li>
+Always include the missing sprite detect, from Debug.
+Often the dog sprite is missing from the wad.
+</li>
+<li>
+Made Voodoo card support optional.
+The code is no longer tied to support for Glide.
+</li>
+<li>
+Fix Load savegame menu controls to allow ESCAPE
+from the Load savegame after changing to another directory.
+</li>
+</ul>
+
+
 <h2>1.48.8 SVN1568 (2020-12-19)</h2>
 
 <h3>FEATURES 1.48.8</h3>

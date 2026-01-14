@@ -1611,6 +1611,7 @@ Requires compiling with the MiniGL library and configuration.
 <td>Hardware accelerated rendering using the Glide library for the Voodoo card.
 For Linux-X11-XSHM, Linux-X11-GGI, and WIN32 ports.
 Requires compiling with the Glide library and configuration.
+Voodoo card support is now a compile-time option.
 </td>
 </tr>
 
@@ -1623,6 +1624,7 @@ it selects window video modes with "MESA_GLX_FX=window",
 It also prevents grabbing the mouse.
 For Linux-X11-XSHM port.
 Requires compiling with the XSHM library, MESA library, and configuration.
+Voodoo card support is now a compile-time option.
 </td>
 </tr>
 
@@ -2096,6 +2098,100 @@ modes available and how the mode selection is handled.</td>
   could not increase the length of a string, but Legacy can.
   Sprite renaming works too, well, pretty much anything works :)
 </p>
+<p>
+  Some dehacked lumps were written using thing numbers and frame numbers
+  that were added in Boom, and PrBoom.
+  Thing numbers in the range 138 to 150 in Doom Legacy differ from PrBoom.
+  These numbers must be translated to the numbers that Legacy uses internally.
+</p>
+<p>
+  There is Automatic detection that can correct the thing
+  numbering in some wads.  This relies upon comments in the dehacked
+  lump, and upon detecting port specific linedefs.
+  For some wads the user will have to override the Automatic
+  detection, and specify the dehacked thing coding directly.
+</p>
+<p>
+  Note that the thing numbers used in dehacked lumps, are always
+  the internal thing numbers + 1.
+</p>
+<p>
+  MT_DOGS has dog specific code that provides dog behaviors.
+  Using MT_DOGS for something other than a dog, will make it
+  behave like a dog, such as running around and barking.
+</p>
+<p>
+  Currently, Doom Legacy does not provide the dog sprites and sounds.
+  The user must provide a wad that has dog sprites and sounds.
+<br>
+  For instance:<br>
+<code>  
+  >> legacy -game doom2 -file prboom.wad antaxyz.wad <br>
+  >> legacy -game doom2 -file dogs1.wad antaxyz.wad <br>
+</code>
+</p>
+
+<table class="def">
+<tr><th>option</th><th>description</th></tr>
+<tr>
+<td>-dehthing<br/></td>
+<td>Select dehacked thing coding for the range 138 to 150.<br>
+<table>
+<tr><td>legacy</td><td>DoomLegacy untranslated</td></tr>
+<tr><td>boom</td><td>translate things according to Boom.</td></tr>
+<tr><td>prboom</td><td>Boom and Beta things</td></tr>
+<tr><td>ee</td><td>Eternity Engine things</td></tr>
+</table>
+</td>
+</tr>
+</table>
+
+<br>
+Thing codes in the following lists are as they appear in dehacked.
+<ul>
+<li>legacy:
+<br>DoomLegacy untranslated.
+<ul>
+<li>138: MT_CHASECAM</li>
+<li>139: MT_SPIRIT</li>
+<li>140: MT_SMOK</li>
+<li>141: MT_SPLASH</li>
+<li>142: MT_PUSH</li>
+<li>143: MT_PULL</li>
+<li>144: MT_DOGS</li>
+<li>145: MT_PLASMA1</li>
+<li>146: MT_PLASMA2</li>
+<li>147: MT_CAMERA</li>
+<li>148: MT_NODE</li>
+</ul>
+<br>
+<li>boom:
+<br>Translate things according to Boom.
+<ul>
+<li>139: MT_PUSH</li>
+<li>140: MT_PULL</li>
+</ul>
+<br>
+<li>prboom:
+<br>Boom and Beta things.
+<ul>
+<li>139: MT_PUSH</li>
+<li>140: MT_PULL</li>
+<li>141: MT_DOGS</li>
+<li>142: MT_PLASMA1</li>
+<li>143: MT_PLASMA2</li>
+<li>144: MT_CAMERA</li>
+<li>145: MT_PLASMA3</li>
+</ul>
+<br>
+<li>ee:
+<br>Eternity Engine things.
+<ul>
+<li>138: MT_PUSH</li>
+<li>139: MT_PULL</li>
+<li>140: MT_DOGS</li>
+</ul>
+</ul>
 
 <h3>BEX patches</h3>
 <p>  

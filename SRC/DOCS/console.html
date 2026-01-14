@@ -1675,6 +1675,21 @@ with the default value, causing havoc.
 Default is Boom.
 </td></tr>
 
+<tr><td>blockmap</td><td>enum</td>
+<td>
+Control automatic blockmap generation.  A simple blockmap generator is
+included in Doom Legacy to cope with wads with broken, large, or missing blockmaps.
+<table class="def">
+<tr><td>Vanilla</td><td>0</td><td>Use the wad blockmap. as in vanilla Doom.<td></tr>
+<tr><td>Large</td><td>1</td><td>Upon detecting a large blockmap, that
+overflows the offset, generate a new blockmap instead.<td></tr>
+<tr><td>Generate</td><td>2</td><td>Always generate a new blockmap.<td></tr>
+<tr><td>Auto</td><td>3</td><td>Try to Load the blockmap, and upon significant errors then
+Generate a blockmap.<td></tr>
+</table>
+Default is Auto.
+</td></tr>
+
 
 <tr><td>weaponrecoil</td><td>bool</td>
 <td>
