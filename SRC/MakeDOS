@@ -304,10 +304,13 @@ ifdef DJGPPDOS_NATIVE
 endif
 
 ifdef BEXLANGUAGE
-BEX_LANGUAGE=1
+	BEX_LANGUAGE=1
 endif
 ifdef SURROUND
-SURROUND=1
+	SURROUND=1
+endif
+ifdef ZLIB
+	HAVE_ZLIB=1
 endif
 
 # CD-Music enable/disable, if you don't have the special libraries, etc.
@@ -336,7 +339,17 @@ ifdef DJGPPDOS_NATIVE
 	ifdef BEX_LANGUAGE
 	   OPTS+=-DBEX_LANGUAGE
 	endif
-		
+	
+	# ZLIB
+	ifdef HAVE_ZLIB
+		HAVE_ZLIB=1
+		OPTS+=-DHAVE_ZLIB=$(HAVE_ZLIB)
+		ifeq ($(HAVE_ZLIB), 1)
+			LIBS+=-lzip
+			LIBS+=-lz
+		endif
+	endif
+
 	ENABLE_DRAW24=1
 	ENABLE_DRAW32=1
 	
@@ -344,14 +357,8 @@ ifdef DJGPPDOS_NATIVE
 	OPTS+=-DENABLE_DRAW32
 	
 	LIBS+=-lsocke
-	LIBS+=-llz
-#  LIBS+=-lzip
-#  LIBS+=-lbz2
-#  LIBS+=-llzma
-#  LIBS+=-lzstd
-#  LIBS+=-lbcryp
-#  LIBS+=-lz
-#  LIBS+=-lssp
+	#LIBS+=-llz
+
 	
 	SFLAGS=
   CFLAGS=-g

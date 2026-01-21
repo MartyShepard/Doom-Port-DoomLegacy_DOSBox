@@ -1176,23 +1176,25 @@ endif
 # LIBZIP
 # For now, Linux only.
 ifeq ($(OS), LINUX)
-  ifdef HAVE_LIBZIP
-    # Option ZIPWAD_OPTIONAL uses lib dlopen.
-    LIBS+=-lzip
-    OPTS+=-DHAVE_LIBZIP=$(HAVE_LIBZIP)
-  endif
   ifdef HAVE_DLOPEN
-    # Option ZIPWAD_OPTIONAL uses lib dlopen.
     LIBS+=-ldl
     OPTS+=-DHAVE_DLOPEN
+  endif
+
+  ifdef HAVE_LIBZIP
+    OPTS+=-DHAVE_LIBZIP=$(HAVE_LIBZIP)
+    ifeq ($(HAVE_LIBZIP), 1)
+      LIBS+=-lzip
+    endif
   endif
 endif
 
 # ZLIB
 ifdef HAVE_ZLIB
-    # When optional uses lib dlopen.
+  OPTS+=-DHAVE_ZLIB=$(HAVE_ZLIB)
+  ifeq ($(HAVE_ZLIB), 1)
     LIBS+=-lz
-    OPTS+=-DHAVE_ZLIB=$(HAVE_ZLIB)
+  endif
 endif
 
 

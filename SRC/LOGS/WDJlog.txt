@@ -8957,11 +8957,39 @@ patchfile = w109_069_ver14810
 - commit revision 1608
 Update to version 1.48.10, with docs.
 
-=== commit
-
 *** w109_strcasestr
 patchfile = w109_070_strcasestr
 - commit revision 1609
 Mingw32 does not have strcasestr.
 Had to write one for Mingw32 and Watcom.
+
+=== commit
+
+*** w109_dynload
+patchfile = w109_071_dynload
+- commit revision 1610
+Fix compile errors in dynamic load of zlib, and libzip.
+Detect version of libzip from header file.
+Remove version of libzip from make_options.
+Fix HAVE_LIBZIP in make_options to be same
+syntax as HAVE_ZLIB.
+Update all docs to reflect this.
+
+*** w109_hwr_draw_cache
+patchfile = w109_072_hwr_draw_cache
+- commit revision 1611
+Fix a segfault in biowar.wad Map08 with OpenGL.
+It would segfault when a texture being drawn in cache,
+had one patch extending lower than the texture bottom.
+The draw in the cache would overrun the allocated memory.
+Fixed the limit test to test against the dest index, instead of a
+source index.  They differed in scaling.
+
+*** w109_misc
+patchfile = w109_073_misc
+- commit revision 1612
+Update docs for 1.48.10 rev 1612.
+Unused ext state are set to zero.
+Update release scripts.
+
 

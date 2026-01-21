@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*- 
 //-----------------------------------------------------------------------------
 //
-// $Id: w_wad.h 1576 2021-02-04 11:30:13Z wesleyjohnson $
+// $Id: w_wad.h 1610 2022-01-01 09:40:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -324,11 +324,18 @@ typedef enum {
     FH_mask = 0xF0,
 } file_handle_e;
 
+// Dynamically loaded libzip
+#if !defined( __DJGPP__ )
+#if HAVE_LIBZIP == 3
+# define OPT_LIBZIP
 extern byte  libzip_present;
+void  WZ_available( void );
+#endif
+#endif
+
 extern byte  archive_open;
 extern byte  archive_filenum;
 
-void  WZ_available( void );
 byte  WZ_filename_cmp( const char * filename1, const char * filename2 );
 byte  WZ_find_file_in_archive( const char * filename, const char * archive_name );
 // Return filename with extension, otherwise NULL.

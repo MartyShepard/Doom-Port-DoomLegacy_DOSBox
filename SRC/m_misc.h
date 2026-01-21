@@ -134,4 +134,7 @@ char * dl_strcasestr( const char * haystack,  const char * needle );
 	// Case-insensitive strstr (GNU-kompatibel)
 	char *strcasestr(const char *haystack, const char *needle);
 #endif
+
+int mingw_vsprintf(char *str, const char *format, va_list ap);
+int mingw_vsnprintf(char *str, size_t size, const char *format, va_list ap);
 #endif

@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: w_wad.c 1602 2021-11-12 09:09:41Z wesleyjohnson $
+// $Id: w_wad.c 1610 2022-01-01 09:40:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Portions Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -354,11 +354,13 @@ int W_Load_WadFile ( const char * filename )
     if( fc == FC_zip )
     {
 #ifdef ZIPWAD
+# ifdef OPT_LIBZIP
         if( ! libzip_present )
         {
             msg = "Cannot read zip file, ziplib not present.";
                 goto read_failure;
         }
+# endif
 
         // Other files are keep open until shutdown,
         // but zip files are not accessed by handle.

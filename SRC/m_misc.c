@@ -1204,3 +1204,29 @@ char *strcasestr(const char *haystack, const char *needle)
     return NULL;
 }
 #endif
+
+// MinGW-Style vsnprintf für DJGPP
+int mingw_vsnprintf(char *str, size_t size, const char *format, va_list ap)
+{
+    // DJGPP hat vsnprintf – nutzen wir es direkt
+    #ifdef DJGPP
+        return vsnprintf(str, size, format, ap);
+    #else
+        // Fallback für sehr alte DJGPP ohne vsnprintf
+        char buf[4096];  // groß genug für die meisten Fälle
+        int len = vsprintf(buf, format, ap);
+        if (len < 0) return -1;
+
+        if (size > 0) {
+            strncpy(str, buf, size - 1);
+            str[size - 1] = '\0';
+        }
+        return len;
+    #endif
+}
+
+// mingw_vsprintf (ohne size-Limit)
+int mingw_vsprintf(char *str, const char *format, va_list ap)
+{
+    return mingw_vsnprintf(str, INT_MAX, format, ap);
+}

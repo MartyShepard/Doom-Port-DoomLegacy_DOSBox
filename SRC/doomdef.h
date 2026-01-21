@@ -1,7 +1,7 @@
 // Emacs style mode select   -*- C++ -*-
 //-----------------------------------------------------------------------------
 //
-// $Id: doomdef.h 1595 2021-10-16 07:39:26Z wesleyjohnson $
+// $Id: doomdef.h 1610 2022-01-01 09:40:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2013 by DooM Legacy Team.
@@ -36,7 +36,7 @@
 #define RANGECHECK
 #define RANGECHECK_DRAW_LIMITS
 // Do some extra tests, that never happens but maybe.
-//#define PARANOIA
+#define PARANOIA
 // Write message in log.txt (win32 and Linux only for the moment)
 #define LOGMESSAGES
 // Show debug messages.
@@ -207,26 +207,16 @@
 // Read zip wads.
 // This requires  HAVE_LIBZIP  be set in make_options to get linking.
 #define ZIPWAD
-#ifdef HAVE_DLOPEN
-// Test for optional ziplib.  Requires lib dlopen.
-// This requires  HAVE_DLOPEN  be set in make_options to get linking.
-#define OPT_LIBZIP
-#endif
 #endif
 #endif
 
 #if defined( __DJGPP__ )
 // For now Linux only because it requires libzip.
-//#define HAVE_LIBZIP 1
+#define HAVE_LIBZIP
 #ifdef HAVE_LIBZIP
 // Read zip wads.
 // This requires  HAVE_LIBZIP  be set in make_options to get linking.
 #define ZIPWAD
-#ifdef HAVE_DLOPEN
-// Test for optional ziplib.  Requires lib dlopen.
-// This requires  HAVE_DLOPEN  be set in make_options to get linking.
-#define OPT_LIBZIP
-#endif
 #endif
 #endif
 
@@ -249,17 +239,17 @@
 
 // Special handling for devparm is somewhat dated.
 // Most users do not ever use it.
-#define DEVPARM_LOADING
+// #define DEVPARM_LOADING
 
 // File reload at level start when filename starts with "~"
 // A fragile development hack that has been mostly disabled for years.
 // ** Broken.
-#define WADFILE_RELOAD
+// #define WADFILE_RELOAD
 
 // Loading disk icon.
 // Disk accesses are too fast for this to be useful anymore.
 // ** Broken
-#define LOADING_DISK_ICON
+// #define LOADING_DISK_ICON
 
 
 

@@ -2,7 +2,7 @@
 //-----------------------------------------------------------------------------
 // Include: DOS DJGPP Fixes/ DOS Compile Fixes
 //
-// $Id: d_main.c 1609 2021-12-22 05:57:14Z wesleyjohnson $
+// $Id: d_main.c 1610 2022-01-01 09:40:13Z wesleyjohnson $
 //
 // Copyright (C) 1993-1996 by id Software, Inc.
 // Copyright (C) 1998-2016 by DooM Legacy Team.
@@ -241,6 +241,11 @@
 #include "p_fab.h"
 #include "p_info.h"
 #include "p_local.h"
+#if !defined( __DJGPP__ )
+#include "p_extnodes.h"
+#else
+#include "p_extnod.h"
+#endif
 
 #include "r_main.h"
 #include "r_local.h"
@@ -293,7 +298,21 @@
     #define DOSNAME ""
   #endif
 
+  #ifdef HAVE_LIBZIP
+    #include <zipconf.h>
+    #if ((LIBZIP_VERSION_MAJOR < 1) || (LIBZIP_VERSION_MAJOR == 1 && LIBZIP_VERSION_MINOR < 2))
+      #define ZIPNAME "Zip " LIBZIP_VERSION
+      static const char LIBZIPSTR[] = "[" ZIPNAME "]";
+    #else
+      #define ZIPNAME "Zip " LIBZIP_VERSION " FSEEK"
+      static const char LIBZIPSTR[] = "[" ZIPNAME "]";
+    #endif
+  #else
+    static const char LIBZIPSTR[] = "";
+  #endif
+
   static const char DOSSTRING[] = "[" DOSNAME "]";
+
 
   // Proto
   void Commandline_GetBitModi(void);
@@ -311,19 +330,20 @@
   }
 
 #else
-  static const char DOSSTRING[] = "";	
+  static const char DOSSTRING[] = "";
+  static const char LIBZIPSTR[] = "";
 #endif
 
 // Versioning
 #ifndef SVN_REV
-#define SVN_REV "1609"
+#define SVN_REV "1610"
 #endif
 
 
 // Version number: major.minor.revision
 const int  VERSION  = 148; // major*100 + minor
 const int  REVISION = 10;  // for bugfix releases, should not affect compatibility. has nothing to do with svn revisions.
-static const char VERSIONSTRING[] = "(Rev " SVN_REV ")";
+static const char VERSIONSTRING[] = "(" SVN_REV ")";
 //static const char VERSIONSTRING[] = "Beta (Rev " SVN_REV ")";
 char VERSION_BANNER[80];
 
@@ -2238,10 +2258,13 @@ void D_DoomMain()
     french_early_text();
 #endif
 #if defined( __DJGPP__ )
-    char dosroot[MAX_WADPATH]; 
-#endif
+    char dosroot[MAX_WADPATH];
     // print version banner just once here, use it anywhere
-    sprintf(VERSION_BANNER, "Doom Legacy %d.%d.%d %s %s", VERSION/100, VERSION%100, REVISION, VERSIONSTRING, DOSSTRING);
+    sprintf(VERSION_BANNER, "Doom Legacy %d.%d.%d %s %s %s", VERSION/100, VERSION%100, REVISION, VERSIONSTRING, DOSSTRING, LIBZIPSTR);
+#else
+    // print version banner just once here, use it anywhere
+    sprintf(VERSION_BANNER, "Doom Legacy %d.%d.%d %s", VERSION/100, VERSION%100, REVISION, VERSIONSTRING);
+#endif
     demoversion = VERSION;
 
     D_Make_legacytitle();
@@ -2443,7 +2466,15 @@ void D_DoomMain()
     G_Controldefault();
    
 #ifdef ZIPWAD
+# ifdef OPT_LIBZIP
     WZ_available();  // check for zip lib
+# endif
+#endif
+#ifdef HAVE_ZLIB
+# if HAVE_ZLIB == 3
+    // Dynamic load zlib.
+    ZLIB_available();
+# endif
 #endif
 
     // Before this line are initializations that are run only one time.
@@ -4230,10 +4261,25 @@ void Commandline_GetCompileFeatures(void)
         printf("ENGINE [ ] Zip Support\n");
 #endif
 
-#ifdef ZIPWAD_OPTIONAL
-        printf("ENGINE [X] Zip Support (Optional)\n");
+#ifdef HAVE_LIBZIP
+        static const char LIBZIPVER[] = "" LIBZIP_VERSION"";
+        printf("ENGINE [X] Zip LibZIP Version: %s\n", LIBZIPVER);
 #else
-        printf("ENGINE [ ] Zip Support (Optional)\n");
+        printf("ENGINE [ ] Zip LibZIP Version: No LibZip\n");
+#endif
+
+#ifdef ZIPWAD_OPTIONAL
+        printf("ENGINE [X] Zip Support (External Library Support\n");
+#else
+        printf("ENGINE [ ] Zip Support (External Library Support)\n");
+#endif
+
+#ifdef GEN_ZIP_SEEK
+        printf("ENGINE [X] Zip Support (No LIBZIP Zip-FSeek, Using Doom Legacy Routine)\n");
+#endif
+
+#ifdef HAVE_LIBZIP
+        printf("ENGINE [X] Zip Support (Using LIBZIP Zip-Fseek function)\n");
 #endif
 
 // User Info

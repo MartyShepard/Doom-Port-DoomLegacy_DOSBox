@@ -90,4 +90,11 @@ extern void P_LoadSubsectors_DeePBSP (int lump);
 extern void P_LoadNodes_DeePBSP (int lump);
 extern void P_LoadNodes_ZDBSP (int lump, boolean compressed);
 
+#ifdef HAVE_ZLIB
+#if HAVE_ZLIB == 3
+// Dynamic load zlib.
+void ZLIB_available( void );
+#endif
+#endif
+
 #endif
